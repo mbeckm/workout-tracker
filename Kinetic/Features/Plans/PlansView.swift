@@ -65,7 +65,7 @@ private struct EmptyPlansView: View {
 				Text("Create your first plan")
 					.font(.title3.weight(.semibold))
 					.foregroundStyle(KineticTheme.ink)
-				Text("Choose how many days you train each week, then add free-text exercises with target sets and reps.")
+				Text("Choose how many days you train each week, then search exercises and set targets.")
 					.font(.body)
 					.foregroundStyle(KineticTheme.slate)
 			}

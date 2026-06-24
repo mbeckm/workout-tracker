@@ -6,6 +6,28 @@ Goal: Find shipped mobile UX patterns for a light-first iOS workout tracker focu
 
 ## References And Takeaways
 
+### Progressive plan setup
+
+References:
+- Tempo starting a training plan: https://mobbin.com/flows/985e6fd9-9777-4644-8e79-05c8c75d1b20
+- Equinox+ personalizing a program: https://mobbin.com/flows/754cee5d-c1f4-44a7-9ae9-5e09474db3a3
+- Runna onboarding: https://mobbin.com/flows/1689d6d5-e245-4369-9dae-320bd863136b
+- 5 Minute Journal onboarding: https://mobbin.com/flows/dce031a1-1a4b-40e7-8474-3413989ddc21
+
+What works:
+- Setup flows feel less intimidating when each screen has one job.
+- Strong title-led screens and persistent bottom actions keep the user oriented.
+- Horizontal progress indicators make longer setup feel bounded.
+- Fitness setup flows often split schedule, preferences, and plan confirmation instead of showing one long editor.
+- Review moments help users feel ownership before committing to a plan.
+
+Kinetic adaptation:
+- The plus button should open a guided plan builder rather than a dense all-at-once form.
+- Split plan creation into basics, day names, exercises, and review.
+- Keep exercise entry free-text, but reveal one training day at a time.
+- Make the final review show the whole week with day and exercise reorder controls before saving.
+- Keep the bottom action persistent so the next step is always obvious.
+
 ### Hevy
 
 References:

@@ -65,7 +65,12 @@ final class TrainingDay {
 final class PlanExercise {
 	@Attribute(.unique) var id: UUID
 	var order: Int
+	var catalogID: String?
 	var name: String
+	var category: String = ""
+	var primaryMuscles: [String] = []
+	var secondaryMuscles: [String] = []
+	var equipment: [String] = []
 	var targetSets: Int
 	var targetReps: Int
 	var notes: String
@@ -74,17 +79,40 @@ final class PlanExercise {
 	init(
 		id: UUID = UUID(),
 		order: Int,
+		catalogID: String? = nil,
 		name: String,
+		category: String = "",
+		primaryMuscles: [String] = [],
+		secondaryMuscles: [String] = [],
+		equipment: [String] = [],
 		targetSets: Int,
 		targetReps: Int,
 		notes: String = ""
 	) {
 		self.id = id
 		self.order = order
+		self.catalogID = catalogID
 		self.name = name
+		self.category = category
+		self.primaryMuscles = primaryMuscles
+		self.secondaryMuscles = secondaryMuscles
+		self.equipment = equipment
 		self.targetSets = targetSets
 		self.targetReps = targetReps
 		self.notes = notes
+	}
+}
+
+extension PlanExercise {
+	var trainingTargetSummary: String {
+		let muscleText = primaryMuscles.isEmpty ? category : primaryMuscles.kineticSummary()
+		let equipmentText = equipment.kineticSummary(fallback: "Bodyweight")
+
+		if muscleText.isEmpty {
+			return equipmentText
+		}
+
+		return "\(muscleText) - \(equipmentText)"
 	}
 }
 

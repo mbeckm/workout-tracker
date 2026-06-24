@@ -193,6 +193,9 @@ private struct ExerciseLoggingSection: View {
 					Text("\(exercise.targetSets) sets · \(exercise.targetReps) reps target")
 						.font(.caption)
 						.foregroundStyle(KineticTheme.slate)
+					Text(exercise.trainingTargetSummary)
+						.font(.caption)
+						.foregroundStyle(KineticTheme.slate)
 				}
 				Spacer()
 				if !exercise.notes.isEmpty {
