@@ -121,7 +121,10 @@ private struct SetTable: View {
     var sets: [LoggedSet]
 
     var body: some View {
-        CardShell(height: 168, cornerRadius: 12, fill: AppColor.surface2) {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(AppColor.surface2)
+
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
                 GridRow {
                     header("Set")
@@ -138,8 +141,11 @@ private struct SetTable: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 9)
+            .padding(.leading, 25.3)
+            .padding(.trailing, 25.3)
+            .padding(.top, 12.6)
         }
+        .frame(height: 168)
     }
 
     private func header(_ text: String) -> some View {
