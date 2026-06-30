@@ -199,16 +199,20 @@ private struct SummaryCard: View {
     var workout: LoggedWorkout?
 
     var body: some View {
-        CardShell(height: 310) {
-            VStack(spacing: 24) {
-                summary(value: durationText, label: "Duration")
-                divider
-                summary(value: "\(workout?.exerciseCount ?? 8)", label: "Exercises")
-                divider
-                summary(value: "\(workout?.setCount ?? 32)", label: "Sets")
-            }
-            .frame(maxWidth: .infinity)
+        VStack(spacing: 24) {
+            summary(value: durationText, label: "Duration")
+            divider
+            summary(value: "\(workout?.exerciseCount ?? 8)", label: "Exercises")
+            divider
+            summary(value: "\(workout?.setCount ?? 32)", label: "Sets")
         }
+        .padding(.vertical, 16)
+        .frame(width: 354, height: 310)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
     }
 
     private var durationText: String {
@@ -235,6 +239,6 @@ private struct SummaryCard: View {
         Rectangle()
             .fill(AppColor.border)
             .frame(height: 1)
-            .frame(maxWidth: .infinity)
+            .frame(width: 338)
     }
 }
