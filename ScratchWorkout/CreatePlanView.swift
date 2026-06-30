@@ -83,19 +83,20 @@ struct CreatePlanView: View {
 
             VStack(spacing: 16) {
                 HStack(spacing: 24) {
-                    RoundStepButton(symbol: "minus") {
+                    RoundStepButton(symbol: "minus", fill: AppColor.border) {
                         daysPerWeek = max(1, daysPerWeek - 1)
                     }
 
                     Text("\(daysPerWeek)")
                         .font(.custom("Inter", size: 128, relativeTo: .largeTitle).weight(.bold))
-                        .frame(width: 92, height: 105)
+                        .frame(width: 83, height: 105)
                         .contentTransition(.numericText())
 
-                    RoundStepButton(symbol: "plus") {
+                    RoundStepButton(symbol: "plus", fill: AppColor.border) {
                         daysPerWeek = min(7, daysPerWeek + 1)
                     }
                 }
+                .offset(x: 2.5)
 
                 Text("Workouts per week")
                     .font(AppFont.h1)

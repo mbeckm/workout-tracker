@@ -273,6 +273,7 @@ struct StepProgress: View {
 
 struct RoundStepButton: View {
     var symbol: String
+    var fill: Color = AppColor.surface2
     var action: () -> Void
 
     var body: some View {
@@ -284,7 +285,7 @@ struct RoundStepButton: View {
                 .font(.system(size: 30, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 45, height: 45)
-                .background(AppColor.surface2, in: Circle())
+                .background(fill, in: Circle())
         }
         .buttonStyle(.plain)
     }
