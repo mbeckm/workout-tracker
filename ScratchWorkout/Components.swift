@@ -70,13 +70,13 @@ struct AppTabBar: View {
                 .fill(AppColor.border)
                 .frame(height: 1)
 
-            HStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 95) {
                 ForEach(AppTab.allCases) { tab in
                     Button {
                         Haptics.tap()
                         onSelect(tab)
                     } label: {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 4) {
                             Image(systemName: tab.icon)
                                 .font(.system(size: 27, weight: .regular))
                                 .frame(width: 36, height: 36)
@@ -86,16 +86,11 @@ struct AppTabBar: View {
                                 .lineLimit(1)
                         }
                         .foregroundStyle(activeTab == tab ? AppColor.accent : AppColor.secondaryText)
-                        .frame(width: 60, height: 58)
+                        .frame(height: 58)
                     }
                     .buttonStyle(.plain)
-
-                    if tab != AppTab.allCases.last {
-                        Spacer(minLength: 35)
-                    }
                 }
             }
-            .padding(.horizontal, 46)
             .padding(.top, 12)
             .frame(maxWidth: .infinity)
         }
