@@ -43,24 +43,31 @@ struct StartWorkoutView: View {
 
 struct LogWorkoutView: View {
     var exercise: ExercisePrescription
-    var onComplete: ([LoggedSet]) -> Void
+    var exerciseIndex: Int
+    var exerciseCount: Int
+    var onExerciseComplete: ([LoggedSet]) -> Void
 
-    @State private var weight = 85
-    @State private var reps = 12
-    @State private var activeStep = 1
+    @State private var weight = 0
+    @State private var reps = 0
     @State private var sets: [LoggedSet]
 
-    init(exercise: ExercisePrescription, onComplete: @escaping ([LoggedSet]) -> Void) {
+    init(
+        exercise: ExercisePrescription,
+        exerciseIndex: Int,
+        exerciseCount: Int,
+        onExerciseComplete: @escaping ([LoggedSet]) -> Void
+    ) {
         self.exercise = exercise
-        self.onComplete = onComplete
-        _reps = State(initialValue: exercise.reps)
+        self.exerciseIndex = exerciseIndex
+        self.exerciseCount = exerciseCount
+        self.onExerciseComplete = onExerciseComplete
         _sets = State(initialValue: Self.initialSets(for: exercise))
     }
 
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                StepProgress(count: 5, active: activeStep, width: 48, spacing: 24)
+                StepProgress(count: progressCount, active: activeProgress, width: 48, spacing: 24)
                     .padding(.top, 70)
 
                 SectionTitle(text: exercise.name)
@@ -73,7 +80,7 @@ struct LogWorkoutView: View {
 
                 VStack(alignment: .center, spacing: 16) {
                     NumberStepper(label: "Weight", value: $weight, minimum: 0, maximum: 300)
-                    NumberStepper(label: "Reps", value: $reps, minimum: 1, maximum: 50)
+                    NumberStepper(label: "Reps", value: $reps, minimum: 0, maximum: 50)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 16)
@@ -92,28 +99,36 @@ struct LogWorkoutView: View {
     }
 
     private func logSet() {
+        guard let nextIndex = sets.firstIndex(where: { $0.weight == nil || $0.reps == nil }) else {
+            onExerciseComplete(sets)
+            return
+        }
+
+        var updatedSets = sets
+        updatedSets[nextIndex].weight = weight
+        updatedSets[nextIndex].reps = reps
+
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            if let nextIndex = sets.firstIndex(where: { $0.weight == nil }) {
-                sets[nextIndex].weight = weight
-                sets[nextIndex].reps = reps
-                activeStep = min(5, activeStep + 1)
-            } else {
-                onComplete(sets)
-            }
+            sets = updatedSets
+        }
+
+        if nextIndex >= updatedSets.count - 1 {
+            onExerciseComplete(updatedSets)
         }
     }
 
     private static func initialSets(for exercise: ExercisePrescription) -> [LoggedSet] {
         (1...exercise.sets).map { index in
-            switch index {
-            case 1:
-                LoggedSet(index: index, weight: 85, reps: exercise.reps)
-            case 2:
-                LoggedSet(index: index, weight: 85, reps: max(1, exercise.reps - 2))
-            default:
-                LoggedSet(index: index, weight: nil, reps: nil)
-            }
+            LoggedSet(index: index, weight: nil, reps: nil)
         }
+    }
+
+    private var progressCount: Int {
+        max(exerciseCount, 1)
+    }
+
+    private var activeProgress: Int {
+        min(exerciseIndex + 1, progressCount)
     }
 }
 
@@ -135,8 +150,8 @@ private struct SetTable: View {
                 ForEach(sets) { set in
                     GridRow {
                         cell("\(set.index)", isEmpty: set.weight == nil)
-                        cell(set.weight.map(String.init) ?? "-", isEmpty: set.weight == nil)
-                        cell(set.reps.map(String.init) ?? "-", isEmpty: set.reps == nil)
+                        cell(set.weight.map(String.init) ?? "0", isEmpty: set.weight == nil)
+                        cell(set.reps.map(String.init) ?? "0", isEmpty: set.reps == nil)
                     }
                 }
             }

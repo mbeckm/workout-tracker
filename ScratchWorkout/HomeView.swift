@@ -42,6 +42,7 @@ struct HomeView: View {
                     PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: "Mon., 11.08.", height: 80)
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 12)
 
                 Spacer(minLength: 96)
             }

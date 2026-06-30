@@ -9,14 +9,6 @@ struct WorkoutStore {
         activePlan.days.first ?? SampleData.activePlan.days[0]
     }
 
-    var nextExerciseToLog: ExercisePrescription {
-        if nextWorkoutDay.title == "Push" {
-            return ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 12)
-        }
-
-        return nextWorkoutDay.exercises.first ?? SampleData.pushExercises[1]
-    }
-
     var recentWorkout: LoggedWorkout? {
         workoutHistory.first
     }
@@ -30,7 +22,7 @@ struct WorkoutStore {
     }
 
     private let defaults: UserDefaults
-    private let storageKey = "scratchWorkout.appState.v1"
+    private let storageKey = "scratchWorkout.appState.v2"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -58,15 +50,18 @@ struct WorkoutStore {
         persist()
     }
 
-    mutating func completeWorkout(day: WorkoutDay, sets: [LoggedSet]) -> LoggedWorkout {
-        let completedSetCount = sets.filter { $0.weight != nil && $0.reps != nil }.count
-        let prescribedSetCount = day.title == "Push" ? 32 : day.exercises.reduce(0) { $0 + $1.sets }
+    mutating func completeWorkout(day: WorkoutDay, exerciseSets: [[LoggedSet]]) -> LoggedWorkout {
+        let completedSetCount = exerciseSets
+            .flatMap { $0 }
+            .filter { $0.weight != nil && $0.reps != nil }
+            .count
+        let prescribedSetCount = day.exercises.reduce(0) { $0 + $1.sets }
         let workout = LoggedWorkout(
             title: day.title,
             completedAt: Date(),
             durationMinutes: 93,
             exerciseCount: day.exercises.count,
-            setCount: max(completedSetCount, prescribedSetCount)
+            setCount: completedSetCount == 0 ? prescribedSetCount : completedSetCount
         )
         workoutHistory.insert(workout, at: 0)
         persist()

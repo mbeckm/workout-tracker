@@ -5,21 +5,20 @@ struct RootView: View {
     @State private var route: AppRoute?
     @State private var store = WorkoutStore()
     @State private var completedWorkout: LoggedWorkout?
+    @State private var workoutSessionDay: WorkoutDay?
+    @State private var activeExerciseIndex = 0
+    @State private var loggedExerciseSets: [[LoggedSet]] = []
 
     var body: some View {
         ZStack(alignment: .bottom) {
             currentScreen
-                .id(screenID)
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.985)),
-                    removal: .opacity.combined(with: .scale(scale: 1.015))
-                ))
 
             AppTabBar(selectedTab: $selectedTab, route: route) { tab in
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
                     selectedTab = tab
                     route = nil
                     completedWorkout = nil
+                    clearWorkoutSession()
                 }
             }
         }
@@ -33,21 +32,37 @@ struct RootView: View {
         case .startWorkout:
             StartWorkoutView(day: store.nextWorkoutDay, onStart: {
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                    route = .logWorkout
+                    beginWorkout()
                 }
             })
         case .logWorkout:
-            LogWorkoutView(exercise: store.nextExerciseToLog, onComplete: { sets in
-                completedWorkout = store.completeWorkout(day: store.nextWorkoutDay, sets: sets)
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    route = .workoutComplete
-                }
-            })
+            let day = workoutSessionDay ?? store.nextWorkoutDay
+            if day.exercises.isEmpty {
+                StartWorkoutView(day: day, onStart: {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        beginWorkout()
+                    }
+                })
+            } else {
+                let index = min(activeExerciseIndex, day.exercises.count - 1)
+                LogWorkoutView(
+                    exercise: day.exercises[index],
+                    exerciseIndex: index,
+                    exerciseCount: day.exercises.count,
+                    onExerciseComplete: { sets in
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            completeExercise(sets, in: day, at: index)
+                        }
+                    }
+                )
+                .id(day.exercises[index].id)
+            }
         case .workoutComplete:
             WorkoutCompleteView(workout: completedWorkout, onFinish: {
                 withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
                     selectedTab = .home
                     route = nil
+                    clearWorkoutSession()
                 }
             })
         case .createPlan:
@@ -75,18 +90,40 @@ struct RootView: View {
             case .workout:
                 StartWorkoutView(day: store.nextWorkoutDay, onStart: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                        route = .logWorkout
+                        beginWorkout()
                     }
                 })
             }
         }
     }
 
-    private var screenID: String {
-        if let route {
-            return "route-\(String(describing: route))"
+    private func beginWorkout() {
+        let day = store.nextWorkoutDay
+        workoutSessionDay = day
+        activeExerciseIndex = 0
+        loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
+        route = .logWorkout
+    }
+
+    private func completeExercise(_ sets: [LoggedSet], in day: WorkoutDay, at index: Int) {
+        if loggedExerciseSets.count != day.exercises.count {
+            loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
         }
-        return "tab-\(String(describing: selectedTab))"
+
+        loggedExerciseSets[index] = sets
+
+        if index >= day.exercises.count - 1 {
+            completedWorkout = store.completeWorkout(day: day, exerciseSets: loggedExerciseSets)
+            route = .workoutComplete
+        } else {
+            activeExerciseIndex = index + 1
+        }
+    }
+
+    private func clearWorkoutSession() {
+        workoutSessionDay = nil
+        activeExerciseIndex = 0
+        loggedExerciseSets = []
     }
 }
 
@@ -162,7 +199,12 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
             .previewDisplayName("Start Workout")
 
             ScreenPreviewShell(tab: .workout, route: .logWorkout) {
-                LogWorkoutView(exercise: PreviewFixtures.logExercise, onComplete: { _ in })
+                LogWorkoutView(
+                    exercise: PreviewFixtures.logExercise,
+                    exerciseIndex: 1,
+                    exerciseCount: 5,
+                    onExerciseComplete: { _ in }
+                )
             }
             .previewDisplayName("Log Workout")
 

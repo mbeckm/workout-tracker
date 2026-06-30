@@ -115,15 +115,17 @@ struct CreatePlanView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 257)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                Haptics.tap(.medium)
-                withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
-                    stage = .search
-                }
-            }
 
-            Spacer(minLength: 278)
+            Spacer(minLength: 24)
+
+            HStack {
+                Spacer()
+                CTAButton(title: "Next", width: 294) {
+                    advanceToSearch()
+                }
+                Spacer()
+            }
+            .padding(.bottom, 106)
         }
     }
 
@@ -316,9 +318,9 @@ struct CreatePlanView: View {
 
     private var generatedDays: [WorkoutDay] {
         let templates = [
-            WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
+            WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
             WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
-            WorkoutDay(title: "Push", exercises: SampleData.pushExercises)
+            WorkoutDay(title: "Legs", exercises: SampleData.legExercises)
         ]
 
         return (0..<daysPerWeek).map { index in
@@ -342,6 +344,12 @@ struct CreatePlanView: View {
             days: generatedDays
         )
         onFinish(plan, activate)
+    }
+
+    private func advanceToSearch() {
+        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
+            stage = .search
+        }
     }
 }
 

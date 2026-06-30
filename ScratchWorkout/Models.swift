@@ -72,13 +72,10 @@ struct LoggedWorkout: Identifiable, Equatable, Codable {
 enum SampleData {
     static let pushExercises = [
         ExercisePrescription(name: "Flat Barbell Bench Press", sets: 4, reps: 8),
-        ExercisePrescription(name: "Incline Dumbbell Press", sets: 3, reps: 12),
-        ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
+        ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 12),
+        ExercisePrescription(name: "Overhead Press", sets: 3, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
-        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
-        ExercisePrescription(name: "Cable Fly", sets: 3, reps: 12),
-        ExercisePrescription(name: "Dips", sets: 3, reps: 10),
-        ExercisePrescription(name: "Skull Crushers", sets: 3, reps: 12)
+        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15)
     ]
 
     static let legExercises = [
@@ -103,8 +100,8 @@ enum SampleData {
         createdAt: "12.02.26",
         days: [
             WorkoutDay(title: "Push", exercises: pushExercises),
-            WorkoutDay(title: "Legs", exercises: legExercises),
-            WorkoutDay(title: "Pull", exercises: pullExercises)
+            WorkoutDay(title: "Pull", exercises: pullExercises),
+            WorkoutDay(title: "Legs", exercises: legExercises)
         ]
     )
 }
