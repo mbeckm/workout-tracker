@@ -309,7 +309,10 @@ struct NumberStepper: View {
 
                 Text("\(value)")
                     .font(AppFont.display)
-                    .frame(width: 60)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .contentTransition(.numericText())
+                    .frame(width: 42)
 
                 RoundStepButton(symbol: "plus") {
                     value = min(maximum, value + 1)
@@ -318,4 +321,3 @@ struct NumberStepper: View {
         }
     }
 }
-
