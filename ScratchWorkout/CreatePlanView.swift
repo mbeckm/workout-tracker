@@ -15,12 +15,15 @@ struct CreatePlanView: View {
 
     @Namespace private var searchNamespace
     @FocusState private var searchFocused: Bool
-    @State private var stage: Stage = .frequency
-    @State private var daysPerWeek = 3
-    @State private var searchQuery = ""
+    @State private var stage: Stage
+    @State private var daysPerWeek: Int
+    @State private var currentDayIndex = 0
+    @State private var completedDays = 0
+    @State private var planDays: [[ExercisePrescription]]
+    @State private var searchQuery: String
     @State private var configuredSets = 3
     @State private var configuredReps = 12
-    @State private var selectedExercise = "Incline Bench Press"
+    @State private var selectedExerciseName = "Incline Bench Press"
 
     init(
         initialStage: Stage = .frequency,
@@ -28,10 +31,23 @@ struct CreatePlanView: View {
         searchQuery: String = "",
         onFinish: @escaping (WorkoutPlan, Bool) -> Void
     ) {
+        let seededDays: [[ExercisePrescription]]
+        let seededCompletedDays: Int
+
+        if initialStage == .finalReview || initialStage == .activatePrompt {
+            seededDays = Array(SampleData.activePlan.days.prefix(daysPerWeek).map(\.exercises))
+            seededCompletedDays = daysPerWeek
+        } else {
+            seededDays = Array(repeating: [], count: daysPerWeek)
+            seededCompletedDays = 0
+        }
+
         self.onFinish = onFinish
         _stage = State(initialValue: initialStage)
         _daysPerWeek = State(initialValue: daysPerWeek)
         _searchQuery = State(initialValue: searchQuery)
+        _planDays = State(initialValue: seededDays)
+        _completedDays = State(initialValue: seededCompletedDays)
     }
 
     var body: some View {
@@ -46,13 +62,9 @@ struct CreatePlanView: View {
             }
             .padding(.horizontal, 24)
         }
-        .onChange(of: searchFocused) { _, focused in
-            if focused && stage == .search && searchQuery.isEmpty {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                    searchQuery = "Inclin"
-                }
-            }
-        }
+        .animation(.spring(response: 0.44, dampingFraction: 0.84), value: stage)
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: currentDayIndex)
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: completedDays)
     }
 
     @ViewBuilder
@@ -61,26 +73,9 @@ struct CreatePlanView: View {
         case .frequency:
             frequencyView
                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
-        case .search:
-            searchView
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
-        case .configureSets:
-            configureView(title: "Number of sets", value: $configuredSets, activeSteps: 1) {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                    stage = .configureReps
-                }
-            }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        case .configureReps:
-            configureView(title: "Number of reps", value: $configuredReps, activeSteps: 1) {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                    stage = .dayReview
-                }
-            }
-            .transition(.move(edge: .bottom).combined(with: .opacity))
-        case .dayReview:
-            dayReviewView
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
+        case .search, .configureSets, .configureReps, .dayReview:
+            dayBuilderView
+                .transition(.opacity)
         case .finalReview, .activatePrompt:
             finalReviewView
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -121,7 +116,7 @@ struct CreatePlanView: View {
             HStack {
                 Spacer()
                 CTAButton(title: "Next", width: 294) {
-                    advanceToSearch()
+                    startBuildingPlan()
                 }
                 Spacer()
             }
@@ -129,96 +124,81 @@ struct CreatePlanView: View {
         }
     }
 
-    private var searchView: some View {
+    private var dayBuilderView: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Create Plan")
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            StepProgress(count: 3, active: 1, width: 90, spacing: 45)
+            DayStepProgress(count: daysPerWeek, completed: completedDays)
                 .padding(.top, 24)
 
-            SectionTitle(text: "Day 1")
+            SectionTitle(text: currentDayTitle)
                 .padding(.top, 24)
 
-            Spacer(minLength: 0)
-
-            SearchSurface(
-                query: $searchQuery,
-                focused: $searchFocused,
-                namespace: searchNamespace,
-                suggestions: suggestions,
-                onSelect: { exercise in
-                    selectedExercise = exercise.replacingOccurrences(of: " (Dumbbells)", with: "")
-                    Haptics.tap(.medium)
-                    withAnimation(.spring(response: 0.44, dampingFraction: 0.82)) {
-                        searchFocused = false
-                        stage = .configureSets
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    ForEach(currentDayExercises) { exercise in
+                        ExerciseCard(exercise: exercise)
                     }
                 }
-            )
-            .padding(.bottom, 106)
-        }
-    }
+                .padding(.top, currentDayExercises.isEmpty ? 0 : 12)
+                .padding(.bottom, 16)
+            }
+            .frame(maxHeight: 302)
 
-    private func configureView(title: String, value: Binding<Int>, activeSteps: Int, onConfirm: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Create Plan")
-                .font(AppFont.display)
-                .padding(.top, 66)
+            Spacer(minLength: 16)
 
-            StepProgress(count: 3, active: activeSteps, width: 90, spacing: 45)
-                .padding(.top, 24)
-
-            SectionTitle(text: "Day 1")
-                .padding(.top, 24)
-
-            Spacer(minLength: 0)
-
-            ExerciseConfigCard(exercise: selectedExercise, label: title, value: value, onConfirm: onConfirm)
+            bottomBuilder
                 .padding(.bottom, 106)
         }
     }
 
-    private var dayReviewView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Create Plan")
-                .font(AppFont.display)
-                .padding(.top, 66)
-
-            StepProgress(count: 3, active: 1, width: 90, spacing: 45)
-                .padding(.top, 24)
-
-            SectionTitle(text: "Day 1")
-                .padding(.top, 24)
-
-            VStack(spacing: 12) {
-                ForEach(SampleData.legExercises) { exercise in
-                    ExerciseCard(exercise: exercise)
-                }
-            }
-            .padding(.top, 12)
-
-            Spacer(minLength: 24)
-
-            Button {
-                Haptics.tap(.medium)
-                withAnimation(.spring(response: 0.46, dampingFraction: 0.84)) {
-                    stage = .finalReview
-                }
-            } label: {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(AppColor.surface1)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(AppColor.border, lineWidth: 1)
+    @ViewBuilder
+    private var bottomBuilder: some View {
+        VStack(spacing: 12) {
+            Group {
+                switch stage {
+                case .configureSets:
+                    ExerciseConfigCard(
+                        exercise: selectedExerciseName,
+                        label: "Number of sets",
+                        value: $configuredSets,
+                        onConfirm: confirmSets
                     )
-                    .frame(width: 360, height: 48)
+                    .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                case .configureReps:
+                    ExerciseConfigCard(
+                        exercise: selectedExerciseName,
+                        label: "Number of reps",
+                        value: $configuredReps,
+                        onConfirm: addConfiguredExercise
+                    )
+                    .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                default:
+                    SearchSurface(
+                        query: $searchQuery,
+                        focused: $searchFocused,
+                        namespace: searchNamespace,
+                        results: filteredExercises,
+                        isExpanded: isSearchExpanded,
+                        onSelect: selectExercise
+                    )
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Continue to review")
-            .padding(.bottom, 106)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)),
+                removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom))
+            ))
+
+            if stage == .search && !currentDayExercises.isEmpty && !isSearchExpanded {
+                CTAButton(title: "Save Day", width: 294) {
+                    saveCurrentDay()
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var finalReviewView: some View {
@@ -227,36 +207,32 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            StepProgress(count: 3, active: 3, width: 90, spacing: 45)
+            DayStepProgress(count: daysPerWeek, completed: daysPerWeek)
                 .padding(.top, 24)
 
-            SectionTitle(text: "Day 3")
-                .padding(.top, 25)
-
-            VStack(spacing: 12) {
-                ForEach((stage == .activatePrompt ? Array(SampleData.pullExercises.prefix(3)) : SampleData.pullExercises)) { exercise in
-                    ExerciseCard(exercise: exercise)
-                }
-            }
-            .padding(.top, 12)
-
-            Spacer(minLength: 24)
-
-            if stage == .finalReview {
-                HStack {
-                    Spacer()
-                    CTAButton(title: "Save Plan", width: 294) {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                            stage = .activatePrompt
-                        }
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
+                    ForEach(0..<daysPerWeek, id: \.self) { index in
+                        DayReviewSection(
+                            title: "Day \(index + 1)",
+                            exercises: exercisesForDay(at: index)
+                        )
                     }
-                    Spacer()
                 }
-                .padding(.bottom, 106)
-            } else {
-                Spacer()
-                    .frame(height: 188)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
             }
+
+            HStack {
+                Spacer()
+                CTAButton(title: "Save Plan", width: 294) {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        stage = .activatePrompt
+                    }
+                }
+                Spacer()
+            }
+            .padding(.bottom, 106)
         }
     }
 
@@ -307,38 +283,113 @@ struct CreatePlanView: View {
         .zIndex(4)
     }
 
-    private var suggestions: [String] {
-        guard !searchQuery.isEmpty else { return [] }
-        return [
-            "Incline Bench Press (Dumbbells)",
-            "Incline Bicep Curls",
-            "Incline Bench Press (Barbell)"
-        ]
+    private var currentDayTitle: String {
+        "Day \(currentDayIndex + 1)"
+    }
+
+    private var currentDayExercises: [ExercisePrescription] {
+        exercisesForDay(at: currentDayIndex)
+    }
+
+    private var isSearchExpanded: Bool {
+        !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var filteredExercises: [ExercisePrescription] {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !query.isEmpty else {
+            return []
+        }
+
+        return Array(SampleData.exerciseDatabase.filter {
+            $0.name.localizedCaseInsensitiveContains(query)
+        }.prefix(8))
     }
 
     private var generatedDays: [WorkoutDay] {
-        let templates = [
-            WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
-            WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
-            WorkoutDay(title: "Legs", exercises: SampleData.legExercises)
-        ]
+        (0..<daysPerWeek).map { index in
+            WorkoutDay(title: "Day \(index + 1)", exercises: exercisesForDay(at: index))
+        }
+    }
 
-        return (0..<daysPerWeek).map { index in
-            let template = templates[index % templates.count]
+    private func exercisesForDay(at index: Int) -> [ExercisePrescription] {
+        guard planDays.indices.contains(index) else {
+            return []
+        }
 
-            guard index >= templates.count else {
-                return template
+        return planDays[index]
+    }
+
+    private func startBuildingPlan() {
+        planDays = Array(repeating: [], count: daysPerWeek)
+        completedDays = 0
+        currentDayIndex = 0
+        resetExerciseEntry()
+
+        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
+            stage = .search
+        }
+    }
+
+    private func selectExercise(_ exercise: ExercisePrescription) {
+        Haptics.tap(.medium)
+        selectedExerciseName = exercise.name
+        configuredSets = exercise.sets
+        configuredReps = exercise.reps
+        searchFocused = false
+
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            searchQuery = ""
+            stage = .configureSets
+        }
+    }
+
+    private func confirmSets() {
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            stage = .configureReps
+        }
+    }
+
+    private func addConfiguredExercise() {
+        ensurePlanDays()
+
+        let exercise = ExercisePrescription(
+            name: selectedExerciseName,
+            sets: configuredSets,
+            reps: configuredReps
+        )
+        planDays[currentDayIndex].append(exercise)
+        resetExerciseEntry()
+
+        withAnimation(.spring(response: 0.44, dampingFraction: 0.84)) {
+            stage = .search
+        }
+    }
+
+    private func saveCurrentDay() {
+        guard !currentDayExercises.isEmpty else {
+            return
+        }
+
+        Haptics.tap(.medium)
+        completedDays = max(completedDays, currentDayIndex + 1)
+        resetExerciseEntry()
+
+        withAnimation(.spring(response: 0.46, dampingFraction: 0.84)) {
+            if currentDayIndex >= daysPerWeek - 1 {
+                stage = .finalReview
+            } else {
+                currentDayIndex += 1
+                stage = .search
             }
-
-            let cycle = (index / templates.count) + 1
-            return WorkoutDay(title: "\(template.title) \(cycle)", exercises: template.exercises)
         }
     }
 
     private func finish(activate: Bool) {
         Haptics.tap(.medium)
         let plan = WorkoutPlan(
-            name: "PPL",
+            name: "Custom Plan",
             daysPerWeek: daysPerWeek,
             createdAt: "30.06.26",
             days: generatedDays
@@ -346,10 +397,18 @@ struct CreatePlanView: View {
         onFinish(plan, activate)
     }
 
-    private func advanceToSearch() {
-        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
-            stage = .search
+    private func ensurePlanDays() {
+        if planDays.count != daysPerWeek {
+            planDays = Array(repeating: [], count: daysPerWeek)
         }
+    }
+
+    private func resetExerciseEntry() {
+        searchQuery = ""
+        selectedExerciseName = "Incline Bench Press"
+        configuredSets = 3
+        configuredReps = 12
+        searchFocused = false
     }
 }
 
@@ -357,79 +416,131 @@ private struct SearchSurface: View {
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
     var namespace: Namespace.ID
-    var suggestions: [String]
-    var onSelect: (String) -> Void
+    var results: [ExercisePrescription]
+    var isExpanded: Bool
+    var onSelect: (ExercisePrescription) -> Void
 
     var body: some View {
-        Group {
-            if suggestions.isEmpty {
-                fieldOnly
-            } else {
-                expanded
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 18) {
+                content
             }
+        } else {
+            content
         }
-        .frame(width: 360)
-        .animation(.spring(response: 0.44, dampingFraction: 0.84), value: suggestions.isEmpty)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if isExpanded {
+            expanded
+        } else {
+            fieldOnly
+        }
     }
 
     private var fieldOnly: some View {
         searchField
-            .matchedGeometryEffect(id: "search-field", in: namespace)
-            .frame(height: 54)
+            .matchedGeometryEffect(id: "plan-entry-surface", in: namespace)
+            .frame(width: 360, height: 54)
+            .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
     }
 
     private var expanded: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(suggestions, id: \.self) { suggestion in
-                    Button {
-                        onSelect(suggestion)
-                    } label: {
-                        Text(suggestion)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 4) {
+                    if results.isEmpty {
+                        Text("No matching exercises")
                             .font(AppFont.subheading)
-                            .foregroundStyle(AppColor.primaryText)
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(AppColor.secondaryText)
+                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                    } else {
+                        ForEach(results) { exercise in
+                            Button {
+                                onSelect(exercise)
+                            } label: {
+                                SearchResultRow(exercise: exercise)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
-
-                Spacer(minLength: 0)
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 12)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .frame(height: 306)
+            .frame(height: 292)
 
             searchField
-                .matchedGeometryEffect(id: "search-field", in: namespace)
                 .frame(height: 54)
         }
-        .frame(height: 360)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
+        .frame(width: 360, height: 360)
+        .liquidGlassSurface(cornerRadius: 20, interactive: true)
+        .matchedGeometryEffect(id: "plan-entry-surface", in: namespace)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private var searchField: some View {
-        HStack {
-            TextField("Search to add an exercise", text: $query)
+        HStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(AppColor.secondaryText)
+
+            TextField("Search exercise", text: $query)
                 .focused(focused)
                 .font(AppFont.body)
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
                 .accessibilityLabel("Exercise search")
-                .padding(.horizontal, 24)
+
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
         }
-        .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
+        .padding(.horizontal, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .liquidGlassSurface(cornerRadius: 20, interactive: true)
+    }
+}
+
+private struct SearchResultRow: View {
+    var exercise: ExercisePrescription
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(exercise.name)
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+
+                HStack(spacing: 18) {
+                    Text("\(exercise.sets) Sets")
+                    Text("\(exercise.reps) Reps")
+                }
+                .font(AppFont.caption)
+                .foregroundStyle(AppColor.secondaryText)
+            }
+
+            Spacer(minLength: 12)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(AppColor.secondaryText)
+        }
+        .padding(.horizontal, 6)
+        .frame(height: 60)
+        .contentShape(Rectangle())
     }
 }
 
@@ -449,7 +560,7 @@ private struct ExerciseConfigCard: View {
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.secondaryText)
             }
-            .frame(width: 150, alignment: .leading)
+            .frame(width: 180, alignment: .leading)
 
             HStack(alignment: .center) {
                 HStack(spacing: 16) {
@@ -485,10 +596,79 @@ private struct ExerciseConfigCard: View {
         }
         .padding(24)
         .frame(width: 360, height: 153, alignment: .topLeading)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+        .liquidGlassSurface(cornerRadius: 20, interactive: true)
+    }
+}
+
+private struct DayStepProgress: View {
+    var count: Int
+    var completed: Int
+
+    private var barSpacing: CGFloat {
+        count <= 3 ? 45 : 12
+    }
+
+    private var barWidth: CGFloat {
+        let safeCount = CGFloat(max(count, 1))
+        let availableWidth = 360 - (barSpacing * CGFloat(max(count - 1, 0)))
+        return floor(availableWidth / safeCount)
+    }
+
+    var body: some View {
+        StepProgress(
+            count: max(count, 1),
+            active: min(completed, count),
+            width: barWidth,
+            spacing: barSpacing
         )
+        .frame(width: 360, alignment: .leading)
+    }
+}
+
+private struct DayReviewSection: View {
+    var title: String
+    var exercises: [ExercisePrescription]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(text: title)
+
+            VStack(spacing: 12) {
+                ForEach(exercises) { exercise in
+                    ExerciseCard(exercise: exercise)
+                }
+            }
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func liquidGlassSurface(cornerRadius: CGFloat, interactive: Bool = false) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+
+        if #available(iOS 26.0, *) {
+            self
+                .background(AppColor.surface1.opacity(0.18), in: shape)
+                .glassEffect(glassEffect(interactive: interactive), in: shape)
+                .overlay(
+                    shape
+                        .stroke(AppColor.border.opacity(0.72), lineWidth: 1)
+                )
+        } else {
+            self
+                .background(.ultraThinMaterial, in: shape)
+                .background(AppColor.surface1.opacity(0.82), in: shape)
+                .overlay(
+                    shape
+                        .stroke(AppColor.border, lineWidth: 1)
+                )
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private func glassEffect(interactive: Bool) -> Glass {
+        let glass = Glass.regular.tint(AppColor.surface1.opacity(0.24))
+        return interactive ? glass.interactive() : glass
     }
 }
