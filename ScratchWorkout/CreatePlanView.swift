@@ -199,7 +199,7 @@ struct CreatePlanView: View {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .stroke(AppColor.border, lineWidth: 1)
                     )
-                    .frame(height: 48)
+                    .frame(width: 360, height: 48)
             }
             .buttonStyle(.plain)
             .padding(.bottom, 106)
