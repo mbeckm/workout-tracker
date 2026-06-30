@@ -418,48 +418,54 @@ private struct ExerciseConfigCard: View {
     var onConfirm: () -> Void
 
     var body: some View {
-        CardShell(height: 153, cornerRadius: 12, fill: AppColor.surface1) {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(exercise)
-                        .font(AppFont.subheading)
-                        .lineLimit(1)
-                    Text(label)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.secondaryText)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(exercise)
+                    .font(AppFont.subheading)
+                    .lineLimit(1)
+                Text(label)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            .frame(width: 150, alignment: .leading)
 
-                HStack(alignment: .center) {
-                    HStack(spacing: 16) {
-                        RoundStepButton(symbol: "minus") {
-                            value = max(1, value - 1)
-                        }
-
-                        Text("\(value)")
-                            .font(AppFont.display)
-                            .frame(width: 42)
-                            .contentTransition(.numericText())
-
-                        RoundStepButton(symbol: "plus") {
-                            value = min(30, value + 1)
-                        }
+            HStack(alignment: .center) {
+                HStack(spacing: 16) {
+                    RoundStepButton(symbol: "minus", fill: AppColor.border) {
+                        value = max(1, value - 1)
                     }
 
-                    Spacer()
+                    Text("\(value)")
+                        .font(AppFont.display)
+                        .frame(width: 42)
+                        .contentTransition(.numericText())
 
-                    Button {
-                        Haptics.tap(.medium)
-                        onConfirm()
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundStyle(AppColor.base)
-                            .frame(width: 45, height: 45)
-                            .background(AppColor.accent, in: Circle())
+                    RoundStepButton(symbol: "plus", fill: AppColor.border) {
+                        value = min(30, value + 1)
                     }
-                    .buttonStyle(.plain)
                 }
+
+                Spacer()
+
+                Button {
+                    Haptics.tap(.medium)
+                    onConfirm()
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundStyle(AppColor.base)
+                        .frame(width: 45, height: 45)
+                        .background(AppColor.accent, in: Circle())
+                }
+                .buttonStyle(.plain)
             }
         }
+        .padding(24)
+        .frame(width: 360, height: 153, alignment: .topLeading)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
     }
 }
