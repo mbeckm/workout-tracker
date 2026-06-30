@@ -510,6 +510,11 @@ private struct SearchSurface: View {
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
+        .onAppear {
+            DispatchQueue.main.async {
+                focused.wrappedValue = true
+            }
+        }
     }
 }
 

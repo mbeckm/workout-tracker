@@ -4,9 +4,14 @@ struct WorkoutStore {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     private(set) var workoutHistory: [LoggedWorkout]
+    private(set) var nextDayIndex: Int
 
     var nextWorkoutDay: WorkoutDay {
-        activePlan.days.first ?? SampleData.activePlan.days[0]
+        guard !activePlan.days.isEmpty else {
+            return SampleData.activePlan.days[0]
+        }
+
+        return activePlan.days[normalizedNextDayIndex]
     }
 
     var recentWorkout: LoggedWorkout? {
@@ -32,10 +37,12 @@ struct WorkoutStore {
             activePlan = snapshot.activePlan
             savedPlans = snapshot.savedPlans
             workoutHistory = snapshot.workoutHistory
+            nextDayIndex = snapshot.nextDayIndex ?? 0
         } else {
             activePlan = SampleData.activePlan
             savedPlans = Self.defaultSavedPlans
             workoutHistory = []
+            nextDayIndex = 0
         }
     }
 
@@ -45,6 +52,7 @@ struct WorkoutStore {
 
         if activate {
             activePlan = plan
+            nextDayIndex = 0
         }
 
         persist()
@@ -64,6 +72,7 @@ struct WorkoutStore {
             setCount: completedSetCount == 0 ? prescribedSetCount : completedSetCount
         )
         workoutHistory.insert(workout, at: 0)
+        advancePastCompletedDay(day)
         persist()
         return workout
     }
@@ -72,7 +81,8 @@ struct WorkoutStore {
         let snapshot = WorkoutSnapshot(
             activePlan: activePlan,
             savedPlans: savedPlans,
-            workoutHistory: workoutHistory
+            workoutHistory: workoutHistory,
+            nextDayIndex: normalizedNextDayIndex
         )
 
         guard let data = try? JSONEncoder().encode(snapshot) else {
@@ -80,6 +90,24 @@ struct WorkoutStore {
         }
 
         defaults.set(data, forKey: storageKey)
+    }
+
+    private var normalizedNextDayIndex: Int {
+        guard !activePlan.days.isEmpty else {
+            return 0
+        }
+
+        return min(max(nextDayIndex, 0), activePlan.days.count - 1)
+    }
+
+    private mutating func advancePastCompletedDay(_ day: WorkoutDay) {
+        guard !activePlan.days.isEmpty else {
+            nextDayIndex = 0
+            return
+        }
+
+        let completedIndex = activePlan.days.firstIndex { $0.id == day.id } ?? normalizedNextDayIndex
+        nextDayIndex = (completedIndex + 1) % activePlan.days.count
     }
 
     private static var defaultSavedPlans: [WorkoutPlan] {
@@ -95,4 +123,5 @@ private struct WorkoutSnapshot: Codable {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     var workoutHistory: [LoggedWorkout]
+    var nextDayIndex: Int?
 }

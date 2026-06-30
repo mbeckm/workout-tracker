@@ -76,7 +76,7 @@ struct RootView: View {
         case nil:
             switch selectedTab {
             case .home:
-                HomeView(activePlan: store.activePlan, recentWorkout: store.recentWorkout, workoutsThisMonth: store.workoutsThisMonth, onOpenWorkout: {
+                HomeView(nextWorkout: store.nextWorkoutDay, recentWorkout: store.recentWorkout, workoutsThisMonth: store.workoutsThisMonth, onOpenWorkout: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                         route = .startWorkout
                     }
@@ -176,7 +176,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
         Group {
             ScreenPreviewShell(tab: .home) {
                 HomeView(
-                    activePlan: SampleData.activePlan,
+                    nextWorkout: SampleData.activePlan.days[0],
                     recentWorkout: nil,
                     workoutsThisMonth: 14,
                     onOpenWorkout: {}

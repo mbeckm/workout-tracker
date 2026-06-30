@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    var activePlan: WorkoutPlan
+    var nextWorkout: WorkoutDay
     var recentWorkout: LoggedWorkout?
     var workoutsThisMonth: Int
     var onOpenWorkout: () -> Void
@@ -50,16 +50,12 @@ struct HomeView: View {
         }
     }
 
-    private var nextWorkout: WorkoutDay? {
-        activePlan.days.first
-    }
-
     private var nextWorkoutTitle: String {
-        nextWorkout?.title ?? "Push"
+        nextWorkout.title
     }
 
     private var nextWorkoutExerciseCount: Int {
-        nextWorkout?.exercises.count ?? 8
+        nextWorkout.exercises.count
     }
 
     private var lastWorkoutTitle: String {
