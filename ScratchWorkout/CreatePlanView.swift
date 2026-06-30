@@ -22,6 +22,18 @@ struct CreatePlanView: View {
     @State private var configuredReps = 12
     @State private var selectedExercise = "Incline Bench Press"
 
+    init(
+        initialStage: Stage = .frequency,
+        daysPerWeek: Int = 3,
+        searchQuery: String = "",
+        onFinish: @escaping (WorkoutPlan, Bool) -> Void
+    ) {
+        self.onFinish = onFinish
+        _stage = State(initialValue: initialStage)
+        _daysPerWeek = State(initialValue: daysPerWeek)
+        _searchQuery = State(initialValue: searchQuery)
+    }
+
     var body: some View {
         AppScreen {
             ZStack(alignment: .topLeading) {
