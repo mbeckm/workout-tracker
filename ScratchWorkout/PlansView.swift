@@ -8,28 +8,32 @@ struct PlansView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center) {
+                ZStack(alignment: .topLeading) {
                     Text("Plans")
                         .font(AppFont.display)
+                        .padding(.top, 66)
 
-                    Spacer()
+                    HStack {
+                        Spacer()
 
-                    Button {
-                        Haptics.tap(.medium)
-                        onNewPlan()
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 29, weight: .bold))
-                            .foregroundStyle(.black)
-                            .frame(width: 44, height: 44)
+                        Button {
+                            Haptics.tap(.medium)
+                            onNewPlan()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 29, weight: .bold))
+                                .foregroundStyle(.black)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.trailing, -4)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, -4)
+                    .padding(.top, 54)
                 }
-                .padding(.top, 54)
+                .frame(height: 104)
 
                 SectionTitle(text: "Active Plan")
-                    .padding(.top, 28)
+                    .padding(.top, 24)
 
                 PlanCard(title: activePlan.name, lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"], date: nil)
                     .padding(.top, 12)
@@ -57,4 +61,3 @@ struct PlansView: View {
         }
     }
 }
-

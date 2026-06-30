@@ -81,8 +81,6 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            Spacer(minLength: 0)
-
             VStack(spacing: 16) {
                 HStack(spacing: 24) {
                     RoundStepButton(symbol: "minus") {
@@ -103,6 +101,7 @@ struct CreatePlanView: View {
                     .font(AppFont.h1)
             }
             .frame(maxWidth: .infinity)
+            .padding(.top, 257)
             .contentShape(Rectangle())
             .onTapGesture {
                 Haptics.tap(.medium)
@@ -447,4 +446,3 @@ private struct ExerciseConfigCard: View {
         }
     }
 }
-

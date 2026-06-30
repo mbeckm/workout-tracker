@@ -150,7 +150,7 @@ struct WorkoutCompleteView: View {
                     .font(AppFont.display)
                     .padding(.top, 70)
 
-                VStack(spacing: 26) {
+                VStack(spacing: 17) {
                     ZStack {
                         Circle()
                             .fill(AppColor.accent)
@@ -160,10 +160,11 @@ struct WorkoutCompleteView: View {
                             .font(.system(size: 48, weight: .bold))
                             .foregroundStyle(AppColor.base)
                     }
+                    .frame(width: 120, height: 120)
 
                     SummaryCard()
                 }
-                .padding(.top, 64)
+                .padding(.top, 48)
                 .padding(.horizontal, 24)
 
                 Spacer(minLength: 24)
@@ -209,4 +210,3 @@ private struct SummaryCard: View {
             .frame(maxWidth: .infinity)
     }
 }
-
