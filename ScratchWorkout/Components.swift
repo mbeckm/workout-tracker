@@ -77,8 +77,7 @@ struct AppTabBar: View {
                         onSelect(tab)
                     } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 27, weight: .regular))
+                            TabIcon(tab: tab, color: activeTab == tab ? AppColor.accent : AppColor.secondaryText)
                                 .frame(width: 36, height: 36)
 
                             Text(tab.title)
@@ -97,6 +96,94 @@ struct AppTabBar: View {
         .frame(height: 82)
         .background(AppColor.surface1)
         .ignoresSafeArea(edges: .bottom)
+    }
+}
+
+private struct TabIcon: View {
+    var tab: AppTab
+    var color: Color
+
+    var body: some View {
+        ZStack {
+            switch tab {
+            case .home:
+                HomeTabIcon(color: color)
+            case .plans:
+                PlansTabIcon(color: color)
+            case .workout:
+                WorkoutTabIcon(color: color)
+            }
+        }
+        .frame(width: 36, height: 36)
+    }
+}
+
+private struct HomeTabIcon: View {
+    var color: Color
+
+    var body: some View {
+        Path { path in
+            path.move(to: CGPoint(x: 7, y: 16))
+            path.addLine(to: CGPoint(x: 18, y: 7))
+            path.addLine(to: CGPoint(x: 29, y: 16))
+            path.addLine(to: CGPoint(x: 29, y: 30))
+            path.addLine(to: CGPoint(x: 22, y: 30))
+            path.addLine(to: CGPoint(x: 22, y: 20))
+            path.addLine(to: CGPoint(x: 14, y: 20))
+            path.addLine(to: CGPoint(x: 14, y: 30))
+            path.addLine(to: CGPoint(x: 7, y: 30))
+            path.closeSubpath()
+        }
+        .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+    }
+}
+
+private struct PlansTabIcon: View {
+    var color: Color
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .stroke(color, lineWidth: 2)
+                .frame(width: 22, height: 27)
+
+            Path { path in
+                path.move(to: CGPoint(x: 7, y: 27))
+                path.addLine(to: CGPoint(x: 29, y: 27))
+            }
+            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+        }
+        .frame(width: 36, height: 36)
+    }
+}
+
+private struct WorkoutTabIcon: View {
+    var color: Color
+
+    var body: some View {
+        ZStack {
+            Capsule()
+                .fill(color)
+                .frame(width: 23, height: 4)
+                .rotationEffect(.degrees(45))
+
+            dumbbellPlate
+                .offset(x: -9, y: -9)
+            dumbbellPlate
+                .offset(x: -13, y: -5)
+            dumbbellPlate
+                .offset(x: 9, y: 9)
+            dumbbellPlate
+                .offset(x: 13, y: 5)
+        }
+        .frame(width: 36, height: 36)
+    }
+
+    private var dumbbellPlate: some View {
+        RoundedRectangle(cornerRadius: 1.2, style: .continuous)
+            .fill(color)
+            .frame(width: 4, height: 13)
+            .rotationEffect(.degrees(45))
     }
 }
 
