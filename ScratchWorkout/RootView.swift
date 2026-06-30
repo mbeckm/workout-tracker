@@ -82,11 +82,20 @@ struct RootView: View {
                     }
                 })
             case .plans:
-                PlansView(activePlan: store.activePlan, savedPlans: store.savedPlans, onNewPlan: {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                        route = .createPlan
+                PlansView(
+                    activePlan: store.activePlan,
+                    savedPlans: store.savedPlans,
+                    onNewPlan: {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            route = .createPlan
+                        }
+                    },
+                    onSelectPlan: { plan in
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            store.activatePlan(plan)
+                        }
                     }
-                })
+                )
             case .workout:
                 StartWorkoutView(day: store.nextWorkoutDay, onStart: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
@@ -188,7 +197,8 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                 PlansView(
                     activePlan: SampleData.activePlan,
                     savedPlans: PreviewFixtures.savedPlans,
-                    onNewPlan: {}
+                    onNewPlan: {},
+                    onSelectPlan: { _ in }
                 )
             }
             .previewDisplayName("Plans")

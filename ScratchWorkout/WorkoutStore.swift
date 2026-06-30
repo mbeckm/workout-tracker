@@ -34,8 +34,8 @@ struct WorkoutStore {
 
         if let data = defaults.data(forKey: storageKey),
            let snapshot = try? JSONDecoder().decode(WorkoutSnapshot.self, from: data) {
-            activePlan = snapshot.activePlan
-            savedPlans = snapshot.savedPlans
+            activePlan = Self.normalizedPlan(snapshot.activePlan)
+            savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
             workoutHistory = snapshot.workoutHistory
             nextDayIndex = snapshot.nextDayIndex ?? 0
         } else {
@@ -53,6 +53,20 @@ struct WorkoutStore {
         if activate {
             activePlan = plan
             nextDayIndex = 0
+        }
+
+        persist()
+    }
+
+    mutating func activatePlan(_ plan: WorkoutPlan) {
+        let normalizedPlan = Self.normalizedPlan(plan)
+        activePlan = normalizedPlan
+        nextDayIndex = 0
+
+        if let index = savedPlans.firstIndex(where: { $0.id == plan.id }) {
+            savedPlans[index] = normalizedPlan
+        } else {
+            savedPlans.insert(normalizedPlan, at: 0)
         }
 
         persist()
@@ -112,10 +126,47 @@ struct WorkoutStore {
 
     private static var defaultSavedPlans: [WorkoutPlan] {
         [
-            WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: []),
-            WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: []),
-            WorkoutPlan(name: "Leg Focus", daysPerWeek: 3, createdAt: "12.02.26", days: [])
+            WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: SampleData.activePlan.days),
+            WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: [
+                WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
+                WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+                WorkoutDay(title: "Legs", exercises: SampleData.legExercises)
+            ]),
+            WorkoutPlan(name: "Leg Focus", daysPerWeek: 3, createdAt: "12.02.26", days: [
+                WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
+                WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+                WorkoutDay(title: "Legs 2", exercises: SampleData.legExercises)
+            ])
         ]
+    }
+
+    private static func normalizedPlan(_ plan: WorkoutPlan) -> WorkoutPlan {
+        guard plan.days.isEmpty else {
+            return plan
+        }
+
+        var normalizedPlan = plan
+        normalizedPlan.days = templateDays(for: plan.name)
+        return normalizedPlan
+    }
+
+    private static func templateDays(for planName: String) -> [WorkoutDay] {
+        switch planName {
+        case "Superman":
+            [
+                WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
+                WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+                WorkoutDay(title: "Legs", exercises: SampleData.legExercises)
+            ]
+        case "Leg Focus":
+            [
+                WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
+                WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+                WorkoutDay(title: "Legs 2", exercises: SampleData.legExercises)
+            ]
+        default:
+            SampleData.activePlan.days
+        }
     }
 }
 
