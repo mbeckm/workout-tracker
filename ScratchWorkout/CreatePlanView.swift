@@ -347,6 +347,7 @@ private struct SearchSurface: View {
                 expanded
             }
         }
+        .frame(width: 360)
         .animation(.spring(response: 0.44, dampingFraction: 0.84), value: suggestions.isEmpty)
     }
 
@@ -375,7 +376,7 @@ private struct SearchSurface: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 28)
+            .padding(.top, 24)
             .frame(height: 306)
 
             searchField
