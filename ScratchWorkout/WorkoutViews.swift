@@ -41,7 +41,7 @@ struct StartWorkoutView: View {
 }
 
 struct LogWorkoutView: View {
-    var onComplete: () -> Void
+    var onComplete: ([LoggedSet]) -> Void
 
     @State private var weight = 85
     @State private var reps = 12
@@ -94,7 +94,7 @@ struct LogWorkoutView: View {
                 sets[nextIndex].reps = reps
                 activeStep = min(5, activeStep + 1)
             } else {
-                onComplete()
+                onComplete(sets)
             }
         }
     }

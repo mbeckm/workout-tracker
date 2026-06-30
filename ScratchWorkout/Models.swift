@@ -32,32 +32,41 @@ enum AppRoute: Equatable {
     case createPlan
 }
 
-struct WorkoutPlan: Identifiable, Equatable {
-    let id = UUID()
+struct WorkoutPlan: Identifiable, Equatable, Codable {
+    var id = UUID()
     var name: String
     var daysPerWeek: Int
     var createdAt: String
     var days: [WorkoutDay]
 }
 
-struct WorkoutDay: Identifiable, Equatable {
-    let id = UUID()
+struct WorkoutDay: Identifiable, Equatable, Codable {
+    var id = UUID()
     var title: String
     var exercises: [ExercisePrescription]
 }
 
-struct ExercisePrescription: Identifiable, Equatable {
-    let id = UUID()
+struct ExercisePrescription: Identifiable, Equatable, Codable {
+    var id = UUID()
     var name: String
     var sets: Int
     var reps: Int
 }
 
-struct LoggedSet: Identifiable, Equatable {
-    let id = UUID()
+struct LoggedSet: Identifiable, Equatable, Codable {
+    var id = UUID()
     var index: Int
     var weight: Int?
     var reps: Int?
+}
+
+struct LoggedWorkout: Identifiable, Equatable, Codable {
+    var id = UUID()
+    var title: String
+    var completedAt: Date
+    var durationMinutes: Int
+    var exerciseCount: Int
+    var setCount: Int
 }
 
 enum SampleData {
@@ -96,4 +105,3 @@ enum SampleData {
         ]
     )
 }
-

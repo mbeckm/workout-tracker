@@ -16,6 +16,7 @@
 		A10000000000000000000007 /* PlansView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* PlansView.swift */; };
 		A10000000000000000000008 /* WorkoutViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* WorkoutViews.swift */; };
 		A10000000000000000000009 /* CreatePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CreatePlanView.swift */; };
+		A10000000000000000000015 /* WorkoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* WorkoutStore.swift */; };
 		A10000000000000000000011 /* Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* Inter.ttf */; };
 		A10000000000000000000012 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* OFL.txt */; };
 /* End PBXBuildFile section */
@@ -35,6 +36,7 @@
 		A20000000000000000000012 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Resources/Fonts/OFL.txt; sourceTree = "<group>"; };
 		A20000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000014 /* ScratchWorkout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScratchWorkout.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000015 /* WorkoutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 				A20000000000000000000001 /* ScratchWorkoutApp.swift */,
 				A20000000000000000000002 /* Theme.swift */,
 				A20000000000000000000003 /* Models.swift */,
+				A20000000000000000000015 /* WorkoutStore.swift */,
 				A20000000000000000000004 /* Components.swift */,
 				A20000000000000000000005 /* RootView.swift */,
 				A20000000000000000000006 /* HomeView.swift */,
@@ -157,6 +160,7 @@
 				A10000000000000000000001 /* ScratchWorkoutApp.swift in Sources */,
 				A10000000000000000000002 /* Theme.swift in Sources */,
 				A10000000000000000000003 /* Models.swift in Sources */,
+				A10000000000000000000015 /* WorkoutStore.swift in Sources */,
 				A10000000000000000000004 /* Components.swift in Sources */,
 				A10000000000000000000005 /* RootView.swift in Sources */,
 				A10000000000000000000006 /* HomeView.swift in Sources */,

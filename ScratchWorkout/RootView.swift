@@ -3,12 +3,7 @@ import SwiftUI
 struct RootView: View {
     @State private var selectedTab: AppTab = .home
     @State private var route: AppRoute?
-    @State private var activePlan = SampleData.activePlan
-    @State private var savedPlans = [
-        WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: []),
-        WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: []),
-        WorkoutPlan(name: "Leg Focus", daysPerWeek: 3, createdAt: "12.02.26", days: [])
-    ]
+    @State private var store = WorkoutStore()
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -40,7 +35,8 @@ struct RootView: View {
                 }
             })
         case .logWorkout:
-            LogWorkoutView(onComplete: {
+            LogWorkoutView(onComplete: { sets in
+                store.completeWorkout(sets: sets)
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     route = .workoutComplete
                 }
@@ -54,10 +50,7 @@ struct RootView: View {
             })
         case .createPlan:
             CreatePlanView { plan, activate in
-                savedPlans.insert(plan, at: 0)
-                if activate {
-                    activePlan = plan
-                }
+                store.savePlan(plan, activate: activate)
                 withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
                     selectedTab = .plans
                     route = nil
@@ -66,13 +59,13 @@ struct RootView: View {
         case nil:
             switch selectedTab {
             case .home:
-                HomeView(activePlan: activePlan, onOpenWorkout: {
+                HomeView(activePlan: store.activePlan, onOpenWorkout: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                         route = .startWorkout
                     }
                 })
             case .plans:
-                PlansView(activePlan: activePlan, savedPlans: savedPlans, onNewPlan: {
+                PlansView(activePlan: store.activePlan, savedPlans: store.savedPlans, onNewPlan: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                         route = .createPlan
                     }
@@ -94,4 +87,3 @@ struct RootView: View {
         return "tab-\(String(describing: selectedTab))"
     }
 }
-
