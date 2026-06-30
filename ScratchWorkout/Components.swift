@@ -88,6 +88,8 @@ struct AppTabBar: View {
                         .frame(height: 58)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(tab.title)
+                    .accessibilityValue(activeTab == tab ? "Selected" : "")
                 }
             }
             .padding(.top, 12)
@@ -212,6 +214,7 @@ struct MetricLabel: View {
                 .font(AppFont.caption)
                 .foregroundStyle(AppColor.secondaryText)
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -281,6 +284,7 @@ struct PlanCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -311,6 +315,7 @@ struct ExerciseCard: View {
                     .frame(width: 36, height: 36)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -332,6 +337,7 @@ struct CTAButton: View {
                 .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
 }
 
@@ -356,6 +362,7 @@ struct StepProgress: View {
 struct RoundStepButton: View {
     var symbol: String
     var fill: Color = AppColor.surface2
+    var accessibilityLabel: String?
     var action: () -> Void
 
     var body: some View {
@@ -370,6 +377,18 @@ struct RoundStepButton: View {
                 .background(fill, in: Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel ?? defaultAccessibilityLabel)
+    }
+
+    private var defaultAccessibilityLabel: String {
+        switch symbol {
+        case "minus":
+            "Decrease"
+        case "plus":
+            "Increase"
+        default:
+            symbol
+        }
     }
 }
 
@@ -386,7 +405,7 @@ struct NumberStepper: View {
                 .foregroundStyle(AppColor.secondaryText)
 
             HStack(spacing: 16) {
-                RoundStepButton(symbol: "minus") {
+                RoundStepButton(symbol: "minus", accessibilityLabel: "Decrease \(label)") {
                     value = max(minimum, value - 1)
                 }
 
@@ -397,10 +416,11 @@ struct NumberStepper: View {
                     .contentTransition(.numericText())
                     .frame(width: 42)
 
-                RoundStepButton(symbol: "plus") {
+                RoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
                 }
             }
         }
+        .accessibilityElement(children: .contain)
     }
 }

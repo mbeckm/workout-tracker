@@ -95,7 +95,7 @@ struct CreatePlanView: View {
 
             VStack(spacing: 16) {
                 HStack(spacing: 24) {
-                    RoundStepButton(symbol: "minus", fill: AppColor.border) {
+                    RoundStepButton(symbol: "minus", fill: AppColor.border, accessibilityLabel: "Decrease workouts per week") {
                         daysPerWeek = max(1, daysPerWeek - 1)
                     }
 
@@ -104,7 +104,7 @@ struct CreatePlanView: View {
                         .frame(width: 83, height: 105)
                         .contentTransition(.numericText())
 
-                    RoundStepButton(symbol: "plus", fill: AppColor.border) {
+                    RoundStepButton(symbol: "plus", fill: AppColor.border, accessibilityLabel: "Increase workouts per week") {
                         daysPerWeek = min(7, daysPerWeek + 1)
                     }
                 }
@@ -214,6 +214,7 @@ struct CreatePlanView: View {
                     .frame(width: 360, height: 48)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Continue to review")
             .padding(.bottom, 106)
         }
     }
@@ -412,6 +413,7 @@ private struct SearchSurface: View {
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
+                .accessibilityLabel("Exercise search")
                 .padding(.horizontal, 24)
         }
         .frame(maxWidth: .infinity)
@@ -443,7 +445,7 @@ private struct ExerciseConfigCard: View {
 
             HStack(alignment: .center) {
                 HStack(spacing: 16) {
-                    RoundStepButton(symbol: "minus", fill: AppColor.border) {
+                    RoundStepButton(symbol: "minus", fill: AppColor.border, accessibilityLabel: "Decrease \(label.lowercased())") {
                         value = max(1, value - 1)
                     }
 
@@ -452,7 +454,7 @@ private struct ExerciseConfigCard: View {
                         .frame(width: 42)
                         .contentTransition(.numericText())
 
-                    RoundStepButton(symbol: "plus", fill: AppColor.border) {
+                    RoundStepButton(symbol: "plus", fill: AppColor.border, accessibilityLabel: "Increase \(label.lowercased())") {
                         value = min(30, value + 1)
                     }
                 }
@@ -470,6 +472,7 @@ private struct ExerciseConfigCard: View {
                         .background(AppColor.accent, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Confirm \(label.lowercased())")
             }
         }
         .padding(24)
