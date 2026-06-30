@@ -4,6 +4,7 @@ struct RootView: View {
     @State private var selectedTab: AppTab = .home
     @State private var route: AppRoute?
     @State private var store = WorkoutStore()
+    @State private var completedWorkout: LoggedWorkout?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -18,6 +19,7 @@ struct RootView: View {
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
                     selectedTab = tab
                     route = nil
+                    completedWorkout = nil
                 }
             }
         }
@@ -35,14 +37,14 @@ struct RootView: View {
                 }
             })
         case .logWorkout:
-            LogWorkoutView(onComplete: { sets in
-                store.completeWorkout(day: store.nextWorkoutDay, sets: sets)
+            LogWorkoutView(exercise: store.nextExerciseToLog, onComplete: { sets in
+                completedWorkout = store.completeWorkout(day: store.nextWorkoutDay, sets: sets)
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     route = .workoutComplete
                 }
             })
         case .workoutComplete:
-            WorkoutCompleteView(onFinish: {
+            WorkoutCompleteView(workout: completedWorkout, onFinish: {
                 withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
                     selectedTab = .home
                     route = nil

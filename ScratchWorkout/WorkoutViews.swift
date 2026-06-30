@@ -42,17 +42,20 @@ struct StartWorkoutView: View {
 }
 
 struct LogWorkoutView: View {
+    var exercise: ExercisePrescription
     var onComplete: ([LoggedSet]) -> Void
 
     @State private var weight = 85
     @State private var reps = 12
     @State private var activeStep = 1
-    @State private var sets = [
-        LoggedSet(index: 1, weight: 85, reps: 12),
-        LoggedSet(index: 2, weight: 85, reps: 10),
-        LoggedSet(index: 3, weight: nil, reps: nil),
-        LoggedSet(index: 4, weight: nil, reps: nil)
-    ]
+    @State private var sets: [LoggedSet]
+
+    init(exercise: ExercisePrescription, onComplete: @escaping ([LoggedSet]) -> Void) {
+        self.exercise = exercise
+        self.onComplete = onComplete
+        _reps = State(initialValue: exercise.reps)
+        _sets = State(initialValue: Self.initialSets(for: exercise))
+    }
 
     var body: some View {
         AppScreen {
@@ -60,7 +63,7 @@ struct LogWorkoutView: View {
                 StepProgress(count: 5, active: activeStep, width: 48, spacing: 24)
                     .padding(.top, 70)
 
-                SectionTitle(text: "Incline Bench Press")
+                SectionTitle(text: exercise.name)
                     .padding(.top, 24)
 
                 SetTable(sets: sets)
@@ -96,6 +99,19 @@ struct LogWorkoutView: View {
                 activeStep = min(5, activeStep + 1)
             } else {
                 onComplete(sets)
+            }
+        }
+    }
+
+    private static func initialSets(for exercise: ExercisePrescription) -> [LoggedSet] {
+        (1...exercise.sets).map { index in
+            switch index {
+            case 1:
+                LoggedSet(index: index, weight: 85, reps: exercise.reps)
+            case 2:
+                LoggedSet(index: index, weight: 85, reps: max(1, exercise.reps - 2))
+            default:
+                LoggedSet(index: index, weight: nil, reps: nil)
             }
         }
     }
@@ -142,6 +158,7 @@ private struct SetTable: View {
 }
 
 struct WorkoutCompleteView: View {
+    var workout: LoggedWorkout?
     var onFinish: () -> Void
 
     var body: some View {
@@ -163,7 +180,7 @@ struct WorkoutCompleteView: View {
                     }
                     .frame(width: 120, height: 120)
 
-                    SummaryCard()
+                    SummaryCard(workout: workout)
                 }
                 .padding(.top, 48)
                 .padding(.horizontal, 24)
@@ -179,17 +196,27 @@ struct WorkoutCompleteView: View {
 }
 
 private struct SummaryCard: View {
+    var workout: LoggedWorkout?
+
     var body: some View {
         CardShell(height: 310) {
             VStack(spacing: 24) {
-                summary(value: "1h 33min", label: "Duration")
+                summary(value: durationText, label: "Duration")
                 divider
-                summary(value: "8", label: "Exercises")
+                summary(value: "\(workout?.exerciseCount ?? 8)", label: "Exercises")
                 divider
-                summary(value: "32", label: "Sets")
+                summary(value: "\(workout?.setCount ?? 32)", label: "Sets")
             }
             .frame(maxWidth: .infinity)
         }
+    }
+
+    private var durationText: String {
+        guard let minutes = workout?.durationMinutes else {
+            return "1h 33min"
+        }
+
+        return "\(minutes / 60)h \(minutes % 60)min"
     }
 
     private func summary(value: String, label: String) -> some View {
