@@ -20,8 +20,8 @@ struct PlansView: View {
                             Haptics.tap(.medium)
                             onNewPlan()
                         } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 29, weight: .bold))
+                            Text("+")
+                                .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
                                 .foregroundStyle(.black)
                                 .frame(width: 44, height: 44)
                         }
