@@ -300,17 +300,32 @@ struct CreatePlanView: View {
         ]
     }
 
+    private var generatedDays: [WorkoutDay] {
+        let templates = [
+            WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
+            WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
+            WorkoutDay(title: "Push", exercises: SampleData.pushExercises)
+        ]
+
+        return (0..<daysPerWeek).map { index in
+            let template = templates[index % templates.count]
+
+            guard index >= templates.count else {
+                return template
+            }
+
+            let cycle = (index / templates.count) + 1
+            return WorkoutDay(title: "\(template.title) \(cycle)", exercises: template.exercises)
+        }
+    }
+
     private func finish(activate: Bool) {
         Haptics.tap(.medium)
         let plan = WorkoutPlan(
             name: "PPL",
             daysPerWeek: daysPerWeek,
             createdAt: "30.06.26",
-            days: [
-                WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
-                WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
-                WorkoutDay(title: "Push", exercises: SampleData.pushExercises)
-            ]
+            days: generatedDays
         )
         onFinish(plan, activate)
     }
