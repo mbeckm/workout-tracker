@@ -2,6 +2,8 @@ import SwiftUI
 
 struct HomeView: View {
     var activePlan: WorkoutPlan
+    var recentWorkout: LoggedWorkout?
+    var workoutsThisMonth: Int
     var onOpenWorkout: () -> Void
 
     private let heatmap = [
@@ -18,7 +20,7 @@ struct HomeView: View {
                     .font(AppFont.display)
                     .padding(.top, 66)
 
-                MetricLabel(value: "14", label: "workouts this month")
+                MetricLabel(value: "\(workoutsThisMonth)", label: "workouts this month")
                     .padding(.top, 24)
 
                 HeatmapGrid(rows: heatmap)
@@ -27,7 +29,7 @@ struct HomeView: View {
                 SectionTitle(text: "Last")
                     .padding(.top, 36)
 
-                PlanCard(title: "Pull", lines: ["8 Exercises", "1h 22min"], date: "yesterday")
+                PlanCard(title: lastWorkoutTitle, lines: lastWorkoutLines, date: lastWorkoutDate)
                     .padding(.top, 12)
 
                 SectionTitle(text: "Next in plan")
@@ -37,7 +39,7 @@ struct HomeView: View {
                     Haptics.tap(.medium)
                     onOpenWorkout()
                 } label: {
-                    PlanCard(title: activePlan.days.first?.title ?? "Push", lines: ["8 Exercises"], date: "Mon., 11.08.", height: 80)
+                    PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: "Mon., 11.08.", height: 80)
                 }
                 .buttonStyle(.plain)
 
@@ -45,6 +47,47 @@ struct HomeView: View {
             }
             .padding(.horizontal, 24)
         }
+    }
+
+    private var nextWorkout: WorkoutDay? {
+        activePlan.days.first
+    }
+
+    private var nextWorkoutTitle: String {
+        nextWorkout?.title ?? "Push"
+    }
+
+    private var nextWorkoutExerciseCount: Int {
+        nextWorkout?.exercises.count ?? 8
+    }
+
+    private var lastWorkoutTitle: String {
+        recentWorkout?.title ?? "Pull"
+    }
+
+    private var lastWorkoutLines: [String] {
+        guard let recentWorkout else {
+            return ["8 Exercises", "1h 22min"]
+        }
+
+        return [
+            "\(recentWorkout.exerciseCount) Exercises",
+            formatDuration(minutes: recentWorkout.durationMinutes)
+        ]
+    }
+
+    private var lastWorkoutDate: String {
+        guard let recentWorkout else {
+            return "yesterday"
+        }
+
+        return Calendar.current.isDateInToday(recentWorkout.completedAt) ? "today" : "recently"
+    }
+
+    private func formatDuration(minutes: Int) -> String {
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        return "\(hours)h \(remainingMinutes)min"
     }
 }
 
@@ -65,4 +108,3 @@ private struct HeatmapGrid: View {
         }
     }
 }
-

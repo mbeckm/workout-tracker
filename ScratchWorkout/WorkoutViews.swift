@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct StartWorkoutView: View {
+    var day: WorkoutDay
     var onStart: () -> Void
 
     var body: some View {
@@ -11,16 +12,16 @@ struct StartWorkoutView: View {
                     .padding(.top, 70)
 
                 HStack(alignment: .firstTextBaseline) {
-                    SectionTitle(text: "Push")
+                    SectionTitle(text: day.title)
                     Spacer()
-                    Text("8 Exercises")
+                    Text("\(day.exercises.count) Exercises")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.secondaryText)
                 }
                 .padding(.top, 24)
 
                 VStack(spacing: 12) {
-                    ForEach(SampleData.pushExercises) { exercise in
+                    ForEach(Array(day.exercises.prefix(5))) { exercise in
                         ExerciseCard(exercise: exercise)
                     }
                 }

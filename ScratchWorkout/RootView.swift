@@ -29,14 +29,14 @@ struct RootView: View {
     private var currentScreen: some View {
         switch route {
         case .startWorkout:
-            StartWorkoutView(onStart: {
+            StartWorkoutView(day: store.nextWorkoutDay, onStart: {
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
                     route = .logWorkout
                 }
             })
         case .logWorkout:
             LogWorkoutView(onComplete: { sets in
-                store.completeWorkout(sets: sets)
+                store.completeWorkout(day: store.nextWorkoutDay, sets: sets)
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     route = .workoutComplete
                 }
@@ -59,7 +59,7 @@ struct RootView: View {
         case nil:
             switch selectedTab {
             case .home:
-                HomeView(activePlan: store.activePlan, onOpenWorkout: {
+                HomeView(activePlan: store.activePlan, recentWorkout: store.recentWorkout, workoutsThisMonth: store.workoutsThisMonth, onOpenWorkout: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                         route = .startWorkout
                     }
@@ -71,7 +71,7 @@ struct RootView: View {
                     }
                 })
             case .workout:
-                StartWorkoutView(onStart: {
+                StartWorkoutView(day: store.nextWorkoutDay, onStart: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
                         route = .logWorkout
                     }

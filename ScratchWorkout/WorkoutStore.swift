@@ -5,6 +5,22 @@ struct WorkoutStore {
     var savedPlans: [WorkoutPlan]
     private(set) var workoutHistory: [LoggedWorkout]
 
+    var nextWorkoutDay: WorkoutDay {
+        activePlan.days.first ?? SampleData.activePlan.days[0]
+    }
+
+    var recentWorkout: LoggedWorkout? {
+        workoutHistory.first
+    }
+
+    var workoutsThisMonth: Int {
+        let calendar = Calendar.current
+        let completedThisMonth = workoutHistory.filter {
+            calendar.isDate($0.completedAt, equalTo: Date(), toGranularity: .month)
+        }
+        return 14 + completedThisMonth.count
+    }
+
     private let defaults: UserDefaults
     private let storageKey = "scratchWorkout.appState.v1"
 
@@ -34,13 +50,13 @@ struct WorkoutStore {
         persist()
     }
 
-    mutating func completeWorkout(sets: [LoggedSet]) {
+    mutating func completeWorkout(day: WorkoutDay, sets: [LoggedSet]) {
         let completedSetCount = sets.filter { $0.weight != nil && $0.reps != nil }.count
         let workout = LoggedWorkout(
-            title: "Push",
+            title: day.title,
             completedAt: Date(),
             durationMinutes: 93,
-            exerciseCount: 8,
+            exerciseCount: day.exercises.count,
             setCount: max(completedSetCount, 32)
         )
         workoutHistory.insert(workout, at: 0)

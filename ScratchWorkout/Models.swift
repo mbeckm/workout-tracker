@@ -75,7 +75,10 @@ enum SampleData {
         ExercisePrescription(name: "Incline Dumbbell Press", sets: 3, reps: 12),
         ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
-        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15)
+        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
+        ExercisePrescription(name: "Cable Fly", sets: 3, reps: 12),
+        ExercisePrescription(name: "Dips", sets: 3, reps: 10),
+        ExercisePrescription(name: "Skull Crushers", sets: 3, reps: 12)
     ]
 
     static let legExercises = [
