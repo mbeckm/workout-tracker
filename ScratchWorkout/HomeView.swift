@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    var activePlan: WorkoutPlan
     var nextWorkout: WorkoutDay
-    var recentWorkout: LoggedWorkout?
     var workoutsThisMonth: Int
     var onOpenWorkout: () -> Void
 
@@ -26,14 +26,14 @@ struct HomeView: View {
                 HeatmapGrid(rows: heatmap)
                     .padding(.top, 12)
 
-                SectionTitle(text: "Last")
+                SectionTitle(text: "Active Plan")
                     .padding(.top, 36)
 
-                PlanCard(title: lastWorkoutTitle, lines: lastWorkoutLines, date: lastWorkoutDate)
+                PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
                     .padding(.top, 12)
 
                 SectionTitle(text: "Next in plan")
-                    .padding(.top, 42)
+                    .padding(.top, 24)
 
                 Button {
                     Haptics.tap(.medium)
@@ -58,33 +58,8 @@ struct HomeView: View {
         nextWorkout.exercises.count
     }
 
-    private var lastWorkoutTitle: String {
-        recentWorkout?.title ?? "Pull"
-    }
-
-    private var lastWorkoutLines: [String] {
-        guard let recentWorkout else {
-            return ["8 Exercises", "1h 22min"]
-        }
-
-        return [
-            "\(recentWorkout.exerciseCount) Exercises",
-            formatDuration(minutes: recentWorkout.durationMinutes)
-        ]
-    }
-
-    private var lastWorkoutDate: String {
-        guard let recentWorkout else {
-            return "yesterday"
-        }
-
-        return Calendar.current.isDateInToday(recentWorkout.completedAt) ? "today" : "recently"
-    }
-
-    private func formatDuration(minutes: Int) -> String {
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-        return "\(hours)h \(remainingMinutes)min"
+    private var activePlanTitle: String {
+        activePlan.name == "PPL" ? "Push Pull Legs" : activePlan.name
     }
 }
 

@@ -4,9 +4,6 @@ struct CreatePlanView: View {
     enum Stage: String {
         case frequency
         case search
-        case configureSets
-        case configureReps
-        case dayReview
         case finalReview
         case activatePrompt
     }
@@ -22,11 +19,7 @@ struct CreatePlanView: View {
     @State private var completedDays = 0
     @State private var planDays: [[ExercisePrescription]]
     @State private var searchQuery: String
-    @State private var configuredSets = 3
-    @State private var configuredReps = 12
-    @State private var selectedExerciseName = "Incline Bench Press"
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var shouldAutoFocusSearch = false
+    @State private var isAddingExercise = false
 
     init(
         initialStage: Stage = .frequency,
@@ -71,15 +64,10 @@ struct CreatePlanView: View {
             }
             .padding(.horizontal, 24)
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification), perform: updateKeyboardHeight)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeOut(duration: 0.18)) {
-                keyboardHeight = 0
-            }
-        }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: stage)
         .animation(.spring(response: 0.26, dampingFraction: 0.88), value: currentDayIndex)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completedDays)
+        .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isAddingExercise)
     }
 
     @ViewBuilder
@@ -88,7 +76,7 @@ struct CreatePlanView: View {
         case .frequency:
             frequencyView
                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
-        case .search, .configureSets, .configureReps, .dayReview:
+        case .search:
             dayBuilderView
                 .transition(.opacity)
         case .finalReview, .activatePrompt:
@@ -153,8 +141,79 @@ struct CreatePlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
+                    if shouldShowSearchSurface {
+                        PlanEntrySurface(
+                            query: $searchQuery,
+                            focused: $searchFocused,
+                            results: filteredExercises,
+                            onSelect: addExerciseFromSearch
+                        )
+                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                        .frame(maxWidth: .infinity)
+                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                    } else if currentDayExercises.isEmpty {
+                        EmptyDayState(onAdd: beginExerciseSearch)
+                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                    }
+
+                    ForEach(currentDayExercises) { exercise in
+                        EditableExerciseCard(
+                            exercise: exercise,
+                            onDelete: {
+                                deleteExercise(exercise.id)
+                            },
+                            onReorderBefore: { draggedID in
+                                reorderExercise(draggedID, before: exercise.id)
+                            }
+                        )
+                    }
+                }
+                .padding(.top, currentDayExercises.isEmpty && !shouldShowSearchSurface ? 24 : 12)
+                .padding(.bottom, 24)
+            }
+            .frame(maxWidth: .infinity)
+            .clipped()
+            .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded {
+                        searchFocused = false
+                    }
+            )
+
+            if !currentDayExercises.isEmpty {
+                HStack {
+                    Spacer()
+                    CTAButton(title: "Save Day", width: 312) {
+                        saveCurrentDay()
+                    }
+                    Spacer()
+                }
+                .padding(.bottom, 106)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+    }
+
+    private var finalReviewView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Review")
+                .font(AppFont.display)
+                .padding(.top, 66)
+
+            DayStepProgress(count: daysPerWeek, completed: daysPerWeek, current: currentDayIndex, onSelect: switchToDay)
+                .padding(.top, 24)
+
+            SectionTitle(text: currentDayTitle)
+                .padding(.top, 24)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
                     if currentDayExercises.isEmpty {
-                        EmptyDayState()
+                        EmptyDayState(onAdd: {
+                            switchToDay(currentDayIndex)
+                            beginExerciseSearch()
+                        })
                     } else {
                         ForEach(currentDayExercises) { exercise in
                             EditableExerciseCard(
@@ -167,86 +226,12 @@ struct CreatePlanView: View {
                                 }
                             )
                         }
-
-                        if stage == .search && !isSearchExpanded {
-                            CTAButton(title: "Save Day", width: 294) {
-                                saveCurrentDay()
-                            }
-                            .padding(.top, 4)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        }
                     }
                 }
                 .padding(.top, 12)
-                .padding(.bottom, 16)
-            }
-            .frame(maxWidth: .infinity)
-            .clipped()
-            .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(
-                TapGesture()
-                    .onEnded {
-                        searchFocused = false
-                    }
-            )
-
-            bottomBuilder
-                .padding(.bottom, bottomBuilderBottomPadding)
-        }
-    }
-
-    @ViewBuilder
-    private var bottomBuilder: some View {
-        PlanEntrySurface(
-            mode: entrySurfaceMode,
-            query: $searchQuery,
-            focused: $searchFocused,
-            results: filteredExercises,
-            exercise: selectedExerciseName,
-            sets: $configuredSets,
-            reps: $configuredReps,
-            autoFocus: shouldAutoFocusSearch,
-            onSelect: selectExercise,
-            onConfirmSets: confirmSets,
-            onConfirmReps: addConfiguredExercise,
-            onAutoFocusConsumed: {
-                shouldAutoFocusSearch = false
-            }
-        )
-        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var finalReviewView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Review")
-                .font(AppFont.display)
-                .padding(.top, 66)
-
-            DayStepProgress(count: daysPerWeek, completed: daysPerWeek, current: currentDayIndex, onSelect: switchToDay)
-                .padding(.top, 24)
-
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    ForEach(0..<daysPerWeek, id: \.self) { index in
-                        EditableDayReviewSection(
-                            title: "Day \(index + 1)",
-                            exercises: exercisesForDay(at: index),
-                            onSelect: {
-                                switchToDay(index)
-                            },
-                            onDelete: {
-                                deleteDay(at: index)
-                            },
-                            onReorderBefore: { draggedIndex in
-                                reorderDay(from: draggedIndex, before: index)
-                            }
-                        )
-                    }
-                }
-                .padding(.top, 24)
                 .padding(.bottom, 24)
             }
+            .clipped()
 
             HStack {
                 Spacer()
@@ -327,23 +312,8 @@ struct CreatePlanView: View {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var entrySurfaceMode: PlanEntrySurface.Mode {
-        switch stage {
-        case .configureSets:
-            .sets
-        case .configureReps:
-            .reps
-        default:
-            .search(expanded: isSearchExpanded)
-        }
-    }
-
-    private var bottomBuilderBottomPadding: CGFloat {
-        guard keyboardHeight > 0, searchFocused, stage == .search else {
-            return 106
-        }
-
-        return keyboardHeight + 12
+    private var shouldShowSearchSurface: Bool {
+        isAddingExercise || isSearchExpanded
     }
 
     private var filteredExercises: [ExercisePrescription] {
@@ -355,7 +325,7 @@ struct CreatePlanView: View {
 
         return Array(SampleData.exerciseDatabase.filter {
             $0.name.localizedCaseInsensitiveContains(query)
-        }.prefix(8))
+        })
     }
 
     private var generatedDays: [WorkoutDay] {
@@ -376,7 +346,7 @@ struct CreatePlanView: View {
         planDays = Array(repeating: [], count: daysPerWeek)
         completedDays = 0
         currentDayIndex = 0
-        shouldAutoFocusSearch = false
+        isAddingExercise = false
         resetExerciseEntry()
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
@@ -384,40 +354,33 @@ struct CreatePlanView: View {
         }
     }
 
-    private func selectExercise(_ exercise: ExercisePrescription) {
+    private func beginExerciseSearch() {
         Haptics.tap(.medium)
-        selectedExerciseName = exercise.name.planDisplayName
-        configuredSets = exercise.sets
-        configuredReps = exercise.reps
-        searchFocused = false
-        shouldAutoFocusSearch = false
+        isAddingExercise = true
 
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
-            searchQuery = ""
-            stage = .configureSets
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            searchFocused = true
         }
     }
 
-    private func confirmSets() {
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
-            stage = .configureReps
-        }
-    }
-
-    private func addConfiguredExercise() {
+    private func addExerciseFromSearch(_ exercise: ExercisePrescription) {
         ensurePlanDays()
+        Haptics.tap(.medium)
 
-        let exercise = ExercisePrescription(
-            name: selectedExerciseName,
-            sets: configuredSets,
-            reps: configuredReps
+        let newExercise = ExercisePrescription(
+            name: exercise.name.planDisplayName,
+            sets: exercise.sets,
+            reps: exercise.reps
         )
-        planDays[currentDayIndex].append(exercise)
-        resetExerciseEntry()
-        shouldAutoFocusSearch = true
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+            planDays[currentDayIndex].append(newExercise)
+            isAddingExercise = true
             stage = .search
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            searchFocused = true
         }
     }
 
@@ -428,7 +391,7 @@ struct CreatePlanView: View {
 
         Haptics.tap(.medium)
         completedDays = max(completedDays, currentDayIndex + 1)
-        shouldAutoFocusSearch = false
+        isAddingExercise = false
         resetExerciseEntry()
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
@@ -447,12 +410,13 @@ struct CreatePlanView: View {
         }
 
         Haptics.tap()
-        shouldAutoFocusSearch = false
+        let shouldRemainInReview = stage == .finalReview || stage == .activatePrompt
+        isAddingExercise = false
         resetExerciseEntry()
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
             currentDayIndex = index
-            stage = .search
+            stage = shouldRemainInReview ? .finalReview : .search
         }
     }
 
@@ -486,38 +450,6 @@ struct CreatePlanView: View {
         }
     }
 
-    private func deleteDay(at index: Int) {
-        guard daysPerWeek > 1, planDays.indices.contains(index) else {
-            return
-        }
-
-        Haptics.tap(.medium)
-
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
-            planDays.remove(at: index)
-            daysPerWeek -= 1
-            currentDayIndex = min(currentDayIndex, daysPerWeek - 1)
-            completedDays = min(completedDays, daysPerWeek)
-        }
-    }
-
-    private func reorderDay(from sourceIndex: Int, before targetIndex: Int) {
-        guard planDays.indices.contains(sourceIndex),
-              planDays.indices.contains(targetIndex),
-              sourceIndex != targetIndex else {
-            return
-        }
-
-        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
-            let moved = planDays.remove(at: sourceIndex)
-            let adjustedTarget = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
-            planDays.insert(moved, at: adjustedTarget)
-            if currentDayIndex == sourceIndex {
-                currentDayIndex = adjustedTarget
-            }
-        }
-    }
-
     private func finish(activate: Bool) {
         Haptics.tap(.medium)
         let plan = WorkoutPlan(
@@ -537,32 +469,50 @@ struct CreatePlanView: View {
 
     private func resetExerciseEntry() {
         searchQuery = ""
-        selectedExerciseName = "Incline Bench Press"
-        configuredSets = 3
-        configuredReps = 12
         searchFocused = false
-    }
-
-    private func updateKeyboardHeight(_ notification: Notification) {
-        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
-            return
-        }
-
-        let height = max(0, UIScreen.main.bounds.height - keyboardFrame.minY)
-        withAnimation(.easeOut(duration: 0.18)) {
-            keyboardHeight = height
-        }
     }
 }
 
 private struct EmptyDayState: View {
+    var onAdd: () -> Void
+
     var body: some View {
-        CardShell(height: 84) {
+        VStack(spacing: 16) {
             Text("No exercises yet")
                 .font(AppFont.subheading)
                 .foregroundStyle(AppColor.secondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(1)
+
+            Button {
+                onAdd()
+            } label: {
+                HStack(spacing: 16) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 30, weight: .semibold))
+                        .frame(width: 23, height: 23)
+
+                    Text("Add first exercise")
+                        .font(AppFont.h1)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(AppColor.primaryText)
+                .frame(width: 294, height: 56)
+                .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(AppColor.border, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
         .accessibilityLabel("No exercises yet")
     }
 }
@@ -627,248 +577,93 @@ private struct EditableExerciseCard: View {
     }
 }
 
-private struct EditableDayReviewSection: View {
-    var title: String
-    var exercises: [ExercisePrescription]
-    var onSelect: () -> Void
-    var onDelete: () -> Void
-    var onReorderBefore: (Int) -> Void
-
-    @State private var horizontalOffset: CGFloat = 0
-
-    private var dayIndex: Int {
-        let numberText = title.replacingOccurrences(of: "Day ", with: "")
-        return max((Int(numberText) ?? 1) - 1, 0)
-    }
-
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.red.opacity(0.18))
-                .opacity(deleteBackgroundOpacity)
-                .overlay(alignment: .trailing) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(AppColor.primaryText)
-                        .padding(.trailing, 22)
-                        .opacity(deleteBackgroundOpacity)
-                }
-
-            Button(action: onSelect) {
-                DayReviewSection(title: title, exercises: exercises)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .offset(x: horizontalOffset)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 20)
-                    .onChanged { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else {
-                            return
-                        }
-
-                        horizontalOffset = min(0, value.translation.width)
-                    }
-                    .onEnded { value in
-                        guard value.translation.width < -90 else {
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
-                                horizontalOffset = 0
-                            }
-                            return
-                        }
-
-                        onDelete()
-                    }
-            )
-        }
-        .draggable(String(dayIndex))
-        .dropDestination(for: String.self) { items, _ in
-            guard let first = items.first, let sourceIndex = Int(first) else {
-                return false
-            }
-
-            onReorderBefore(sourceIndex)
-            return true
-        }
-    }
-
-    private var deleteBackgroundOpacity: Double {
-        min(1, max(0, Double(-horizontalOffset / 48)))
-    }
-}
-
 private struct PlanEntrySurface: View {
-    enum Mode: Equatable {
-        case search(expanded: Bool)
-        case sets
-        case reps
-    }
-
-    var mode: Mode
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
-    var exercise: String
-    @Binding var sets: Int
-    @Binding var reps: Int
-    var autoFocus: Bool
     var onSelect: (ExercisePrescription) -> Void
-    var onConfirmSets: () -> Void
-    var onConfirmReps: () -> Void
-    var onAutoFocusConsumed: () -> Void
+
+    private var isExpanded: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var resultViewportHeight: CGFloat {
+        let visibleRows = max(1, min(results.count, 5))
+        return CGFloat(visibleRows * 26 + max(0, visibleRows - 1) * 16)
+    }
 
     var body: some View {
-        content
-        .animation(.spring(response: 0.24, dampingFraction: 0.88), value: mode)
-        .onChange(of: mode) { _, newMode in
-            focusSearchIfNeeded(for: newMode)
-        }
-        .onChange(of: autoFocus) { _, shouldFocus in
-            guard shouldFocus else {
-                return
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            searchField
 
-            focusSearchIfNeeded(for: mode)
-        }
-    }
+            if isExpanded {
+                Rectangle()
+                    .fill(AppColor.border)
+                    .frame(height: 1)
+                    .transition(.opacity)
 
-    @ViewBuilder
-    private var content: some View {
-        switch mode {
-        case .search(let expanded):
-            if expanded {
-                expandedSearch
-            } else {
-                searchField
-                    .frame(width: 360, height: 54)
-                    .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
-            }
-        case .sets:
-            configuration(label: "Number of sets", value: $sets, onConfirm: onConfirmSets)
-                .transition(.opacity)
-        case .reps:
-            configuration(label: "Number of reps", value: $reps, onConfirm: onConfirmReps)
-                .transition(.opacity)
-        }
-    }
-
-    private var expandedSearch: some View {
-        VStack(spacing: 0) {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    if results.isEmpty {
-                        Text("No matching exercises")
-                            .font(AppFont.subheading)
-                            .foregroundStyle(AppColor.secondaryText)
-                            .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-                    } else {
-                        ForEach(results) { exercise in
-                            Button {
-                                onSelect(exercise)
-                            } label: {
-                                Text(exercise.name)
-                                    .font(AppFont.subheading)
-                                    .foregroundStyle(AppColor.primaryText)
-                                    .lineLimit(1)
-                                    .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-                                    .contentShape(Rectangle())
+                ScrollView(showsIndicators: results.count > 5) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        if results.isEmpty {
+                            Text("No matching exercises")
+                                .font(AppFont.h2)
+                                .foregroundStyle(AppColor.secondaryText)
+                                .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                        } else {
+                            ForEach(results) { exercise in
+                                Button {
+                                    onSelect(exercise)
+                                } label: {
+                                    Text(exercise.name.planDisplayName)
+                                        .font(AppFont.h2)
+                                        .foregroundStyle(AppColor.primaryText)
+                                        .lineLimit(1)
+                                        .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 12)
+                .frame(height: resultViewportHeight)
+                .scrollDismissesKeyboard(.interactively)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            .frame(height: 292)
-
-            searchField
-                .frame(height: 54)
         }
-        .frame(width: 360, height: 360)
-        .liquidGlassSurface(cornerRadius: 20, interactive: true)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
+        .frame(width: 354, alignment: .topLeading)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
     }
 
     private var searchField: some View {
-        HStack(spacing: 0) {
-            TextField("Search to add an exercise", text: $query)
+        HStack(spacing: 16) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(AppColor.secondaryText)
+                .frame(width: 22, height: 22)
+
+            TextField("Search", text: $query)
                 .focused(focused)
-                .font(AppFont.body)
+                .font(AppFont.h2)
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
                 .accessibilityLabel("Exercise search")
         }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .liquidGlassSurface(cornerRadius: 20, interactive: true)
+        .frame(height: 26)
         .onAppear {
-            focusSearchIfNeeded(for: mode)
-        }
-    }
-
-    private func focusSearchIfNeeded(for mode: Mode) {
-        guard autoFocus, case .search(let expanded) = mode, !expanded else {
-            return
-        }
-
-        onAutoFocusConsumed()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            focused.wrappedValue = true
-        }
-    }
-
-    private func configuration(label: String, value: Binding<Int>, onConfirm: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(exercise)
-                    .font(AppFont.subheading)
-                    .lineLimit(1)
-                Text(label)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.secondaryText)
-            }
-            .frame(width: 150, alignment: .leading)
-
-            HStack(alignment: .center) {
-                HStack(spacing: 16) {
-                    RoundStepButton(symbol: "minus", fill: AppColor.border, accessibilityLabel: "Decrease \(label.lowercased())") {
-                        value.wrappedValue = max(1, value.wrappedValue - 1)
-                    }
-
-                    Text("\(value.wrappedValue)")
-                        .font(AppFont.display)
-                        .frame(width: 42)
-                        .contentTransition(.numericText())
-
-                    RoundStepButton(symbol: "plus", fill: AppColor.border, accessibilityLabel: "Increase \(label.lowercased())") {
-                        value.wrappedValue = min(30, value.wrappedValue + 1)
-                    }
-                }
-
-                Spacer()
-
-                Button {
-                    Haptics.tap(.medium)
-                    onConfirm()
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(AppColor.base)
-                        .frame(width: 45, height: 45)
-                        .background(AppColor.accent, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Confirm \(label.lowercased())")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                focused.wrappedValue = true
             }
         }
-        .padding(24)
-        .frame(width: 360, height: 153, alignment: .topLeading)
-        .liquidGlassSurface(cornerRadius: 20, interactive: true)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value.wrappedValue)
     }
 }
 
@@ -920,37 +715,6 @@ private struct DayStepProgress: View {
         } else {
             AppColor.border
         }
-    }
-}
-
-private struct DayReviewSection: View {
-    var title: String
-    var exercises: [ExercisePrescription]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(text: title)
-
-            VStack(spacing: 12) {
-                ForEach(exercises) { exercise in
-                    ExerciseCard(exercise: exercise)
-                }
-            }
-        }
-    }
-}
-
-private extension View {
-    func liquidGlassSurface(cornerRadius: CGFloat, interactive: Bool = false) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-
-        return self
-            .background(.ultraThinMaterial, in: shape)
-            .background(AppColor.surface1.opacity(interactive ? 0.76 : 0.84), in: shape)
-            .overlay(
-                shape
-                    .stroke(AppColor.border.opacity(interactive ? 0.72 : 1), lineWidth: 1)
-            )
     }
 }
 
