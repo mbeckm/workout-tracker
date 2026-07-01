@@ -2,24 +2,7 @@ import SwiftUI
 
 struct GrainBackground: View {
     var body: some View {
-        ZStack {
-            AppColor.base
-            Canvas { context, size in
-                for index in 0..<1800 {
-                    let x = pseudoRandom(index, salt: 17) * size.width
-                    let y = pseudoRandom(index, salt: 41) * size.height
-                    let alpha = 0.015 + pseudoRandom(index, salt: 83) * 0.035
-                    let rect = CGRect(x: x, y: y, width: 0.7, height: 0.7)
-                    context.fill(Path(rect), with: .color(.white.opacity(alpha)))
-                }
-            }
-            .blendMode(.screen)
-        }
-    }
-
-    private func pseudoRandom(_ value: Int, salt: Int) -> CGFloat {
-        let seed = Double((value * 1103515245 + salt * 12345) & 0x7fffffff)
-        return CGFloat(seed.truncatingRemainder(dividingBy: 10_000) / 10_000)
+        AppColor.base
     }
 }
 
