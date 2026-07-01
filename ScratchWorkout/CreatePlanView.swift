@@ -712,6 +712,24 @@ enum ExerciseDraftStep: Equatable {
             "Number of reps"
         }
     }
+
+    var actionSymbol: String {
+        switch self {
+        case .sets:
+            "chevron.right"
+        case .reps:
+            "checkmark"
+        }
+    }
+
+    var actionAccessibilityLabel: String {
+        switch self {
+        case .sets:
+            "Continue to reps"
+        case .reps:
+            "Save exercise"
+        }
+    }
 }
 
 struct ExerciseDraft: Identifiable, Equatable {
@@ -812,7 +830,7 @@ struct ExerciseDraftSurface: View {
 
                 Spacer(minLength: 24)
 
-                DraftRoundButton(symbol: "chevron.right", fill: AppColor.accent, foreground: AppColor.base, strokeWidth: 0, accessibilityLabel: step == .sets ? "Continue to reps" : "Save exercise", action: onAdvance)
+                DraftRoundButton(symbol: step.actionSymbol, fill: AppColor.accent, foreground: AppColor.base, strokeWidth: 0, accessibilityLabel: step.actionAccessibilityLabel, action: onAdvance)
             }
             .frame(height: 45)
         }

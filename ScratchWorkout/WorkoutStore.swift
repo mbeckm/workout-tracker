@@ -195,10 +195,6 @@ struct WorkoutStore {
             return false
         }
 
-        if plan.days.count < SampleData.activePlan.days.count {
-            return true
-        }
-
         guard let firstDay = plan.days.first,
               let firstExercise = firstDay.exercises.first else {
             return false
@@ -208,7 +204,9 @@ struct WorkoutStore {
             return true
         }
 
-        return firstDay.title == "Day 1" && firstDay.matchesLegacySeededDayOne
+        return plan.days.count == SampleData.activePlan.days.count &&
+            firstDay.title == "Day 1" &&
+            firstDay.matchesLegacySeededDayOne
     }
 
     private func isSeededPPL(_ plan: WorkoutPlan) -> Bool {
