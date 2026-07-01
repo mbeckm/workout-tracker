@@ -18,11 +18,6 @@ struct AppScreen<Content: View>: View {
             GrainBackground()
                 .ignoresSafeArea()
 
-            Rectangle()
-                .fill(AppColor.statusStrip)
-                .frame(height: 46)
-                .ignoresSafeArea(edges: .top)
-
             content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -66,16 +61,16 @@ struct AppTabBar: View {
                                 .frame(height: 16)
                         }
                         .foregroundStyle(activeTab == tab ? AppColor.accent : AppColor.secondaryText)
-                        .frame(width: tab.slotWidth, height: 58, alignment: .top)
+                        .frame(width: AppTab.slotWidth, height: 58, alignment: .top)
                     }
                     .buttonStyle(.plain)
-                    .frame(width: tab.slotWidth, height: 58, alignment: .top)
+                    .frame(width: AppTab.slotWidth, height: 58, alignment: .top)
                     .accessibilityLabel(tab.title)
                     .accessibilityValue(activeTab == tab ? "Selected" : "")
 
                     if tab != .workout {
                         Spacer(minLength: 0)
-                            .frame(width: 95)
+                            .frame(width: AppTab.slotSpacing)
                     }
                 }
             }
@@ -96,13 +91,12 @@ struct AppTabBar: View {
 }
 
 private extension AppTab {
-    var slotWidth: CGFloat {
-        switch self {
-        case .home, .plans:
-            36
-        case .workout:
-            48
-        }
+    static var slotWidth: CGFloat {
+        72
+    }
+
+    static var slotSpacing: CGFloat {
+        47
     }
 }
 
@@ -402,7 +396,6 @@ struct NumberStepper: View {
     @Binding var value: Int
     var minimum: Int = 1
     var maximum: Int = 999
-    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -415,66 +408,22 @@ struct NumberStepper: View {
                     value = max(minimum, value - 1)
                 }
 
-                EditableStepperValue(
-                    value: $value,
-                    text: numericText,
-                    isFocused: $isFocused,
-                    label: label
-                )
+                Text("\(value)")
+                    .font(AppFont.display)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .frame(width: 64, height: 45)
+                    .accessibilityLabel("\(label) value")
 
                 RepeatingRoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
                 }
             }
             .frame(width: 178, alignment: .center)
-            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: value)
+            .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value)
         }
         .accessibilityElement(children: .contain)
-    }
-
-    private var numericText: Binding<String> {
-        Binding(
-            get: { "\(value)" },
-            set: { newValue in
-                let digits = newValue.filter(\.isNumber)
-                guard let parsed = Int(digits) else {
-                    value = minimum
-                    return
-                }
-
-                value = min(max(parsed, minimum), maximum)
-            }
-        )
-    }
-}
-
-private struct EditableStepperValue: View {
-    @Binding var value: Int
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
-    var label: String
-
-    var body: some View {
-        ZStack {
-            Text("\(value)")
-                .font(AppFont.display)
-                .foregroundStyle(AppColor.primaryText)
-                .lineLimit(1)
-                .contentTransition(.numericText())
-                .frame(width: 64, height: 45)
-
-            TextField("", text: $text)
-                .focused(isFocused)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.center)
-                .font(AppFont.display)
-                .foregroundStyle(.clear)
-                .tint(.clear)
-                .frame(width: 64, height: 45)
-                .contentShape(Rectangle())
-                .accessibilityLabel("\(label) value")
-        }
-        .frame(width: 64, height: 45)
     }
 }
 

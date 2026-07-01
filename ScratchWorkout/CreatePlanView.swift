@@ -25,6 +25,8 @@ struct CreatePlanView: View {
     @State private var configuredSets = 3
     @State private var configuredReps = 12
     @State private var selectedExerciseName = "Incline Bench Press"
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var shouldAutoFocusSearch = false
 
     init(
         initialStage: Stage = .frequency,
@@ -54,18 +56,30 @@ struct CreatePlanView: View {
     var body: some View {
         AppScreen {
             ZStack(alignment: .topLeading) {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        searchFocused = false
+                    }
+
                 baseContent
 
                 if stage == .activatePrompt {
                     activationPrompt
-                        .transition(.scale(scale: 0.9, anchor: .bottom).combined(with: .opacity))
+                        .transition(.scale(scale: 0.94, anchor: .bottom).combined(with: .opacity))
                 }
             }
             .padding(.horizontal, 24)
         }
-        .animation(.spring(response: 0.44, dampingFraction: 0.84), value: stage)
-        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: currentDayIndex)
-        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: completedDays)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification), perform: updateKeyboardHeight)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.18)) {
+                keyboardHeight = 0
+            }
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: stage)
+        .animation(.spring(response: 0.26, dampingFraction: 0.88), value: currentDayIndex)
+        .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completedDays)
     }
 
     @ViewBuilder
@@ -168,9 +182,16 @@ struct CreatePlanView: View {
             }
             .frame(maxWidth: .infinity)
             .clipped()
+            .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded {
+                        searchFocused = false
+                    }
+            )
 
             bottomBuilder
-                .padding(.bottom, 106)
+                .padding(.bottom, bottomBuilderBottomPadding)
         }
     }
 
@@ -184,9 +205,13 @@ struct CreatePlanView: View {
             exercise: selectedExerciseName,
             sets: $configuredSets,
             reps: $configuredReps,
+            autoFocus: shouldAutoFocusSearch,
             onSelect: selectExercise,
             onConfirmSets: confirmSets,
-            onConfirmReps: addConfiguredExercise
+            onConfirmReps: addConfiguredExercise,
+            onAutoFocusConsumed: {
+                shouldAutoFocusSearch = false
+            }
         )
         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
         .frame(maxWidth: .infinity)
@@ -313,6 +338,14 @@ struct CreatePlanView: View {
         }
     }
 
+    private var bottomBuilderBottomPadding: CGFloat {
+        guard keyboardHeight > 0, searchFocused, stage == .search else {
+            return 106
+        }
+
+        return keyboardHeight + 12
+    }
+
     private var filteredExercises: [ExercisePrescription] {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -343,9 +376,10 @@ struct CreatePlanView: View {
         planDays = Array(repeating: [], count: daysPerWeek)
         completedDays = 0
         currentDayIndex = 0
+        shouldAutoFocusSearch = false
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
             stage = .search
         }
     }
@@ -356,15 +390,16 @@ struct CreatePlanView: View {
         configuredSets = exercise.sets
         configuredReps = exercise.reps
         searchFocused = false
+        shouldAutoFocusSearch = false
 
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
             searchQuery = ""
             stage = .configureSets
         }
     }
 
     private func confirmSets() {
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
             stage = .configureReps
         }
     }
@@ -379,8 +414,9 @@ struct CreatePlanView: View {
         )
         planDays[currentDayIndex].append(exercise)
         resetExerciseEntry()
+        shouldAutoFocusSearch = true
 
-        withAnimation(.spring(response: 0.44, dampingFraction: 0.84)) {
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
             stage = .search
         }
     }
@@ -392,9 +428,10 @@ struct CreatePlanView: View {
 
         Haptics.tap(.medium)
         completedDays = max(completedDays, currentDayIndex + 1)
+        shouldAutoFocusSearch = false
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.46, dampingFraction: 0.84)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
             if currentDayIndex >= daysPerWeek - 1 {
                 stage = .finalReview
             } else {
@@ -410,9 +447,10 @@ struct CreatePlanView: View {
         }
 
         Haptics.tap()
+        shouldAutoFocusSearch = false
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
             currentDayIndex = index
             stage = .search
         }
@@ -504,6 +542,17 @@ struct CreatePlanView: View {
         configuredReps = 12
         searchFocused = false
     }
+
+    private func updateKeyboardHeight(_ notification: Notification) {
+        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
+            return
+        }
+
+        let height = max(0, UIScreen.main.bounds.height - keyboardFrame.minY)
+        withAnimation(.easeOut(duration: 0.18)) {
+            keyboardHeight = height
+        }
+    }
 }
 
 private struct EmptyDayState: View {
@@ -529,11 +578,13 @@ private struct EditableExerciseCard: View {
         ZStack(alignment: .trailing) {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.red.opacity(0.22))
+                .opacity(deleteBackgroundOpacity)
                 .overlay(alignment: .trailing) {
                     Image(systemName: "trash")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(AppColor.primaryText)
                         .padding(.trailing, 22)
+                        .opacity(deleteBackgroundOpacity)
                 }
 
             ExerciseCard(exercise: exercise)
@@ -550,7 +601,7 @@ private struct EditableExerciseCard: View {
                         }
                         .onEnded { value in
                             guard value.translation.width < -90 else {
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
                                     horizontalOffset = 0
                                 }
                                 return
@@ -569,6 +620,10 @@ private struct EditableExerciseCard: View {
             onReorderBefore(id)
             return true
         }
+    }
+
+    private var deleteBackgroundOpacity: Double {
+        min(1, max(0, Double(-horizontalOffset / 48)))
     }
 }
 
@@ -590,11 +645,13 @@ private struct EditableDayReviewSection: View {
         ZStack(alignment: .trailing) {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.red.opacity(0.18))
+                .opacity(deleteBackgroundOpacity)
                 .overlay(alignment: .trailing) {
                     Image(systemName: "trash")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(AppColor.primaryText)
                         .padding(.trailing, 22)
+                        .opacity(deleteBackgroundOpacity)
                 }
 
             Button(action: onSelect) {
@@ -614,7 +671,7 @@ private struct EditableDayReviewSection: View {
                     }
                     .onEnded { value in
                         guard value.translation.width < -90 else {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
                                 horizontalOffset = 0
                             }
                             return
@@ -634,6 +691,10 @@ private struct EditableDayReviewSection: View {
             return true
         }
     }
+
+    private var deleteBackgroundOpacity: Double {
+        min(1, max(0, Double(-horizontalOffset / 48)))
+    }
 }
 
 private struct PlanEntrySurface: View {
@@ -650,15 +711,24 @@ private struct PlanEntrySurface: View {
     var exercise: String
     @Binding var sets: Int
     @Binding var reps: Int
+    var autoFocus: Bool
     var onSelect: (ExercisePrescription) -> Void
     var onConfirmSets: () -> Void
     var onConfirmReps: () -> Void
+    var onAutoFocusConsumed: () -> Void
 
     var body: some View {
         content
-        .animation(.spring(response: 0.4, dampingFraction: 0.84), value: mode)
+        .animation(.spring(response: 0.24, dampingFraction: 0.88), value: mode)
         .onChange(of: mode) { _, newMode in
             focusSearchIfNeeded(for: newMode)
+        }
+        .onChange(of: autoFocus) { _, shouldFocus in
+            guard shouldFocus else {
+                return
+            }
+
+            focusSearchIfNeeded(for: mode)
         }
     }
 
@@ -740,11 +810,13 @@ private struct PlanEntrySurface: View {
     }
 
     private func focusSearchIfNeeded(for mode: Mode) {
-        guard case .search(let expanded) = mode, !expanded else {
+        guard autoFocus, case .search(let expanded) = mode, !expanded else {
             return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+        onAutoFocusConsumed()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             focused.wrappedValue = true
         }
     }
@@ -796,7 +868,7 @@ private struct PlanEntrySurface: View {
         .padding(24)
         .frame(width: 360, height: 153, alignment: .topLeading)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
-        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: value.wrappedValue)
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value.wrappedValue)
     }
 }
 
@@ -836,8 +908,8 @@ private struct DayStepProgress: View {
             }
         }
         .frame(width: 360, alignment: .leading)
-        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: completed)
-        .animation(.spring(response: 0.34, dampingFraction: 0.82), value: current)
+        .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
     }
 
     private func fill(for index: Int) -> Color {

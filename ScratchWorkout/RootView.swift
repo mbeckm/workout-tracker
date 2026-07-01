@@ -28,7 +28,8 @@ struct RootView: View {
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(AppColor.base)
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(.container, edges: .bottom)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
     @ViewBuilder

@@ -9,7 +9,6 @@ enum AppColor {
     static let secondaryText = Color(hex: 0x8A8A8A)
     static let tertiaryText = Color(hex: 0x4A4A4A)
     static let accent = Color(hex: 0xA8FF3E)
-    static let statusStrip = Color(hex: 0x737373)
 }
 
 enum AppFont {
@@ -42,4 +41,3 @@ enum Haptics {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
 }
-

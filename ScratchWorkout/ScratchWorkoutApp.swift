@@ -6,7 +6,6 @@ struct ScratchWorkoutApp: App {
         WindowGroup {
             RootView()
                 .preferredColorScheme(.dark)
-                .statusBarHidden(true)
         }
     }
 }

@@ -9,7 +9,7 @@ struct StartWorkoutView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Start Workout")
                     .font(AppFont.display)
-                    .padding(.top, 70)
+                    .padding(.top, 66)
 
                 HStack(alignment: .firstTextBaseline) {
                     SectionTitle(text: day.title)
@@ -68,7 +68,7 @@ struct LogWorkoutView: View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
                 StepProgress(count: progressCount, active: activeProgress, width: progressBarWidth, spacing: progressBarSpacing)
-                    .padding(.top, 70)
+                    .padding(.top, 66)
 
                 SectionTitle(text: exercise.name)
                     .padding(.top, 24)
@@ -200,7 +200,7 @@ struct WorkoutCompleteView: View {
             VStack(spacing: 0) {
                 Text("Well done!")
                     .font(AppFont.display)
-                    .padding(.top, 70)
+                    .padding(.top, 66)
 
                 VStack(spacing: 17) {
                     ZStack {
