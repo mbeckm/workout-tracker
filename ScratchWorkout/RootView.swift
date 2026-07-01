@@ -41,12 +41,61 @@ struct RootView: View {
                     beginWorkout()
                 }
             })
+        case .nextWorkoutPreview:
+            StartWorkoutView(day: store.nextWorkoutDay, onStart: {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    beginWorkout(day: store.nextWorkoutDay)
+                }
+            })
+        case .activePlanDetail:
+            PlanDetailView(
+                plan: store.activePlan,
+                allowsEditing: false,
+                onStartWorkout: { day in
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        beginWorkout(day: day)
+                    }
+                },
+                onSave: { plan in
+                    store.updatePlan(plan)
+                }
+            )
+        case .planDetail(let planID):
+            if let plan = store.plan(for: planID) {
+                PlanDetailView(
+                    plan: plan,
+                    allowsEditing: true,
+                    onStartWorkout: { day in
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                            beginWorkout(day: day)
+                        }
+                    },
+                    onSave: { plan in
+                        store.updatePlan(plan)
+                    }
+                )
+            } else {
+                PlansView(
+                    activePlan: store.activePlan,
+                    savedPlans: store.savedPlans,
+                    onNewPlan: {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            route = .createPlan
+                        }
+                    },
+                    onOpenPlan: { plan in
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            route = .planDetail(plan.id)
+                        }
+                    }
+                )
+            }
         case .logWorkout:
             let day = workoutSessionDay ?? store.nextWorkoutDay
             if day.exercises.isEmpty {
                 StartWorkoutView(day: day, onStart: {
                     withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
-                        beginWorkout()
+                        beginWorkout(day: day)
                     }
                 })
             } else {
@@ -82,11 +131,21 @@ struct RootView: View {
         case nil:
             switch selectedTab {
             case .home:
-                HomeView(activePlan: store.activePlan, nextWorkout: store.nextWorkoutDay, workoutsThisMonth: store.workoutsThisMonth, onOpenWorkout: {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                        route = .startWorkout
+                HomeView(
+                    activePlan: store.activePlan,
+                    nextWorkout: store.nextWorkoutDay,
+                    workoutsThisMonth: store.workoutsThisMonth,
+                    onOpenActivePlan: {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            route = .activePlanDetail
+                        }
+                    },
+                    onOpenNextWorkout: {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            route = .nextWorkoutPreview
+                        }
                     }
-                })
+                )
             case .plans:
                 PlansView(
                     activePlan: store.activePlan,
@@ -96,9 +155,9 @@ struct RootView: View {
                             route = .createPlan
                         }
                     },
-                    onSelectPlan: { plan in
+                    onOpenPlan: { plan in
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                            store.activatePlan(plan)
+                            route = .planDetail(plan.id)
                         }
                     }
                 )
@@ -112,8 +171,8 @@ struct RootView: View {
         }
     }
 
-    private func beginWorkout() {
-        let day = store.nextWorkoutDay
+    private func beginWorkout(day selectedDay: WorkoutDay? = nil) {
+        let day = selectedDay ?? store.nextWorkoutDay
         workoutSessionDay = day
         activeExerciseIndex = 0
         loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
@@ -194,7 +253,8 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     nextWorkout: SampleData.activePlan.days[0],
                     workoutsThisMonth: 14,
-                    onOpenWorkout: {}
+                    onOpenActivePlan: {},
+                    onOpenNextWorkout: {}
                 )
             }
             .previewDisplayName("Overview")
@@ -204,7 +264,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     savedPlans: PreviewFixtures.savedPlans,
                     onNewPlan: {},
-                    onSelectPlan: { _ in }
+                    onOpenPlan: { _ in }
                 )
             }
             .previewDisplayName("Plans")

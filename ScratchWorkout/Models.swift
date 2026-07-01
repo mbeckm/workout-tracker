@@ -30,6 +30,9 @@ enum AppRoute: Equatable {
     case logWorkout
     case workoutComplete
     case createPlan
+    case activePlanDetail
+    case planDetail(UUID)
+    case nextWorkoutPreview
 }
 
 struct WorkoutPlan: Identifiable, Equatable, Codable {
@@ -128,12 +131,13 @@ enum SampleData {
 
     static let activePlan = WorkoutPlan(
         name: "PPL",
-        daysPerWeek: 3,
+        daysPerWeek: 4,
         createdAt: "12.02.26",
         days: [
-            WorkoutDay(title: "Push", exercises: pushExercises),
-            WorkoutDay(title: "Pull", exercises: pullExercises),
-            WorkoutDay(title: "Legs", exercises: legExercises)
+            WorkoutDay(title: "Day 1", exercises: pushExercises),
+            WorkoutDay(title: "Day 2", exercises: pullExercises),
+            WorkoutDay(title: "Day 3", exercises: legExercises),
+            WorkoutDay(title: "Day 4", exercises: Array(pushExercises.prefix(4)) + Array(pullExercises.prefix(4)))
         ]
     )
 }

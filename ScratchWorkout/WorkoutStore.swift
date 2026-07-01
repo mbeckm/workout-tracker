@@ -14,6 +14,14 @@ struct WorkoutStore {
         return activePlan.days[normalizedNextDayIndex]
     }
 
+    func plan(for id: UUID) -> WorkoutPlan? {
+        if activePlan.id == id {
+            return activePlan
+        }
+
+        return savedPlans.first { $0.id == id }
+    }
+
     var recentWorkout: LoggedWorkout? {
         workoutHistory.first
     }
@@ -47,12 +55,30 @@ struct WorkoutStore {
     }
 
     mutating func savePlan(_ plan: WorkoutPlan, activate: Bool) {
-        savedPlans.removeAll { $0.id == plan.id }
-        savedPlans.insert(plan, at: 0)
+        let normalizedPlan = Self.normalizedPlan(plan)
+        savedPlans.removeAll { $0.id == normalizedPlan.id }
+        savedPlans.insert(normalizedPlan, at: 0)
 
         if activate {
-            activePlan = plan
+            activePlan = normalizedPlan
             nextDayIndex = 0
+        }
+
+        persist()
+    }
+
+    mutating func updatePlan(_ plan: WorkoutPlan) {
+        let normalizedPlan = Self.normalizedPlan(plan)
+
+        if activePlan.id == normalizedPlan.id {
+            activePlan = normalizedPlan
+            nextDayIndex = min(nextDayIndex, max(normalizedPlan.days.count - 1, 0))
+        }
+
+        if let index = savedPlans.firstIndex(where: { $0.id == normalizedPlan.id }) {
+            savedPlans[index] = normalizedPlan
+        } else {
+            savedPlans.insert(normalizedPlan, at: 0)
         }
 
         persist()
@@ -141,7 +167,7 @@ struct WorkoutStore {
     }
 
     private static func normalizedPlan(_ plan: WorkoutPlan) -> WorkoutPlan {
-        if plan.name == SampleData.activePlan.name {
+        if plan.name == SampleData.activePlan.name && plan.days.count < SampleData.activePlan.days.count {
             var normalizedPlan = plan
             normalizedPlan.daysPerWeek = SampleData.activePlan.daysPerWeek
             normalizedPlan.createdAt = SampleData.activePlan.createdAt

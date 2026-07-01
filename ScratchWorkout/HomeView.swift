@@ -4,7 +4,8 @@ struct HomeView: View {
     var activePlan: WorkoutPlan
     var nextWorkout: WorkoutDay
     var workoutsThisMonth: Int
-    var onOpenWorkout: () -> Void
+    var onOpenActivePlan: () -> Void
+    var onOpenNextWorkout: () -> Void
 
     private let heatmap = [
         [true, false, true, false, true, true, false],
@@ -29,7 +30,13 @@ struct HomeView: View {
                 SectionTitle(text: "Active Plan")
                     .padding(.top, 36)
 
-                PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
+                Button {
+                    Haptics.tap(.medium)
+                    onOpenActivePlan()
+                } label: {
+                    PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
+                }
+                .buttonStyle(.plain)
                     .padding(.top, 12)
 
                 SectionTitle(text: "Next in plan")
@@ -37,7 +44,7 @@ struct HomeView: View {
 
                 Button {
                     Haptics.tap(.medium)
-                    onOpenWorkout()
+                    onOpenNextWorkout()
                 } label: {
                     PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: "Mon., 11.08.", height: 80)
                 }

@@ -4,7 +4,7 @@ struct PlansView: View {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     var onNewPlan: () -> Void
-    var onSelectPlan: (WorkoutPlan) -> Void
+    var onOpenPlan: (WorkoutPlan) -> Void
 
     var body: some View {
         AppScreen {
@@ -36,7 +36,13 @@ struct PlansView: View {
                 SectionTitle(text: "Active Plan")
                     .padding(.top, 24)
 
-                PlanCard(title: activePlan.name, lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"], date: nil)
+                Button {
+                    Haptics.tap(.medium)
+                    onOpenPlan(activePlan)
+                } label: {
+                    PlanCard(title: activePlan.name, lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"], date: nil)
+                }
+                .buttonStyle(.plain)
                     .padding(.top, 12)
 
                 SectionTitle(text: "Saved Plans")
@@ -46,12 +52,12 @@ struct PlansView: View {
                     ForEach(displaySavedPlans.prefix(3)) { plan in
                         Button {
                             Haptics.tap(.medium)
-                            onSelectPlan(plan)
+                            onOpenPlan(plan)
                         } label: {
                             PlanCard(title: plan.name, lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"], date: nil)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Activate \(plan.name)")
+                        .accessibilityLabel("Open \(plan.name)")
                     }
                 }
                 .padding(.top, 12)

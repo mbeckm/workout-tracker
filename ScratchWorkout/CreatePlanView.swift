@@ -192,6 +192,7 @@ struct CreatePlanView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.top, currentDayExercises.isEmpty ? 24 : 12)
                 .padding(.bottom, 24)
             }
@@ -264,6 +265,7 @@ struct CreatePlanView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
@@ -298,19 +300,17 @@ struct CreatePlanView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack {
+            HStack(spacing: 12) {
                 Button {
                     finish(activate: false)
                 } label: {
                     Text("Save to plans")
-                        .font(AppFont.caption)
+                        .font(AppFont.label)
                         .foregroundStyle(AppColor.primaryText)
-                        .frame(width: 113, height: 45)
+                        .frame(width: 147, height: 56)
                         .background(AppColor.border, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
-
-                Spacer()
 
                 Button {
                     finish(activate: true)
@@ -318,21 +318,21 @@ struct CreatePlanView: View {
                     Text("Save & activate")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.base)
-                        .frame(width: 127, height: 45)
+                        .frame(width: 147, height: 56)
                         .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(24)
-        .frame(width: 350)
+        .frame(width: 354)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         )
         .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
-        .offset(x: 2, y: 589)
+        .offset(x: 0, y: 589)
         .zIndex(4)
     }
 
@@ -594,7 +594,7 @@ struct CreatePlanView: View {
     }
 }
 
-private enum ExerciseDraftStep: Equatable {
+enum ExerciseDraftStep: Equatable {
     case sets
     case reps
 
@@ -608,7 +608,7 @@ private enum ExerciseDraftStep: Equatable {
     }
 }
 
-private struct ExerciseDraft: Identifiable, Equatable {
+struct ExerciseDraft: Identifiable, Equatable {
     var id = UUID()
     var editingID: UUID?
     var name: String
@@ -660,7 +660,7 @@ private struct EmptyDayState: View {
     }
 }
 
-private struct ExerciseDraftSurface: View {
+struct ExerciseDraftSurface: View {
     @Binding var draft: ExerciseDraft
     @Binding var step: ExerciseDraftStep
     var onAdvance: () -> Void
@@ -770,7 +770,7 @@ private struct DraftRoundButton: View {
     }
 }
 
-private struct EditableExerciseCard: View {
+struct EditableExerciseCard: View {
     var exercise: ExercisePrescription
     var onEdit: () -> Void
     var onDelete: () -> Void
@@ -843,7 +843,7 @@ private struct EditableExerciseCard: View {
     }
 }
 
-private struct PlanEntrySurface: View {
+struct PlanEntrySurface: View {
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
@@ -933,7 +933,7 @@ private struct PlanEntrySurface: View {
     }
 }
 
-private struct DayStepProgress: View {
+struct DayStepProgress: View {
     var count: Int
     var completed: Int
     var current: Int
@@ -943,32 +943,35 @@ private struct DayStepProgress: View {
         count <= 3 ? 45 : 12
     }
 
-    private var barWidth: CGFloat {
+    private func barWidth(for availableWidth: CGFloat) -> CGFloat {
         let safeCount = CGFloat(max(count, 1))
-        let availableWidth = 360 - (barSpacing * CGFloat(max(count - 1, 0)))
-        return floor(availableWidth / safeCount)
+        let usableWidth = availableWidth - (barSpacing * CGFloat(max(count - 1, 0)))
+        return floor(max(0, usableWidth) / safeCount)
     }
 
     var body: some View {
-        HStack(spacing: barSpacing) {
-            ForEach(0..<max(count, 1), id: \.self) { index in
-                Button {
-                    onSelect?(index)
-                } label: {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(fill(for: index))
-                        .frame(width: barWidth, height: 24)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
-                        )
+        GeometryReader { proxy in
+            HStack(spacing: barSpacing) {
+                ForEach(0..<max(count, 1), id: \.self) { index in
+                    Button {
+                        onSelect?(index)
+                    } label: {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(fill(for: index))
+                            .frame(width: barWidth(for: proxy.size.width), height: 24)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(onSelect == nil)
+                    .accessibilityLabel("Day \(index + 1)")
                 }
-                .buttonStyle(.plain)
-                .disabled(onSelect == nil)
-                .accessibilityLabel("Day \(index + 1)")
             }
+            .frame(width: proxy.size.width, alignment: .leading)
         }
-        .frame(width: 360, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
     }
@@ -984,7 +987,7 @@ private struct DayStepProgress: View {
     }
 }
 
-private extension String {
+extension String {
     var planDisplayName: String {
         guard let parenthesis = firstIndex(of: "(") else {
             return self

@@ -78,7 +78,7 @@ struct LogWorkoutView: View {
 
                 Spacer(minLength: 0)
 
-                VStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .center, spacing: 24) {
                     NumberStepper(label: "Weight", value: $weight, minimum: 0, maximum: 300)
                     NumberStepper(label: "Reps", value: $reps, minimum: 0, maximum: 50)
                 }
@@ -149,7 +149,7 @@ private struct SetTable: View {
     var sets: [LoggedSet]
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
+        Grid(alignment: .leading, horizontalSpacing: 34, verticalSpacing: 12) {
             GridRow {
                 header("Set")
                 header("kg")
@@ -159,16 +159,13 @@ private struct SetTable: View {
             ForEach(sets) { set in
                 GridRow {
                     cell("\(set.index)", isEmpty: set.weight == nil)
-                    cell(set.weight.map(String.init) ?? "0", isEmpty: set.weight == nil)
-                    cell(set.reps.map(String.init) ?? "0", isEmpty: set.reps == nil)
+                    cell(set.weight.map(String.init) ?? "-", isEmpty: set.weight == nil)
+                    cell(set.reps.map(String.init) ?? "-", isEmpty: set.reps == nil)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 25.3)
-        .padding(.trailing, 25.3)
-        .padding(.top, 12.6)
-        .padding(.bottom, 33.4)
+        .padding(16)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -178,14 +175,14 @@ private struct SetTable: View {
 
     private func header(_ text: String) -> some View {
         Text(text)
-            .font(AppFont.label)
+            .font(AppFont.body)
             .foregroundStyle(AppColor.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func cell(_ text: String, isEmpty: Bool) -> some View {
         Text(text)
-            .font(AppFont.label)
+            .font(AppFont.body)
             .foregroundStyle(isEmpty ? AppColor.tertiaryText : AppColor.primaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

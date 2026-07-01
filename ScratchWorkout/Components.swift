@@ -32,11 +32,11 @@ struct AppTabBar: View {
 
     private var activeTab: AppTab {
         switch route {
-        case .createPlan:
+        case .createPlan, .planDetail:
             .plans
         case .logWorkout, .workoutComplete:
             .workout
-        case .startWorkout:
+        case .startWorkout, .activePlanDetail, .nextWorkoutPreview:
             .home
         case nil:
             selectedTab
@@ -412,17 +412,19 @@ struct NumberStepper: View {
                     .font(AppFont.display)
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .contentTransition(.numericText())
-                    .frame(width: 64, height: 45)
+                    .frame(width: 42, height: 45)
                     .accessibilityLabel("\(label) value")
 
                 RepeatingRoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
                 }
             }
-            .frame(width: 178, alignment: .center)
+            .frame(width: 164, alignment: .center)
             .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value)
         }
+        .frame(width: 164, alignment: .leading)
         .accessibilityElement(children: .contain)
     }
 }
