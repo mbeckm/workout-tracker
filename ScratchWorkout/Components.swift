@@ -403,19 +403,22 @@ struct NumberStepper: View {
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.secondaryText)
 
-            HStack(spacing: 16) {
+            HStack(spacing: 0) {
                 RepeatingRoundStepButton(symbol: "minus", accessibilityLabel: "Decrease \(label)") {
                     value = max(minimum, value - 1)
                 }
+
+                Spacer(minLength: 0)
 
                 Text("\(value)")
                     .font(AppFont.display)
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
                     .contentTransition(.numericText())
-                    .frame(width: 42, height: 45)
+                    .frame(width: 48, height: 45)
                     .accessibilityLabel("\(label) value")
+
+                Spacer(minLength: 0)
 
                 RepeatingRoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
