@@ -1105,10 +1105,6 @@ struct DayStepProgress: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(fill(for: index))
                 .frame(width: width, height: 24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
-                )
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Day \(index + 1)")
@@ -1158,7 +1154,7 @@ struct DayStepProgress: View {
         if index < completed {
             return AppColor.accent
         } else if index == current {
-            return AppColor.border.opacity(0.88)
+            return AppColor.accent
         } else {
             return AppColor.border
         }
