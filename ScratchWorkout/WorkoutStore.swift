@@ -167,7 +167,7 @@ struct WorkoutStore {
     }
 
     private static func normalizedPlan(_ plan: WorkoutPlan) -> WorkoutPlan {
-        if plan.name == SampleData.activePlan.name && plan.days.count < SampleData.activePlan.days.count {
+        if plan.name == SampleData.activePlan.name && isLegacySeededPPL(plan) {
             var normalizedPlan = plan
             normalizedPlan.daysPerWeek = SampleData.activePlan.daysPerWeek
             normalizedPlan.createdAt = SampleData.activePlan.createdAt
@@ -182,6 +182,18 @@ struct WorkoutStore {
         var normalizedPlan = plan
         normalizedPlan.days = templateDays(for: plan.name)
         return normalizedPlan
+    }
+
+    private static func isLegacySeededPPL(_ plan: WorkoutPlan) -> Bool {
+        if plan.days.count < SampleData.activePlan.days.count {
+            return true
+        }
+
+        guard let firstExercise = plan.days.first?.exercises.first else {
+            return false
+        }
+
+        return firstExercise.name == "Flat Barbell Bench Press"
     }
 
     private static func templateDays(for planName: String) -> [WorkoutDay] {

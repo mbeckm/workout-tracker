@@ -98,13 +98,24 @@ enum SampleData {
 
     static let pushExercises = [
         ExercisePrescription(name: "Flat Barbell Bench Press", sets: 4, reps: 8),
-        ExercisePrescription(name: "Incline Dumbbell Press", sets: 3, reps: 12),
+        ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 8),
         ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
         ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
         ExercisePrescription(name: "Dips", sets: 3, reps: 10),
         ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15),
         ExercisePrescription(name: "Skull Crushers", sets: 3, reps: 12)
+    ]
+
+    static let dayOneExercises = [
+        ExercisePrescription(name: "Barbell Row", sets: 4, reps: 10),
+        ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 8),
+        ExercisePrescription(name: "Pull-Ups", sets: 4, reps: 8),
+        ExercisePrescription(name: "Seated Cable Row", sets: 3, reps: 12),
+        ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
+        ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
+        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
+        ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15)
     ]
 
     static let legExercises = [
@@ -134,7 +145,7 @@ enum SampleData {
         daysPerWeek: 4,
         createdAt: "12.02.26",
         days: [
-            WorkoutDay(title: "Day 1", exercises: pushExercises),
+            WorkoutDay(title: "Day 1", exercises: dayOneExercises),
             WorkoutDay(title: "Day 2", exercises: pullExercises),
             WorkoutDay(title: "Day 3", exercises: legExercises),
             WorkoutDay(title: "Day 4", exercises: Array(pushExercises.prefix(4)) + Array(pullExercises.prefix(4)))
