@@ -21,6 +21,7 @@ struct RootView: View {
             }
         }
         .background(AppColor.base)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .ignoresSafeArea()
     }
 

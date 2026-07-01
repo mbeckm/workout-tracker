@@ -42,6 +42,7 @@ struct AppScreen<Content: View>: View {
 
             content
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .foregroundStyle(AppColor.primaryText)
     }
 }
@@ -66,10 +67,6 @@ struct AppTabBar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle()
-                .fill(AppColor.border)
-                .frame(height: 1)
-
             HStack(alignment: .top, spacing: 0) {
                 ForEach(AppTab.allCases) { tab in
                     Button {
@@ -102,9 +99,16 @@ struct AppTabBar: View {
             .padding(.top, 12)
             .frame(width: 310, alignment: .topLeading)
         }
-        .frame(height: 82)
+        .frame(maxWidth: .infinity, minHeight: 82, maxHeight: 82, alignment: .top)
         .background(AppColor.surface1)
-        .ignoresSafeArea(edges: .bottom)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(AppColor.border)
+                .frame(height: 1)
+        }
+        .transaction { transaction in
+            transaction.animation = nil
+        }
     }
 }
 
@@ -428,23 +432,19 @@ struct NumberStepper: View {
                     value = max(minimum, value - 1)
                 }
 
-                TextField("", text: numericText)
-                    .focused($isFocused)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .font(AppFont.display)
-                    .foregroundStyle(AppColor.primaryText)
-                    .tint(AppColor.accent)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .contentTransition(.numericText())
-                    .frame(width: 44)
-                    .accessibilityLabel("\(label) value")
+                EditableStepperValue(
+                    value: $value,
+                    text: numericText,
+                    isFocused: $isFocused,
+                    label: label
+                )
 
                 RepeatingRoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
                 }
             }
+            .frame(width: 178, alignment: .center)
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: value)
         }
         .accessibilityElement(children: .contain)
     }
@@ -462,6 +462,36 @@ struct NumberStepper: View {
                 value = min(max(parsed, minimum), maximum)
             }
         )
+    }
+}
+
+private struct EditableStepperValue: View {
+    @Binding var value: Int
+    @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding
+    var label: String
+
+    var body: some View {
+        ZStack {
+            Text("\(value)")
+                .font(AppFont.display)
+                .foregroundStyle(AppColor.primaryText)
+                .lineLimit(1)
+                .contentTransition(.numericText())
+                .frame(width: 64, height: 45)
+
+            TextField("", text: $text)
+                .focused(isFocused)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.center)
+                .font(AppFont.display)
+                .foregroundStyle(.clear)
+                .tint(.clear)
+                .frame(width: 64, height: 45)
+                .contentShape(Rectangle())
+                .accessibilityLabel("\(label) value")
+        }
+        .frame(width: 64, height: 45)
     }
 }
 
