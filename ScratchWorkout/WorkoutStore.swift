@@ -8,7 +8,11 @@ struct WorkoutStore {
 
     var nextWorkoutDay: WorkoutDay {
         guard !activePlan.days.isEmpty else {
-            return SampleData.activePlan.days[0]
+            return SampleData.nextWorkoutDay
+        }
+
+        if isSeededPPL(activePlan), normalizedNextDayIndex == 0 {
+            return SampleData.nextWorkoutDay
         }
 
         return activePlan.days[normalizedNextDayIndex]
@@ -196,6 +200,12 @@ struct WorkoutStore {
         }
 
         return firstExercise.name == "Flat Barbell Bench Press"
+    }
+
+    private func isSeededPPL(_ plan: WorkoutPlan) -> Bool {
+        plan.name == SampleData.activePlan.name &&
+        plan.createdAt == SampleData.activePlan.createdAt &&
+        plan.daysPerWeek == SampleData.activePlan.daysPerWeek
     }
 
     private static func normalizedDays(_ days: [WorkoutDay], for planName: String, count: Int) -> [WorkoutDay] {
