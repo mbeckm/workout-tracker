@@ -202,7 +202,7 @@ struct WorkoutCompleteView: View {
                     .font(AppFont.display)
                     .padding(.top, 70)
 
-                VStack(spacing: 17) {
+                VStack(spacing: 16) {
                     ZStack {
                         Circle()
                             .fill(AppColor.accent)
@@ -261,6 +261,7 @@ private struct SummaryCard: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(AppFont.display)
+                .tracking(-0.64)
             Text(label)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.secondaryText)
