@@ -66,7 +66,7 @@ struct PlansView: View {
 
                 HStack {
                     Spacer()
-                    CTAButton(title: "New Plan", width: 294, action: onNewPlan)
+                    CTAButton(title: "New Plan", width: 312, action: onNewPlan)
                     Spacer()
                 }
                 .padding(.bottom, 106)
