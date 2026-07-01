@@ -134,6 +134,7 @@ struct RootView: View {
                 HomeView(
                     activePlan: store.activePlan,
                     nextWorkout: store.nextWorkoutDay,
+                    recentWorkout: store.recentWorkout,
                     workoutsThisMonth: store.workoutsThisMonth,
                     onOpenActivePlan: {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
@@ -250,6 +251,14 @@ private enum PreviewFixtures {
         setCount: 32
     )
 
+    static let recentWorkout = LoggedWorkout(
+        title: "Pull",
+        completedAt: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+        durationMinutes: 82,
+        exerciseCount: 8,
+        setCount: 32
+    )
+
     static let logExercise = ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 12)
 }
 
@@ -260,12 +269,25 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                 HomeView(
                     activePlan: SampleData.activePlan,
                     nextWorkout: SampleData.activePlan.days[0],
+                    recentWorkout: nil,
                     workoutsThisMonth: 14,
                     onOpenActivePlan: {},
                     onOpenNextWorkout: {}
                 )
             }
             .previewDisplayName("Overview")
+
+            ScreenPreviewShell(tab: .home) {
+                HomeView(
+                    activePlan: SampleData.activePlan,
+                    nextWorkout: WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+                    recentWorkout: PreviewFixtures.recentWorkout,
+                    workoutsThisMonth: 14,
+                    onOpenActivePlan: {},
+                    onOpenNextWorkout: {}
+                )
+            }
+            .previewDisplayName("Overview - Recent")
 
             ScreenPreviewShell(tab: .plans) {
                 PlansView(
