@@ -283,7 +283,7 @@ struct CreatePlanView: View {
             HStack {
                 Spacer()
                 if stage == .finalReview {
-                    CTAButton(title: "Save Plan", width: 312) {
+                    CTAButton(title: "Save Plan", width: 294) {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                             stage = .activatePrompt
                         }
@@ -291,7 +291,7 @@ struct CreatePlanView: View {
                     .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
                 } else {
                     Color.clear
-                        .frame(width: 312, height: 56)
+                        .frame(width: 294, height: 56)
                 }
                 Spacer()
             }
