@@ -152,7 +152,7 @@ struct WorkoutStore {
 
     private static var defaultSavedPlans: [WorkoutPlan] {
         [
-            WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: SampleData.activePlan.days),
+            WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: templateDays(for: "Batman", count: 3)),
             WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: [
                 WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
                 WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
@@ -175,12 +175,14 @@ struct WorkoutStore {
             return normalizedPlan
         }
 
-        guard plan.days.isEmpty else {
-            return plan
+        guard !plan.days.isEmpty else {
+            var normalizedPlan = plan
+            normalizedPlan.days = templateDays(for: plan.name, count: plan.daysPerWeek)
+            return normalizedPlan
         }
 
         var normalizedPlan = plan
-        normalizedPlan.days = templateDays(for: plan.name)
+        normalizedPlan.days = normalizedDays(plan.days, for: plan.name, count: plan.daysPerWeek)
         return normalizedPlan
     }
 
@@ -196,8 +198,21 @@ struct WorkoutStore {
         return firstExercise.name == "Flat Barbell Bench Press"
     }
 
-    private static func templateDays(for planName: String) -> [WorkoutDay] {
-        switch planName {
+    private static func normalizedDays(_ days: [WorkoutDay], for planName: String, count: Int) -> [WorkoutDay] {
+        guard count > 0, days.count != count else {
+            return days
+        }
+
+        if days.count > count {
+            return Array(days.prefix(count))
+        }
+
+        let template = templateDays(for: planName, count: count)
+        return days + Array(template.dropFirst(days.count).prefix(count - days.count))
+    }
+
+    private static func templateDays(for planName: String, count: Int) -> [WorkoutDay] {
+        let days: [WorkoutDay] = switch planName {
         case "Superman":
             [
                 WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
@@ -213,6 +228,19 @@ struct WorkoutStore {
         default:
             SampleData.activePlan.days
         }
+
+        guard count > 0 else {
+            return days
+        }
+
+        if days.count >= count {
+            return Array(days.prefix(count))
+        }
+
+        let extraDays = (days.count..<count).map { index in
+            WorkoutDay(title: "Day \(index + 1)", exercises: SampleData.pushExercises)
+        }
+        return days + extraDays
     }
 }
 

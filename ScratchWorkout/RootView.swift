@@ -229,9 +229,17 @@ private struct ScreenPreviewShell<Content: View>: View {
 
 private enum PreviewFixtures {
     static let savedPlans = [
-        WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: SampleData.activePlan.days),
-        WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: SampleData.activePlan.days),
-        WorkoutPlan(name: "Leg Focus", daysPerWeek: 3, createdAt: "12.02.26", days: SampleData.activePlan.days)
+        WorkoutPlan(name: "Batman", daysPerWeek: 3, createdAt: "12.02.26", days: Array(SampleData.activePlan.days.prefix(3))),
+        WorkoutPlan(name: "Superman", daysPerWeek: 3, createdAt: "12.02.26", days: [
+            WorkoutDay(title: "Pull", exercises: SampleData.pullExercises),
+            WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+            WorkoutDay(title: "Legs", exercises: SampleData.legExercises)
+        ]),
+        WorkoutPlan(name: "Leg Focus", daysPerWeek: 3, createdAt: "12.02.26", days: [
+            WorkoutDay(title: "Legs", exercises: SampleData.legExercises),
+            WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
+            WorkoutDay(title: "Legs 2", exercises: SampleData.legExercises)
+        ])
     ]
 
     static let loggedWorkout = LoggedWorkout(
