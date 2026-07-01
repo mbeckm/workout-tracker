@@ -1011,7 +1011,11 @@ struct DayStepProgress: View {
 
     private func fill(for index: Int) -> Color {
         if selectedOnly {
-            return index == current ? AppColor.accent : AppColor.border
+            if index == current {
+                return AppColor.accent
+            }
+
+            return index == current + 1 ? AppColor.surface2 : AppColor.border
         }
 
         if index < completed {
