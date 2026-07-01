@@ -665,6 +665,9 @@ private struct PlanEntrySurface: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.84), value: mode)
+        .onChange(of: mode) { _, newMode in
+            focusSearchIfNeeded(for: newMode)
+        }
     }
 
     @ViewBuilder
@@ -740,11 +743,17 @@ private struct PlanEntrySurface: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
         .onAppear {
-            DispatchQueue.main.async {
-                if case .search = mode {
-                    focused.wrappedValue = true
-                }
-            }
+            focusSearchIfNeeded(for: mode)
+        }
+    }
+
+    private func focusSearchIfNeeded(for mode: Mode) {
+        guard case .search(let expanded) = mode, !expanded else {
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+            focused.wrappedValue = true
         }
     }
 
