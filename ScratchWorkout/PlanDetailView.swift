@@ -67,6 +67,14 @@ struct PlanDetailView: View {
                             } else if !isEditing {
                                 ExerciseCard(exercise: exercise)
                                     .frame(maxWidth: .infinity)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        guard allowsEditing else {
+                                            return
+                                        }
+
+                                        editExercise(exercise)
+                                    }
                             } else {
                                 EditableExerciseCard(
                                     exercise: exercise,
@@ -99,18 +107,21 @@ struct PlanDetailView: View {
                         }
                 )
 
-                HStack {
-                    Spacer()
-                    CTAButton(title: isEditing ? "Save" : "Start this Workout", width: 312) {
-                        if isEditing {
-                            savePlanEdits()
-                        } else if let day = currentDay {
-                            onStartWorkout(day)
+                if exerciseDraft == nil {
+                    HStack {
+                        Spacer()
+                        CTAButton(title: isEditing ? "Save" : "Start this Workout", width: 312) {
+                            if isEditing {
+                                savePlanEdits()
+                            } else if let day = currentDay {
+                                onStartWorkout(day)
+                            }
                         }
+                        Spacer()
                     }
-                    Spacer()
+                    .padding(.bottom, 106)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
-                .padding(.bottom, 106)
             }
             .padding(.horizontal, 24)
         }
@@ -290,6 +301,8 @@ struct PlanDetailView: View {
         Haptics.tap(.medium)
 
         withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
+            isEditing = true
+            isAddingExercise = false
             exerciseDraft = ExerciseDraft(
                 editingID: exercise.id,
                 name: exercise.name,

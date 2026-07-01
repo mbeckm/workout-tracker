@@ -211,7 +211,7 @@ struct CreatePlanView: View {
                     }
             )
 
-            if !currentDayExercises.isEmpty {
+            if !currentDayExercises.isEmpty && exerciseDraft == nil {
                 HStack {
                     Spacer()
                     CTAButton(title: "Save Day", width: 312) {
@@ -282,7 +282,7 @@ struct CreatePlanView: View {
 
             HStack {
                 Spacer()
-                if stage == .finalReview {
+                if stage == .finalReview && exerciseDraft == nil {
                     CTAButton(title: "Save Plan", width: 294) {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                             stage = .activatePrompt
@@ -731,9 +731,9 @@ struct ExerciseDraftSurface: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, minHeight: 157, maxHeight: 157, alignment: .topLeading)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         )
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: step)
