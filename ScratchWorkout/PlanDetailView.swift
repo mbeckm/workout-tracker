@@ -36,8 +36,14 @@ struct PlanDetailView: View {
                 header
                     .padding(.top, 66)
 
-                DayStepProgress(count: max(draftPlan.days.count, 1), completed: currentDayIndex + 1, current: currentDayIndex, onSelect: switchToDay)
-                    .padding(.top, 24)
+                DayStepProgress(
+                    count: max(draftPlan.days.count, 1),
+                    completed: 0,
+                    current: currentDayIndex,
+                    selectedOnly: true,
+                    onSelect: switchToDay
+                )
+                .padding(.top, 24)
 
                 dayTitle
                     .padding(.top, 24)
@@ -49,28 +55,33 @@ struct PlanDetailView: View {
                         }
 
                         ForEach(currentDayExercises) { exercise in
-                        if let draft = exerciseDraft, draft.editingID == exercise.id {
-                            ExerciseDraftSurface(
-                                draft: draftBinding(fallback: draft),
-                                step: $exerciseDraftStep,
-                                onAdvance: advanceOrSaveExerciseDraft
-                            )
-                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                        } else if !isEditing {
-                            ExerciseCard(exercise: exercise)
-                        } else {
-                            EditableExerciseCard(
-                                exercise: exercise,
-                                onEdit: {
-                                    editExercise(exercise)
-                                },
-                                onDelete: {
-                                    deleteExercise(exercise.id)
-                                },
-                                onReorderBefore: { draggedID in
-                                    reorderExercise(draggedID, before: exercise.id)
-                                }
-                            )
+                            if let draft = exerciseDraft, draft.editingID == exercise.id {
+                                ExerciseDraftSurface(
+                                    draft: draftBinding(fallback: draft),
+                                    step: $exerciseDraftStep,
+                                    onAdvance: advanceOrSaveExerciseDraft
+                                )
+                                .matchedGeometryEffect(id: exercise.id, in: entryNamespace)
+                                .frame(maxWidth: .infinity)
+                                .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                            } else if !isEditing {
+                                ExerciseCard(exercise: exercise)
+                                    .frame(maxWidth: .infinity)
+                            } else {
+                                EditableExerciseCard(
+                                    exercise: exercise,
+                                    onEdit: {
+                                        editExercise(exercise)
+                                    },
+                                    onDelete: {
+                                        deleteExercise(exercise.id)
+                                    },
+                                    onReorderBefore: { draggedID in
+                                        reorderExercise(draggedID, before: exercise.id)
+                                    }
+                                )
+                                .matchedGeometryEffect(id: exercise.id, in: entryNamespace)
+                                .frame(maxWidth: .infinity)
                             }
                         }
                     }
@@ -167,6 +178,7 @@ struct PlanDetailView: View {
                 onAdvance: advanceOrSaveExerciseDraft
             )
             .matchedGeometryEffect(id: "plan-detail-entry-surface", in: entryNamespace)
+            .frame(maxWidth: .infinity)
             .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
         } else if shouldShowSearchSurface {
             PlanEntrySurface(

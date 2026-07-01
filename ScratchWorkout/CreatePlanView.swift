@@ -152,6 +152,7 @@ struct CreatePlanView: View {
                             onAdvance: advanceOrSaveExerciseDraft
                         )
                         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                        .frame(maxWidth: .infinity)
                         .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
                     } else if shouldShowSearchSurface {
                         PlanEntrySurface(
@@ -175,6 +176,8 @@ struct CreatePlanView: View {
                                 step: $exerciseDraftStep,
                                 onAdvance: advanceOrSaveExerciseDraft
                             )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
                             .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
                         } else {
                             EditableExerciseCard(
@@ -189,6 +192,8 @@ struct CreatePlanView: View {
                                     reorderExercise(draggedID, before: exercise.id)
                                 }
                             )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -247,6 +252,8 @@ struct CreatePlanView: View {
                                     step: $exerciseDraftStep,
                                     onAdvance: advanceOrSaveExerciseDraft
                                 )
+                                .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                                .frame(maxWidth: .infinity)
                                 .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
                             } else {
                                 EditableExerciseCard(
@@ -261,6 +268,8 @@ struct CreatePlanView: View {
                                         reorderExercise(draggedID, before: exercise.id)
                                     }
                                 )
+                                .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                                .frame(maxWidth: .infinity)
                             }
                         }
                     }
@@ -952,13 +961,22 @@ struct DayStepProgress: View {
     var count: Int
     var completed: Int
     var current: Int
+    var selectedOnly = false
     var onSelect: ((Int) -> Void)?
 
     private var barSpacing: CGFloat {
-        count <= 3 ? 45 : 12
+        count <= 4 ? 45 : 12
     }
 
     private func barWidth(for availableWidth: CGFloat) -> CGFloat {
+        if count <= 3 {
+            return 90
+        }
+
+        if count == 4 {
+            return 55
+        }
+
         let safeCount = CGFloat(max(count, 1))
         let usableWidth = availableWidth - (barSpacing * CGFloat(max(count - 1, 0)))
         return floor(max(0, usableWidth) / safeCount)
@@ -992,12 +1010,16 @@ struct DayStepProgress: View {
     }
 
     private func fill(for index: Int) -> Color {
+        if selectedOnly {
+            return index == current ? AppColor.accent : AppColor.border
+        }
+
         if index < completed {
-            AppColor.accent
+            return AppColor.accent
         } else if index == current {
-            AppColor.border.opacity(0.88)
+            return AppColor.border.opacity(0.88)
         } else {
-            AppColor.border
+            return AppColor.border
         }
     }
 }
