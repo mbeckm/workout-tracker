@@ -466,7 +466,7 @@ struct CreatePlanView: View {
         withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
             exerciseDraft = draft
             exerciseDraftStep = .sets
-            isAddingExercise = true
+            isAddingExercise = false
             searchQuery = ""
             searchFocused = false
         }
@@ -1010,7 +1010,7 @@ struct PlanEntrySurface: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 15)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)

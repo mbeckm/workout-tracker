@@ -68,6 +68,7 @@ struct PlanDetailView: View {
                                 .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
                             } else if !isEditing {
                                 ExerciseCard(exercise: exercise)
+                                    .matchedGeometryEffect(id: exercise.id, in: entryNamespace)
                                     .frame(maxWidth: .infinity)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
@@ -297,6 +298,7 @@ struct PlanDetailView: View {
                 reps: exercise.reps
             )
             exerciseDraftStep = .sets
+            isAddingExercise = false
             searchQuery = ""
             searchFocused = false
         }
