@@ -174,6 +174,7 @@ struct RootView: View {
 
     private func beginWorkout(day selectedDay: WorkoutDay? = nil) {
         let day = selectedDay ?? store.nextWorkoutDay
+        selectedTab = .workout
         workoutSessionDay = day
         activeExerciseIndex = 0
         loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
