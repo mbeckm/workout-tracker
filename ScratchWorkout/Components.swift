@@ -32,11 +32,11 @@ struct AppTabBar: View {
 
     private var activeTab: AppTab {
         switch route {
-        case .createPlan, .planDetail:
+        case .createPlan, .activePlanDetail, .planDetail:
             .plans
         case .logWorkout, .workoutComplete:
             .workout
-        case .startWorkout, .activePlanDetail, .nextWorkoutPreview:
+        case .startWorkout, .nextWorkoutPreview:
             .home
         case nil:
             selectedTab

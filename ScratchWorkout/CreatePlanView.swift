@@ -300,39 +300,49 @@ struct CreatePlanView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 12) {
+            HStack {
                 Button {
                     finish(activate: false)
                 } label: {
                     Text("Save to plans")
-                        .font(AppFont.label)
+                        .font(AppFont.subheading)
                         .foregroundStyle(AppColor.primaryText)
-                        .frame(width: 147, height: 56)
-                        .background(AppColor.border, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .lineLimit(1)
+                        .padding(.horizontal, 16)
+                        .frame(height: 45)
+                        .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(AppColor.border, lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
+
+                Spacer(minLength: 12)
 
                 Button {
                     finish(activate: true)
                 } label: {
                     Text("Save & activate")
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.base)
-                        .frame(width: 147, height: 56)
+                        .font(AppFont.subheading)
+                        .foregroundStyle(AppColor.surface1)
+                        .lineLimit(1)
+                        .padding(.horizontal, 16)
+                        .frame(height: 45)
                         .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(24)
-        .frame(width: 354)
+        .frame(width: 350)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         )
         .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
-        .offset(x: 0, y: 589)
+        .offset(x: 2, y: 589)
         .zIndex(4)
     }
 
@@ -847,6 +857,7 @@ struct PlanEntrySurface: View {
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
+    var autoFocus = true
     var onSelect: (ExercisePrescription) -> Void
 
     private var isExpanded: Bool {
@@ -926,6 +937,10 @@ struct PlanEntrySurface: View {
         }
         .frame(height: 26)
         .onAppear {
+            guard autoFocus else {
+                return
+            }
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
                 focused.wrappedValue = true
             }

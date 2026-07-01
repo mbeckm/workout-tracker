@@ -20,14 +20,17 @@ struct StartWorkoutView: View {
                 }
                 .padding(.top, 24)
 
-                VStack(spacing: 12) {
-                    ForEach(Array(day.exercises.prefix(5))) { exercise in
-                        ExerciseCard(exercise: exercise)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 12) {
+                        ForEach(day.exercises) { exercise in
+                            ExerciseCard(exercise: exercise)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .padding(.top, 12)
+                    .padding(.bottom, 24)
                 }
-                .padding(.top, 12)
-
-                Spacer(minLength: 24)
+                .scrollDismissesKeyboard(.interactively)
 
                 HStack {
                     Spacer()

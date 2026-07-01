@@ -7,6 +7,7 @@ struct PlanDetailView: View {
     var onSave: (WorkoutPlan) -> Void
 
     @Namespace private var entryNamespace
+    @FocusState private var planNameFocused: Bool
     @FocusState private var searchFocused: Bool
     @State private var draftPlan: WorkoutPlan
     @State private var currentDayIndex = 0
@@ -83,6 +84,7 @@ struct PlanDetailView: View {
                     TapGesture()
                         .onEnded {
                             searchFocused = false
+                            planNameFocused = false
                         }
                 )
 
@@ -111,6 +113,7 @@ struct PlanDetailView: View {
         HStack(alignment: .center, spacing: 10) {
             if isEditing {
                 TextField("Plan name", text: $draftPlan.name)
+                    .focused($planNameFocused)
                     .font(AppFont.display)
                     .foregroundStyle(AppColor.primaryText)
                     .tint(AppColor.primaryText)
@@ -170,6 +173,7 @@ struct PlanDetailView: View {
                 query: $searchQuery,
                 focused: $searchFocused,
                 results: filteredExercises,
+                autoFocus: false,
                 onSelect: addExerciseFromSearch
             )
             .matchedGeometryEffect(id: "plan-detail-entry-surface", in: entryNamespace)
@@ -237,7 +241,7 @@ struct PlanDetailView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            searchFocused = true
+            planNameFocused = true
         }
     }
 
@@ -382,6 +386,7 @@ struct PlanDetailView: View {
     private func resetEntryState(keepSearchVisible: Bool) {
         searchQuery = ""
         searchFocused = false
+        planNameFocused = false
         exerciseDraft = nil
         exerciseDraftStep = .sets
         isAddingExercise = keepSearchVisible
