@@ -10,18 +10,24 @@ struct RootView: View {
     @State private var loggedExerciseSets: [[LoggedSet]] = []
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            currentScreen
+        GeometryReader { proxy in
+            ZStack(alignment: .topLeading) {
+                currentScreen
+                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
 
-            AppTabBar(selectedTab: $selectedTab, route: route) { tab in
-                selectedTab = tab
-                route = nil
-                completedWorkout = nil
-                clearWorkoutSession()
+                AppTabBar(selectedTab: $selectedTab, route: route) { tab in
+                    selectedTab = tab
+                    route = nil
+                    completedWorkout = nil
+                    clearWorkoutSession()
+                }
+                .frame(width: proxy.size.width, height: 82)
+                .position(x: proxy.size.width / 2, y: proxy.size.height - 41)
+                .zIndex(10)
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background(AppColor.base)
         }
-        .background(AppColor.base)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .ignoresSafeArea()
     }
 

@@ -131,7 +131,7 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            DayStepProgress(count: daysPerWeek, completed: completedDays)
+            DayStepProgress(count: daysPerWeek, completed: completedDays, current: currentDayIndex, onSelect: switchToDay)
                 .padding(.top, 24)
 
             SectionTitle(text: currentDayTitle)
@@ -143,7 +143,15 @@ struct CreatePlanView: View {
                         EmptyDayState()
                     } else {
                         ForEach(currentDayExercises) { exercise in
-                            ExerciseCard(exercise: exercise)
+                            EditableExerciseCard(
+                                exercise: exercise,
+                                onDelete: {
+                                    deleteExercise(exercise.id)
+                                },
+                                onReorderBefore: { draggedID in
+                                    reorderExercise(draggedID, before: exercise.id)
+                                }
+                            )
                         }
 
                         if stage == .search && !isSearchExpanded {
@@ -158,9 +166,8 @@ struct CreatePlanView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 16)
             }
-            .frame(maxHeight: 302)
-
-            Spacer(minLength: 16)
+            .frame(maxWidth: .infinity)
+            .clipped()
 
             bottomBuilder
                 .padding(.bottom, 106)
@@ -191,15 +198,24 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            DayStepProgress(count: daysPerWeek, completed: daysPerWeek)
+            DayStepProgress(count: daysPerWeek, completed: daysPerWeek, current: currentDayIndex, onSelect: switchToDay)
                 .padding(.top, 24)
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     ForEach(0..<daysPerWeek, id: \.self) { index in
-                        DayReviewSection(
+                        EditableDayReviewSection(
                             title: "Day \(index + 1)",
-                            exercises: exercisesForDay(at: index)
+                            exercises: exercisesForDay(at: index),
+                            onSelect: {
+                                switchToDay(index)
+                            },
+                            onDelete: {
+                                deleteDay(at: index)
+                            },
+                            onReorderBefore: { draggedIndex in
+                                reorderDay(from: draggedIndex, before: index)
+                            }
                         )
                     }
                 }
@@ -388,6 +404,82 @@ struct CreatePlanView: View {
         }
     }
 
+    private func switchToDay(_ index: Int) {
+        guard index >= 0, index < daysPerWeek else {
+            return
+        }
+
+        Haptics.tap()
+        resetExerciseEntry()
+
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+            currentDayIndex = index
+            stage = .search
+        }
+    }
+
+    private func deleteExercise(_ id: UUID) {
+        guard planDays.indices.contains(currentDayIndex) else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            planDays[currentDayIndex].removeAll { $0.id == id }
+            if planDays[currentDayIndex].isEmpty {
+                completedDays = min(completedDays, currentDayIndex)
+            }
+        }
+    }
+
+    private func reorderExercise(_ draggedID: UUID, before targetID: UUID) {
+        guard planDays.indices.contains(currentDayIndex),
+              draggedID != targetID,
+              let fromIndex = planDays[currentDayIndex].firstIndex(where: { $0.id == draggedID }),
+              let targetIndex = planDays[currentDayIndex].firstIndex(where: { $0.id == targetID }) else {
+            return
+        }
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            let moved = planDays[currentDayIndex].remove(at: fromIndex)
+            let adjustedTarget = targetIndex > fromIndex ? targetIndex - 1 : targetIndex
+            planDays[currentDayIndex].insert(moved, at: adjustedTarget)
+        }
+    }
+
+    private func deleteDay(at index: Int) {
+        guard daysPerWeek > 1, planDays.indices.contains(index) else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+            planDays.remove(at: index)
+            daysPerWeek -= 1
+            currentDayIndex = min(currentDayIndex, daysPerWeek - 1)
+            completedDays = min(completedDays, daysPerWeek)
+        }
+    }
+
+    private func reorderDay(from sourceIndex: Int, before targetIndex: Int) {
+        guard planDays.indices.contains(sourceIndex),
+              planDays.indices.contains(targetIndex),
+              sourceIndex != targetIndex else {
+            return
+        }
+
+        withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
+            let moved = planDays.remove(at: sourceIndex)
+            let adjustedTarget = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
+            planDays.insert(moved, at: adjustedTarget)
+            if currentDayIndex == sourceIndex {
+                currentDayIndex = adjustedTarget
+            }
+        }
+    }
+
     private func finish(activate: Bool) {
         Haptics.tap(.medium)
         let plan = WorkoutPlan(
@@ -423,6 +515,124 @@ private struct EmptyDayState: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityLabel("No exercises yet")
+    }
+}
+
+private struct EditableExerciseCard: View {
+    var exercise: ExercisePrescription
+    var onDelete: () -> Void
+    var onReorderBefore: (UUID) -> Void
+
+    @State private var horizontalOffset: CGFloat = 0
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.red.opacity(0.22))
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(AppColor.primaryText)
+                        .padding(.trailing, 22)
+                }
+
+            ExerciseCard(exercise: exercise)
+                .offset(x: horizontalOffset)
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else {
+                                return
+                            }
+
+                            horizontalOffset = min(0, value.translation.width)
+                        }
+                        .onEnded { value in
+                            guard value.translation.width < -90 else {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                    horizontalOffset = 0
+                                }
+                                return
+                            }
+
+                            onDelete()
+                        }
+                )
+        }
+        .draggable(exercise.id.uuidString)
+        .dropDestination(for: String.self) { items, _ in
+            guard let first = items.first, let id = UUID(uuidString: first) else {
+                return false
+            }
+
+            onReorderBefore(id)
+            return true
+        }
+    }
+}
+
+private struct EditableDayReviewSection: View {
+    var title: String
+    var exercises: [ExercisePrescription]
+    var onSelect: () -> Void
+    var onDelete: () -> Void
+    var onReorderBefore: (Int) -> Void
+
+    @State private var horizontalOffset: CGFloat = 0
+
+    private var dayIndex: Int {
+        let numberText = title.replacingOccurrences(of: "Day ", with: "")
+        return max((Int(numberText) ?? 1) - 1, 0)
+    }
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.red.opacity(0.18))
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(AppColor.primaryText)
+                        .padding(.trailing, 22)
+                }
+
+            Button(action: onSelect) {
+                DayReviewSection(title: title, exercises: exercises)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .offset(x: horizontalOffset)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20)
+                    .onChanged { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else {
+                            return
+                        }
+
+                        horizontalOffset = min(0, value.translation.width)
+                    }
+                    .onEnded { value in
+                        guard value.translation.width < -90 else {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                                horizontalOffset = 0
+                            }
+                            return
+                        }
+
+                        onDelete()
+                    }
+            )
+        }
+        .draggable(String(dayIndex))
+        .dropDestination(for: String.self) { items, _ in
+            guard let first = items.first, let sourceIndex = Int(first) else {
+                return false
+            }
+
+            onReorderBefore(sourceIndex)
+            return true
+        }
     }
 }
 
@@ -592,6 +802,8 @@ private struct PlanEntrySurface: View {
 private struct DayStepProgress: View {
     var count: Int
     var completed: Int
+    var current: Int
+    var onSelect: ((Int) -> Void)?
 
     private var barSpacing: CGFloat {
         count <= 3 ? 45 : 12
@@ -604,13 +816,37 @@ private struct DayStepProgress: View {
     }
 
     var body: some View {
-        StepProgress(
-            count: max(count, 1),
-            active: min(completed, count),
-            width: barWidth,
-            spacing: barSpacing
-        )
+        HStack(spacing: barSpacing) {
+            ForEach(0..<max(count, 1), id: \.self) { index in
+                Button {
+                    onSelect?(index)
+                } label: {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(fill(for: index))
+                        .frame(width: barWidth, height: 24)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(onSelect == nil)
+                .accessibilityLabel("Day \(index + 1)")
+            }
+        }
         .frame(width: 360, alignment: .leading)
+        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: completed)
+        .animation(.spring(response: 0.34, dampingFraction: 0.82), value: current)
+    }
+
+    private func fill(for index: Int) -> Color {
+        if index < completed {
+            AppColor.accent
+        } else if index == current {
+            AppColor.border.opacity(0.88)
+        } else {
+            AppColor.border
+        }
     }
 }
 
