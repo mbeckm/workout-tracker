@@ -20,6 +20,8 @@ struct CreatePlanView: View {
     @State private var planDays: [[ExercisePrescription]]
     @State private var searchQuery: String
     @State private var isAddingExercise = false
+    @State private var exerciseDraft: ExerciseDraft?
+    @State private var exerciseDraftStep: ExerciseDraftStep = .sets
 
     init(
         initialStage: Stage = .frequency,
@@ -68,6 +70,8 @@ struct CreatePlanView: View {
         .animation(.spring(response: 0.26, dampingFraction: 0.88), value: currentDayIndex)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completedDays)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isAddingExercise)
+        .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: exerciseDraftStep)
     }
 
     @ViewBuilder
@@ -141,7 +145,15 @@ struct CreatePlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    if shouldShowSearchSurface {
+                    if let draft = exerciseDraft, draft.editingID == nil {
+                        ExerciseDraftSurface(
+                            draft: draftBinding(fallback: draft),
+                            step: $exerciseDraftStep,
+                            onAdvance: advanceOrSaveExerciseDraft
+                        )
+                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                    } else if shouldShowSearchSurface {
                         PlanEntrySurface(
                             query: $searchQuery,
                             focused: $searchFocused,
@@ -157,15 +169,27 @@ struct CreatePlanView: View {
                     }
 
                     ForEach(currentDayExercises) { exercise in
-                        EditableExerciseCard(
-                            exercise: exercise,
-                            onDelete: {
-                                deleteExercise(exercise.id)
-                            },
-                            onReorderBefore: { draggedID in
-                                reorderExercise(draggedID, before: exercise.id)
-                            }
-                        )
+                        if let draft = exerciseDraft, draft.editingID == exercise.id {
+                            ExerciseDraftSurface(
+                                draft: draftBinding(fallback: draft),
+                                step: $exerciseDraftStep,
+                                onAdvance: advanceOrSaveExerciseDraft
+                            )
+                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                        } else {
+                            EditableExerciseCard(
+                                exercise: exercise,
+                                onEdit: {
+                                    editExercise(exercise)
+                                },
+                                onDelete: {
+                                    deleteExercise(exercise.id)
+                                },
+                                onReorderBefore: { draggedID in
+                                    reorderExercise(draggedID, before: exercise.id)
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(.top, currentDayExercises.isEmpty ? 24 : 12)
@@ -216,15 +240,27 @@ struct CreatePlanView: View {
                         })
                     } else {
                         ForEach(currentDayExercises) { exercise in
-                            EditableExerciseCard(
-                                exercise: exercise,
-                                onDelete: {
-                                    deleteExercise(exercise.id)
-                                },
-                                onReorderBefore: { draggedID in
-                                    reorderExercise(draggedID, before: exercise.id)
-                                }
-                            )
+                            if let draft = exerciseDraft, draft.editingID == exercise.id {
+                                ExerciseDraftSurface(
+                                    draft: draftBinding(fallback: draft),
+                                    step: $exerciseDraftStep,
+                                    onAdvance: advanceOrSaveExerciseDraft
+                                )
+                                .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                            } else {
+                                EditableExerciseCard(
+                                    exercise: exercise,
+                                    onEdit: {
+                                        editExercise(exercise)
+                                    },
+                                    onDelete: {
+                                        deleteExercise(exercise.id)
+                                    },
+                                    onReorderBefore: { draggedID in
+                                        reorderExercise(draggedID, before: exercise.id)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -313,7 +349,7 @@ struct CreatePlanView: View {
     }
 
     private var shouldShowSearchSurface: Bool {
-        isAddingExercise || isSearchExpanded
+        exerciseDraft == nil && (isAddingExercise || isSearchExpanded)
     }
 
     private var filteredExercises: [ExercisePrescription] {
@@ -356,6 +392,9 @@ struct CreatePlanView: View {
 
     private func beginExerciseSearch() {
         Haptics.tap(.medium)
+        exerciseDraft = nil
+        exerciseDraftStep = .sets
+        searchQuery = ""
         isAddingExercise = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -364,23 +403,88 @@ struct CreatePlanView: View {
     }
 
     private func addExerciseFromSearch(_ exercise: ExercisePrescription) {
-        ensurePlanDays()
         Haptics.tap(.medium)
 
-        let newExercise = ExercisePrescription(
+        let draft = ExerciseDraft(
+            editingID: nil,
             name: exercise.name.planDisplayName,
             sets: exercise.sets,
             reps: exercise.reps
         )
 
-        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
-            planDays[currentDayIndex].append(newExercise)
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
+            exerciseDraft = draft
+            exerciseDraftStep = .sets
             isAddingExercise = true
-            stage = .search
+            searchQuery = ""
+            searchFocused = false
+        }
+    }
+
+    private func editExercise(_ exercise: ExercisePrescription) {
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
+            exerciseDraft = ExerciseDraft(
+                editingID: exercise.id,
+                name: exercise.name,
+                sets: exercise.sets,
+                reps: exercise.reps
+            )
+            exerciseDraftStep = .sets
+            isAddingExercise = false
+            searchQuery = ""
+            searchFocused = false
+        }
+    }
+
+    private func advanceOrSaveExerciseDraft() {
+        guard exerciseDraft != nil else {
+            return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            searchFocused = true
+        Haptics.tap(.medium)
+
+        if exerciseDraftStep == .sets {
+            withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+                exerciseDraftStep = .reps
+            }
+            return
+        }
+
+        saveExerciseDraft()
+    }
+
+    private func saveExerciseDraft() {
+        guard let draft = exerciseDraft else {
+            return
+        }
+
+        ensurePlanDays()
+
+        let isEditing = draft.editingID != nil
+        var savedExercise = ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
+
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
+            if let editingID = draft.editingID,
+               let index = planDays[currentDayIndex].firstIndex(where: { $0.id == editingID }) {
+                savedExercise.id = editingID
+                planDays[currentDayIndex][index] = savedExercise
+            } else {
+                planDays[currentDayIndex].append(savedExercise)
+            }
+
+            exerciseDraft = nil
+            exerciseDraftStep = .sets
+            searchQuery = ""
+            isAddingExercise = !isEditing
+            searchFocused = false
+        }
+
+        if !isEditing {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                searchFocused = true
+            }
         }
     }
 
@@ -429,6 +533,10 @@ struct CreatePlanView: View {
 
         withAnimation(.spring(response: 0.36, dampingFraction: 0.86)) {
             planDays[currentDayIndex].removeAll { $0.id == id }
+            if exerciseDraft?.editingID == id {
+                exerciseDraft = nil
+                exerciseDraftStep = .sets
+            }
             if planDays[currentDayIndex].isEmpty {
                 completedDays = min(completedDays, currentDayIndex)
             }
@@ -470,7 +578,42 @@ struct CreatePlanView: View {
     private func resetExerciseEntry() {
         searchQuery = ""
         searchFocused = false
+        exerciseDraft = nil
+        exerciseDraftStep = .sets
     }
+
+    private func draftBinding(fallback: ExerciseDraft) -> Binding<ExerciseDraft> {
+        Binding(
+            get: {
+                exerciseDraft ?? fallback
+            },
+            set: { newValue in
+                exerciseDraft = newValue
+            }
+        )
+    }
+}
+
+private enum ExerciseDraftStep: Equatable {
+    case sets
+    case reps
+
+    var subtitle: String {
+        switch self {
+        case .sets:
+            "Number of sets"
+        case .reps:
+            "Number of reps"
+        }
+    }
+}
+
+private struct ExerciseDraft: Identifiable, Equatable {
+    var id = UUID()
+    var editingID: UUID?
+    var name: String
+    var sets: Int
+    var reps: Int
 }
 
 private struct EmptyDayState: View {
@@ -517,8 +660,119 @@ private struct EmptyDayState: View {
     }
 }
 
+private struct ExerciseDraftSurface: View {
+    @Binding var draft: ExerciseDraft
+    @Binding var step: ExerciseDraftStep
+    var onAdvance: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(draft.name)
+                    .font(AppFont.h2)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+
+                Text(step.subtitle)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    DraftRoundButton(symbol: "minus", fill: AppColor.surface2, foreground: AppColor.primaryText, accessibilityLabel: "Decrease \(step.subtitle)") {
+                        updateValue(by: -1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Text("\(currentValue)")
+                        .font(AppFont.display)
+                        .foregroundStyle(AppColor.primaryText)
+                        .lineLimit(1)
+                        .contentTransition(.numericText())
+                        .frame(width: 48, height: 45)
+                        .accessibilityLabel(step.subtitle)
+
+                    Spacer(minLength: 0)
+
+                    DraftRoundButton(symbol: "plus", fill: AppColor.surface2, foreground: AppColor.primaryText, accessibilityLabel: "Increase \(step.subtitle)") {
+                        updateValue(by: 1)
+                    }
+                }
+                .frame(width: 164, height: 45)
+
+                Spacer(minLength: 24)
+
+                DraftRoundButton(symbol: "chevron.right", fill: AppColor.accent, foreground: AppColor.base, strokeWidth: 0, accessibilityLabel: step == .sets ? "Continue to reps" : "Save exercise", action: onAdvance)
+            }
+            .frame(height: 45)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, minHeight: 157, maxHeight: 157, alignment: .topLeading)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
+        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: step)
+        .animation(.spring(response: 0.2, dampingFraction: 0.88), value: currentValue)
+        .accessibilityElement(children: .contain)
+    }
+
+    private var currentValue: Int {
+        switch step {
+        case .sets:
+            draft.sets
+        case .reps:
+            draft.reps
+        }
+    }
+
+    private func updateValue(by delta: Int) {
+        switch step {
+        case .sets:
+            draft.sets = min(99, max(1, draft.sets + delta))
+        case .reps:
+            draft.reps = min(99, max(1, draft.reps + delta))
+        }
+    }
+}
+
+private struct DraftRoundButton: View {
+    var symbol: String
+    var fill: Color
+    var foreground: Color
+    var stroke: Color = AppColor.border
+    var strokeWidth: CGFloat = 1
+    var accessibilityLabel: String
+    var action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: symbol == "chevron.right" ? 32 : 30, weight: .bold))
+                .foregroundStyle(foreground)
+                .frame(width: 45, height: 45)
+                .background(fill, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(stroke, lineWidth: strokeWidth)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
 private struct EditableExerciseCard: View {
     var exercise: ExercisePrescription
+    var onEdit: () -> Void
     var onDelete: () -> Void
     var onReorderBefore: (UUID) -> Void
 
@@ -543,6 +797,15 @@ private struct EditableExerciseCard: View {
             ExerciseCard(exercise: exercise)
                 .offset(x: horizontalOffset)
                 .contentShape(Rectangle())
+                .onTapGesture {
+                    if horizontalOffset < -1 {
+                        withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                            horizontalOffset = 0
+                        }
+                    } else {
+                        onEdit()
+                    }
+                }
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 20)
                         .onChanged { value in
@@ -636,7 +899,7 @@ private struct PlanEntrySurface: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 15)
-        .frame(width: 354, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
