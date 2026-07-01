@@ -496,7 +496,7 @@ struct CreatePlanView: View {
             exerciseDraft = nil
             exerciseDraftStep = .sets
             searchQuery = ""
-            isAddingExercise = !isEditing
+            isAddingExercise = stage == .search
             searchFocused = false
         }
 
