@@ -239,38 +239,56 @@ struct CreatePlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    if currentDayExercises.isEmpty {
+                    if let draft = exerciseDraft, draft.editingID == nil {
+                        ExerciseDraftSurface(
+                            draft: draftBinding(fallback: draft),
+                            step: $exerciseDraftStep,
+                            onAdvance: advanceOrSaveExerciseDraft
+                        )
+                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                        .frame(maxWidth: .infinity)
+                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                    } else if shouldShowSearchSurface {
+                        PlanEntrySurface(
+                            query: $searchQuery,
+                            focused: $searchFocused,
+                            results: filteredExercises,
+                            onSelect: addExerciseFromSearch
+                        )
+                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
+                        .frame(maxWidth: .infinity)
+                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                    } else if currentDayExercises.isEmpty {
                         EmptyDayState(onAdd: {
-                            switchToDay(currentDayIndex)
                             beginExerciseSearch()
                         })
-                    } else {
-                        ForEach(currentDayExercises) { exercise in
-                            if let draft = exerciseDraft, draft.editingID == exercise.id {
-                                ExerciseDraftSurface(
-                                    draft: draftBinding(fallback: draft),
-                                    step: $exerciseDraftStep,
-                                    onAdvance: advanceOrSaveExerciseDraft
-                                )
-                                .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                                .frame(maxWidth: .infinity)
-                                .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                            } else {
-                                EditableExerciseCard(
-                                    exercise: exercise,
-                                    onEdit: {
-                                        editExercise(exercise)
-                                    },
-                                    onDelete: {
-                                        deleteExercise(exercise.id)
-                                    },
-                                    onReorderBefore: { draggedID in
-                                        reorderExercise(draggedID, before: exercise.id)
-                                    }
-                                )
-                                .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                                .frame(maxWidth: .infinity)
-                            }
+                    }
+
+                    ForEach(currentDayExercises) { exercise in
+                        if let draft = exerciseDraft, draft.editingID == exercise.id {
+                            ExerciseDraftSurface(
+                                draft: draftBinding(fallback: draft),
+                                step: $exerciseDraftStep,
+                                onAdvance: advanceOrSaveExerciseDraft
+                            )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
+                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                        } else {
+                            EditableExerciseCard(
+                                exercise: exercise,
+                                onEdit: {
+                                    editExercise(exercise)
+                                },
+                                onDelete: {
+                                    deleteExercise(exercise.id)
+                                },
+                                onReorderBefore: { draggedID in
+                                    reorderExercise(draggedID, before: exercise.id)
+                                }
+                            )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -282,7 +300,7 @@ struct CreatePlanView: View {
 
             HStack {
                 Spacer()
-                if stage == .finalReview && exerciseDraft == nil {
+                if stage == .finalReview && exerciseDraft == nil && !shouldShowSearchSurface {
                     CTAButton(title: "Save Plan", width: 294) {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                             stage = .activatePrompt
