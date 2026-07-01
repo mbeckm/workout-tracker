@@ -166,7 +166,7 @@ struct CreatePlanView: View {
                             query: $searchQuery,
                             focused: $searchFocused,
                             results: filteredExercises,
-                            onSelect: addExerciseFromSearch
+                            onConfigure: configureExerciseFromSearch
                         )
                         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
                         .frame(maxWidth: .infinity)
@@ -268,7 +268,7 @@ struct CreatePlanView: View {
                             query: $searchQuery,
                             focused: $searchFocused,
                             results: filteredExercises,
-                            onSelect: addExerciseFromSearch
+                            onConfigure: configureExerciseFromSearch
                         )
                         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
                         .frame(maxWidth: .infinity)
@@ -312,6 +312,7 @@ struct CreatePlanView: View {
                 .padding(.bottom, 24)
             }
             .clipped()
+            .frame(maxWidth: .infinity)
 
             HStack {
                 Spacer()
@@ -454,18 +455,22 @@ struct CreatePlanView: View {
         }
     }
 
-    private func addExerciseFromSearch(_ exercise: ExercisePrescription) {
+    private func configureExerciseFromSearch(_ exercise: ExercisePrescription) {
         Haptics.tap(.medium)
 
-        let draft = ExerciseDraft(
-            editingID: nil,
-            name: exercise.name.planDisplayName,
-            sets: exercise.sets,
-            reps: exercise.reps
-        )
+        beginDraftConfiguration(from: exercise, editingID: nil)
+    }
+
+    private func beginDraftConfiguration(from exercise: ExercisePrescription, editingID: UUID?) {
+        let displayName = editingID == nil ? exercise.name.planDisplayName : exercise.name
 
         withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
-            exerciseDraft = draft
+            exerciseDraft = ExerciseDraft(
+                editingID: editingID,
+                name: displayName,
+                sets: exercise.sets,
+                reps: exercise.reps
+            )
             exerciseDraftStep = .sets
             isAddingExercise = false
             searchQuery = ""
@@ -476,18 +481,7 @@ struct CreatePlanView: View {
     private func editExercise(_ exercise: ExercisePrescription) {
         Haptics.tap(.medium)
 
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
-            exerciseDraft = ExerciseDraft(
-                editingID: exercise.id,
-                name: exercise.name,
-                sets: exercise.sets,
-                reps: exercise.reps
-            )
-            exerciseDraftStep = .sets
-            isAddingExercise = false
-            searchQuery = ""
-            searchFocused = false
-        }
+        beginDraftConfiguration(from: exercise, editingID: exercise.id)
     }
 
     private func advanceOrSaveExerciseDraft() {
@@ -508,7 +502,8 @@ struct CreatePlanView: View {
     }
 
     private func saveExerciseDraft() {
-        guard let draft = exerciseDraft else {
+        guard let draft = exerciseDraft,
+              exerciseDraftStep == .reps else {
             return
         }
 
@@ -960,7 +955,7 @@ struct PlanEntrySurface: View {
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
     var autoFocus = true
-    var onSelect: (ExercisePrescription) -> Void
+    var onConfigure: (ExercisePrescription) -> Void
 
     private var isExpanded: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -991,7 +986,7 @@ struct PlanEntrySurface: View {
                         } else {
                             ForEach(results) { exercise in
                                 Button {
-                                    onSelect(exercise)
+                                    onConfigure(exercise)
                                 } label: {
                                     Text(exercise.name.planDisplayName)
                                         .font(AppFont.h2)

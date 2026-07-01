@@ -101,6 +101,7 @@ struct PlanDetailView: View {
                     .padding(.bottom, 24)
                 }
                 .clipped()
+                .frame(maxWidth: .infinity)
                 .scrollDismissesKeyboard(.interactively)
                 .simultaneousGesture(
                     TapGesture()
@@ -204,7 +205,7 @@ struct PlanDetailView: View {
                 focused: $searchFocused,
                 results: filteredExercises,
                 autoFocus: false,
-                onSelect: addExerciseFromSearch
+                onConfigure: configureExerciseFromSearch
             )
             .matchedGeometryEffect(id: "plan-detail-entry-surface", in: entryNamespace)
             .frame(maxWidth: .infinity)
@@ -288,13 +289,19 @@ struct PlanDetailView: View {
         }
     }
 
-    private func addExerciseFromSearch(_ exercise: ExercisePrescription) {
+    private func configureExerciseFromSearch(_ exercise: ExercisePrescription) {
         Haptics.tap(.medium)
+
+        beginDraftConfiguration(from: exercise, editingID: nil)
+    }
+
+    private func beginDraftConfiguration(from exercise: ExercisePrescription, editingID: UUID?) {
+        let displayName = editingID == nil ? exercise.name.planDisplayName : exercise.name
 
         withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
             exerciseDraft = ExerciseDraft(
-                editingID: nil,
-                name: exercise.name.planDisplayName,
+                editingID: editingID,
+                name: displayName,
                 sets: exercise.sets,
                 reps: exercise.reps
             )
@@ -310,17 +317,9 @@ struct PlanDetailView: View {
 
         withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) {
             isEditing = true
-            isAddingExercise = false
-            exerciseDraft = ExerciseDraft(
-                editingID: exercise.id,
-                name: exercise.name,
-                sets: exercise.sets,
-                reps: exercise.reps
-            )
-            exerciseDraftStep = .sets
-            searchQuery = ""
-            searchFocused = false
         }
+
+        beginDraftConfiguration(from: exercise, editingID: exercise.id)
     }
 
     private func advanceOrSaveExerciseDraft() {
@@ -342,6 +341,7 @@ struct PlanDetailView: View {
 
     private func saveExerciseDraft() {
         guard let draft = exerciseDraft,
+              exerciseDraftStep == .reps,
               draftPlan.days.indices.contains(currentDayIndex) else {
             return
         }
