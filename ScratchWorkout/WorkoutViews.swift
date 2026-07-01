@@ -261,6 +261,7 @@ private struct SummaryCard: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(AppFont.display)
+                .tracking(-0.64)
             Text(label)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.secondaryText)
