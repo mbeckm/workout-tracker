@@ -129,6 +129,9 @@ struct PlanDetailView: View {
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isEditing)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: exerciseDraftStep)
+        .onChange(of: plan) { _, newPlan in
+            syncDraftPlan(with: newPlan)
+        }
     }
 
     private var header: some View {
@@ -414,6 +417,17 @@ struct PlanDetailView: View {
         exerciseDraft = nil
         exerciseDraftStep = .sets
         isAddingExercise = keepSearchVisible
+    }
+
+    private func syncDraftPlan(with plan: WorkoutPlan) {
+        guard !isEditing, exerciseDraft == nil else {
+            return
+        }
+
+        let displayPlan = Self.editableDisplayPlan(plan)
+        draftPlan = displayPlan
+        currentDayIndex = min(currentDayIndex, max(displayPlan.days.count - 1, 0))
+        resetEntryState(keepSearchVisible: false)
     }
 
     private func draftBinding(fallback: ExerciseDraft) -> Binding<ExerciseDraft> {
