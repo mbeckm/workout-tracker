@@ -936,7 +936,7 @@ struct PlanEntrySurface: View {
                 .foregroundStyle(AppColor.secondaryText)
                 .frame(width: 22, height: 22)
 
-            TextField("Search", text: $query)
+            TextField("", text: $query)
                 .focused(focused)
                 .font(AppFont.h2)
                 .tint(AppColor.accent)
