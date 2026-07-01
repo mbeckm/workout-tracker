@@ -325,7 +325,6 @@ struct PlanDetailView: View {
             return
         }
 
-        let isExistingExercise = draft.editingID != nil
         var savedExercise = ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
@@ -344,7 +343,7 @@ struct PlanDetailView: View {
             searchFocused = false
         }
 
-        if !isExistingExercise {
+        if isEditing {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 searchFocused = true
             }

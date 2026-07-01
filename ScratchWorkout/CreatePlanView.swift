@@ -481,7 +481,7 @@ struct CreatePlanView: View {
 
         ensurePlanDays()
 
-        let isEditing = draft.editingID != nil
+        let shouldResumeSearch = stage == .search
         var savedExercise = ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
@@ -496,11 +496,11 @@ struct CreatePlanView: View {
             exerciseDraft = nil
             exerciseDraftStep = .sets
             searchQuery = ""
-            isAddingExercise = stage == .search
+            isAddingExercise = shouldResumeSearch
             searchFocused = false
         }
 
-        if !isEditing {
+        if shouldResumeSearch {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 searchFocused = true
             }
@@ -942,9 +942,14 @@ struct PlanEntrySurface: View {
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
+                .frame(maxWidth: .infinity)
                 .accessibilityLabel("Exercise search")
         }
-        .frame(height: 26)
+        .frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            focused.wrappedValue = true
+        }
         .onAppear {
             guard autoFocus else {
                 return
