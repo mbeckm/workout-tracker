@@ -168,7 +168,7 @@ struct CreatePlanView: View {
                         )
                     }
                 }
-                .padding(.top, currentDayExercises.isEmpty && !shouldShowSearchSurface ? 24 : 12)
+                .padding(.top, currentDayExercises.isEmpty ? 24 : 12)
                 .padding(.bottom, 24)
             }
             .frame(maxWidth: .infinity)
@@ -526,15 +526,18 @@ private struct EditableExerciseCard: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.red.opacity(0.22))
-                .opacity(deleteBackgroundOpacity)
-                .overlay(alignment: .trailing) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(AppColor.primaryText)
-                        .padding(.trailing, 22)
-                        .opacity(deleteBackgroundOpacity)
+            if horizontalOffset < -1 {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.red.opacity(0.22))
+                    .opacity(deleteBackgroundOpacity)
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(AppColor.primaryText)
+                            .padding(.trailing, 22)
+                            .opacity(deleteBackgroundOpacity)
+                    }
+                    .transition(.opacity)
                 }
 
             ExerciseCard(exercise: exercise)
