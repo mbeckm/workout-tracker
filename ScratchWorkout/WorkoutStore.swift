@@ -191,6 +191,10 @@ struct WorkoutStore {
     }
 
     private static func isLegacySeededPPL(_ plan: WorkoutPlan) -> Bool {
+        guard plan.createdAt == SampleData.activePlan.createdAt else {
+            return false
+        }
+
         if plan.days.count < SampleData.activePlan.days.count {
             return true
         }
@@ -204,8 +208,7 @@ struct WorkoutStore {
             return true
         }
 
-        return firstExercise.name == "Barbell Row" &&
-            firstDay.exercises.dropFirst().first?.name == "Incline Bench Press"
+        return firstDay.title == "Day 1" && firstDay.matchesLegacySeededDayOne
     }
 
     private func isSeededPPL(_ plan: WorkoutPlan) -> Bool {
@@ -266,4 +269,29 @@ private struct WorkoutSnapshot: Codable {
     var savedPlans: [WorkoutPlan]
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int?
+}
+
+private extension WorkoutDay {
+    var matchesLegacySeededDayOne: Bool {
+        let legacyExercises = [
+            ("Barbell Row", 4, 10),
+            ("Incline Bench Press", 4, 8),
+            ("Pull-Ups", 4, 8),
+            ("Seated Cable Row", 3, 12),
+            ("Overhead Press", 4, 10),
+            ("Lateral Raises", 3, 15),
+            ("Tricep Pushdowns", 3, 15),
+            ("Cable Chest Fly", 3, 15)
+        ]
+
+        guard exercises.count == legacyExercises.count else {
+            return false
+        }
+
+        return zip(exercises, legacyExercises).allSatisfy { exercise, legacy in
+            exercise.name == legacy.0 &&
+                exercise.sets == legacy.1 &&
+                exercise.reps == legacy.2
+        }
+    }
 }
