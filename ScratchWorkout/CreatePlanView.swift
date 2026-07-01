@@ -334,7 +334,7 @@ struct CreatePlanView: View {
 
     private func selectExercise(_ exercise: ExercisePrescription) {
         Haptics.tap(.medium)
-        selectedExerciseName = exercise.name
+        selectedExerciseName = exercise.name.planDisplayName
         configuredSets = exercise.sets
         configuredReps = exercise.reps
         searchFocused = false
@@ -449,25 +449,30 @@ private struct SearchSurface: View {
     private var expanded: some View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 16) {
                     if results.isEmpty {
                         Text("No matching exercises")
                             .font(AppFont.subheading)
                             .foregroundStyle(AppColor.secondaryText)
-                            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                            .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
                     } else {
                         ForEach(results) { exercise in
                             Button {
                                 onSelect(exercise)
                             } label: {
-                                SearchResultRow(exercise: exercise)
+                                Text(exercise.name)
+                                    .font(AppFont.subheading)
+                                    .foregroundStyle(AppColor.primaryText)
+                                    .lineLimit(1)
+                                    .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
                 .padding(.bottom, 12)
             }
             .frame(height: 292)
@@ -482,32 +487,16 @@ private struct SearchSurface: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(AppColor.secondaryText)
-
-            TextField("Search exercise", text: $query)
+        HStack(spacing: 0) {
+            TextField("Search to add an exercise", text: $query)
                 .focused(focused)
                 .font(AppFont.body)
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
                 .accessibilityLabel("Exercise search")
-
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(AppColor.secondaryText)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
-            }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
         .onAppear {
@@ -515,37 +504,6 @@ private struct SearchSurface: View {
                 focused.wrappedValue = true
             }
         }
-    }
-}
-
-private struct SearchResultRow: View {
-    var exercise: ExercisePrescription
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(exercise.name)
-                    .font(AppFont.subheading)
-                    .foregroundStyle(AppColor.primaryText)
-                    .lineLimit(1)
-
-                HStack(spacing: 18) {
-                    Text("\(exercise.sets) Sets")
-                    Text("\(exercise.reps) Reps")
-                }
-                .font(AppFont.caption)
-                .foregroundStyle(AppColor.secondaryText)
-            }
-
-            Spacer(minLength: 12)
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(AppColor.secondaryText)
-        }
-        .padding(.horizontal, 6)
-        .frame(height: 60)
-        .contentShape(Rectangle())
     }
 }
 
@@ -565,7 +523,7 @@ private struct ExerciseConfigCard: View {
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.secondaryText)
             }
-            .frame(width: 180, alignment: .leading)
+            .frame(width: 150, alignment: .leading)
 
             HStack(alignment: .center) {
                 HStack(spacing: 16) {
@@ -675,5 +633,15 @@ private extension View {
     private func glassEffect(interactive: Bool) -> Glass {
         let glass = Glass.regular.tint(AppColor.surface1.opacity(0.24))
         return interactive ? glass.interactive() : glass
+    }
+}
+
+private extension String {
+    var planDisplayName: String {
+        guard let parenthesis = firstIndex(of: "(") else {
+            return self
+        }
+
+        return String(self[..<parenthesis]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

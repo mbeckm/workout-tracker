@@ -67,7 +67,7 @@ struct LogWorkoutView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                StepProgress(count: progressCount, active: activeProgress, width: 48, spacing: 24)
+                StepProgress(count: progressCount, active: activeProgress, width: progressBarWidth, spacing: progressBarSpacing)
                     .padding(.top, 70)
 
                 SectionTitle(text: exercise.name)
@@ -129,6 +129,19 @@ struct LogWorkoutView: View {
 
     private var activeProgress: Int {
         min(exerciseIndex + 1, progressCount)
+    }
+
+    private var progressBarSpacing: CGFloat {
+        progressCount <= 5 ? 24 : 12
+    }
+
+    private var progressBarWidth: CGFloat {
+        guard progressCount > 5 else {
+            return 48
+        }
+
+        let availableWidth = 336 - (progressBarSpacing * CGFloat(progressCount - 1))
+        return floor(availableWidth / CGFloat(progressCount))
     }
 }
 

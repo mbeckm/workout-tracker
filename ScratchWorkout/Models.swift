@@ -72,11 +72,13 @@ struct LoggedWorkout: Identifiable, Equatable, Codable {
 enum SampleData {
     static let exerciseDatabase = [
         ExercisePrescription(name: "Flat Barbell Bench Press", sets: 4, reps: 8),
-        ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 10),
-        ExercisePrescription(name: "Incline Dumbbell Press", sets: 3, reps: 12),
-        ExercisePrescription(name: "Overhead Press", sets: 3, reps: 10),
+        ExercisePrescription(name: "Incline Bench Press (Dumbbells)", sets: 3, reps: 12),
+        ExercisePrescription(name: "Incline Bicep Curls", sets: 3, reps: 12),
+        ExercisePrescription(name: "Incline Bench Press (Barbell)", sets: 4, reps: 8),
+        ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
         ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
+        ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15),
         ExercisePrescription(name: "Pull-Ups", sets: 4, reps: 8),
         ExercisePrescription(name: "Lat Pulldown", sets: 3, reps: 12),
         ExercisePrescription(name: "Barbell Row", sets: 4, reps: 10),
@@ -85,36 +87,43 @@ enum SampleData {
         ExercisePrescription(name: "Barbell Curl", sets: 3, reps: 12),
         ExercisePrescription(name: "Hammer Curl", sets: 3, reps: 12),
         ExercisePrescription(name: "Barbell Back Squat", sets: 5, reps: 5),
-        ExercisePrescription(name: "Front Squat", sets: 4, reps: 8),
         ExercisePrescription(name: "Romanian Deadlift", sets: 4, reps: 10),
         ExercisePrescription(name: "Leg Press", sets: 3, reps: 15),
         ExercisePrescription(name: "Leg Curl", sets: 3, reps: 12),
-        ExercisePrescription(name: "Walking Lunges", sets: 3, reps: 12),
         ExercisePrescription(name: "Standing Calf Raise", sets: 4, reps: 20)
     ]
 
     static let pushExercises = [
         ExercisePrescription(name: "Flat Barbell Bench Press", sets: 4, reps: 8),
-        ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 12),
-        ExercisePrescription(name: "Overhead Press", sets: 3, reps: 10),
+        ExercisePrescription(name: "Incline Dumbbell Press", sets: 3, reps: 12),
+        ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
-        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15)
+        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
+        ExercisePrescription(name: "Dips", sets: 3, reps: 10),
+        ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15),
+        ExercisePrescription(name: "Skull Crushers", sets: 3, reps: 12)
     ]
 
     static let legExercises = [
         ExercisePrescription(name: "Barbell Back Squat", sets: 5, reps: 5),
+        ExercisePrescription(name: "Front Squat", sets: 4, reps: 8),
         ExercisePrescription(name: "Romanian Deadlift", sets: 4, reps: 10),
         ExercisePrescription(name: "Leg Press", sets: 3, reps: 15),
         ExercisePrescription(name: "Leg Curl", sets: 3, reps: 12),
-        ExercisePrescription(name: "Standing Calf Raise", sets: 4, reps: 20)
+        ExercisePrescription(name: "Walking Lunges", sets: 3, reps: 12),
+        ExercisePrescription(name: "Standing Calf Raise", sets: 4, reps: 20),
+        ExercisePrescription(name: "Leg Extension", sets: 3, reps: 15)
     ]
 
     static let pullExercises = [
         ExercisePrescription(name: "Pull-Ups", sets: 4, reps: 8),
+        ExercisePrescription(name: "Lat Pulldown", sets: 3, reps: 12),
         ExercisePrescription(name: "Barbell Row", sets: 4, reps: 10),
         ExercisePrescription(name: "Seated Cable Row", sets: 3, reps: 12),
         ExercisePrescription(name: "Face Pulls", sets: 3, reps: 15),
-        ExercisePrescription(name: "Barbell Curl", sets: 3, reps: 12)
+        ExercisePrescription(name: "Barbell Curl", sets: 3, reps: 12),
+        ExercisePrescription(name: "Hammer Curl", sets: 3, reps: 12),
+        ExercisePrescription(name: "Rear Delt Fly", sets: 3, reps: 15)
     ]
 
     static let activePlan = WorkoutPlan(

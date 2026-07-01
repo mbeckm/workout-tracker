@@ -141,6 +141,14 @@ struct WorkoutStore {
     }
 
     private static func normalizedPlan(_ plan: WorkoutPlan) -> WorkoutPlan {
+        if plan.name == SampleData.activePlan.name {
+            var normalizedPlan = plan
+            normalizedPlan.daysPerWeek = SampleData.activePlan.daysPerWeek
+            normalizedPlan.createdAt = SampleData.activePlan.createdAt
+            normalizedPlan.days = SampleData.activePlan.days
+            return normalizedPlan
+        }
+
         guard plan.days.isEmpty else {
             return plan
         }
