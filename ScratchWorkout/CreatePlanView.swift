@@ -215,7 +215,8 @@ struct CreatePlanView: View {
                 TapGesture()
                     .onEnded {
                         searchFocused = false
-                    }
+                    },
+                including: .gesture
             )
 
             if !currentDayExercises.isEmpty && exerciseDraft == nil {
@@ -946,6 +947,7 @@ struct EditableExerciseCard: View {
             onReorderBefore(id)
             return true
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     private var deleteBackgroundOpacity: Double {
@@ -1002,15 +1004,16 @@ struct PlanEntrySurface: View {
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(height: resultViewportHeight)
+                .frame(maxWidth: .infinity, minHeight: resultViewportHeight, maxHeight: resultViewportHeight, alignment: .topLeading)
                 .scrollDismissesKeyboard(.interactively)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 15)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)

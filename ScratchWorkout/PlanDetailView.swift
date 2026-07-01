@@ -107,7 +107,8 @@ struct PlanDetailView: View {
                         .onEnded {
                             searchFocused = false
                             planNameFocused = false
-                        }
+                        },
+                    including: .gesture
                 )
 
                 if exerciseDraft == nil {
