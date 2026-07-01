@@ -203,9 +203,10 @@ struct WorkoutStore {
     }
 
     private func isSeededPPL(_ plan: WorkoutPlan) -> Bool {
-        plan.name == SampleData.activePlan.name &&
+        (plan.name == SampleData.activePlan.name || plan.name == "Push Pull Legs") &&
         plan.createdAt == SampleData.activePlan.createdAt &&
-        plan.daysPerWeek == SampleData.activePlan.daysPerWeek
+        plan.daysPerWeek == SampleData.activePlan.daysPerWeek &&
+        plan.days == SampleData.activePlan.days
     }
 
     private static func normalizedDays(_ days: [WorkoutDay], for planName: String, count: Int) -> [WorkoutDay] {
