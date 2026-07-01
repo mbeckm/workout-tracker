@@ -7,8 +7,6 @@ struct ScratchWorkoutApp: App {
             RootView()
                 .preferredColorScheme(.dark)
                 .statusBarHidden(true)
-                .persistentSystemOverlays(.hidden)
         }
     }
 }
-

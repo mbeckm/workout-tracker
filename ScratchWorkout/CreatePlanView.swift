@@ -655,15 +655,7 @@ private struct PlanEntrySurface: View {
     var onConfirmReps: () -> Void
 
     var body: some View {
-        Group {
-            if #available(iOS 26.0, *) {
-                GlassEffectContainer(spacing: 18) {
-                    content
-                }
-            } else {
-                content
-            }
-        }
+        content
         .animation(.spring(response: 0.4, dampingFraction: 0.84), value: mode)
         .onChange(of: mode) { _, newMode in
             focusSearchIfNeeded(for: newMode)
@@ -877,33 +869,16 @@ private struct DayReviewSection: View {
 }
 
 private extension View {
-    @ViewBuilder
     func liquidGlassSurface(cornerRadius: CGFloat, interactive: Bool = false) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
 
-        if #available(iOS 26.0, *) {
-            self
-                .background(AppColor.surface1.opacity(0.18), in: shape)
-                .glassEffect(glassEffect(interactive: interactive), in: shape)
-                .overlay(
-                    shape
-                        .stroke(AppColor.border.opacity(0.72), lineWidth: 1)
-                )
-        } else {
-            self
-                .background(.ultraThinMaterial, in: shape)
-                .background(AppColor.surface1.opacity(0.82), in: shape)
-                .overlay(
-                    shape
-                        .stroke(AppColor.border, lineWidth: 1)
-                )
-        }
-    }
-
-    @available(iOS 26.0, *)
-    private func glassEffect(interactive: Bool) -> Glass {
-        let glass = Glass.regular.tint(AppColor.surface1.opacity(0.24))
-        return interactive ? glass.interactive() : glass
+        return self
+            .background(.ultraThinMaterial, in: shape)
+            .background(AppColor.surface1.opacity(interactive ? 0.76 : 0.84), in: shape)
+            .overlay(
+                shape
+                    .stroke(AppColor.border.opacity(interactive ? 0.72 : 1), lineWidth: 1)
+            )
     }
 }
 
