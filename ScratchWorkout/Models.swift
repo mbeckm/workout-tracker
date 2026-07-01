@@ -103,20 +103,20 @@ enum SampleData {
         ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
         ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
         ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
-        ExercisePrescription(name: "Dips", sets: 3, reps: 10),
-        ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15),
-        ExercisePrescription(name: "Skull Crushers", sets: 3, reps: 12)
+        ExercisePrescription(name: "Dips", sets: 5, reps: 10),
+        ExercisePrescription(name: "Cable Chest Fly", sets: 5, reps: 15),
+        ExercisePrescription(name: "Skull Crushers", sets: 5, reps: 12)
     ]
 
     static let dayOneExercises = [
         ExercisePrescription(name: "Barbell Row", sets: 4, reps: 10),
         ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 8),
         ExercisePrescription(name: "Pull-Ups", sets: 4, reps: 8),
-        ExercisePrescription(name: "Seated Cable Row", sets: 3, reps: 12),
+        ExercisePrescription(name: "Seated Cable Row", sets: 4, reps: 12),
         ExercisePrescription(name: "Overhead Press", sets: 4, reps: 10),
-        ExercisePrescription(name: "Lateral Raises", sets: 3, reps: 15),
-        ExercisePrescription(name: "Tricep Pushdowns", sets: 3, reps: 15),
-        ExercisePrescription(name: "Cable Chest Fly", sets: 3, reps: 15)
+        ExercisePrescription(name: "Lateral Raises", sets: 4, reps: 15),
+        ExercisePrescription(name: "Tricep Pushdowns", sets: 4, reps: 15),
+        ExercisePrescription(name: "Cable Chest Fly", sets: 4, reps: 15)
     ]
 
     static let legExercises = [

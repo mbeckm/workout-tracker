@@ -195,11 +195,17 @@ struct WorkoutStore {
             return true
         }
 
-        guard let firstExercise = plan.days.first?.exercises.first else {
+        guard let firstDay = plan.days.first,
+              let firstExercise = firstDay.exercises.first else {
             return false
         }
 
-        return firstExercise.name == "Flat Barbell Bench Press"
+        if firstExercise.name == "Flat Barbell Bench Press" {
+            return true
+        }
+
+        return firstExercise.name == "Barbell Row" &&
+            firstDay.exercises.dropFirst().first?.name == "Incline Bench Press"
     }
 
     private func isSeededPPL(_ plan: WorkoutPlan) -> Bool {
