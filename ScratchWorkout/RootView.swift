@@ -14,12 +14,10 @@ struct RootView: View {
             currentScreen
 
             AppTabBar(selectedTab: $selectedTab, route: route) { tab in
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
-                    selectedTab = tab
-                    route = nil
-                    completedWorkout = nil
-                    clearWorkoutSession()
-                }
+                selectedTab = tab
+                route = nil
+                completedWorkout = nil
+                clearWorkoutSession()
             }
         }
         .background(AppColor.base)

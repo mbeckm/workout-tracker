@@ -14,6 +14,7 @@ struct CreatePlanView: View {
     var onFinish: (WorkoutPlan, Bool) -> Void
 
     @Namespace private var searchNamespace
+    @Namespace private var activationNamespace
     @FocusState private var searchFocused: Bool
     @State private var stage: Stage
     @State private var daysPerWeek: Int
@@ -57,7 +58,7 @@ struct CreatePlanView: View {
 
                 if stage == .activatePrompt {
                     activationPrompt
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(.scale(scale: 0.9, anchor: .bottom).combined(with: .opacity))
                 }
             }
             .padding(.horizontal, 24)
@@ -138,11 +139,23 @@ struct CreatePlanView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    ForEach(currentDayExercises) { exercise in
-                        ExerciseCard(exercise: exercise)
+                    if currentDayExercises.isEmpty {
+                        EmptyDayState()
+                    } else {
+                        ForEach(currentDayExercises) { exercise in
+                            ExerciseCard(exercise: exercise)
+                        }
+
+                        if stage == .search && !isSearchExpanded {
+                            CTAButton(title: "Save Day", width: 294) {
+                                saveCurrentDay()
+                            }
+                            .padding(.top, 4)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        }
                     }
                 }
-                .padding(.top, currentDayExercises.isEmpty ? 0 : 12)
+                .padding(.top, 12)
                 .padding(.bottom, 16)
             }
             .frame(maxHeight: 302)
@@ -156,48 +169,19 @@ struct CreatePlanView: View {
 
     @ViewBuilder
     private var bottomBuilder: some View {
-        VStack(spacing: 12) {
-            Group {
-                switch stage {
-                case .configureSets:
-                    ExerciseConfigCard(
-                        exercise: selectedExerciseName,
-                        label: "Number of sets",
-                        value: $configuredSets,
-                        onConfirm: confirmSets
-                    )
-                    .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                case .configureReps:
-                    ExerciseConfigCard(
-                        exercise: selectedExerciseName,
-                        label: "Number of reps",
-                        value: $configuredReps,
-                        onConfirm: addConfiguredExercise
-                    )
-                    .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                default:
-                    SearchSurface(
-                        query: $searchQuery,
-                        focused: $searchFocused,
-                        namespace: searchNamespace,
-                        results: filteredExercises,
-                        isExpanded: isSearchExpanded,
-                        onSelect: selectExercise
-                    )
-                }
-            }
-            .transition(.asymmetric(
-                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)),
-                removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .bottom))
-            ))
-
-            if stage == .search && !currentDayExercises.isEmpty && !isSearchExpanded {
-                CTAButton(title: "Save Day", width: 294) {
-                    saveCurrentDay()
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
+        PlanEntrySurface(
+            mode: entrySurfaceMode,
+            query: $searchQuery,
+            focused: $searchFocused,
+            results: filteredExercises,
+            exercise: selectedExerciseName,
+            sets: $configuredSets,
+            reps: $configuredReps,
+            onSelect: selectExercise,
+            onConfirmSets: confirmSets,
+            onConfirmReps: addConfiguredExercise
+        )
+        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
         .frame(maxWidth: .infinity)
     }
 
@@ -225,10 +209,16 @@ struct CreatePlanView: View {
 
             HStack {
                 Spacer()
-                CTAButton(title: "Save Plan", width: 294) {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
-                        stage = .activatePrompt
+                if stage == .finalReview {
+                    CTAButton(title: "Save Plan", width: 294) {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                            stage = .activatePrompt
+                        }
                     }
+                    .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
+                } else {
+                    Color.clear
+                        .frame(width: 294, height: 56)
                 }
                 Spacer()
             }
@@ -279,6 +269,7 @@ struct CreatePlanView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         )
+        .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
         .offset(x: 2, y: 589)
         .zIndex(4)
     }
@@ -293,6 +284,17 @@ struct CreatePlanView: View {
 
     private var isSearchExpanded: Bool {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var entrySurfaceMode: PlanEntrySurface.Mode {
+        switch stage {
+        case .configureSets:
+            .sets
+        case .configureReps:
+            .reps
+        default:
+            .search(expanded: isSearchExpanded)
+        }
     }
 
     private var filteredExercises: [ExercisePrescription] {
@@ -412,41 +414,70 @@ struct CreatePlanView: View {
     }
 }
 
-private struct SearchSurface: View {
+private struct EmptyDayState: View {
+    var body: some View {
+        CardShell(height: 84) {
+            Text("No exercises yet")
+                .font(AppFont.subheading)
+                .foregroundStyle(AppColor.secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityLabel("No exercises yet")
+    }
+}
+
+private struct PlanEntrySurface: View {
+    enum Mode: Equatable {
+        case search(expanded: Bool)
+        case sets
+        case reps
+    }
+
+    var mode: Mode
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
-    var namespace: Namespace.ID
     var results: [ExercisePrescription]
-    var isExpanded: Bool
+    var exercise: String
+    @Binding var sets: Int
+    @Binding var reps: Int
     var onSelect: (ExercisePrescription) -> Void
+    var onConfirmSets: () -> Void
+    var onConfirmReps: () -> Void
 
     var body: some View {
-        if #available(iOS 26.0, *) {
-            GlassEffectContainer(spacing: 18) {
+        Group {
+            if #available(iOS 26.0, *) {
+                GlassEffectContainer(spacing: 18) {
+                    content
+                }
+            } else {
                 content
             }
-        } else {
-            content
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.84), value: mode)
     }
 
     @ViewBuilder
     private var content: some View {
-        if isExpanded {
-            expanded
-        } else {
-            fieldOnly
+        switch mode {
+        case .search(let expanded):
+            if expanded {
+                expandedSearch
+            } else {
+                searchField
+                    .frame(width: 360, height: 54)
+                    .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
+            }
+        case .sets:
+            configuration(label: "Number of sets", value: $sets, onConfirm: onConfirmSets)
+                .transition(.opacity)
+        case .reps:
+            configuration(label: "Number of reps", value: $reps, onConfirm: onConfirmReps)
+                .transition(.opacity)
         }
     }
 
-    private var fieldOnly: some View {
-        searchField
-            .matchedGeometryEffect(id: "plan-entry-surface", in: namespace)
-            .frame(width: 360, height: 54)
-            .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
-    }
-
-    private var expanded: some View {
+    private var expandedSearch: some View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -482,7 +513,6 @@ private struct SearchSurface: View {
         }
         .frame(width: 360, height: 360)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
-        .matchedGeometryEffect(id: "plan-entry-surface", in: namespace)
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -501,19 +531,14 @@ private struct SearchSurface: View {
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
         .onAppear {
             DispatchQueue.main.async {
-                focused.wrappedValue = true
+                if case .search = mode {
+                    focused.wrappedValue = true
+                }
             }
         }
     }
-}
 
-private struct ExerciseConfigCard: View {
-    var exercise: String
-    var label: String
-    @Binding var value: Int
-    var onConfirm: () -> Void
-
-    var body: some View {
+    private func configuration(label: String, value: Binding<Int>, onConfirm: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(exercise)
@@ -528,16 +553,16 @@ private struct ExerciseConfigCard: View {
             HStack(alignment: .center) {
                 HStack(spacing: 16) {
                     RoundStepButton(symbol: "minus", fill: AppColor.border, accessibilityLabel: "Decrease \(label.lowercased())") {
-                        value = max(1, value - 1)
+                        value.wrappedValue = max(1, value.wrappedValue - 1)
                     }
 
-                    Text("\(value)")
+                    Text("\(value.wrappedValue)")
                         .font(AppFont.display)
                         .frame(width: 42)
                         .contentTransition(.numericText())
 
                     RoundStepButton(symbol: "plus", fill: AppColor.border, accessibilityLabel: "Increase \(label.lowercased())") {
-                        value = min(30, value + 1)
+                        value.wrappedValue = min(30, value.wrappedValue + 1)
                     }
                 }
 
@@ -560,6 +585,7 @@ private struct ExerciseConfigCard: View {
         .padding(24)
         .frame(width: 360, height: 153, alignment: .topLeading)
         .liquidGlassSurface(cornerRadius: 20, interactive: true)
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: value.wrappedValue)
     }
 }
 

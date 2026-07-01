@@ -149,31 +149,31 @@ private struct SetTable: View {
     var sets: [LoggedSet]
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(AppColor.surface2)
+        Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
+            GridRow {
+                header("Set")
+                header("kg")
+                header("Reps")
+            }
 
-            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
+            ForEach(sets) { set in
                 GridRow {
-                    header("Set")
-                    header("kg")
-                    header("Reps")
-                }
-
-                ForEach(sets) { set in
-                    GridRow {
-                        cell("\(set.index)", isEmpty: set.weight == nil)
-                        cell(set.weight.map(String.init) ?? "0", isEmpty: set.weight == nil)
-                        cell(set.reps.map(String.init) ?? "0", isEmpty: set.reps == nil)
-                    }
+                    cell("\(set.index)", isEmpty: set.weight == nil)
+                    cell(set.weight.map(String.init) ?? "0", isEmpty: set.weight == nil)
+                    cell(set.reps.map(String.init) ?? "0", isEmpty: set.reps == nil)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 25.3)
-            .padding(.trailing, 25.3)
-            .padding(.top, 12.6)
         }
-        .frame(height: 168)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, 25.3)
+        .padding(.trailing, 25.3)
+        .padding(.top, 12.6)
+        .padding(.bottom, 33.4)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
     }
 
     private func header(_ text: String) -> some View {

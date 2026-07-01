@@ -70,7 +70,7 @@ struct AppTabBar: View {
                 .fill(AppColor.border)
                 .frame(height: 1)
 
-            HStack(alignment: .top, spacing: 95) {
+            HStack(alignment: .top, spacing: 0) {
                 ForEach(AppTab.allCases) { tab in
                     Button {
                         Haptics.tap()
@@ -83,21 +83,39 @@ struct AppTabBar: View {
                             Text(tab.title)
                                 .font(AppFont.caption)
                                 .lineLimit(1)
+                                .frame(height: 16)
                         }
                         .foregroundStyle(activeTab == tab ? AppColor.accent : AppColor.secondaryText)
-                        .frame(height: 58)
+                        .frame(width: tab.slotWidth, height: 58, alignment: .top)
                     }
                     .buttonStyle(.plain)
+                    .frame(width: tab.slotWidth, height: 58, alignment: .top)
                     .accessibilityLabel(tab.title)
                     .accessibilityValue(activeTab == tab ? "Selected" : "")
+
+                    if tab != .workout {
+                        Spacer(minLength: 0)
+                            .frame(width: 95)
+                    }
                 }
             }
             .padding(.top, 12)
-            .frame(maxWidth: .infinity)
+            .frame(width: 310, alignment: .topLeading)
         }
         .frame(height: 82)
         .background(AppColor.surface1)
         .ignoresSafeArea(edges: .bottom)
+    }
+}
+
+private extension AppTab {
+    var slotWidth: CGFloat {
+        switch self {
+        case .home, .plans:
+            36
+        case .workout:
+            48
+        }
     }
 }
 
@@ -397,6 +415,7 @@ struct NumberStepper: View {
     @Binding var value: Int
     var minimum: Int = 1
     var maximum: Int = 999
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -405,22 +424,108 @@ struct NumberStepper: View {
                 .foregroundStyle(AppColor.secondaryText)
 
             HStack(spacing: 16) {
-                RoundStepButton(symbol: "minus", accessibilityLabel: "Decrease \(label)") {
+                RepeatingRoundStepButton(symbol: "minus", accessibilityLabel: "Decrease \(label)") {
                     value = max(minimum, value - 1)
                 }
 
-                Text("\(value)")
+                TextField("", text: numericText)
+                    .focused($isFocused)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
                     .font(AppFont.display)
+                    .foregroundStyle(AppColor.primaryText)
+                    .tint(AppColor.accent)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .contentTransition(.numericText())
-                    .frame(width: 42)
+                    .frame(width: 44)
+                    .accessibilityLabel("\(label) value")
 
-                RoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
+                RepeatingRoundStepButton(symbol: "plus", accessibilityLabel: "Increase \(label)") {
                     value = min(maximum, value + 1)
                 }
             }
         }
         .accessibilityElement(children: .contain)
+    }
+
+    private var numericText: Binding<String> {
+        Binding(
+            get: { "\(value)" },
+            set: { newValue in
+                let digits = newValue.filter(\.isNumber)
+                guard let parsed = Int(digits) else {
+                    value = minimum
+                    return
+                }
+
+                value = min(max(parsed, minimum), maximum)
+            }
+        )
+    }
+}
+
+private struct RepeatingRoundStepButton: View {
+    var symbol: String
+    var accessibilityLabel: String
+    var action: () -> Void
+
+    @State private var isPressing = false
+    @State private var repeatTask: Task<Void, Never>?
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 45, height: 45)
+                .background(AppColor.surface2, in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(AppColor.border, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    startRepeating()
+                }
+                .onEnded { _ in
+                    stopRepeating()
+                }
+        )
+        .onDisappear(perform: stopRepeating)
+    }
+
+    private func startRepeating() {
+        guard !isPressing else {
+            return
+        }
+
+        isPressing = true
+        repeatTask?.cancel()
+        repeatTask = Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            var delay: UInt64 = 125_000_000
+
+            while !Task.isCancelled {
+                await MainActor.run {
+                    action()
+                }
+
+                try? await Task.sleep(nanoseconds: delay)
+                delay = max(38_000_000, UInt64(Double(delay) * 0.84))
+            }
+        }
+    }
+
+    private func stopRepeating() {
+        isPressing = false
+        repeatTask?.cancel()
+        repeatTask = nil
     }
 }
