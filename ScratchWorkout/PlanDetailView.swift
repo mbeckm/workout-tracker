@@ -41,7 +41,9 @@ struct PlanDetailView: View {
                     completed: 0,
                     current: currentDayIndex,
                     selectedOnly: true,
-                    onSelect: switchToDay
+                    onSelect: switchToDay,
+                    onReorder: isEditing ? reorderDay : nil,
+                    onDelete: isEditing ? deleteDay : nil
                 )
                 .padding(.top, 24)
 
@@ -395,6 +397,63 @@ struct PlanDetailView: View {
             let adjustedTarget = targetIndex > fromIndex ? targetIndex - 1 : targetIndex
             draftPlan.days[currentDayIndex].exercises.insert(moved, at: adjustedTarget)
         }
+    }
+
+    private func reorderDay(_ fromIndex: Int, to targetIndex: Int) {
+        guard isEditing,
+              draftPlan.days.indices.contains(fromIndex),
+              draftPlan.days.indices.contains(targetIndex),
+              fromIndex != targetIndex else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            let movedDay = draftPlan.days.remove(at: fromIndex)
+            let destination = min(targetIndex, draftPlan.days.count)
+            draftPlan.days.insert(movedDay, at: destination)
+            currentDayIndex = adjustedCurrentDay(afterMovingFrom: fromIndex, to: destination)
+            draftPlan.daysPerWeek = draftPlan.days.count
+            resetEntryState(keepSearchVisible: true)
+        }
+    }
+
+    private func deleteDay(_ index: Int) {
+        guard isEditing,
+              draftPlan.days.count > 1,
+              draftPlan.days.indices.contains(index) else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            draftPlan.days.remove(at: index)
+            draftPlan.daysPerWeek = draftPlan.days.count
+            if currentDayIndex > index {
+                currentDayIndex -= 1
+            } else if currentDayIndex >= draftPlan.days.count {
+                currentDayIndex = max(draftPlan.days.count - 1, 0)
+            }
+            resetEntryState(keepSearchVisible: true)
+        }
+    }
+
+    private func adjustedCurrentDay(afterMovingFrom fromIndex: Int, to destination: Int) -> Int {
+        if currentDayIndex == fromIndex {
+            return destination
+        }
+
+        if fromIndex < currentDayIndex && currentDayIndex <= destination {
+            return currentDayIndex - 1
+        }
+
+        if destination <= currentDayIndex && currentDayIndex < fromIndex {
+            return currentDayIndex + 1
+        }
+
+        return currentDayIndex
     }
 
     private func savePlanEdits() {

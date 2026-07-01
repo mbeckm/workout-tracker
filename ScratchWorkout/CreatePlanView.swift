@@ -137,7 +137,14 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            DayStepProgress(count: daysPerWeek, completed: completedDays, current: currentDayIndex, onSelect: switchToDay)
+            DayStepProgress(
+                count: daysPerWeek,
+                completed: completedDays,
+                current: currentDayIndex,
+                onSelect: switchToDay,
+                onReorder: reorderDay,
+                onDelete: deleteDay
+            )
                 .padding(.top, 24)
 
             SectionTitle(text: currentDayTitle)
@@ -231,7 +238,14 @@ struct CreatePlanView: View {
                 .font(AppFont.display)
                 .padding(.top, 66)
 
-            DayStepProgress(count: daysPerWeek, completed: daysPerWeek, current: currentDayIndex, onSelect: switchToDay)
+            DayStepProgress(
+                count: daysPerWeek,
+                completed: daysPerWeek,
+                current: currentDayIndex,
+                onSelect: switchToDay,
+                onReorder: reorderDay,
+                onDelete: deleteDay
+            )
                 .padding(.top, 24)
 
             SectionTitle(text: currentDayTitle)
@@ -593,6 +607,65 @@ struct CreatePlanView: View {
             let adjustedTarget = targetIndex > fromIndex ? targetIndex - 1 : targetIndex
             planDays[currentDayIndex].insert(moved, at: adjustedTarget)
         }
+    }
+
+    private func reorderDay(_ fromIndex: Int, to targetIndex: Int) {
+        guard planDays.indices.contains(fromIndex),
+              planDays.indices.contains(targetIndex),
+              fromIndex != targetIndex else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            let movedDay = planDays.remove(at: fromIndex)
+            let destination = min(targetIndex, planDays.count)
+            planDays.insert(movedDay, at: destination)
+            currentDayIndex = adjustedCurrentDay(afterMovingFrom: fromIndex, to: destination)
+            completedDays = min(completedDays, daysPerWeek)
+        }
+    }
+
+    private func deleteDay(_ index: Int) {
+        guard daysPerWeek > 1,
+              planDays.indices.contains(index) else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            planDays.remove(at: index)
+            daysPerWeek = planDays.count
+            if currentDayIndex > index {
+                currentDayIndex -= 1
+            } else if currentDayIndex >= daysPerWeek {
+                currentDayIndex = max(daysPerWeek - 1, 0)
+            }
+            if completedDays > index {
+                completedDays -= 1
+            }
+            completedDays = min(completedDays, daysPerWeek)
+            resetExerciseEntry()
+            isAddingExercise = false
+        }
+    }
+
+    private func adjustedCurrentDay(afterMovingFrom fromIndex: Int, to destination: Int) -> Int {
+        if currentDayIndex == fromIndex {
+            return destination
+        }
+
+        if fromIndex < currentDayIndex && currentDayIndex <= destination {
+            return currentDayIndex - 1
+        }
+
+        if destination <= currentDayIndex && currentDayIndex < fromIndex {
+            return currentDayIndex + 1
+        }
+
+        return currentDayIndex
     }
 
     private func finish(activate: Bool) {
@@ -986,6 +1059,8 @@ struct DayStepProgress: View {
     var current: Int
     var selectedOnly = false
     var onSelect: ((Int) -> Void)?
+    var onReorder: ((Int, Int) -> Void)?
+    var onDelete: ((Int) -> Void)?
 
     private var barSpacing: CGFloat {
         count <= 4 ? 45 : 12
@@ -1009,20 +1084,7 @@ struct DayStepProgress: View {
         GeometryReader { proxy in
             HStack(spacing: barSpacing) {
                 ForEach(0..<max(count, 1), id: \.self) { index in
-                    Button {
-                        onSelect?(index)
-                    } label: {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(fill(for: index))
-                            .frame(width: barWidth(for: proxy.size.width), height: 24)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(onSelect == nil)
-                    .accessibilityLabel("Day \(index + 1)")
+                    dayBar(index: index, width: barWidth(for: proxy.size.width))
                 }
             }
             .frame(width: proxy.size.width, alignment: .leading)
@@ -1030,6 +1092,55 @@ struct DayStepProgress: View {
         .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
+    }
+
+    @ViewBuilder
+    private func dayBar(index: Int, width: CGFloat) -> some View {
+        let button = Button {
+            onSelect?(index)
+        } label: {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(fill(for: index))
+                .frame(width: width, height: 24)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(index == current ? AppColor.accent.opacity(0.65) : .clear, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Day \(index + 1)")
+
+        if onReorder != nil || onDelete != nil {
+            button
+                .draggable(String(index))
+                .dropDestination(for: String.self) { items, _ in
+                    guard let rawIndex = items.first,
+                          let fromIndex = Int(rawIndex),
+                          fromIndex != index else {
+                        return false
+                    }
+
+                    onReorder?(fromIndex, index)
+                    return true
+                }
+                .simultaneousGesture(deleteSwipe(for: index))
+        } else {
+            button
+        }
+    }
+
+    private func deleteSwipe(for index: Int) -> some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = abs(value.translation.height)
+                guard horizontal < -36,
+                      abs(horizontal) > vertical * 1.4 else {
+                    return
+                }
+
+                onDelete?(index)
+            }
     }
 
     private func fill(for index: Int) -> Color {
