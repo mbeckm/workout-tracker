@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
+    @StateObject private var accountController = AccountController()
     @State private var selectedTab: AppTab = .home
     @State private var route: AppRoute?
     @State private var store = WorkoutStore()
@@ -8,6 +9,7 @@ struct RootView: View {
     @State private var workoutSessionDay: WorkoutDay?
     @State private var activeExerciseIndex = 0
     @State private var loggedExerciseSets: [[LoggedSet]] = []
+    @State private var isAccountPresented = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -30,6 +32,13 @@ struct RootView: View {
         }
         .ignoresSafeArea(.container, edges: .bottom)
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .task {
+            await accountController.restoreSession()
+        }
+        .sheet(isPresented: $isAccountPresented) {
+            AccountView(controller: accountController, currentSnapshot: store.cloudSnapshot)
+                .preferredColorScheme(.dark)
+        }
     }
 
     @ViewBuilder
@@ -58,6 +67,7 @@ struct RootView: View {
                 },
                 onSave: { plan in
                     store.updatePlan(plan)
+                    syncAccount(reason: .planUpdated)
                 }
             )
         case .planDetail(let planID):
@@ -72,6 +82,7 @@ struct RootView: View {
                     },
                     onSave: { plan in
                         store.updatePlan(plan)
+                        syncAccount(reason: .planUpdated)
                     }
                 )
             } else {
@@ -123,11 +134,22 @@ struct RootView: View {
         case .createPlan:
             CreatePlanView { plan, activate in
                 store.savePlan(plan, activate: activate)
+                syncAccount(reason: .planSaved)
                 withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
                     selectedTab = .plans
                     route = nil
                 }
             }
+        case .exerciseStats(let exerciseName):
+            ExerciseStatsView(
+                stats: store.exerciseStats(for: exerciseName),
+                onBack: {
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                        selectedTab = .stats
+                        route = nil
+                    }
+                }
+            )
         case nil:
             switch selectedTab {
             case .home:
@@ -136,6 +158,8 @@ struct RootView: View {
                     nextWorkout: store.nextWorkoutDay,
                     recentWorkout: store.recentWorkout,
                     workoutsThisMonth: store.workoutsThisMonth,
+                    accountSession: accountController.session,
+                    accountSyncState: accountController.syncState,
                     onOpenActivePlan: {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                             route = .activePlanDetail
@@ -145,6 +169,9 @@ struct RootView: View {
                         withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
                             route = .nextWorkoutPreview
                         }
+                    },
+                    onOpenAccount: {
+                        isAccountPresented = true
                     }
                 )
             case .plans:
@@ -168,6 +195,15 @@ struct RootView: View {
                         beginWorkout()
                     }
                 })
+            case .stats:
+                StatsView(
+                    topExercises: store.topLoggedExercises,
+                    onOpenExercise: { exerciseName in
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                            route = .exerciseStats(exerciseName)
+                        }
+                    }
+                )
             }
         }
     }
@@ -190,6 +226,7 @@ struct RootView: View {
 
         if index >= day.exercises.count - 1 {
             completedWorkout = store.completeWorkout(day: day, exerciseSets: loggedExerciseSets)
+            syncAccount(reason: .workoutCompleted)
             route = .workoutComplete
         } else {
             activeExerciseIndex = index + 1
@@ -200,6 +237,14 @@ struct RootView: View {
         workoutSessionDay = nil
         activeExerciseIndex = 0
         loggedExerciseSets = []
+    }
+
+    private func syncAccount(reason: WorkoutSyncReason) {
+        let snapshot = store.cloudSnapshot
+
+        Task {
+            await accountController.sync(snapshot: snapshot, reason: reason)
+        }
     }
 }
 
@@ -272,8 +317,11 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     nextWorkout: SampleData.activePlan.days[0],
                     recentWorkout: nil,
                     workoutsThisMonth: 14,
+                    accountSession: .signedOut,
+                    accountSyncState: .signedOut,
                     onOpenActivePlan: {},
-                    onOpenNextWorkout: {}
+                    onOpenNextWorkout: {},
+                    onOpenAccount: {}
                 )
             }
             .previewDisplayName("Overview")
@@ -284,8 +332,11 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     nextWorkout: WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
                     recentWorkout: PreviewFixtures.recentWorkout,
                     workoutsThisMonth: 14,
+                    accountSession: .signedIn(AccountUser(id: "preview-apple", displayName: "Apple Account", email: nil, provider: .apple, createdAt: Date())),
+                    accountSyncState: .synced(Date()),
                     onOpenActivePlan: {},
-                    onOpenNextWorkout: {}
+                    onOpenNextWorkout: {},
+                    onOpenAccount: {}
                 )
             }
             .previewDisplayName("Overview - Recent")

@@ -30,12 +30,89 @@ struct WorkoutStore {
         workoutHistory.first
     }
 
+    var cloudSnapshot: WorkoutCloudSnapshot {
+        WorkoutCloudSnapshot(
+            activePlan: activePlan,
+            savedPlans: savedPlans,
+            workoutHistory: workoutHistory,
+            nextDayIndex: normalizedNextDayIndex,
+            capturedAt: Date()
+        )
+    }
+
     var workoutsThisMonth: Int {
         let calendar = Calendar.current
         let completedThisMonth = workoutHistory.filter {
             calendar.isDate($0.completedAt, equalTo: Date(), toGranularity: .month)
         }
         return 14 + completedThisMonth.count
+    }
+
+    var topLoggedExercises: [ExerciseSetSummary] {
+        let summaries = statsWorkouts
+            .flatMap(\.exercises)
+            .reduce(into: [String: ExerciseSetSummary]()) { partialResult, exercise in
+                let setCount = exercise.sets.filter(\.hasLoggedValues).count
+                guard setCount > 0 else {
+                    return
+                }
+
+                let key = exercise.exerciseName.normalizedStatsKey
+                if var existing = partialResult[key] {
+                    existing.setCount += setCount
+                    partialResult[key] = existing
+                } else {
+                    partialResult[key] = ExerciseSetSummary(exerciseName: exercise.exerciseName, setCount: setCount)
+                }
+            }
+            .values
+            .sorted { lhs, rhs in
+                if lhs.setCount == rhs.setCount {
+                    return lhs.exerciseName < rhs.exerciseName
+                }
+
+                return lhs.setCount > rhs.setCount
+            }
+
+        return Array(summaries.prefix(3))
+    }
+
+    func exerciseStats(for exerciseName: String) -> ExerciseStatsDetails {
+        let key = exerciseName.normalizedStatsKey
+        let calendar = Calendar.current
+        let points = statsWorkouts
+            .flatMap { workout in
+                workout.exercises
+                    .filter { $0.exerciseName.normalizedStatsKey == key }
+                    .map { (workout.completedAt, $0) }
+            }
+            .reduce(into: [Date: (totalTenRM: Double, setCount: Int)]()) { partialResult, entry in
+                let day = calendar.startOfDay(for: entry.0)
+                let tenRMs = entry.1.sets.compactMap(\.estimatedTenRM)
+
+                guard !tenRMs.isEmpty else {
+                    return
+                }
+
+                var aggregate = partialResult[day] ?? (0, 0)
+                aggregate.totalTenRM += tenRMs.reduce(0, +)
+                aggregate.setCount += tenRMs.count
+                partialResult[day] = aggregate
+            }
+            .map { day, aggregate in
+                ExerciseStatsPoint(
+                    date: day,
+                    averageTenRM: aggregate.totalTenRM / Double(aggregate.setCount),
+                    setCount: aggregate.setCount
+                )
+            }
+            .sorted { $0.date < $1.date }
+
+        return ExerciseStatsDetails(
+            exerciseName: exerciseName,
+            totalLoggedSets: points.reduce(0) { $0 + $1.setCount },
+            progression: points
+        )
     }
 
     private let defaults: UserDefaults
@@ -108,12 +185,16 @@ struct WorkoutStore {
             .filter { $0.weight != nil && $0.reps != nil }
             .count
         let prescribedSetCount = day.exercises.reduce(0) { $0 + $1.sets }
+        let loggedExercises = zip(day.exercises, exerciseSets).map { exercise, sets in
+            LoggedExercise(exerciseName: exercise.name, sets: sets)
+        }
         let workout = LoggedWorkout(
             title: day.title,
             completedAt: Date(),
             durationMinutes: 93,
             exerciseCount: day.exercises.count,
-            setCount: completedSetCount == 0 ? prescribedSetCount : completedSetCount
+            setCount: completedSetCount == 0 ? prescribedSetCount : completedSetCount,
+            exercises: loggedExercises
         )
         workoutHistory.insert(workout, at: 0)
         advancePastCompletedDay(day)
@@ -142,6 +223,11 @@ struct WorkoutStore {
         }
 
         return min(max(nextDayIndex, 0), activePlan.days.count - 1)
+    }
+
+    private var statsWorkouts: [LoggedWorkout] {
+        let detailedWorkouts = workoutHistory.filter { !$0.exercises.isEmpty }
+        return detailedWorkouts.isEmpty ? SampleData.loggedStatsHistory : detailedWorkouts
     }
 
     private mutating func advancePastCompletedDay(_ day: WorkoutDay) {

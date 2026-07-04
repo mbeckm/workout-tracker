@@ -9,6 +9,7 @@ struct CreatePlanView: View {
     }
 
     var onFinish: (WorkoutPlan, Bool) -> Void
+    private let exerciseCatalog: any ExerciseCatalogService
 
     @Namespace private var searchNamespace
     @Namespace private var activationNamespace
@@ -19,6 +20,8 @@ struct CreatePlanView: View {
     @State private var completedDays = 0
     @State private var planDays: [[ExercisePrescription]]
     @State private var searchQuery: String
+    @State private var searchResults: [ExercisePrescription] = []
+    @State private var searchState: PlanEntrySearchState = .idle
     @State private var isAddingExercise = false
     @State private var exerciseDraft: ExerciseDraft?
     @State private var exerciseDraftStep: ExerciseDraftStep = .sets
@@ -27,6 +30,7 @@ struct CreatePlanView: View {
         initialStage: Stage = .frequency,
         daysPerWeek: Int = 3,
         searchQuery: String = "",
+        exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
         onFinish: @escaping (WorkoutPlan, Bool) -> Void
     ) {
         let seededDays: [[ExercisePrescription]]
@@ -41,6 +45,7 @@ struct CreatePlanView: View {
         }
 
         self.onFinish = onFinish
+        self.exerciseCatalog = exerciseCatalog
         _stage = State(initialValue: initialStage)
         _daysPerWeek = State(initialValue: daysPerWeek)
         _searchQuery = State(initialValue: searchQuery)
@@ -72,6 +77,9 @@ struct CreatePlanView: View {
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isAddingExercise)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: exerciseDraftStep)
+        .task(id: searchQuery) {
+            await updateExerciseSearch()
+        }
     }
 
     @ViewBuilder
@@ -165,7 +173,8 @@ struct CreatePlanView: View {
                         PlanEntrySurface(
                             query: $searchQuery,
                             focused: $searchFocused,
-                            results: filteredExercises,
+                            results: searchResults,
+                            searchState: searchState,
                             onConfigure: configureExerciseFromSearch
                         )
                         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
@@ -267,7 +276,8 @@ struct CreatePlanView: View {
                         PlanEntrySurface(
                             query: $searchQuery,
                             focused: $searchFocused,
-                            results: filteredExercises,
+                            results: searchResults,
+                            searchState: searchState,
                             onConfigure: configureExerciseFromSearch
                         )
                         .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
@@ -405,18 +415,6 @@ struct CreatePlanView: View {
         exerciseDraft == nil && (isAddingExercise || isSearchExpanded)
     }
 
-    private var filteredExercises: [ExercisePrescription] {
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !query.isEmpty else {
-            return []
-        }
-
-        return Array(SampleData.exerciseDatabase.filter {
-            $0.name.localizedCaseInsensitiveContains(query)
-        })
-    }
-
     private var generatedDays: [WorkoutDay] {
         (0..<daysPerWeek).map { index in
             WorkoutDay(title: "Day \(index + 1)", exercises: exercisesForDay(at: index))
@@ -469,7 +467,8 @@ struct CreatePlanView: View {
                 editingID: editingID,
                 name: displayName,
                 sets: exercise.sets,
-                reps: exercise.reps
+                reps: exercise.reps,
+                sourceExercise: exercise
             )
             exerciseDraftStep = .sets
             isAddingExercise = false
@@ -510,7 +509,10 @@ struct CreatePlanView: View {
         ensurePlanDays()
 
         let shouldResumeSearch = stage == .search
-        var savedExercise = ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
+        var savedExercise = draft.sourceExercise ?? ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
+        savedExercise.name = draft.name
+        savedExercise.sets = draft.sets
+        savedExercise.reps = draft.reps
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
             if let editingID = draft.editingID,
@@ -518,6 +520,7 @@ struct CreatePlanView: View {
                 savedExercise.id = editingID
                 planDays[currentDayIndex][index] = savedExercise
             } else {
+                savedExercise.id = UUID()
                 planDays[currentDayIndex].append(savedExercise)
             }
 
@@ -532,6 +535,10 @@ struct CreatePlanView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 searchFocused = true
             }
+        }
+
+        Task {
+            await exerciseCatalog.recordSelection(savedExercise)
         }
     }
 
@@ -684,8 +691,48 @@ struct CreatePlanView: View {
     private func resetExerciseEntry() {
         searchQuery = ""
         searchFocused = false
+        searchResults = []
+        searchState = .idle
         exerciseDraft = nil
         exerciseDraftStep = .sets
+    }
+
+    private func updateExerciseSearch() async {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !query.isEmpty else {
+            searchResults = []
+            searchState = .idle
+            return
+        }
+
+        searchState = .loading
+
+        do {
+            try await Task.sleep(for: .milliseconds(250))
+        } catch {
+            return
+        }
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        let response = await exerciseCatalog.search(query: query)
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        searchResults = response.exercises
+
+        if response.exercises.isEmpty {
+            searchState = .message(response.notice?.message ?? "No matching exercises")
+        } else if let notice = response.notice {
+            searchState = .message(notice.message)
+        } else {
+            searchState = .loaded
+        }
     }
 
     private func draftBinding(fallback: ExerciseDraft) -> Binding<ExerciseDraft> {
@@ -738,6 +785,7 @@ struct ExerciseDraft: Identifiable, Equatable {
     var name: String
     var sets: Int
     var reps: Int
+    var sourceExercise: ExercisePrescription? = nil
 }
 
 private struct EmptyDayState: View {
@@ -972,6 +1020,7 @@ struct PlanEntrySurface: View {
     @Binding var query: String
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
+    var searchState: PlanEntrySearchState = .idle
     var autoFocus = true
     var onConfigure: (ExercisePrescription) -> Void
 
@@ -980,8 +1029,23 @@ struct PlanEntrySurface: View {
     }
 
     private var resultViewportHeight: CGFloat {
-        let visibleRows = max(1, min(results.count, 5))
+        let visibleRows = max(1, min(results.count + statusRowCount, 5))
         return CGFloat(visibleRows * 26 + max(0, visibleRows - 1) * 16)
+    }
+
+    private var statusMessage: String? {
+        switch searchState {
+        case .idle, .loaded:
+            nil
+        case .loading:
+            "Searching exercises"
+        case .message(let message):
+            message
+        }
+    }
+
+    private var statusRowCount: Int {
+        statusMessage == nil ? 0 : 1
     }
 
     var body: some View {
@@ -996,7 +1060,14 @@ struct PlanEntrySurface: View {
 
                 ScrollView(showsIndicators: results.count > 5) {
                     VStack(alignment: .leading, spacing: 16) {
-                        if results.isEmpty {
+                        if let statusMessage {
+                            Text(statusMessage)
+                                .font(AppFont.h2)
+                                .foregroundStyle(AppColor.secondaryText)
+                                .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                        }
+
+                        if results.isEmpty && statusMessage == nil {
                             Text("No matching exercises")
                                 .font(AppFont.h2)
                                 .foregroundStyle(AppColor.secondaryText)
@@ -1022,6 +1093,8 @@ struct PlanEntrySurface: View {
                 .frame(maxWidth: .infinity, minHeight: resultViewportHeight, maxHeight: resultViewportHeight, alignment: .topLeading)
                 .scrollDismissesKeyboard(.interactively)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+
+                providerAttribution
             }
         }
         .padding(.horizontal, 16)
@@ -1034,6 +1107,17 @@ struct PlanEntrySurface: View {
         )
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
+    }
+
+    private var providerAttribution: some View {
+        Link(destination: URL(string: "https://ascendapi.com")!) {
+            Text("Exercise data by AscendAPI")
+                .font(AppFont.caption)
+                .foregroundStyle(AppColor.secondaryText)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityLabel("Exercise data by AscendAPI")
     }
 
     private var searchField: some View {
@@ -1067,6 +1151,13 @@ struct PlanEntrySurface: View {
             }
         }
     }
+}
+
+enum PlanEntrySearchState: Equatable {
+    case idle
+    case loading
+    case loaded
+    case message(String)
 }
 
 struct DayStepProgress: View {

@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -16,10 +16,16 @@
 		A10000000000000000000007 /* PlansView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* PlansView.swift */; };
 		A10000000000000000000008 /* WorkoutViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* WorkoutViews.swift */; };
 		A10000000000000000000009 /* CreatePlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* CreatePlanView.swift */; };
+		A10000000000000000000011 /* Resources/Fonts/Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* Resources/Fonts/Inter.ttf */; };
+		A10000000000000000000012 /* Resources/Fonts/OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Resources/Fonts/OFL.txt */; };
 		A10000000000000000000015 /* WorkoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* WorkoutStore.swift */; };
 		A10000000000000000000016 /* PlanDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* PlanDetailView.swift */; };
-		A10000000000000000000011 /* Inter.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* Inter.ttf */; };
-		A10000000000000000000012 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* OFL.txt */; };
+		A10000000000000000000017 /* ExerciseCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ExerciseCatalog.swift */; };
+		A10000000000000000000018 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* PrivacyInfo.xcprivacy */; };
+		A10000000000000000000019 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* StatsView.swift */; };
+		A10000000000000000000020 /* AccountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* AccountModels.swift */; };
+		A10000000000000000000021 /* AccountServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* AccountServices.swift */; };
+		A10000000000000000000022 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* AccountView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,12 +39,18 @@
 		A20000000000000000000008 /* WorkoutViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutViews.swift; sourceTree = "<group>"; };
 		A20000000000000000000009 /* CreatePlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePlanView.swift; sourceTree = "<group>"; };
 		A20000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A20000000000000000000011 /* Inter.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/Fonts/Inter.ttf; sourceTree = "<group>"; };
-		A20000000000000000000012 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Resources/Fonts/OFL.txt; sourceTree = "<group>"; };
+		A20000000000000000000011 /* Resources/Fonts/Inter.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Resources/Fonts/Inter.ttf; sourceTree = "<group>"; };
+		A20000000000000000000012 /* Resources/Fonts/OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Resources/Fonts/OFL.txt; sourceTree = "<group>"; };
 		A20000000000000000000013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000014 /* ScratchWorkout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScratchWorkout.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000015 /* WorkoutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000016 /* PlanDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanDetailView.swift; sourceTree = "<group>"; };
+		A20000000000000000000017 /* ExerciseCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCatalog.swift; sourceTree = "<group>"; };
+		A20000000000000000000018 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A20000000000000000000019 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* AccountModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountModels.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* AccountServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountServices.swift; sourceTree = "<group>"; };
+		A20000000000000000000022 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +79,7 @@
 				A20000000000000000000002 /* Theme.swift */,
 				A20000000000000000000003 /* Models.swift */,
 				A20000000000000000000015 /* WorkoutStore.swift */,
+				A20000000000000000000017 /* ExerciseCatalog.swift */,
 				A20000000000000000000004 /* Components.swift */,
 				A20000000000000000000005 /* RootView.swift */,
 				A20000000000000000000006 /* HomeView.swift */,
@@ -74,10 +87,15 @@
 				A20000000000000000000016 /* PlanDetailView.swift */,
 				A20000000000000000000008 /* WorkoutViews.swift */,
 				A20000000000000000000009 /* CreatePlanView.swift */,
+				A20000000000000000000019 /* StatsView.swift */,
+				A20000000000000000000020 /* AccountModels.swift */,
+				A20000000000000000000021 /* AccountServices.swift */,
+				A20000000000000000000022 /* AccountView.swift */,
 				A20000000000000000000010 /* Assets.xcassets */,
-				A20000000000000000000011 /* Inter.ttf */,
-				A20000000000000000000012 /* OFL.txt */,
+				A20000000000000000000011 /* Resources/Fonts/Inter.ttf */,
+				A20000000000000000000012 /* Resources/Fonts/OFL.txt */,
 				A20000000000000000000013 /* Info.plist */,
+				A20000000000000000000018 /* PrivacyInfo.xcprivacy */,
 			);
 			path = ScratchWorkout;
 			sourceTree = "<group>";
@@ -148,8 +166,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10000000000000000000011 /* Inter.ttf in Resources */,
-				A10000000000000000000012 /* OFL.txt in Resources */,
+				A10000000000000000000011 /* Resources/Fonts/Inter.ttf in Resources */,
+				A10000000000000000000012 /* Resources/Fonts/OFL.txt in Resources */,
+				A10000000000000000000018 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,6 +183,7 @@
 				A10000000000000000000002 /* Theme.swift in Sources */,
 				A10000000000000000000003 /* Models.swift in Sources */,
 				A10000000000000000000015 /* WorkoutStore.swift in Sources */,
+				A10000000000000000000017 /* ExerciseCatalog.swift in Sources */,
 				A10000000000000000000004 /* Components.swift in Sources */,
 				A10000000000000000000005 /* RootView.swift in Sources */,
 				A10000000000000000000006 /* HomeView.swift in Sources */,
@@ -171,6 +191,10 @@
 				A10000000000000000000016 /* PlanDetailView.swift in Sources */,
 				A10000000000000000000008 /* WorkoutViews.swift in Sources */,
 				A10000000000000000000009 /* CreatePlanView.swift in Sources */,
+				A10000000000000000000019 /* StatsView.swift in Sources */,
+				A10000000000000000000020 /* AccountModels.swift in Sources */,
+				A10000000000000000000021 /* AccountServices.swift in Sources */,
+				A10000000000000000000022 /* AccountView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,7 +324,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 494ATHBZ74;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScratchWorkout/Info.plist;
@@ -330,7 +354,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 494ATHBZ74;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = ScratchWorkout/Info.plist;

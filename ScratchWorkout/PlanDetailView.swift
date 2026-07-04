@@ -5,6 +5,7 @@ struct PlanDetailView: View {
     var allowsEditing: Bool
     var onStartWorkout: (WorkoutDay) -> Void
     var onSave: (WorkoutPlan) -> Void
+    private let exerciseCatalog: any ExerciseCatalogService
 
     @Namespace private var entryNamespace
     @FocusState private var planNameFocused: Bool
@@ -13,6 +14,8 @@ struct PlanDetailView: View {
     @State private var currentDayIndex = 0
     @State private var isEditing = false
     @State private var searchQuery = ""
+    @State private var searchResults: [ExercisePrescription] = []
+    @State private var searchState: PlanEntrySearchState = .idle
     @State private var isAddingExercise = false
     @State private var exerciseDraft: ExerciseDraft?
     @State private var exerciseDraftStep: ExerciseDraftStep = .sets
@@ -20,11 +23,13 @@ struct PlanDetailView: View {
     init(
         plan: WorkoutPlan,
         allowsEditing: Bool,
+        exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
         onStartWorkout: @escaping (WorkoutDay) -> Void,
         onSave: @escaping (WorkoutPlan) -> Void
     ) {
         self.plan = plan
         self.allowsEditing = allowsEditing
+        self.exerciseCatalog = exerciseCatalog
         self.onStartWorkout = onStartWorkout
         self.onSave = onSave
         _draftPlan = State(initialValue: Self.editableDisplayPlan(plan))
@@ -134,6 +139,9 @@ struct PlanDetailView: View {
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isEditing)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: exerciseDraftStep)
+        .task(id: searchQuery) {
+            await updateExerciseSearch()
+        }
         .onChange(of: plan) { _, newPlan in
             syncDraftPlan(with: newPlan)
         }
@@ -203,7 +211,8 @@ struct PlanDetailView: View {
             PlanEntrySurface(
                 query: $searchQuery,
                 focused: $searchFocused,
-                results: filteredExercises,
+                results: searchResults,
+                searchState: searchState,
                 autoFocus: false,
                 onConfigure: configureExerciseFromSearch
             )
@@ -246,18 +255,6 @@ struct PlanDetailView: View {
 
     private var shouldShowSearchSurface: Bool {
         exerciseDraft == nil && (isAddingExercise || !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-    }
-
-    private var filteredExercises: [ExercisePrescription] {
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !query.isEmpty else {
-            return []
-        }
-
-        return Array(SampleData.exerciseDatabase.filter {
-            $0.name.localizedCaseInsensitiveContains(query)
-        })
     }
 
     private func beginEditing() {
@@ -303,7 +300,8 @@ struct PlanDetailView: View {
                 editingID: editingID,
                 name: displayName,
                 sets: exercise.sets,
-                reps: exercise.reps
+                reps: exercise.reps,
+                sourceExercise: exercise
             )
             exerciseDraftStep = .sets
             isAddingExercise = false
@@ -346,7 +344,10 @@ struct PlanDetailView: View {
             return
         }
 
-        var savedExercise = ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
+        var savedExercise = draft.sourceExercise ?? ExercisePrescription(name: draft.name, sets: draft.sets, reps: draft.reps)
+        savedExercise.name = draft.name
+        savedExercise.sets = draft.sets
+        savedExercise.reps = draft.reps
 
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
             if let editingID = draft.editingID,
@@ -354,6 +355,7 @@ struct PlanDetailView: View {
                 savedExercise.id = editingID
                 draftPlan.days[currentDayIndex].exercises[index] = savedExercise
             } else {
+                savedExercise.id = UUID()
                 draftPlan.days[currentDayIndex].exercises.append(savedExercise)
             }
 
@@ -368,6 +370,10 @@ struct PlanDetailView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 searchFocused = true
             }
+        }
+
+        Task {
+            await exerciseCatalog.recordSelection(savedExercise)
         }
     }
 
@@ -474,11 +480,51 @@ struct PlanDetailView: View {
 
     private func resetEntryState(keepSearchVisible: Bool) {
         searchQuery = ""
+        searchResults = []
+        searchState = .idle
         searchFocused = false
         planNameFocused = false
         exerciseDraft = nil
         exerciseDraftStep = .sets
         isAddingExercise = keepSearchVisible
+    }
+
+    private func updateExerciseSearch() async {
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !query.isEmpty else {
+            searchResults = []
+            searchState = .idle
+            return
+        }
+
+        searchState = .loading
+
+        do {
+            try await Task.sleep(for: .milliseconds(250))
+        } catch {
+            return
+        }
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        let response = await exerciseCatalog.search(query: query)
+
+        guard !Task.isCancelled else {
+            return
+        }
+
+        searchResults = response.exercises
+
+        if response.exercises.isEmpty {
+            searchState = .message(response.notice?.message ?? "No matching exercises")
+        } else if let notice = response.notice {
+            searchState = .message(notice.message)
+        } else {
+            searchState = .loaded
+        }
     }
 
     private func syncDraftPlan(with plan: WorkoutPlan) {

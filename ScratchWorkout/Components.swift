@@ -38,6 +38,8 @@ struct AppTabBar: View {
             .workout
         case .startWorkout, .nextWorkoutPreview:
             .home
+        case .exerciseStats:
+            .stats
         case nil:
             selectedTab
         }
@@ -61,21 +63,16 @@ struct AppTabBar: View {
                                 .frame(height: 16)
                         }
                         .foregroundStyle(activeTab == tab ? AppColor.accent : AppColor.secondaryText)
-                        .frame(width: AppTab.slotWidth, height: 58, alignment: .top)
+                        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: 58, alignment: .top)
                     }
                     .buttonStyle(.plain)
-                    .frame(width: AppTab.slotWidth, height: 58, alignment: .top)
+                    .frame(maxWidth: .infinity, minHeight: 58, maxHeight: 58, alignment: .top)
                     .accessibilityLabel(tab.title)
                     .accessibilityValue(activeTab == tab ? "Selected" : "")
-
-                    if tab != .workout {
-                        Spacer(minLength: 0)
-                            .frame(width: AppTab.slotSpacing)
-                    }
                 }
             }
             .padding(.top, 12)
-            .frame(width: 310, alignment: .topLeading)
+            .frame(maxWidth: 354, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, minHeight: 82, maxHeight: 82, alignment: .top)
         .background(AppColor.surface1)
@@ -87,16 +84,6 @@ struct AppTabBar: View {
         .transaction { transaction in
             transaction.animation = nil
         }
-    }
-}
-
-private extension AppTab {
-    static var slotWidth: CGFloat {
-        72
-    }
-
-    static var slotSpacing: CGFloat {
-        47
     }
 }
 
@@ -113,6 +100,8 @@ private struct TabIcon: View {
                 PlansTabIcon(color: color)
             case .workout:
                 WorkoutTabIcon(color: color)
+            case .stats:
+                StatsTabIcon(color: color)
             }
         }
         .frame(width: 36, height: 36)
@@ -185,6 +174,31 @@ private struct WorkoutTabIcon: View {
             .fill(color)
             .frame(width: 4, height: 13)
             .rotationEffect(.degrees(45))
+    }
+}
+
+private struct StatsTabIcon: View {
+    var color: Color
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Path { path in
+                path.move(to: CGPoint(x: 7, y: 29))
+                path.addLine(to: CGPoint(x: 29, y: 29))
+                path.move(to: CGPoint(x: 7, y: 29))
+                path.addLine(to: CGPoint(x: 7, y: 7))
+            }
+            .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+
+            Path { path in
+                path.move(to: CGPoint(x: 10, y: 24))
+                path.addLine(to: CGPoint(x: 15, y: 19))
+                path.addLine(to: CGPoint(x: 20, y: 21))
+                path.addLine(to: CGPoint(x: 28, y: 12))
+            }
+            .stroke(color, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+        }
+        .frame(width: 36, height: 36)
     }
 }
 
