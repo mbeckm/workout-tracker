@@ -139,18 +139,27 @@ final class LiveExerciseCatalogService: ExerciseCatalogService {
             return ExerciseCatalogSearchResponse(exercises: [], notice: nil)
         }
 
+        let recentItemIDs = await cache.recentItemIDs()
+
         do {
-            let items = try await provider.search(query: trimmedQuery, limit: 20)
-            await cache.save(items: items, for: trimmedQuery)
+            let apiItems = try await provider.search(query: trimmedQuery, limit: 50)
+            let rankedItems = ExerciseCatalogSearchRanker.rank(
+                apiItems + seedProvider.catalogItems(for: trimmedQuery),
+                query: trimmedQuery,
+                priorityNames: seedProvider.priorityNames,
+                recentItemIDs: recentItemIDs,
+                limit: 20
+            )
+            await cache.save(items: rankedItems, for: trimmedQuery)
 
             return ExerciseCatalogSearchResponse(
-                exercises: items.map { $0.prescription() },
+                exercises: rankedItems.map { $0.prescription() },
                 notice: nil
             )
         } catch let error as ExerciseCatalogError {
-            return await fallbackSearch(query: trimmedQuery, error: error)
+            return await fallbackSearch(query: trimmedQuery, error: error, recentItemIDs: recentItemIDs)
         } catch {
-            return await fallbackSearch(query: trimmedQuery, error: .unavailable)
+            return await fallbackSearch(query: trimmedQuery, error: .unavailable, recentItemIDs: recentItemIDs)
         }
     }
 
@@ -176,18 +185,32 @@ final class LiveExerciseCatalogService: ExerciseCatalogService {
         await cache.save(selected: ExerciseCatalogItem(prescription: exercise))
     }
 
-    private func fallbackSearch(query: String, error: ExerciseCatalogError) async -> ExerciseCatalogSearchResponse {
-        if let cachedItems = await cache.items(for: query), !cachedItems.isEmpty {
-            return ExerciseCatalogSearchResponse(
-                exercises: cachedItems.map { $0.prescription() },
-                notice: .cachedFallback
-            )
+    private func fallbackSearch(
+        query: String,
+        error: ExerciseCatalogError,
+        recentItemIDs: Set<String>
+    ) async -> ExerciseCatalogSearchResponse {
+        let priorityNames = seedProvider.priorityNames
+        let cachedItems = await cache.items(for: query)
+        let rankedItems = ExerciseCatalogSearchRanker.rank(
+            (cachedItems ?? []) + seedProvider.catalogItems(for: query),
+            query: query,
+            priorityNames: priorityNames,
+            recentItemIDs: recentItemIDs,
+            limit: 20
+        )
+
+        let notice: ExerciseCatalogNotice? = if rankedItems.isEmpty {
+            notice(for: error)
+        } else if cachedItems?.isEmpty == false {
+            .cachedFallback
+        } else {
+            .seedFallback
         }
 
-        let seedItems = seedProvider.searchSeed(query: query, limit: 20)
         return ExerciseCatalogSearchResponse(
-            exercises: seedItems.map { $0.catalogItem.prescription(defaultSets: $0.seedSets, defaultReps: $0.seedReps) },
-            notice: seedItems.isEmpty ? notice(for: error) : .seedFallback
+            exercises: rankedItems.map { $0.prescription() },
+            notice: notice
         )
     }
 
@@ -422,6 +445,14 @@ struct SeedExerciseCatalogProvider: ExerciseCatalogProvider {
         self.items = items.map(SeedExerciseCatalogItem.init)
     }
 
+    var priorityNames: [String] {
+        items.map { $0.catalogItem.name.normalizedExerciseCatalogKey }
+    }
+
+    func catalogItems(for query: String) -> [ExerciseCatalogItem] {
+        searchSeed(query: query, limit: items.count).map(\.catalogItem)
+    }
+
     func search(query: String, limit: Int) async throws -> [ExerciseCatalogItem] {
         searchSeed(query: query, limit: limit).map(\.catalogItem)
     }
@@ -435,17 +466,15 @@ struct SeedExerciseCatalogProvider: ExerciseCatalogProvider {
     }
 
     func searchSeed(query: String, limit: Int) -> [SeedExerciseCatalogItem] {
-        let normalizedQuery = query.normalizedExerciseCatalogKey
-
-        guard !normalizedQuery.isEmpty else {
+        guard !query.normalizedExerciseCatalogKey.isEmpty else {
             return []
         }
 
-        let matches = items.filter {
-            $0.catalogItem.name.normalizedExerciseCatalogKey.contains(normalizedQuery)
-        }
-
-        return Array(matches.prefix(limit))
+        return Array(
+            items
+                .filter { ExerciseCatalogSearchRanker.matches(name: $0.catalogItem.name, query: query) }
+                .prefix(limit)
+        )
     }
 
     func item(id: String) -> ExerciseCatalogItem? {
@@ -487,6 +516,10 @@ actor ExerciseCatalogCache {
 
     func item(id: String) -> ExerciseCatalogItem? {
         snapshot().selected[id]
+    }
+
+    func recentItemIDs() -> Set<String> {
+        Set(snapshot().selected.keys)
     }
 
     func save(items: [ExerciseCatalogItem], for query: String) {
@@ -699,5 +732,101 @@ private extension String {
         folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var normalizedExerciseCatalogWords: [String] {
+        normalizedExerciseCatalogKey
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+    }
+}
+
+enum ExerciseCatalogSearchRanker {
+    static func matches(name: String, query: String) -> Bool {
+        let queryTokens = query.normalizedExerciseCatalogWords
+        guard !queryTokens.isEmpty else {
+            return false
+        }
+
+        let nameWords = name.normalizedExerciseCatalogWords
+        guard !nameWords.isEmpty else {
+            return false
+        }
+
+        var wordIndex = 0
+
+        for token in queryTokens {
+            var matched = false
+
+            while wordIndex < nameWords.count {
+                if nameWords[wordIndex].hasPrefix(token) {
+                    matched = true
+                    wordIndex += 1
+                    break
+                }
+
+                wordIndex += 1
+            }
+
+            if !matched {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    static func rank(
+        _ items: [ExerciseCatalogItem],
+        query: String,
+        priorityNames: [String],
+        recentItemIDs: Set<String>,
+        limit: Int
+    ) -> [ExerciseCatalogItem] {
+        let priorityLookup = Dictionary(uniqueKeysWithValues: priorityNames.enumerated().map { ($1, $0) })
+        var seenIDs = Set<String>()
+
+        return items
+            .filter { matches(name: $0.name, query: query) }
+            .filter { seenIDs.insert($0.id).inserted }
+            .sorted {
+                score(for: $0, query: query, priorityLookup: priorityLookup, recentItemIDs: recentItemIDs)
+                    < score(for: $1, query: query, priorityLookup: priorityLookup, recentItemIDs: recentItemIDs)
+            }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    private static func score(
+        for item: ExerciseCatalogItem,
+        query: String,
+        priorityLookup: [String: Int],
+        recentItemIDs: Set<String>
+    ) -> Int {
+        let normalizedName = item.name.normalizedExerciseCatalogKey
+        let normalizedQuery = query.normalizedExerciseCatalogKey
+        let nameWords = item.name.normalizedExerciseCatalogWords
+        var score = 10_000
+
+        if let priorityIndex = priorityLookup[normalizedName] {
+            score = priorityIndex
+        }
+
+        if recentItemIDs.contains(item.id) {
+            score -= 500
+        }
+
+        if normalizedName.hasPrefix(normalizedQuery) {
+            score -= 300
+        }
+
+        if let firstToken = query.normalizedExerciseCatalogWords.first,
+           let firstMatchIndex = nameWords.firstIndex(where: { $0.hasPrefix(firstToken) }) {
+            score += firstMatchIndex * 20
+        }
+
+        score += nameWords.count
+
+        return score
     }
 }

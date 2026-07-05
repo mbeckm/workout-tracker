@@ -29,12 +29,12 @@ enum AppTab: CaseIterable, Hashable, Identifiable {
 
     static func highlighted(selectedTab: AppTab, route: AppRoute?) -> AppTab {
         switch route {
-        case .createPlan, .activePlanDetail, .planDetail:
+        case .createPlan, .planDetail:
             .plans
+        case .activePlanDetail, .startWorkout, .nextWorkoutPreview:
+            .home
         case .logWorkout, .workoutComplete:
             .workout
-        case .startWorkout, .nextWorkoutPreview:
-            .home
         case .exerciseStats:
             .stats
         case nil:
