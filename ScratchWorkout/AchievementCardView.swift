@@ -9,19 +9,30 @@ struct AchievementCardOverlay: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var haptics = AchievementHaptics()
+
     @State private var backdropOpacity: Double = 0
-    @State private var cardOffsetY: CGFloat = -520
-    @State private var cardScale: CGFloat = 1
+    @State private var cardOffsetY: CGFloat = 60
+    @State private var cardRotationY: Double = 360
+    @State private var cardScale: CGFloat = 0.9
+    @State private var contentOpacity: Double = 0.6
     @State private var cardOpacity: Double = 1
-    @State private var shakeOffsetY: CGFloat = 0
+
+    @State private var lightPassOffset: CGFloat = -420
+    @State private var showLightPass = false
+
     @State private var displayedWeight: Int = 0
-    @State private var showGlow = false
-    @State private var glowOpacity: Double = 0
-    @State private var showSparks = false
-    @State private var dragTiltX: Double = 0
-    @State private var dragTiltY: Double = 0
-    @State private var highlightPoint: CGPoint = CGPoint(x: 177, y: 200)
-    @State private var hasLanded = false
+    @State private var weightScale: CGFloat = 1
+
+    @State private var underglowRadius: CGFloat = 0
+    @State private var underglowOpacity: Double = 0
+
+    @State private var hasSettled = false
+
+    private let cardWidth: CGFloat = 354
+    private let entranceDuration: TimeInterval = 0.9
+    private let passDuration: TimeInterval = 0.45
+    private let countUpDuration: TimeInterval = 0.5
 
     var body: some View {
         ZStack {
@@ -34,8 +45,6 @@ struct AchievementCardOverlay: View {
 
             VStack(spacing: 24) {
                 cardStack
-                    .offset(y: cardOffsetY + shakeOffsetY)
-                    .scaleEffect(cardScale)
                     .opacity(cardOpacity)
 
                 Button("Continue") {
@@ -43,139 +52,149 @@ struct AchievementCardOverlay: View {
                 }
                 .font(AppFont.subheading)
                 .foregroundStyle(AppColor.secondaryText)
-                .opacity(hasLanded ? 1 : 0)
+                .opacity(hasSettled ? 1 : 0)
             }
             .padding(.horizontal, 24)
         }
         .onAppear(perform: startEntrance)
+        .onDisappear {
+            haptics.release()
+        }
     }
 
     private var cardStack: some View {
-        ZStack {
-            if showGlow {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppColor.accent.opacity(0.18))
-                    .frame(width: 354, height: 520)
-                    .blur(radius: 28)
-                    .opacity(glowOpacity)
-            }
-
-            ZStack {
-                AchievementCardContent(
-                    achievement: achievement,
-                    displayedWeight: displayedWeight,
-                    highlightPoint: highlightPoint,
-                    showInteractiveHighlight: hasLanded,
-                    rendersForShare: false
-                )
-
-                if showSparks {
-                    SparkBurstView()
-                        .frame(width: 354, height: 520)
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(width: 354)
-            .rotation3DEffect(.degrees(dragTiltX), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
-            .rotation3DEffect(.degrees(dragTiltY), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
-            .gesture(dragGesture)
-        }
-    }
-
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard hasLanded else { return }
-
-                highlightPoint = CGPoint(
-                    x: min(max(value.location.x, 0), 354),
-                    y: min(max(value.location.y, 0), 520)
-                )
-                dragTiltX = Double(value.translation.height / 18).clamped(to: -10...10)
-                dragTiltY = Double(-value.translation.width / 18).clamped(to: -10...10)
-            }
-            .onEnded { _ in
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.72)) {
-                    dragTiltX = 0
-                    dragTiltY = 0
-                    highlightPoint = CGPoint(x: 177, y: 200)
-                }
-            }
+        AchievementCardContent(
+            achievement: achievement,
+            displayedWeight: displayedWeight,
+            weightScale: weightScale,
+            showLightPass: showLightPass,
+            lightPassOffset: lightPassOffset,
+            rendersForShare: false
+        )
+        .frame(width: cardWidth)
+        .opacity(contentOpacity)
+        .scaleEffect(cardScale)
+        .rotation3DEffect(
+            .degrees(cardRotationY),
+            axis: (x: 0, y: 1, z: 0),
+            perspective: 0.5
+        )
+        .offset(y: cardOffsetY)
+        .shadow(
+            color: AppColor.accent.opacity(underglowOpacity),
+            radius: underglowRadius,
+            x: 0,
+            y: 8
+        )
     }
 
     private func startEntrance() {
+        haptics.prepare()
+
         if reduceMotion {
-            backdropOpacity = 0.85
-            cardOffsetY = 0
-            hasLanded = true
+            withAnimation(.easeOut(duration: 0.3)) {
+                backdropOpacity = 0.85
+                cardOffsetY = 0
+                cardScale = 1
+                contentOpacity = 1
+                cardRotationY = 0
+            }
             displayedWeight = achievement.weight
+            underglowRadius = 16
+            underglowOpacity = 0.10
+            hasSettled = true
+            haptics.playEntrance(reduceMotion: true)
             return
         }
 
-        withAnimation(.easeOut(duration: 0.25)) {
+        haptics.playEntrance(reduceMotion: false)
+
+        withAnimation(.easeOut(duration: 0.3)) {
             backdropOpacity = 0.85
         }
 
-        withAnimation(.spring(response: 0.52, dampingFraction: 0.62)) {
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
             cardOffsetY = 0
+            cardRotationY = 0
+            cardScale = 1
+            contentOpacity = 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
-            handleLanding()
+        let settleDelay = entranceDuration
+        DispatchQueue.main.asyncAfter(deadline: .now() + settleDelay) {
+            haptics.playSettle(fallback: !haptics.isReady)
+        }
+
+        let passStartDelay = entranceDuration * 0.75
+        DispatchQueue.main.asyncAfter(deadline: .now() + passStartDelay) {
+            triggerLightPass()
         }
     }
 
-    private func handleLanding() {
-        hasLanded = true
-        Haptics.tap(.heavy)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        showSparks = true
+    private func triggerLightPass() {
+        showLightPass = true
+        lightPassOffset = -420
+        haptics.playPass(fallback: !haptics.isReady)
 
-        withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 3 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = -2 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 1 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 0 }
+        withAnimation(.easeInOut(duration: passDuration)) {
+            lightPassOffset = 420
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            showSparks = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + passDuration) {
+            showLightPass = false
+            animateWeightCountUp()
         }
-
-        animateWeightCountUp()
     }
 
     private func animateWeightCountUp() {
         let target = achievement.weight
-        let steps = max(target, 1)
-        let stepDuration = 0.6 / Double(steps)
+        let steps = 30
+        let stepDuration = countUpDuration / Double(steps)
 
         for step in 0...steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + stepDuration * Double(step)) {
-                withAnimation(.easeOut(duration: 0.05)) {
+                withAnimation(.linear(duration: stepDuration)) {
                     displayedWeight = Int(round(Double(target) * Double(step) / Double(steps)))
                 }
             }
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + countUpDuration) {
             displayedWeight = target
-            Haptics.tap(.light)
-            showGlow = true
-            withAnimation(.easeOut(duration: 0.35)) {
-                glowOpacity = 1
+            triggerBloom()
+        }
+    }
+
+    private func triggerBloom() {
+        hasSettled = true
+        haptics.playLockAndBloom(fallback: !haptics.isReady)
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            underglowRadius = 28
+            underglowOpacity = 0.22
+        }
+
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.55)) {
+            weightScale = 1.06
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
+                weightScale = 1
             }
-            withAnimation(.easeIn(duration: 0.45).delay(0.2)) {
-                glowOpacity = 0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation(.easeOut(duration: 0.4)) {
+                underglowRadius = 16
+                underglowOpacity = 0.10
             }
         }
     }
 
     private func dismiss() {
+        haptics.release()
+
         if reduceMotion {
             onDismiss()
             return
@@ -198,48 +217,41 @@ struct AchievementCardOverlay: View {
 struct AchievementCardContent: View {
     var achievement: Achievement
     var displayedWeight: Int
-    var highlightPoint: CGPoint = CGPoint(x: 177, y: 200)
-    var showInteractiveHighlight = false
+    var weightScale: CGFloat = 1
+    var showLightPass = false
+    var lightPassOffset: CGFloat = -420
     var rendersForShare = false
+
+    private let cardShape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
     var body: some View {
         VStack(spacing: 24) {
-            trophySection
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundStyle(AppColor.accent)
 
-            EmbossedText(
-                text: "Achievement Unlocked",
-                font: AppFont.subheading,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
+            Text("Achievement Unlocked")
+                .font(AppFont.subheading)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
 
             captionRow
 
             cardDivider
 
-            EmbossedText(
-                text: achievement.exerciseName,
-                font: AppFont.display,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(achievement.exerciseName)
+                .font(AppFont.display)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text("\(displayedWeight)KG")
-                .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
-                .tracking(-2.88)
-                .foregroundStyle(AppColor.accent)
-                .contentTransition(.numericText())
-                .shadow(color: Color.black.opacity(0.35), radius: 0, x: 0, y: -1)
-                .shadow(color: Color.white.opacity(0.12), radius: 0, x: 0, y: 1)
+            weightDisplay
 
-            EmbossedText(
-                text: achievement.repsLabel,
-                font: AppFont.h2,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
+            Text(achievement.repsLabel)
+                .font(AppFont.h2)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
 
             cardDivider
 
@@ -247,25 +259,53 @@ struct AchievementCardContent: View {
         }
         .padding(16)
         .frame(width: 354)
-        .background { metalBackground }
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppColor.surface1, in: cardShape)
+        .overlay(cardShape.stroke(AppColor.border, lineWidth: 1))
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+            if showLightPass {
+                lightPassOverlay
+                    .mask(cardShape)
+            }
         }
     }
 
-    private var trophySection: some View {
-        ZStack {
-            WeightPlateMotif()
-                .frame(width: 180, height: 180)
+    private var weightDisplay: some View {
+        Text("\(displayedWeight)KG")
+            .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+            .tracking(-2.88)
+            .foregroundStyle(AppColor.accent)
+            .contentTransition(.numericText())
+            .scaleEffect(weightScale)
+            .overlay {
+                if showLightPass {
+                    lightPassBand(peakOpacity: 0.18)
+                        .mask {
+                            Text("\(displayedWeight)KG")
+                                .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                                .tracking(-2.88)
+                        }
+                }
+            }
+    }
 
-            Image(systemName: "trophy.fill")
-                .font(.system(size: 64, weight: .semibold))
-                .foregroundStyle(AppColor.accent)
-                .shadow(color: AppColor.accent.opacity(0.35), radius: 12, y: 4)
-        }
-        .frame(height: 96)
+    private var lightPassOverlay: some View {
+        lightPassBand(peakOpacity: 0.10)
+    }
+
+    private func lightPassBand(peakOpacity: Double) -> some View {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: Color.white.opacity(peakOpacity), location: 0.5),
+                .init(color: .clear, location: 1)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .frame(width: 80)
+        .rotationEffect(.degrees(25))
+        .offset(x: lightPassOffset)
+        .blendMode(.screen)
     }
 
     @ViewBuilder
@@ -316,133 +356,10 @@ struct AchievementCardContent: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: Capsule())
+        .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            Capsule()
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
-        }
-    }
-
-    private var metalBackground: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    AppColor.surface2,
-                    AppColor.surface1,
-                    AppColor.base.opacity(0.92)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.08),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 220
-            )
-
-            if showInteractiveHighlight {
-                RadialGradient(
-                    colors: [
-                        Color.white.opacity(0.14),
-                        Color.clear
-                    ],
-                    center: UnitPoint(
-                        x: highlightPoint.x / 354,
-                        y: highlightPoint.y / 520
-                    ),
-                    startRadius: 0,
-                    endRadius: 140
-                )
-                .blendMode(.screen)
-            }
-
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.06),
-                    Color.clear,
-                    Color.black.opacity(0.12)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-    }
-}
-
-private struct EmbossedText: View {
-    var text: String
-    var font: Font
-    var color: Color
-
-    var body: some View {
-        ZStack {
-            Text(text)
-                .font(font)
-                .foregroundStyle(Color.black.opacity(0.4))
-                .offset(y: -1)
-
-            Text(text)
-                .font(font)
-                .foregroundStyle(Color.white.opacity(0.15))
-                .offset(y: 1)
-
-            Text(text)
-                .font(font)
-                .foregroundStyle(color)
-        }
-    }
-}
-
-private struct WeightPlateMotif: View {
-    var body: some View {
-        ZStack {
-            ForEach([140.0, 110.0, 80.0], id: \.self) { diameter in
-                Circle()
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    .frame(width: diameter, height: diameter)
-            }
-
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 1.5)
-                .frame(width: 48, height: 48)
-        }
-    }
-}
-
-private struct SparkBurstView: View {
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
-            Canvas { context, size in
-                let elapsed = timeline.date.timeIntervalSinceReferenceDate
-                let local = elapsed.truncatingRemainder(dividingBy: 0.45)
-
-                for index in 0..<14 {
-                    let seed = Double(index)
-                    let progress = min(local / 0.45, 1)
-                    let angle = (-Double.pi / 2) + (seed - 6.5) * 0.18
-                    let speed = 90 + seed * 8
-                    let x = size.width * 0.5 + cos(angle) * speed * progress
-                    let y = size.height - 8 - sin(abs(angle)) * speed * progress * 0.85
-                    let opacity = (1 - progress) * 0.85
-                    let particleSize = 3 + seed * 0.15
-
-                    let rect = CGRect(
-                        x: x - particleSize / 2,
-                        y: y - particleSize / 2,
-                        width: particleSize,
-                        height: particleSize
-                    )
-                    context.fill(
-                        Path(ellipseIn: rect),
-                        with: .color(AppColor.accent.opacity(opacity))
-                    )
-                }
-            }
         }
     }
 }
@@ -481,42 +398,33 @@ struct ShareCardPayload: Transferable {
     }
 }
 
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
-    }
-}
-
 #if DEBUG
 struct AchievementCardPreview: PreviewProvider {
+    private static let sampleAchievement = Achievement(
+        exerciseName: "Incline Barbell Bench Press",
+        weight: 70,
+        reps: 10,
+        date: Date(timeIntervalSince1970: 1_781_500_800),
+        username: "marvin"
+    )
+
     static var previews: some View {
         ZStack {
             AppColor.base.ignoresSafeArea()
 
             AchievementCardContent(
-                achievement: Achievement(
-                    exerciseName: "Incline Barbell Bench Press",
-                    weight: 70,
-                    reps: 10,
-                    date: Date(timeIntervalSince1970: 1_781_500_800),
-                    username: "marvin"
-                ),
+                achievement: sampleAchievement,
                 displayedWeight: 70
             )
+            .shadow(color: AppColor.accent.opacity(0.10), radius: 16, x: 0, y: 8)
         }
-        .previewDisplayName("Achievement Card")
+        .previewDisplayName("Settled Card")
 
         AchievementCardOverlay(
-            achievement: Achievement(
-                exerciseName: "Incline Barbell Bench Press",
-                weight: 70,
-                reps: 10,
-                date: Date(timeIntervalSince1970: 1_781_500_800),
-                username: "marvin"
-            ),
+            achievement: sampleAchievement,
             onDismiss: {}
         )
-        .previewDisplayName("Achievement Overlay")
+        .previewDisplayName("Overlay Entrance")
     }
 }
 #endif
