@@ -32,6 +32,7 @@
 		A10000000000000000000027 /* Achievements.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* Achievements.swift */; };
 		A10000000000000000000028 /* AchievementCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* AchievementCardView.swift */; };
 		A10000000000000000000029 /* AchievementHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* AchievementHaptics.swift */; };
+		A10000000000000000000030 /* AchievementShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* AchievementShaders.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		A20000000000000000000027 /* Achievements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievements.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* AchievementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCardView.swift; sourceTree = "<group>"; };
 		A20000000000000000000029 /* AchievementHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementHaptics.swift; sourceTree = "<group>"; };
+		A20000000000000000000030 /* AchievementShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = AchievementShaders.metal; sourceTree = "<group>"; };
 		A20000000000000000000026 /* ScratchWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScratchWorkout.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -110,6 +112,7 @@
 				A20000000000000000000027 /* Achievements.swift */,
 				A20000000000000000000028 /* AchievementCardView.swift */,
 				A20000000000000000000029 /* AchievementHaptics.swift */,
+				A20000000000000000000030 /* AchievementShaders.metal */,
 				A20000000000000000000010 /* Assets.xcassets */,
 				A20000000000000000000011 /* Resources/Fonts/Inter.ttf */,
 				A20000000000000000000012 /* Resources/Fonts/OFL.txt */,
@@ -221,6 +224,7 @@
 				A10000000000000000000027 /* Achievements.swift in Sources */,
 				A10000000000000000000028 /* AchievementCardView.swift in Sources */,
 				A10000000000000000000029 /* AchievementHaptics.swift in Sources */,
+				A10000000000000000000030 /* AchievementShaders.metal in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -104,6 +104,27 @@ final class AchievementHaptics {
         _ = playPattern(named: "lock", events: lockEvents(), curves: lockCurves())
     }
 
+    func tapPulse() {
+        if usesFallback {
+            Haptics.tap(.light)
+            return
+        }
+
+        _ = playPattern(
+            named: "tapPulse",
+            events: [
+                CHHapticEvent(
+                    eventType: .hapticTransient,
+                    parameters: [
+                        CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.3),
+                        CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.8)
+                    ],
+                    relativeTime: 0
+                )
+            ]
+        )
+    }
+
     func playReduceMotionFallback() {
         Haptics.tap(.medium)
     }
