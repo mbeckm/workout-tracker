@@ -1,8 +1,8 @@
-# Mobbin Reference Notes
+# Workout UX Reference Notes
 
 Research date: June 22, 2026
 
-Goal: Find shipped mobile UX patterns for a light-first iOS workout tracker focused on reusable workout plans, one-handed set logging, and clear strength progress.
+Goal: Use shipped mobile workout patterns to guide Scratch toward fast plan creation, one-handed workout logging, and clear completion feedback while keeping the current dark sports visual system.
 
 ## References And Takeaways
 
@@ -17,16 +17,15 @@ References:
 What works:
 - Setup flows feel less intimidating when each screen has one job.
 - Strong title-led screens and persistent bottom actions keep the user oriented.
-- Horizontal progress indicators make longer setup feel bounded.
-- Fitness setup flows often split schedule, preferences, and plan confirmation instead of showing one long editor.
+- Progress indicators make longer setup feel bounded.
+- Fitness setup flows often split schedule, preferences, exercise selection, and confirmation instead of showing one long editor.
 - Review moments help users feel ownership before committing to a plan.
 
-Kinetic adaptation:
-- The plus button should open a guided plan builder rather than a dense all-at-once form.
-- Split plan creation into basics, day names, exercises, and review.
-- Keep exercise entry free-text, but reveal one training day at a time.
-- Make the final review show the whole week with day and exercise reorder controls before saving.
-- Keep the bottom action persistent so the next step is always obvious.
+Scratch adaptation:
+- Keep plan creation progressive: frequency, exercise search, configuration, review, and activation.
+- Use the current bold title style and bottom CTA language.
+- Keep exercise entry searchable and quick, with configuration one exercise at a time.
+- Make the final review feel like a training plan the user can activate immediately.
 
 ### Hevy
 
@@ -37,14 +36,14 @@ References:
 - Workout screen: https://mobbin.com/screens/5051937b-36e0-432a-9ca9-2cf3be8789c3
 
 What works:
-- Routine creation is list-first and practical.
+- Routine creation is practical and list-first.
 - Exercise blocks and set prescriptions are easy to scan.
 - Set tables make reps, weight, previous values, and completion state visible at once.
 
-Kinetic adaptation:
-- Make Plans a first-class area, not a secondary utility.
-- Keep plan editing direct: plan name, exercise groups, set targets, quick add, duplicate, reorder.
-- Use compact table logic for logging, but make the current set friendlier and more thumb-first.
+Scratch adaptation:
+- Keep Plans as a first-class tab area.
+- Preserve compact set-table logic during logging.
+- Make the active exercise and Log action more prominent than secondary workout metadata.
 
 ### Fitbod
 
@@ -59,10 +58,10 @@ What works:
 - Progress is framed as concrete milestones and exercise history.
 - Charts support a clear story instead of becoming generic analytics.
 
-Kinetic adaptation:
-- Tap-to-edit reps and weight with steppers or a keypad sheet.
-- Auto-advance after saving a set, with a short confirmation state.
-- Show last performance, best set, estimated strength trend, volume trend, and recent sessions per exercise.
+Scratch adaptation:
+- Continue moving exercise by exercise in the active workout flow.
+- Keep weight and rep controls large and close to the Log CTA.
+- Add richer progress later only when it directly helps the next workout decision.
 
 ### Ladder
 
@@ -76,10 +75,10 @@ What works:
 - Plan cards have clear hierarchy and are less spreadsheet-like.
 - Completion gives closure without requiring analysis.
 
-Kinetic adaptation:
-- Saved plans should feel owned and reusable: plan title, day label, exercise count, estimated duration, recent best.
-- Keep advanced editing one level deeper.
-- Use light cards and friendly hierarchy around plans.
+Scratch adaptation:
+- Saved plans should feel owned and reusable.
+- Start Workout should confirm the day and exercise list before logging begins.
+- Completion should stay compact: celebration, stats, and a clear finish action.
 
 ### Nike Training Club
 
@@ -91,10 +90,9 @@ What works:
 - Strong workout identity and a clear primary action.
 - The plan feels memorable instead of purely tabular.
 
-Kinetic adaptation:
-- Use visual hierarchy to make a plan feel like a reusable object.
-- Avoid full hero imagery; Kinetic should stay tool-like and light.
-- Primary action should be "Log set" or "Open logger", not a heavy start-workout ceremony.
+Scratch adaptation:
+- Use the dark sports styling to make workout days feel distinct.
+- Avoid content-feed behavior; the primary action should stay tied to planning or logging.
 
 ### Strava
 
@@ -104,14 +102,14 @@ Reference:
 What works:
 - Activity summaries create a sense of accomplishment with stats and closure.
 
-Kinetic adaptation:
-- After logging, show small celebration and concrete stats: set saved, volume added, PR if relevant.
-- Keep it private and utility-first, not social-first.
+Scratch adaptation:
+- Workout completion should give a satisfying finish without becoming social or noisy.
+- Keep stats concrete: duration, exercises, sets, and later volume or records when available.
 
 ## Design Decisions
 
-- Plans are the home base.
-- Logging is a compact set table plus a thumb-first active row.
-- Progress answers one question: "Am I getting stronger?"
-- Delight is small and immediate: saved-set pulse, PR badge, encouraging microcopy, and satisfying progress deltas.
-- Keep the UI light-first, calm, and compact. Use Volt only for active/save/progress emphasis.
+- Plans are a core navigation area.
+- Logging is an active, exercise-specific flow.
+- Completion is a short reward and summary, not a dashboard.
+- The app stays dark, high-contrast, and athletic.
+- New references should be filtered through the existing Scratch Figma direction before implementation.
