@@ -163,7 +163,7 @@ struct RootView: View {
                     activePlan: store.activePlan,
                     nextWorkout: store.nextWorkoutDay,
                     recentWorkout: store.recentWorkout,
-                    workoutsThisMonth: store.workoutsThisMonth,
+                    workoutDaysThisMonth: store.workoutDaysThisMonth,
                     accountSession: accountController.session,
                     accountSyncState: accountController.syncState,
                     onOpenActivePlan: {
@@ -315,6 +315,15 @@ private enum PreviewFixtures {
 }
 
 struct ScratchWorkoutScreenPreviews: PreviewProvider {
+    private static let previewWorkoutDays: Set<Date> = {
+        let suiteName = "com.scratchworkout.preview.home-calendar"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            return []
+        }
+        defaults.removePersistentDomain(forName: suiteName)
+        return WorkoutStore(defaults: defaults).workoutDaysThisMonth
+    }()
+
     static var previews: some View {
         Group {
             ScreenPreviewShell(tab: .home) {
@@ -322,7 +331,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     nextWorkout: SampleData.activePlan.days[0],
                     recentWorkout: nil,
-                    workoutsThisMonth: 14,
+                    workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedOut,
                     accountSyncState: .signedOut,
                     onOpenActivePlan: {},
@@ -337,7 +346,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     nextWorkout: WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
                     recentWorkout: PreviewFixtures.recentWorkout,
-                    workoutsThisMonth: 14,
+                    workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedIn(AccountUser(id: "preview-apple", displayName: "Apple Account", email: nil, provider: .apple, createdAt: Date())),
                     accountSyncState: .synced(Date()),
                     onOpenActivePlan: {},
