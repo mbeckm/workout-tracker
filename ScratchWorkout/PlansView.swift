@@ -9,29 +9,26 @@ struct PlansView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .topLeading) {
+                HStack(alignment: .center, spacing: 12) {
                     Text("Plans")
                         .font(AppFont.display)
-                        .padding(.top, 66)
+                        .lineLimit(1)
 
-                    HStack {
-                        Spacer()
+                    Spacer(minLength: 12)
 
-                        Button {
-                            Haptics.tap(.medium)
-                            onNewPlan()
-                        } label: {
-                            Text("+")
-                                .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
-                                .foregroundStyle(.black)
-                                .frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.trailing, -4)
+                    Button {
+                        Haptics.tap(.medium)
+                        onNewPlan()
+                    } label: {
+                        Text("+")
+                            .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
+                            .foregroundStyle(.black)
+                            .frame(width: 44, height: 44)
                     }
-                    .padding(.top, 54)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("New plan")
                 }
-                .frame(height: 104)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
                 SectionTitle(text: "Active Plan")
                     .padding(.top, 24)

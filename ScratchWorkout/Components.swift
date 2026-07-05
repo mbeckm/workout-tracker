@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum AppLayout {
+    static let screenTitleTopPadding: CGFloat = 66
     static let tabBarHeight: CGFloat = 82
     static let legacyTabBarClearance: CGFloat = 106
     static let contentBottomPadding: CGFloat = 24
@@ -143,11 +144,9 @@ struct NativeAppTabView<TabContent: View, RouteOverlay: View>: View {
                         tabContent(tab)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-                        if route != nil {
-                            routeOverlay()
-                                .allowsHitTesting(true)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        }
+                        routeOverlay()
+                            .allowsHitTesting(route != nil)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
                     .background(AppColor.base)
                 }

@@ -27,7 +27,7 @@ struct HomeView: View {
                         action: onOpenAccount
                     )
                 }
-                .padding(.top, 66)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
                 SectionTitle(text: "Workouts this month")
                     .padding(.top, 24)
@@ -54,7 +54,7 @@ struct HomeView: View {
                     Haptics.tap(.medium)
                     onOpenNextWorkout()
                 } label: {
-                    PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: "Mon., 11.08.", height: 80)
+                    PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 12)
@@ -83,9 +83,10 @@ private struct MonthlyWorkoutCalendar: View {
     var referenceDate: Date = Date()
 
     private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    private let columnSpacing: CGFloat = 19
     private let rowSpacing: CGFloat = 16
     private let dotSize: CGFloat = 24
+
+    private var calendarColumnSpacing: CGFloat { 8 }
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -119,24 +120,28 @@ private struct MonthlyWorkoutCalendar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: rowSpacing) {
-            HStack(spacing: columnSpacing) {
+            HStack(spacing: calendarColumnSpacing) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
                         .font(AppFont.caption)
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: dotSize)
+                        .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
             }
 
             ForEach(dayRows.indices, id: \.self) { row in
-                HStack(spacing: columnSpacing) {
+                HStack(spacing: calendarColumnSpacing) {
                     ForEach(0..<7, id: \.self) { column in
                         if let day = dayRows[row][column] {
                             WorkoutDayDot(hasWorkout: workoutDays.contains(day))
+                                .frame(maxWidth: .infinity)
                         } else {
                             Color.clear
-                                .frame(width: dotSize, height: dotSize)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: dotSize)
                         }
                     }
                 }

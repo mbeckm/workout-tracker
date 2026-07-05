@@ -106,7 +106,7 @@ struct CreatePlanView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Create Plan")
                 .font(AppFont.display)
-                .padding(.top, 66)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
             VStack(spacing: 16) {
                 HStack(spacing: 24) {
@@ -148,7 +148,7 @@ struct CreatePlanView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Create Plan")
                 .font(AppFont.display)
-                .padding(.top, 66)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
             DayStepProgress(
                 count: daysPerWeek,
@@ -196,7 +196,7 @@ struct CreatePlanView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Review")
                 .font(AppFont.display)
-                .padding(.top, 66)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
             DayStepProgress(
                 count: daysPerWeek,

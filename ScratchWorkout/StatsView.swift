@@ -66,7 +66,7 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Stats")
                 .font(AppFont.display)
-                .padding(.top, 66)
+                .padding(.top, AppLayout.screenTitleTopPadding)
 
             SectionTitle(text: "Most logged")
                 .padding(.top, 24)
@@ -147,35 +147,33 @@ struct ExerciseStatsView: View {
 
     var body: some View {
         AppScreen {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                    .padding(.top, 58)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                        .padding(.top, AppLayout.screenTitleTopPadding)
 
-                chartSectionHeader
-                    .padding(.top, 24)
+                    chartSectionHeader
+                        .padding(.top, 24)
 
-                TenRMChartCard(points: stats.progression)
-                    .padding(.top, 8)
+                    TenRMChartCard(points: stats.progression)
+                        .padding(.top, 8)
 
-                SectionTitle(text: "History")
-                    .padding(.top, 24)
+                    SectionTitle(text: "History")
+                        .padding(.top, 24)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 12) {
+                    Group {
                         if stats.progression.isEmpty {
                             EmptyExerciseStatsCard()
                         } else {
                             ExerciseStatsHistoryList(points: stats.progression.reversed())
                         }
                     }
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.top, 12)
-                    .padding(.bottom, 126)
+                    .padding(.bottom, AppLayout.contentBottomPadding)
                 }
-                .scrollDismissesKeyboard(.interactively)
-
-                Spacer(minLength: 96)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
+            .scrollDismissesKeyboard(.interactively)
             .padding(.horizontal, 24)
         }
     }
@@ -609,8 +607,8 @@ private struct ExerciseStatsHistoryRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text(dateText)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.secondaryText)
+                        .font(AppFont.h2)
+                        .foregroundStyle(AppColor.primaryText)
                         .lineLimit(1)
 
                     if point.isPersonalBest {
@@ -619,8 +617,8 @@ private struct ExerciseStatsHistoryRow: View {
                 }
 
                 Text(setCountText)
-                    .font(AppFont.caption)
-                    .foregroundStyle(AppColor.tertiaryText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
                     .lineLimit(1)
             }
 
@@ -647,7 +645,7 @@ private struct ExerciseStatsHistoryRow: View {
                 }
             }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .accessibilityElement(children: .combine)
     }
 

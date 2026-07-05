@@ -400,6 +400,7 @@ struct AchievementCardContent: View {
 
             staggerGroup(.weight) {
                 weightDisplay
+                    .padding(.vertical, 4)
             }
 
             staggerGroup(.reps) {
@@ -467,9 +468,10 @@ struct AchievementCardContent: View {
         .compositingGroup()
         .contentTransition(.numericText())
         .scaleEffect(weightScale)
-        .padding(.vertical, 28)
-        .padding(.horizontal, 12)
-        .frame(minHeight: 132)
+        .padding(.vertical, 36)
+        .padding(.horizontal, 16)
+        .frame(minHeight: 148)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var weightNumberText: some View {

@@ -43,7 +43,7 @@ struct PlanDetailView: View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                    .padding(.top, 66)
+                    .padding(.top, AppLayout.screenTitleTopPadding)
 
                 DayStepProgress(
                     count: max(draftPlan.days.count, 1),
@@ -159,6 +159,11 @@ struct PlanDetailView: View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
+                    if isEditing && shouldShowSearchSurface {
+                        searchEntrySurface
+                            .id("plan-detail-entry-anchor")
+                    }
+
                     ForEach(currentDayExercises) { exercise in
                         if let draft = exerciseDraft, draft.editingID == exercise.id {
                             ExerciseDraftSurface(
@@ -199,12 +204,9 @@ struct PlanDetailView: View {
                         }
                     }
 
-                    Group {
-                        if isEditing {
-                            entrySurface
-                        }
+                    if isEditing {
+                        newExerciseDraftSurface
                     }
-                    .id("plan-detail-entry-anchor")
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.top, 12)
@@ -222,36 +224,50 @@ struct PlanDetailView: View {
                 including: .gesture
             )
             .onChange(of: isEditing) { _, newValue in
-                if newValue {
-                    scrollEntryIntoView(proxy)
+                if newValue && shouldShowSearchSurface {
+                    scrollSearchIntoView(proxy)
                 }
             }
             .onChange(of: shouldShowSearchSurface) { _, newValue in
                 if newValue {
-                    scrollEntryIntoView(proxy)
+                    scrollSearchIntoView(proxy)
                 }
             }
             .onChange(of: exerciseDraft) { _, newValue in
-                if newValue != nil {
-                    scrollEntryIntoView(proxy)
+                if newValue?.editingID == nil {
+                    scrollNewExerciseDraftIntoView(proxy)
                 }
             }
             .onChange(of: exerciseDraftStep) { _, _ in
-                scrollEntryIntoView(proxy)
-            }
-            .onChange(of: searchResults.count) { _, _ in
-                scrollEntryIntoView(proxy)
+                if exerciseDraft?.editingID == nil {
+                    scrollNewExerciseDraftIntoView(proxy)
+                }
             }
             .onChange(of: searchFocused) { _, newValue in
-                if newValue {
-                    scrollEntryIntoView(proxy)
+                if newValue && shouldShowSearchSurface {
+                    scrollSearchIntoView(proxy)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private var entrySurface: some View {
+    private var searchEntrySurface: some View {
+        PlanEntrySurface(
+            query: $searchQuery,
+            focused: $searchFocused,
+            results: searchResults,
+            searchState: searchState,
+            autoFocus: false,
+            onConfigure: configureExerciseFromSearch
+        )
+        .matchedGeometryEffect(id: entrySurfaceID, in: entryNamespace)
+        .frame(maxWidth: .infinity)
+        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+    }
+
+    @ViewBuilder
+    private var newExerciseDraftSurface: some View {
         if let draft = exerciseDraft, draft.editingID == nil {
             ExerciseDraftSurface(
                 draft: draftBinding(fallback: draft),
@@ -261,21 +277,9 @@ struct PlanDetailView: View {
             .matchedGeometryEffect(id: entrySurfaceID, in: entryNamespace)
             .frame(maxWidth: .infinity)
             .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
-        } else if shouldShowSearchSurface {
-            PlanEntrySurface(
-                query: $searchQuery,
-                focused: $searchFocused,
-                results: searchResults,
-                searchState: searchState,
-                autoFocus: false,
-                onConfigure: configureExerciseFromSearch
-            )
-            .matchedGeometryEffect(id: entrySurfaceID, in: entryNamespace)
-            .frame(maxWidth: .infinity)
-            .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
+            .id("plan-detail-new-draft-anchor")
         }
     }
-
     private var displayPlanName: String {
         draftPlan.name == "PPL" ? "Push Pull Legs" : draftPlan.name
     }
@@ -421,7 +425,7 @@ struct PlanDetailView: View {
             exerciseDraft = nil
             exerciseDraftStep = .sets
             searchQuery = ""
-            isAddingExercise = isNewExercise ? false : true
+            isAddingExercise = false
             searchFocused = false
 
             if isNewExercise {
@@ -429,17 +433,11 @@ struct PlanDetailView: View {
             }
         }
 
-        if isEditing {
-            if isNewExercise {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
-                    entrySurfaceID = UUID()
-                    isAddingExercise = true
-                    searchFocused = true
-                }
-            } else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    searchFocused = true
-                }
+        if isEditing && isNewExercise {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                entrySurfaceID = UUID()
+                isAddingExercise = true
+                searchFocused = true
             }
         }
 
@@ -620,7 +618,7 @@ struct PlanDetailView: View {
         )
     }
 
-    private func scrollEntryIntoView(_ proxy: ScrollViewProxy) {
+    private func scrollSearchIntoView(_ proxy: ScrollViewProxy) {
         guard entryScrollSuppressionCount == 0 else {
             entryScrollSuppressionCount -= 1
             return
@@ -628,7 +626,20 @@ struct PlanDetailView: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
-                proxy.scrollTo("plan-detail-entry-anchor", anchor: .bottom)
+                proxy.scrollTo("plan-detail-entry-anchor", anchor: .top)
+            }
+        }
+    }
+
+    private func scrollNewExerciseDraftIntoView(_ proxy: ScrollViewProxy) {
+        guard entryScrollSuppressionCount == 0 else {
+            entryScrollSuppressionCount -= 1
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+                proxy.scrollTo("plan-detail-new-draft-anchor", anchor: .bottom)
             }
         }
     }
