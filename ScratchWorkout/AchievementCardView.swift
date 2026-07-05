@@ -34,8 +34,8 @@ private final class DeviceTiltObserver: ObservableObject {
 
     var foilCenter: UnitPoint {
         UnitPoint(
-            x: 0.5 + roll * 0.22,
-            y: 0.5 + pitch * 0.22
+            x: (0.5 + roll * 0.22).clamped(to: 0...1),
+            y: (0.5 + pitch * 0.22).clamped(to: 0...1)
         )
     }
 
@@ -64,7 +64,6 @@ struct AchievementOverlayView: View {
     @State private var showContinue = false
     @State private var contentVisible = false
     @State private var weightShimmerPhase: CGFloat = -1
-    @State private var shareImage: UIImage?
 
     var body: some View {
         ZStack {
@@ -137,8 +136,7 @@ struct AchievementOverlayView: View {
                 foilCenter: reduceMotion ? UnitPoint(x: 0.35, y: 0.3) : tilt.foilCenter,
                 foilAngle: reduceMotion ? .degrees(45) : tilt.foilAngle,
                 weightShimmerPhase: weightShimmerPhase,
-                contentVisible: contentVisible,
-                shareImage: shareImage
+                contentVisible: contentVisible
             )
             .frame(width: 354)
             .rotation3DEffect(.degrees(cardFlipDegrees), axis: (x: 0, y: 1, z: 0), perspective: 0.55)
@@ -180,7 +178,6 @@ struct AchievementOverlayView: View {
             showContinue = true
             glowSettled = true
         }
-        shareImage = renderShareImage()
         Haptics.tap(.heavy)
     }
 
@@ -202,7 +199,6 @@ struct AchievementOverlayView: View {
             }
             startWeightShimmer()
             showContinue = true
-            shareImage = renderShareImage()
         }
 
         withAnimation(.easeInOut(duration: 0.85)) {
@@ -235,22 +231,6 @@ struct AchievementOverlayView: View {
         }
     }
 
-    @MainActor
-    private func renderShareImage() -> UIImage? {
-        let content = AchievementCardContent(
-            achievement: achievement,
-            foilCenter: UnitPoint(x: 0.35, y: 0.3),
-            foilAngle: .degrees(45),
-            weightShimmerPhase: 0.5,
-            contentVisible: true,
-            shareImage: nil
-        )
-        .frame(width: 354)
-
-        let renderer = ImageRenderer(content: content)
-        renderer.scale = 3
-        return renderer.uiImage
-    }
 }
 
 // MARK: - Card content
@@ -261,7 +241,7 @@ struct AchievementCardContent: View {
     var foilAngle: Angle = .degrees(45)
     var weightShimmerPhase: CGFloat = -1
     var contentVisible = true
-    var shareImage: UIImage?
+    var rendersForShare = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -377,26 +357,34 @@ struct AchievementCardContent: View {
 
     @ViewBuilder
     private var sharePill: some View {
-        let image = shareImage ?? renderStaticShareImage()
-        ShareLink(
-            item: Image(uiImage: image),
-            preview: SharePreview("Personal Record", image: Image(uiImage: image))
-        ) {
-            HStack(spacing: 8) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .medium))
-                Text("Share with a friend")
-                    .font(AppFont.subheading)
+        if rendersForShare {
+            sharePillLabel
+        } else {
+            ShareLink(
+                item: ShareCardPayload(achievement: achievement),
+                preview: SharePreview("Achievement Unlocked", image: Image(systemName: "trophy.fill"))
+            ) {
+                sharePillLabel
             }
-            .foregroundStyle(AppColor.secondaryText)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
-            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
-            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var sharePillLabel: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 16, weight: .medium))
+            Text("Share with a friend")
+                .font(AppFont.subheading)
+        }
+        .foregroundStyle(AppColor.secondaryText)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
         }
     }
 
@@ -439,21 +427,42 @@ struct AchievementCardContent: View {
         )
     }
 
-    @MainActor
-    private func renderStaticShareImage() -> UIImage {
-        let content = AchievementCardContent(
-            achievement: achievement,
-            foilCenter: UnitPoint(x: 0.35, y: 0.3),
-            foilAngle: .degrees(45),
-            weightShimmerPhase: 0.5,
-            contentVisible: true,
-            shareImage: nil
-        )
-        .frame(width: 354)
+}
 
-        let renderer = ImageRenderer(content: content)
+// MARK: - Share
+
+struct ShareCardPayload: Transferable {
+    let achievement: Achievement
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .png) { payload in
+            try await payload.renderPNGData()
+        }
+    }
+
+    @MainActor
+    func renderPNGData() throws -> Data {
+        let renderer = ImageRenderer(
+            content: AchievementCardContent(
+                achievement: achievement,
+                foilCenter: UnitPoint(x: 0.35, y: 0.3),
+                foilAngle: .degrees(45),
+                weightShimmerPhase: 0.5,
+                contentVisible: true,
+                rendersForShare: true
+            )
+            .frame(width: 354)
+            .padding(24)
+            .background(AppColor.base)
+        )
         renderer.scale = 3
-        return renderer.uiImage ?? UIImage()
+
+        guard let uiImage = renderer.uiImage,
+              let data = uiImage.pngData() else {
+            throw URLError(.cannotDecodeContentData)
+        }
+
+        return data
     }
 }
 
