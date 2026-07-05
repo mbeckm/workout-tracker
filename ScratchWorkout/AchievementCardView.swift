@@ -6,13 +6,14 @@ import UniformTypeIdentifiers
 enum AchievementStaggerGroup: Int, CaseIterable {
     case trophy
     case title
-    case caption
     case divider1
     case exercise
     case weight
     case reps
+    case delta
     case divider2
     case share
+    case footer
 }
 
 // MARK: - Tap Ripple
@@ -365,7 +366,7 @@ struct AchievementCardContent: View {
     private static let weightAccentBright = Color(red: 0.727, green: 1.0, blue: 0.395)
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             staggerGroup(.trophy) {
                 Image(systemName: "trophy.fill")
                     .font(.system(size: 64, weight: .semibold))
@@ -378,23 +379,24 @@ struct AchievementCardContent: View {
                     .foregroundStyle(AppColor.primaryText)
                     .multilineTextAlignment(.center)
             }
-
-            staggerGroup(.caption) {
-                captionRow
-            }
+            .padding(.top, 16)
 
             staggerGroup(.divider1) {
                 cardDivider
             }
+            .padding(.top, 24)
 
             staggerGroup(.exercise) {
                 Text(achievement.exerciseName)
-                    .font(AppFont.display)
-                    .foregroundStyle(AppColor.primaryText)
+                    .font(AppFont.subheading)
+                    .textCase(.uppercase)
+                    .tracking(1.5)
+                    .foregroundStyle(AppColor.secondaryText)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.top, 24)
 
             staggerGroup(.weight) {
                 weightDisplay
@@ -407,13 +409,29 @@ struct AchievementCardContent: View {
                     .multilineTextAlignment(.center)
             }
 
+            if achievement.deltaLabel != nil {
+                staggerGroup(.delta) {
+                    deltaRow
+                }
+                .padding(.top, 14)
+            }
+
             staggerGroup(.divider2) {
                 cardDivider
             }
+            .padding(.top, 24)
 
             staggerGroup(.share) {
                 sharePill
             }
+            .padding(.top, 20)
+
+            staggerGroup(.footer) {
+                Text(footerLabel)
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            .padding(.top, 14)
         }
         .padding(16)
         .frame(width: AchievementCardSurface.width)
@@ -474,20 +492,32 @@ struct AchievementCardContent: View {
         showAllContent || revealedGroups.contains(group)
     }
 
-    @ViewBuilder
-    private var captionRow: some View {
-        if let usernameCaption = achievement.usernameCaption {
-            HStack(spacing: 24) {
-                Text(achievement.formattedDate)
-                Text(usernameCaption)
+    private var deltaRow: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 11, weight: .bold))
+                Text(achievement.deltaLabel ?? "")
+                    .font(AppFont.label)
             }
-            .font(AppFont.subheading)
-            .foregroundStyle(AppColor.secondaryText)
-        } else {
-            Text(achievement.formattedDate)
-                .font(AppFont.subheading)
-                .foregroundStyle(AppColor.secondaryText)
+            .foregroundStyle(AppColor.accent)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(AppColor.accent.opacity(0.12), in: Capsule())
+
+            if let previousBestLabel = achievement.previousBestLabel {
+                Text(previousBestLabel)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
         }
+    }
+
+    private var footerLabel: String {
+        if let usernameCaption = achievement.usernameCaption {
+            return "\(achievement.formattedDate) · \(usernameCaption)"
+        }
+        return achievement.formattedDate
     }
 
     private var cardDivider: some View {
@@ -572,7 +602,8 @@ struct AchievementCardPreview: PreviewProvider {
         weight: 70,
         reps: 10,
         date: Date(timeIntervalSince1970: 1_781_500_800),
-        username: "marvin"
+        username: "marvin",
+        previousBest: 67
     )
 
     static var previews: some View {

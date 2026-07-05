@@ -142,7 +142,8 @@ struct LogWorkoutView: View {
                 weight: weight,
                 reps: reps,
                 date: Date(),
-                username: username
+                username: username,
+                previousBest: max(previousBestWeight ?? 0, sessionLoggedMaxWeight)
             )
             onAchievementUnlocked(achievement, isLastSet ? updatedSets : nil)
             if isLastSet {

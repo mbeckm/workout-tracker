@@ -7,6 +7,21 @@ struct Achievement: Identifiable, Equatable {
     var reps: Int
     var date: Date
     var username: String?
+    var previousBest: Int?
+
+    var deltaLabel: String? {
+        guard let previousBest, weight > previousBest else {
+            return nil
+        }
+        return "+\(weight - previousBest)KG"
+    }
+
+    var previousBestLabel: String? {
+        guard let previousBest, previousBest > 0 else {
+            return nil
+        }
+        return "Previous best \(previousBest)KG"
+    }
 
     var formattedDate: String {
         Achievement.dateFormatter.string(from: date)
