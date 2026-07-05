@@ -139,15 +139,31 @@ struct WorkoutStore {
                 ExerciseStatsPoint(
                     date: day,
                     averageTenRM: aggregate.totalTenRM / Double(aggregate.setCount),
-                    setCount: aggregate.setCount
+                    setCount: aggregate.setCount,
+                    isPersonalBest: false
                 )
             }
             .sorted { $0.date < $1.date }
 
+        var bestTenRMSoFar = -Double.infinity
+        let progression = points.map { point in
+            let isPersonalBest = point.averageTenRM > bestTenRMSoFar
+            if isPersonalBest {
+                bestTenRMSoFar = point.averageTenRM
+            }
+
+            return ExerciseStatsPoint(
+                date: point.date,
+                averageTenRM: point.averageTenRM,
+                setCount: point.setCount,
+                isPersonalBest: isPersonalBest
+            )
+        }
+
         return ExerciseStatsDetails(
             exerciseName: exerciseName,
-            totalLoggedSets: points.reduce(0) { $0 + $1.setCount },
-            progression: points
+            totalLoggedSets: progression.reduce(0) { $0 + $1.setCount },
+            progression: progression
         )
     }
 
