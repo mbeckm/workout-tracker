@@ -93,6 +93,26 @@ struct WorkoutStore {
         return Array(summaries.prefix(3))
     }
 
+    func personalBestWeight(for exerciseName: String) -> Int? {
+        let key = exerciseName.normalizedStatsKey
+        let weights = statsWorkouts
+            .flatMap(\.exercises)
+            .filter { $0.exerciseName.normalizedStatsKey == key }
+            .flatMap(\.sets)
+            .compactMap { set -> Int? in
+                guard let weight = set.weight,
+                      let reps = set.reps,
+                      weight > 0,
+                      reps > 0 else {
+                    return nil
+                }
+
+                return weight
+            }
+
+        return weights.max()
+    }
+
     func exerciseStats(for exerciseName: String) -> ExerciseStatsDetails {
         let key = exerciseName.normalizedStatsKey
         let calendar = Calendar.current
