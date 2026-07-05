@@ -10,6 +10,9 @@ struct RootView: View {
     @State private var activeExerciseIndex = 0
     @State private var loggedExerciseSets: [[LoggedSet]] = []
     @State private var isAccountPresented = false
+    @State private var activeAchievement: Achievement?
+    @State private var achievementFiredExerciseKeys: Set<String> = []
+    @State private var deferredExerciseCompletion: (sets: [LoggedSet], day: WorkoutDay, index: Int)?
 
     var body: some View {
         GeometryReader { proxy in
@@ -26,6 +29,14 @@ struct RootView: View {
                 .frame(width: proxy.size.width, height: 82)
                 .position(x: proxy.size.width / 2, y: proxy.size.height - 41)
                 .zIndex(10)
+
+                if let activeAchievement {
+                    AchievementCardOverlay(achievement: activeAchievement) {
+                        dismissAchievement()
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .zIndex(100)
+                }
             }
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(AppColor.base)
@@ -117,17 +128,28 @@ struct RootView: View {
                 })
             } else {
                 let index = min(activeExerciseIndex, day.exercises.count - 1)
+                let exercise = day.exercises[index]
                 LogWorkoutView(
-                    exercise: day.exercises[index],
+                    exercise: exercise,
                     exerciseIndex: index,
                     exerciseCount: day.exercises.count,
+                    previousBestWeight: store.personalBestWeight(for: exercise.name),
+                    username: accountUsername,
+                    hasFiredAchievementForExercise: achievementFiredExerciseKeys.contains(exercise.name.normalizedStatsKey),
+                    onAchievementUnlocked: { achievement, pendingSets in
+                        activeAchievement = achievement
+                        achievementFiredExerciseKeys.insert(exercise.name.normalizedStatsKey)
+                        if let pendingSets {
+                            deferredExerciseCompletion = (pendingSets, day, index)
+                        }
+                    },
                     onExerciseComplete: { sets in
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             completeExercise(sets, in: day, at: index)
                         }
                     }
                 )
-                .id(day.exercises[index].id)
+                .id(exercise.id)
             }
         case .workoutComplete:
             WorkoutCompleteView(workout: completedWorkout, onFinish: {
@@ -220,6 +242,9 @@ struct RootView: View {
         workoutSessionDay = day
         activeExerciseIndex = 0
         loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
+        achievementFiredExerciseKeys = []
+        deferredExerciseCompletion = nil
+        activeAchievement = nil
         route = .logWorkout
     }
 
@@ -243,6 +268,33 @@ struct RootView: View {
         workoutSessionDay = nil
         activeExerciseIndex = 0
         loggedExerciseSets = []
+        achievementFiredExerciseKeys = []
+        deferredExerciseCompletion = nil
+        activeAchievement = nil
+    }
+
+    private var accountUsername: String? {
+        guard case let .signedIn(user) = accountController.session else {
+            return nil
+        }
+
+        let trimmed = user.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func dismissAchievement() {
+        activeAchievement = nil
+
+        if let deferredExerciseCompletion {
+            let sets = deferredExerciseCompletion.sets
+            let day = deferredExerciseCompletion.day
+            let index = deferredExerciseCompletion.index
+            self.deferredExerciseCompletion = nil
+
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                completeExercise(sets, in: day, at: index)
+            }
+        }
     }
 
     private func syncAccount(reason: WorkoutSyncReason) {
