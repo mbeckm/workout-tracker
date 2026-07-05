@@ -17,15 +17,14 @@ Conventions for using the Linear MCP server with the ScratchWorkout iOS project.
 
 ## MCP setup
 
-Linear MCP must be connected and authenticated in Cursor:
+| Environment | Auth method |
+|-------------|-------------|
+| **Cursor IDE** | OAuth via Settings → MCP → Authenticate |
+| **Cloud Agents** | Linear API key in Dashboard → Secrets + HTTP MCP header (OAuth is broken in cloud) |
 
-1. Open Cursor Settings (`Ctrl/Cmd + Shift + J`) → **MCP**
-2. Enable the **Linear** server
-3. Authenticate with your Linear account when prompted
+Cloud Agents cannot complete Linear OAuth today ("Invalid redirect URI"). Use a Personal API Key instead — see `references/mcp-setup.md`.
 
-If tools return auth errors, re-authenticate in MCP settings. If the server disconnects, toggle it off and on — a known SSE reconnection issue.
-
-See `references/mcp-setup.md` for the recommended MCP configuration.
+If tools return auth errors in the IDE, re-authenticate in MCP settings. If the server disconnects, toggle it off and on — a known SSE reconnection issue.
 
 ## Discovering tools
 

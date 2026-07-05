@@ -30,11 +30,12 @@ Use the Figma MCP server to implement and validate ScratchWorkout UI. The visual
 
 ## MCP setup
 
-Figma MCP must be connected in Cursor (Settings → MCP). If tools fail:
+| Environment | Status |
+|-------------|--------|
+| **Cursor IDE** | Supported — authenticate in Settings → MCP |
+| **Cloud Agents** | Not supported yet (Figma allowlist) — use `DESIGN.md` + code tokens instead |
 
-1. Toggle the Figma server off and on in MCP settings
-2. Confirm you are authenticated to the Scratch Figma file
-3. Retry with a direct frame/layer link (see URL parsing below)
+In the IDE, if tools fail: toggle Figma MCP off/on, confirm auth, and retry with a direct frame/layer link.
 
 See `references/mcp-setup.md` for configuration details.
 

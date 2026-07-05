@@ -1,16 +1,23 @@
 # Figma MCP setup for ScratchWorkout
 
-## Cursor configuration
+## Cursor IDE (local) — supported
 
-Figma MCP is typically enabled globally in Cursor:
+Figma MCP works in the **Cursor desktop app** and **CLI**. OAuth authentication happens in the browser when you first connect.
 
 1. Open Cursor Settings (`Ctrl/Cmd + Shift + J`)
 2. Go to **MCP**
-3. Enable the **Figma** server and authenticate when prompted
+3. Enable the **Figma** server (install the Figma plugin from the marketplace if needed)
+4. Authenticate when prompted with your Figma account
 
-Project-level overrides can go in `.cursor/mcp.json` at the repo root if your team uses a shared config.
+HTTP endpoint: `https://mcp.figma.com/mcp`
 
-## Verify connection
+## Cloud Agents — not supported yet
+
+Figma MCP is **not available in Cloud Agents** today. Adding Figma in the Automations / Cloud Agent MCP tools tab shows a "Forbidden" badge because Figma only allows approved MCP clients, and the Cloud Agent client is not yet on their allowlist.
+
+**Workaround:** Use Figma MCP from the Cursor IDE / local Cursor app for design-to-code work. Cloud Agents can still implement UI using `DESIGN.md`, `Theme.swift`, and `Components.swift` without live Figma access.
+
+## Verify connection (IDE only)
 
 In Agent chat, ask the agent to list Figma MCP tools. You should see tools such as:
 
@@ -39,12 +46,13 @@ Convert `node-id=123-456` to `nodeId: "123:456"` for MCP tool calls.
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---------|-----|
-| Server status "error" | Toggle Figma MCP off/on; restart Cursor |
-| Empty or truncated design context | Use `get_metadata`, then fetch child nodes individually |
-| Auth failure | Re-authenticate in MCP settings |
-| Wrong frame returned | Ensure the copied link points to the exact node, not the file root |
+| Symptom | Environment | Fix |
+|---------|-------------|-----|
+| "Forbidden" badge | Cloud Agent | Not supported — use local IDE instead |
+| Server status "error" | IDE | Toggle Figma MCP off/on; restart Cursor |
+| Empty or truncated design context | IDE | Use `get_metadata`, then fetch child nodes individually |
+| Auth failure | IDE | Re-authenticate in MCP settings |
+| Wrong frame returned | Any | Ensure the copied link points to the exact node, not the file root |
 
 ## Related docs
 
