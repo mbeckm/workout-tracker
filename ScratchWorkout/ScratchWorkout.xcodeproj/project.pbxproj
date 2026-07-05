@@ -26,6 +26,9 @@
 		A10000000000000000000020 /* AccountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* AccountModels.swift */; };
 		A10000000000000000000021 /* AccountServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* AccountServices.swift */; };
 		A10000000000000000000022 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* AccountView.swift */; };
+		A10000000000000000000023 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* SessionStore.swift */; };
+		A10000000000000000000024 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* AuthConfig.swift */; };
+		A10000000000000000000025 /* AccountMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* AccountMigration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +54,10 @@
 		A20000000000000000000020 /* AccountModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountModels.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* AccountServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountServices.swift; sourceTree = "<group>"; };
 		A20000000000000000000022 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000024 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
+		A20000000000000000000025 /* AccountMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMigration.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* ScratchWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScratchWorkout.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,10 +98,14 @@
 				A20000000000000000000020 /* AccountModels.swift */,
 				A20000000000000000000021 /* AccountServices.swift */,
 				A20000000000000000000022 /* AccountView.swift */,
+				A20000000000000000000023 /* SessionStore.swift */,
+				A20000000000000000000024 /* AuthConfig.swift */,
+				A20000000000000000000025 /* AccountMigration.swift */,
 				A20000000000000000000010 /* Assets.xcassets */,
 				A20000000000000000000011 /* Resources/Fonts/Inter.ttf */,
 				A20000000000000000000012 /* Resources/Fonts/OFL.txt */,
 				A20000000000000000000013 /* Info.plist */,
+				A20000000000000000000026 /* ScratchWorkout.entitlements */,
 				A20000000000000000000018 /* PrivacyInfo.xcprivacy */,
 			);
 			path = ScratchWorkout;
@@ -195,6 +206,9 @@
 				A10000000000000000000020 /* AccountModels.swift in Sources */,
 				A10000000000000000000021 /* AccountServices.swift in Sources */,
 				A10000000000000000000022 /* AccountView.swift in Sources */,
+				A10000000000000000000023 /* SessionStore.swift in Sources */,
+				A10000000000000000000024 /* AuthConfig.swift in Sources */,
+				A10000000000000000000025 /* AccountMigration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,6 +335,7 @@
 		A80000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScratchWorkout/ScratchWorkout.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
@@ -351,6 +366,7 @@
 		A80000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ScratchWorkout/ScratchWorkout.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";

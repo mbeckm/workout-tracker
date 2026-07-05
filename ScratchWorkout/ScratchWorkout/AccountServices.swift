@@ -1,9 +1,13 @@
 import Foundation
 import Combine
 
+protocol AuthProviderAuthorizing {
+    func authorize(_ provider: AccountProvider) async throws -> AuthProviderCredential
+}
+
 protocol AuthServicing {
-    func restoreSession() async throws -> AccountUser?
-    func signIn(with provider: AccountProvider) async throws -> AccountUser
+    func restoreSession() async throws -> StoredSession?
+    func signIn(with credential: AuthProviderCredential) async throws -> StoredSession
     func signOut() async throws
     func deleteAccount(for user: AccountUser) async throws
 }
@@ -14,58 +18,65 @@ protocol CloudWorkoutRepository {
     func deleteData(for user: AccountUser) async throws
 }
 
-enum AccountServiceError: LocalizedError {
-    case missingSession
-    case encodingFailed
+final class LocalPreviewProviderAuthorizer: AuthProviderAuthorizing {
+    func authorize(_ provider: AccountProvider) async throws -> AuthProviderCredential {
+        try await Task.sleep(nanoseconds: 250_000_000)
 
-    var errorDescription: String? {
-        switch self {
-        case .missingSession:
-            "No signed-in account is available."
-        case .encodingFailed:
-            "Account data could not be saved."
-        }
+        return AuthProviderCredential(
+            provider: provider,
+            idToken: "preview-id-token-\(UUID().uuidString)",
+            authorizationCode: "preview-auth-code",
+            nonce: nil,
+            displayName: nil,
+            email: nil
+        )
     }
 }
 
 final class LocalPreviewAuthService: AuthServicing {
-    private let defaults: UserDefaults
-    private let sessionKey = "scratchWorkout.auth.previewSession.v1"
+    private let sessionStore: SessionStoring
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    init(sessionStore: SessionStoring = KeychainSessionStore()) {
+        self.sessionStore = sessionStore
     }
 
-    func restoreSession() async throws -> AccountUser? {
-        guard let data = defaults.data(forKey: sessionKey) else {
-            return nil
-        }
-
-        return try JSONDecoder().decode(AccountUser.self, from: data)
+    func restoreSession() async throws -> StoredSession? {
+        try sessionStore.load()
     }
 
-    func signIn(with provider: AccountProvider) async throws -> AccountUser {
+    func signIn(with credential: AuthProviderCredential) async throws -> StoredSession {
         try await Task.sleep(nanoseconds: 250_000_000)
 
         let user = AccountUser(
-            id: "preview-\(provider.rawValue)",
-            displayName: "\(provider.title) Account",
-            email: nil,
-            provider: provider,
+            id: "preview-\(credential.provider.rawValue)",
+            displayName: credential.displayName ?? "\(credential.provider.title) Account",
+            email: credential.email,
+            provider: credential.provider,
             createdAt: Date()
         )
 
-        let data = try JSONEncoder().encode(user)
-        defaults.set(data, forKey: sessionKey)
-        return user
+        let session = StoredSession(
+            user: user,
+            tokens: AuthTokens(
+                accessToken: UUID().uuidString,
+                refreshToken: UUID().uuidString,
+                idToken: credential.idToken,
+                expiresAt: Date().addingTimeInterval(3600)
+            ),
+            issuedAt: Date()
+        )
+
+        try sessionStore.save(session)
+        return session
     }
 
     func signOut() async throws {
-        defaults.removeObject(forKey: sessionKey)
+        try sessionStore.clear()
     }
 
+    /// Real implementation will also revoke provider tokens at the identity provider.
     func deleteAccount(for user: AccountUser) async throws {
-        defaults.removeObject(forKey: sessionKey)
+        try sessionStore.clear()
     }
 }
 
@@ -104,18 +115,28 @@ final class AccountController: ObservableObject {
     @Published private(set) var session: AuthSession = .loading
     @Published private(set) var syncState: AccountSyncState = .signedOut
     @Published private(set) var isWorking = false
+    @Published var authError: AccountError?
     @Published var alertMessage: String?
+    @Published var pendingMigration: MigrationRequest?
+    @Published var hydratedSnapshot: WorkoutCloudSnapshot?
 
     private let authService: AuthServicing
+    private let providerAuthorizer: AuthProviderAuthorizing
     private let repository: CloudWorkoutRepository
+    private let migrationCoordinator: AccountMigrating
     private var didRestoreSession = false
 
     init(
         authService: AuthServicing = LocalPreviewAuthService(),
-        repository: CloudWorkoutRepository = LocalPreviewWorkoutRepository()
+        providerAuthorizer: AuthProviderAuthorizing = LocalPreviewProviderAuthorizer(),
+        repository: CloudWorkoutRepository = LocalPreviewWorkoutRepository(),
+        migrationCoordinator: AccountMigrating? = nil
     ) {
+        let repo = repository
         self.authService = authService
-        self.repository = repository
+        self.providerAuthorizer = providerAuthorizer
+        self.repository = repo
+        self.migrationCoordinator = migrationCoordinator ?? RepositoryMigrationCoordinator(repository: repo)
     }
 
     func restoreSession() async {
@@ -127,9 +148,16 @@ final class AccountController: ObservableObject {
         session = .loading
 
         do {
-            if let user = try await authService.restoreSession() {
+            if let stored = try await authService.restoreSession() {
+                let user = stored.user
                 session = .signedIn(user)
-                syncState = .idle
+
+                if let remote = try await repository.loadSnapshot(for: user) {
+                    hydratedSnapshot = remote
+                    syncState = .synced(Date())
+                } else {
+                    syncState = .idle
+                }
             } else {
                 session = .signedOut
                 syncState = .signedOut
@@ -137,16 +165,43 @@ final class AccountController: ObservableObject {
         } catch {
             session = .signedOut
             syncState = .signedOut
-            alertMessage = readableMessage(from: error)
+            setAuthError(from: error)
         }
     }
 
-    func signIn(with provider: AccountProvider, snapshot: WorkoutCloudSnapshot) async {
+    func signIn(with provider: AccountProvider, snapshot localSnapshot: WorkoutCloudSnapshot) async {
         await performAccountWork {
-            let user = try await authService.signIn(with: provider)
-            session = .signedIn(user)
-            try await save(snapshot: snapshot, for: user, reason: .signIn)
+            let credential = try await providerAuthorizer.authorize(provider)
+            let stored = try await authService.signIn(with: credential)
+            session = .signedIn(stored.user)
+
+            let remote = try await repository.loadSnapshot(for: stored.user)
+            if let remote {
+                hydratedSnapshot = remote
+                syncState = .synced(Date())
+                pendingMigration = nil
+            } else {
+                pendingMigration = MigrationRequest(localSnapshot: localSnapshot)
+                syncState = .idle
+            }
         }
+    }
+
+    func confirmMigration() async {
+        guard let request = pendingMigration, let user = session.user else {
+            return
+        }
+
+        await performAccountWork {
+            syncState = .syncing
+            try await migrationCoordinator.migrate(request.localSnapshot, for: user)
+            syncState = .synced(Date())
+            pendingMigration = nil
+        }
+    }
+
+    func dismissMigration() {
+        pendingMigration = nil
     }
 
     func signOut() async {
@@ -154,12 +209,14 @@ final class AccountController: ObservableObject {
             try await authService.signOut()
             session = .signedOut
             syncState = .signedOut
+            pendingMigration = nil
         }
     }
 
     func deleteAccount() async {
         guard let user = session.user else {
-            alertMessage = AccountServiceError.missingSession.localizedDescription
+            authError = .missingSession
+            alertMessage = authError?.localizedDescription
             return
         }
 
@@ -168,6 +225,7 @@ final class AccountController: ObservableObject {
             try await authService.deleteAccount(for: user)
             session = .signedOut
             syncState = .signedOut
+            pendingMigration = nil
         }
     }
 
@@ -196,8 +254,18 @@ final class AccountController: ObservableObject {
             try await operation()
         } catch {
             syncState = .failed(readableMessage(from: error))
-            alertMessage = readableMessage(from: error)
+            setAuthError(from: error)
         }
+    }
+
+    private func setAuthError(from error: Error) {
+        if let accountError = error as? AccountError {
+            authError = accountError
+        } else {
+            authError = .backendFailed(readableMessage(from: error))
+        }
+
+        alertMessage = authError?.localizedDescription
     }
 
     private func readableMessage(from error: Error) -> String {

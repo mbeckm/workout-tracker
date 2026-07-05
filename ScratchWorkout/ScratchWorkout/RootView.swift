@@ -35,6 +35,12 @@ struct RootView: View {
         .task {
             await accountController.restoreSession()
         }
+        .onChange(of: accountController.hydratedSnapshot) { _, newValue in
+            if let snap = newValue {
+                store.hydrate(from: snap)
+                accountController.hydratedSnapshot = nil
+            }
+        }
         .sheet(isPresented: $isAccountPresented) {
             AccountView(controller: accountController, currentSnapshot: store.cloudSnapshot)
                 .preferredColorScheme(.dark)
