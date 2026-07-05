@@ -135,6 +135,14 @@ struct WorkoutStore {
         }
     }
 
+    mutating func hydrate(from snapshot: WorkoutCloudSnapshot) {
+        activePlan = Self.normalizedPlan(snapshot.activePlan)
+        savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
+        workoutHistory = snapshot.workoutHistory
+        nextDayIndex = snapshot.nextDayIndex
+        persist()
+    }
+
     mutating func savePlan(_ plan: WorkoutPlan, activate: Bool) {
         let normalizedPlan = Self.normalizedPlan(plan)
         savedPlans.removeAll { $0.id == normalizedPlan.id }

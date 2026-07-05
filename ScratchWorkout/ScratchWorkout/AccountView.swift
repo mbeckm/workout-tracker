@@ -102,9 +102,10 @@ struct AccountView: View {
         .alert("Account", isPresented: alertBinding) {
             Button("OK", role: .cancel) {
                 controller.alertMessage = nil
+                controller.authError = nil
             }
         } message: {
-            Text(controller.alertMessage ?? "")
+            Text(controller.alertMessage ?? controller.authError?.localizedDescription ?? "")
         }
         .confirmationDialog("Delete account?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
             Button("Delete Account", role: .destructive) {
@@ -188,6 +189,10 @@ struct AccountView: View {
 
     private func signedInContent(_ user: AccountUser) -> some View {
         VStack(alignment: .leading, spacing: 16) {
+            if controller.pendingMigration != nil {
+                migrationPrompt
+            }
+
             accountCard {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(user.displayName)
@@ -237,6 +242,44 @@ struct AccountView: View {
             }
             .buttonStyle(.plain)
             .disabled(controller.isWorking)
+        }
+    }
+
+    private var migrationPrompt: some View {
+        accountCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Sync this device?")
+                    .font(AppFont.subheading)
+
+                Text("Your account has no saved workout data yet. Upload plans and history from this device?")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    Task {
+                        await controller.confirmMigration()
+                    }
+                } label: {
+                    accountActionLabel(
+                        title: controller.isWorking ? "Syncing" : "Sync This Device's Data",
+                        foreground: AppColor.base,
+                        fill: AppColor.accent,
+                        strokeWidth: 0
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(controller.isWorking)
+
+                Button {
+                    controller.dismissMigration()
+                } label: {
+                    accountActionLabel(title: "Not Now", foreground: AppColor.primaryText, fill: AppColor.surface1)
+                }
+                .buttonStyle(.plain)
+                .disabled(controller.isWorking)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
