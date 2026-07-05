@@ -25,6 +25,10 @@ struct CreatePlanView: View {
     @State private var isAddingExercise = false
     @State private var exerciseDraft: ExerciseDraft?
     @State private var exerciseDraftStep: ExerciseDraftStep = .sets
+    @State private var entrySurfaceID = UUID()
+    @State private var entryScrollSuppressionCount = 0
+    @State private var stageDirection: AppNavigationDirection = .forward
+    @State private var daySlideDirection: AppNavigationDirection = .forward
 
     init(
         initialStage: Stage = .frequency,
@@ -71,8 +75,7 @@ struct CreatePlanView: View {
             }
             .padding(.horizontal, 24)
         }
-        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: stage)
-        .animation(.spring(response: 0.26, dampingFraction: 0.88), value: currentDayIndex)
+        .animation(AppNavigationAnimation.push, value: stage)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completedDays)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isAddingExercise)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
@@ -84,17 +87,18 @@ struct CreatePlanView: View {
 
     @ViewBuilder
     private var baseContent: some View {
-        switch stage {
-        case .frequency:
-            frequencyView
-                .transition(.opacity.combined(with: .scale(scale: 0.98)))
-        case .search:
-            dayBuilderView
-                .transition(.opacity)
-        case .finalReview, .activatePrompt:
-            finalReviewView
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
+        Group {
+            switch stage {
+            case .frequency:
+                frequencyView
+            case .search:
+                dayBuilderView
+            case .finalReview, .activatePrompt:
+                finalReviewView
+            }
         }
+        .id(stage)
+        .transition(AppScreenTransition.slide(stageDirection))
     }
 
     private var frequencyView: some View {
@@ -155,78 +159,23 @@ struct CreatePlanView: View {
             )
                 .padding(.top, 24)
 
-            SectionTitle(text: currentDayTitle)
-                .padding(.top, 24)
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    if let draft = exerciseDraft, draft.editingID == nil {
-                        ExerciseDraftSurface(
-                            draft: draftBinding(fallback: draft),
-                            step: $exerciseDraftStep,
-                            onAdvance: advanceOrSaveExerciseDraft
-                        )
-                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                        .frame(maxWidth: .infinity)
-                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                    } else if shouldShowSearchSurface {
-                        PlanEntrySurface(
-                            query: $searchQuery,
-                            focused: $searchFocused,
-                            results: searchResults,
-                            searchState: searchState,
-                            onConfigure: configureExerciseFromSearch
-                        )
-                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                        .frame(maxWidth: .infinity)
-                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                    } else if currentDayExercises.isEmpty {
-                        EmptyDayState(onAdd: beginExerciseSearch)
-                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                    }
-
-                    ForEach(currentDayExercises) { exercise in
-                        if let draft = exerciseDraft, draft.editingID == exercise.id {
-                            ExerciseDraftSurface(
-                                draft: draftBinding(fallback: draft),
-                                step: $exerciseDraftStep,
-                                onAdvance: advanceOrSaveExerciseDraft
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                            .frame(maxWidth: .infinity)
-                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                        } else {
-                            EditableExerciseCard(
-                                exercise: exercise,
-                                onEdit: {
-                                    editExercise(exercise)
-                                },
-                                onDelete: {
-                                    deleteExercise(exercise.id)
-                                },
-                                onReorderBefore: { draggedID in
-                                    reorderExercise(draggedID, before: exercise.id)
-                                }
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
+            HorizontalSwipePager(
+                selection: $currentDayIndex,
+                pageCount: daysPerWeek,
+                isEnabled: exerciseDraft == nil,
+                direction: $daySlideDirection,
+                onPageChange: {
+                    isAddingExercise = false
+                    resetExerciseEntry()
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(.top, currentDayExercises.isEmpty ? 24 : 12)
-                .padding(.bottom, 24)
+            ) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionTitle(text: currentDayTitle)
+                        .padding(.top, 24)
+
+                    planDayScrollContent(topPadding: currentDayExercises.isEmpty ? 24 : 12)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .clipped()
-            .scrollDismissesKeyboard(.interactively)
-            .simultaneousGesture(
-                TapGesture()
-                    .onEnded {
-                        searchFocused = false
-                    },
-                including: .gesture
-            )
 
             if !currentDayExercises.isEmpty && exerciseDraft == nil {
                 HStack {
@@ -258,77 +207,30 @@ struct CreatePlanView: View {
             )
                 .padding(.top, 24)
 
-            SectionTitle(text: currentDayTitle)
-                .padding(.top, 24)
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 12) {
-                    if let draft = exerciseDraft, draft.editingID == nil {
-                        ExerciseDraftSurface(
-                            draft: draftBinding(fallback: draft),
-                            step: $exerciseDraftStep,
-                            onAdvance: advanceOrSaveExerciseDraft
-                        )
-                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                        .frame(maxWidth: .infinity)
-                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                    } else if shouldShowSearchSurface {
-                        PlanEntrySurface(
-                            query: $searchQuery,
-                            focused: $searchFocused,
-                            results: searchResults,
-                            searchState: searchState,
-                            onConfigure: configureExerciseFromSearch
-                        )
-                        .matchedGeometryEffect(id: "plan-entry-surface", in: searchNamespace)
-                        .frame(maxWidth: .infinity)
-                        .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                    } else if currentDayExercises.isEmpty {
-                        EmptyDayState(onAdd: {
-                            beginExerciseSearch()
-                        })
-                    }
-
-                    ForEach(currentDayExercises) { exercise in
-                        if let draft = exerciseDraft, draft.editingID == exercise.id {
-                            ExerciseDraftSurface(
-                                draft: draftBinding(fallback: draft),
-                                step: $exerciseDraftStep,
-                                onAdvance: advanceOrSaveExerciseDraft
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                            .frame(maxWidth: .infinity)
-                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
-                        } else {
-                            EditableExerciseCard(
-                                exercise: exercise,
-                                onEdit: {
-                                    editExercise(exercise)
-                                },
-                                onDelete: {
-                                    deleteExercise(exercise.id)
-                                },
-                                onReorderBefore: { draggedID in
-                                    reorderExercise(draggedID, before: exercise.id)
-                                }
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
+            HorizontalSwipePager(
+                selection: $currentDayIndex,
+                pageCount: daysPerWeek,
+                isEnabled: exerciseDraft == nil,
+                direction: $daySlideDirection,
+                onPageChange: {
+                    isAddingExercise = false
+                    resetExerciseEntry()
                 }
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
+            ) {
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionTitle(text: currentDayTitle)
+                        .padding(.top, 24)
+
+                    planDayScrollContent(topPadding: 12)
+                }
             }
-            .clipped()
-            .frame(maxWidth: .infinity)
 
             HStack {
                 Spacer()
                 if stage == .finalReview && exerciseDraft == nil && !shouldShowSearchSurface {
                     CTAButton(title: "Save Plan", width: 294) {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        stageDirection = .forward
+                        withAnimation(AppNavigationAnimation.push) {
                             stage = .activatePrompt
                         }
                     }
@@ -399,6 +301,104 @@ struct CreatePlanView: View {
         .zIndex(4)
     }
 
+    private func planDayScrollContent(topPadding: CGFloat) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    ForEach(currentDayExercises) { exercise in
+                        if let draft = exerciseDraft, draft.editingID == exercise.id {
+                            ExerciseDraftSurface(
+                                draft: draftBinding(fallback: draft),
+                                step: $exerciseDraftStep,
+                                onAdvance: advanceOrSaveExerciseDraft
+                            )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
+                            .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                        } else {
+                            EditableExerciseCard(
+                                exercise: exercise,
+                                onEdit: {
+                                    editExercise(exercise)
+                                },
+                                onDelete: {
+                                    deleteExercise(exercise.id)
+                                },
+                                onReorderBefore: { draggedID in
+                                    reorderExercise(draggedID, before: exercise.id)
+                                }
+                            )
+                            .matchedGeometryEffect(id: exercise.id, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    Group {
+                        if let draft = exerciseDraft, draft.editingID == nil {
+                            ExerciseDraftSurface(
+                                draft: draftBinding(fallback: draft),
+                                step: $exerciseDraftStep,
+                                onAdvance: advanceOrSaveExerciseDraft
+                            )
+                            .matchedGeometryEffect(id: entrySurfaceID, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
+                            .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
+                        } else if shouldShowSearchSurface {
+                            PlanEntrySurface(
+                                query: $searchQuery,
+                                focused: $searchFocused,
+                                results: searchResults,
+                                searchState: searchState,
+                                onConfigure: configureExerciseFromSearch
+                            )
+                            .matchedGeometryEffect(id: entrySurfaceID, in: searchNamespace)
+                            .frame(maxWidth: .infinity)
+                            .transition(.scale(scale: 0.98, anchor: .bottom).combined(with: .opacity))
+                        } else if currentDayExercises.isEmpty {
+                            EmptyDayState(onAdd: beginExerciseSearch)
+                                .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
+                        }
+                    }
+                    .id("plan-entry-anchor")
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.top, topPadding)
+                .padding(.bottom, 24)
+            }
+            .frame(maxWidth: .infinity)
+            .clipped()
+            .scrollDismissesKeyboard(.interactively)
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded {
+                        searchFocused = false
+                    },
+                including: .gesture
+            )
+            .onChange(of: shouldShowSearchSurface) { _, newValue in
+                if newValue {
+                    scrollEntryIntoView(proxy)
+                }
+            }
+            .onChange(of: exerciseDraft) { _, newValue in
+                if newValue != nil {
+                    scrollEntryIntoView(proxy)
+                }
+            }
+            .onChange(of: exerciseDraftStep) { _, _ in
+                scrollEntryIntoView(proxy)
+            }
+            .onChange(of: searchResults.count) { _, _ in
+                scrollEntryIntoView(proxy)
+            }
+            .onChange(of: searchFocused) { _, newValue in
+                if newValue {
+                    scrollEntryIntoView(proxy)
+                }
+            }
+        }
+    }
+
     private var currentDayTitle: String {
         "Day \(currentDayIndex + 1)"
     }
@@ -434,9 +434,12 @@ struct CreatePlanView: View {
         completedDays = 0
         currentDayIndex = 0
         isAddingExercise = false
+        entrySurfaceID = UUID()
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+        stageDirection = .forward
+
+        withAnimation(AppNavigationAnimation.push) {
             stage = .search
         }
     }
@@ -446,6 +449,7 @@ struct CreatePlanView: View {
         exerciseDraft = nil
         exerciseDraftStep = .sets
         searchQuery = ""
+        entrySurfaceID = UUID()
         isAddingExercise = true
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
@@ -514,24 +518,36 @@ struct CreatePlanView: View {
         savedExercise.sets = draft.sets
         savedExercise.reps = draft.reps
 
+        let isNewExercise = draft.editingID == nil
+
         withAnimation(.spring(response: 0.26, dampingFraction: 0.86)) {
             if let editingID = draft.editingID,
                let index = planDays[currentDayIndex].firstIndex(where: { $0.id == editingID }) {
                 savedExercise.id = editingID
                 planDays[currentDayIndex][index] = savedExercise
             } else {
-                savedExercise.id = UUID()
+                savedExercise.id = entrySurfaceID
                 planDays[currentDayIndex].append(savedExercise)
             }
 
             exerciseDraft = nil
             exerciseDraftStep = .sets
             searchQuery = ""
-            isAddingExercise = shouldResumeSearch
+            isAddingExercise = isNewExercise ? false : shouldResumeSearch
             searchFocused = false
+
+            if isNewExercise {
+                entryScrollSuppressionCount = 2
+            }
         }
 
-        if shouldResumeSearch {
+        if isNewExercise && shouldResumeSearch {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+                entrySurfaceID = UUID()
+                isAddingExercise = true
+                searchFocused = true
+            }
+        } else if !isNewExercise && shouldResumeSearch {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 searchFocused = true
             }
@@ -552,10 +568,14 @@ struct CreatePlanView: View {
         isAddingExercise = false
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
-            if currentDayIndex >= daysPerWeek - 1 {
+        if currentDayIndex >= daysPerWeek - 1 {
+            stageDirection = .forward
+            withAnimation(AppNavigationAnimation.push) {
                 stage = .finalReview
-            } else {
+            }
+        } else {
+            daySlideDirection = .forward
+            withAnimation(AppNavigationAnimation.push) {
                 currentDayIndex += 1
                 stage = .search
             }
@@ -572,7 +592,9 @@ struct CreatePlanView: View {
         isAddingExercise = false
         resetExerciseEntry()
 
-        withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+        daySlideDirection = .forIndexChange(from: currentDayIndex, to: index)
+
+        withAnimation(AppNavigationAnimation.push) {
             currentDayIndex = index
             stage = shouldRemainInReview ? .finalReview : .search
         }
@@ -744,6 +766,19 @@ struct CreatePlanView: View {
                 exerciseDraft = newValue
             }
         )
+    }
+
+    private func scrollEntryIntoView(_ proxy: ScrollViewProxy) {
+        guard entryScrollSuppressionCount == 0 else {
+            entryScrollSuppressionCount -= 1
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+                proxy.scrollTo("plan-entry-anchor", anchor: .bottom)
+            }
+        }
     }
 }
 

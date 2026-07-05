@@ -29,6 +29,7 @@
 		A10000000000000000000023 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* SessionStore.swift */; };
 		A10000000000000000000024 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* AuthConfig.swift */; };
 		A10000000000000000000025 /* AccountMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* AccountMigration.swift */; };
+		A10000000000000000000026 /* NavigationMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* NavigationMotion.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,6 +59,7 @@
 		A20000000000000000000024 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* AccountMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMigration.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* ScratchWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScratchWorkout.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000027 /* NavigationMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationMotion.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +90,7 @@
 				A20000000000000000000015 /* WorkoutStore.swift */,
 				A20000000000000000000017 /* ExerciseCatalog.swift */,
 				A20000000000000000000004 /* Components.swift */,
+				A20000000000000000000027 /* NavigationMotion.swift */,
 				A20000000000000000000005 /* RootView.swift */,
 				A20000000000000000000006 /* HomeView.swift */,
 				A20000000000000000000007 /* PlansView.swift */,
@@ -196,6 +199,7 @@
 				A10000000000000000000015 /* WorkoutStore.swift in Sources */,
 				A10000000000000000000017 /* ExerciseCatalog.swift in Sources */,
 				A10000000000000000000004 /* Components.swift in Sources */,
+				A10000000000000000000026 /* NavigationMotion.swift in Sources */,
 				A10000000000000000000005 /* RootView.swift in Sources */,
 				A10000000000000000000006 /* HomeView.swift in Sources */,
 				A10000000000000000000007 /* PlansView.swift in Sources */,
