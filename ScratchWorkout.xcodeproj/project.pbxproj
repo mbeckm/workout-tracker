@@ -29,6 +29,8 @@
 		A10000000000000000000023 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* SessionStore.swift */; };
 		A10000000000000000000024 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* AuthConfig.swift */; };
 		A10000000000000000000025 /* AccountMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* AccountMigration.swift */; };
+		A10000000000000000000027 /* Achievements.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* Achievements.swift */; };
+		A10000000000000000000028 /* AchievementCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* AchievementCardView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +59,8 @@
 		A20000000000000000000023 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000024 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* AccountMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMigration.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* Achievements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievements.swift; sourceTree = "<group>"; };
+		A20000000000000000000028 /* AchievementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCardView.swift; sourceTree = "<group>"; };
 		A20000000000000000000026 /* ScratchWorkout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScratchWorkout.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -101,6 +105,8 @@
 				A20000000000000000000023 /* SessionStore.swift */,
 				A20000000000000000000024 /* AuthConfig.swift */,
 				A20000000000000000000025 /* AccountMigration.swift */,
+				A20000000000000000000027 /* Achievements.swift */,
+				A20000000000000000000028 /* AchievementCardView.swift */,
 				A20000000000000000000010 /* Assets.xcassets */,
 				A20000000000000000000011 /* Resources/Fonts/Inter.ttf */,
 				A20000000000000000000012 /* Resources/Fonts/OFL.txt */,
@@ -209,6 +215,8 @@
 				A10000000000000000000023 /* SessionStore.swift in Sources */,
 				A10000000000000000000024 /* AuthConfig.swift in Sources */,
 				A10000000000000000000025 /* AccountMigration.swift in Sources */,
+				A10000000000000000000027 /* Achievements.swift in Sources */,
+				A10000000000000000000028 /* AchievementCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
