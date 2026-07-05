@@ -1,6 +1,18 @@
 import Charts
 import SwiftUI
 
+private enum ExerciseStatsFormatting {
+    private static let progressionDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.setLocalizedDateFormatFromTemplate("d MMM")
+        return formatter
+    }()
+
+    static func progressionDateText(for date: Date) -> String {
+        progressionDateFormatter.string(from: date)
+    }
+}
+
 struct StatsView: View {
     var topExercises: [ExerciseSetSummary]
     var onOpenExercise: (String) -> Void
@@ -139,8 +151,11 @@ struct ExerciseStatsView: View {
                 header
                     .padding(.top, 58)
 
-                TenRMChartCard(points: stats.progression)
+                chartSectionHeader
                     .padding(.top, 24)
+
+                TenRMChartCard(points: stats.progression)
+                    .padding(.top, 8)
 
                 SectionTitle(text: "History")
                     .padding(.top, 24)
@@ -150,9 +165,7 @@ struct ExerciseStatsView: View {
                         if stats.progression.isEmpty {
                             EmptyExerciseStatsCard()
                         } else {
-                            ForEach(stats.progression.reversed()) { point in
-                                ExerciseStatsHistoryCard(point: point)
-                            }
+                            ExerciseStatsHistoryList(points: stats.progression.reversed())
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -188,6 +201,22 @@ struct ExerciseStatsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(height: 38, alignment: .leading)
+    }
+
+    private var chartSectionHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("10RM")
+                .font(AppFont.h2)
+                .foregroundStyle(AppColor.primaryText)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
+
+            Text("kg")
+                .font(AppFont.caption)
+                .foregroundStyle(AppColor.secondaryText)
+                .lineLimit(1)
+        }
     }
 }
 
@@ -373,28 +402,14 @@ private struct TenRMChartCard: View {
     var points: [ExerciseStatsPoint]
 
     var body: some View {
-        CardShell(height: 236) {
+        CardShell(height: 204) {
             if points.isEmpty {
                 Text("No logged sets yet")
                     .font(AppFont.h2)
                     .foregroundStyle(AppColor.secondaryText)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Estimated 10RM")
-                            .font(AppFont.h2)
-                            .foregroundStyle(AppColor.primaryText)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 12)
-
-                        Text("kg")
-                            .font(AppFont.caption)
-                            .foregroundStyle(AppColor.secondaryText)
-                            .lineLimit(1)
-                    }
-
+                VStack(alignment: .leading, spacing: 8) {
                     Chart {
                         ForEach(yAxisValues, id: \.self) { value in
                             RuleMark(y: .value("Guide", value))
@@ -416,7 +431,7 @@ private struct TenRMChartCard: View {
                                 y: .value("10RM", point.averageTenRM)
                             )
                             .foregroundStyle(AppColor.accent)
-                            .symbolSize(24)
+                            .symbolSize(point.isPersonalBest ? 36 : 24)
                         }
                     }
                     .chartYScale(domain: yDomain)
@@ -437,7 +452,7 @@ private struct TenRMChartCard: View {
                         plotArea
                             .background(AppColor.surface1)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                    .frame(maxWidth: .infinity, minHeight: 156, maxHeight: 156)
 
                     HStack(spacing: 0) {
                         ForEach(Array(xAxisDates.enumerated()), id: \.offset) { index, date in
@@ -512,9 +527,7 @@ private struct TenRMChartCard: View {
     }
 
     private func axisDateText(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.setLocalizedDateFormatFromTemplate("d MMM")
-        return formatter.string(from: date)
+        ExerciseStatsFormatting.progressionDateText(for: date)
     }
 
     private func yAxisText(for value: Double) -> String {
@@ -552,31 +565,89 @@ private struct TenRMChartCard: View {
     }
 }
 
-private struct ExerciseStatsHistoryCard: View {
-    var point: ExerciseStatsPoint
+private struct ExerciseStatsHistoryList: View {
+    var points: [ExerciseStatsPoint]
 
     var body: some View {
-        CardShell(height: 80) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 4) {
+        CardShell {
+            VStack(spacing: 0) {
+                ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
+                    if index > 0 {
+                        historyDivider
+                    }
+
+                    ExerciseStatsHistoryRow(
+                        point: point,
+                        delta: deltaFromPrevious(at: index)
+                    )
+                }
+            }
+        }
+    }
+
+    private var historyDivider: some View {
+        Rectangle()
+            .fill(AppColor.border)
+            .frame(height: 1)
+    }
+
+    private func deltaFromPrevious(at index: Int) -> Double? {
+        guard index + 1 < points.count else {
+            return nil
+        }
+
+        return points[index].averageTenRM - points[index + 1].averageTenRM
+    }
+}
+
+private struct ExerciseStatsHistoryRow: View {
+    var point: ExerciseStatsPoint
+    var delta: Double?
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
                     Text(dateText)
-                        .font(AppFont.h2)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
 
-                    Text("Average 10RM")
-                        .font(AppFont.label)
+                    if point.isPersonalBest {
+                        PersonalBestBadge()
+                    }
+                }
+
+                Text(setCountText)
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.tertiaryText)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(formattedTenRM)
+                        .font(AppFont.h2)
+                        .foregroundStyle(point.isPersonalBest ? AppColor.accent : AppColor.primaryText)
+                        .lineLimit(1)
+
+                    Text("kg")
+                        .font(AppFont.caption)
                         .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
                 }
 
-                Spacer(minLength: 12)
-
-                Text("\(formattedTenRM) kg")
-                    .font(AppFont.h2)
-                    .foregroundStyle(AppColor.primaryText)
-                    .lineLimit(1)
+                if let deltaText {
+                    Text(deltaText)
+                        .font(AppFont.caption)
+                        .foregroundStyle(deltaColor)
+                        .lineLimit(1)
+                }
             }
         }
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
     }
 
@@ -588,10 +659,56 @@ private struct ExerciseStatsHistoryCard: View {
         return String(format: "%.1f", point.averageTenRM)
     }
 
+    private var setCountText: String {
+        point.setCount == 1 ? "1 set" : "\(point.setCount) sets"
+    }
+
     private var dateText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yy"
-        return formatter.string(from: point.date)
+        ExerciseStatsFormatting.progressionDateText(for: point.date)
+    }
+
+    private var deltaText: String? {
+        guard let delta, abs(delta) >= 0.05 else {
+            return nil
+        }
+
+        let formatted = abs(delta) >= 100
+            ? String(format: "%.0f", abs(delta))
+            : String(format: "%.1f", abs(delta))
+
+        if delta > 0 {
+            return "+\(formatted) kg"
+        }
+
+        return "−\(formatted) kg"
+    }
+
+    private var deltaColor: Color {
+        guard let delta else {
+            return AppColor.secondaryText
+        }
+
+        if delta > 0 {
+            return AppColor.accent
+        }
+
+        if delta < 0 {
+            return AppColor.destructive
+        }
+
+        return AppColor.secondaryText
+    }
+}
+
+private struct PersonalBestBadge: View {
+    var body: some View {
+        Text("PR")
+            .font(AppFont.caption)
+            .foregroundStyle(AppColor.base)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(AppColor.accent, in: Capsule())
+            .accessibilityLabel("Personal best")
     }
 }
 

@@ -205,6 +205,7 @@ struct ExerciseStatsPoint: Identifiable, Equatable {
     var date: Date
     var averageTenRM: Double
     var setCount: Int
+    var isPersonalBest: Bool
 }
 
 struct ExerciseStatsDetails: Equatable {
