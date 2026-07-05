@@ -41,11 +41,27 @@ struct WorkoutStore {
     }
 
     var workoutsThisMonth: Int {
+        workoutDaysThisMonth.count
+    }
+
+    var workoutDaysThisMonth: Set<Date> {
         let calendar = Calendar.current
-        let completedThisMonth = workoutHistory.filter {
-            calendar.isDate($0.completedAt, equalTo: Date(), toGranularity: .month)
+        let today = Date()
+        let realDays = Set(
+            workoutHistory
+                .filter { calendar.isDate($0.completedAt, equalTo: today, toGranularity: .month) }
+                .map { calendar.startOfDay(for: $0.completedAt) }
+        )
+
+        if !realDays.isEmpty {
+            return realDays
         }
-        return 14 + completedThisMonth.count
+
+        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) else {
+            return []
+        }
+
+        return Self.seedWorkoutDays(for: monthStart, calendar: calendar)
     }
 
     var topLoggedExercises: [ExerciseSetSummary] {
@@ -353,6 +369,31 @@ struct WorkoutStore {
             WorkoutDay(title: "Day \(index + 1)", exercises: SampleData.pushExercises)
         }
         return days + extraDays
+    }
+
+    private static let seedWorkoutPattern: [Bool] = [
+        true, false, true, false, true, true, false,
+        false, true, false, true, false, true, false,
+        false, true, false, true, false, true, false,
+        false, true, false, true, false, true, true
+    ]
+
+    private static func seedWorkoutDays(for monthStart: Date, calendar: Calendar) -> Set<Date> {
+        let daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+        var days = Set<Date>()
+
+        for day in 1...daysInMonth {
+            let patternIndex = day - 1
+            let hasWorkout = patternIndex < seedWorkoutPattern.count ? seedWorkoutPattern[patternIndex] : false
+            guard hasWorkout,
+                  let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) else {
+                continue
+            }
+
+            days.insert(calendar.startOfDay(for: date))
+        }
+
+        return days
     }
 }
 
