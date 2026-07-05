@@ -29,7 +29,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         videoURL: URL? = nil
     ) {
         self.providerExerciseId = providerExerciseId
-        self.name = name
+        self.name = name.exerciseCatalogDisplayText
         self.exerciseType = exerciseType?.exerciseCatalogDisplayText
         self.bodyParts = bodyParts.map(\.exerciseCatalogDisplayText)
         self.targetMuscles = targetMuscles.map(\.exerciseCatalogDisplayText)
@@ -699,18 +699,5 @@ private extension String {
         folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .lowercased()
             .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    var exerciseCatalogDisplayText: String {
-        lowercased()
-            .split(separator: " ")
-            .map { word in
-                guard let first = word.first else {
-                    return ""
-                }
-
-                return first.uppercased() + word.dropFirst()
-            }
-            .joined(separator: " ")
     }
 }
