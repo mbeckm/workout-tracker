@@ -69,7 +69,7 @@ struct PlansView: View {
                     CTAButton(title: "New Plan", width: 312, action: onNewPlan)
                     Spacer()
                 }
-                .padding(.bottom, 106)
+                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
         }

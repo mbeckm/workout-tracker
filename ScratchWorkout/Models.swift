@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-enum AppTab: CaseIterable, Identifiable {
+enum AppTab: CaseIterable, Hashable, Identifiable {
     case home
     case plans
     case workout
@@ -24,6 +24,21 @@ enum AppTab: CaseIterable, Identifiable {
         case .plans: "rectangle.portrait"
         case .workout: "dumbbell.fill"
         case .stats: "chart.line.uptrend.xyaxis"
+        }
+    }
+
+    static func highlighted(selectedTab: AppTab, route: AppRoute?) -> AppTab {
+        switch route {
+        case .createPlan, .activePlanDetail, .planDetail:
+            .plans
+        case .logWorkout, .workoutComplete:
+            .workout
+        case .startWorkout, .nextWorkoutPreview:
+            .home
+        case .exerciseStats:
+            .stats
+        case nil:
+            selectedTab
         }
     }
 }

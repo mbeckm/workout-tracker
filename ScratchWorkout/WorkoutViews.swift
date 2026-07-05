@@ -37,7 +37,7 @@ struct StartWorkoutView: View {
                     CTAButton(title: "Start Workout", width: 312, action: onStart)
                     Spacer()
                 }
-                .padding(.bottom, 106)
+                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
         }
@@ -107,7 +107,7 @@ struct LogWorkoutView: View {
                     }
                     Spacer()
                 }
-                .padding(.bottom, 106)
+                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
         }
@@ -258,7 +258,7 @@ struct WorkoutCompleteView: View {
                 Spacer(minLength: 24)
 
                 CTAButton(title: "Finish", width: 312, action: onFinish)
-                    .padding(.bottom, 106)
+                    .appBottomChromePadding()
             }
             .frame(maxWidth: .infinity)
         }

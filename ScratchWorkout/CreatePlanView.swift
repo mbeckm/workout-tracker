@@ -29,6 +29,7 @@ struct CreatePlanView: View {
     @State private var entryScrollSuppressionCount = 0
     @State private var stageDirection: AppNavigationDirection = .forward
     @State private var daySlideDirection: AppNavigationDirection = .forward
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
 
     init(
         initialStage: Stage = .frequency,
@@ -139,7 +140,7 @@ struct CreatePlanView: View {
                 }
                 Spacer()
             }
-            .padding(.bottom, 106)
+            .appBottomChromePadding()
         }
     }
 
@@ -165,8 +166,8 @@ struct CreatePlanView: View {
                 isEnabled: exerciseDraft == nil,
                 direction: $daySlideDirection,
                 onPageChange: {
-                    isAddingExercise = false
                     resetExerciseEntry()
+                    resumeSearchIfNeeded(forDayAt: currentDayIndex)
                 }
             ) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -185,7 +186,7 @@ struct CreatePlanView: View {
                     }
                     Spacer()
                 }
-                .padding(.bottom, 106)
+                .appBottomChromePadding()
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
@@ -213,15 +214,15 @@ struct CreatePlanView: View {
                 isEnabled: exerciseDraft == nil,
                 direction: $daySlideDirection,
                 onPageChange: {
-                    isAddingExercise = false
                     resetExerciseEntry()
+                    resumeSearchIfNeeded(forDayAt: currentDayIndex)
                 }
             ) {
                 VStack(alignment: .leading, spacing: 0) {
                     SectionTitle(text: currentDayTitle)
                         .padding(.top, 24)
 
-                    planDayScrollContent(topPadding: 12)
+                    planDayScrollContent(topPadding: 12, bottomPadding: finalReviewScrollBottomPadding)
                 }
             }
 
@@ -241,7 +242,7 @@ struct CreatePlanView: View {
                 }
                 Spacer()
             }
-            .padding(.bottom, 106)
+            .appBottomChromePadding()
         }
     }
 
@@ -301,7 +302,23 @@ struct CreatePlanView: View {
         .zIndex(4)
     }
 
-    private func planDayScrollContent(topPadding: CGFloat) -> some View {
+    private var dayBuilderShowsBottomCTA: Bool {
+        !currentDayExercises.isEmpty && exerciseDraft == nil
+    }
+
+    private var planDayScrollBottomPadding: CGFloat {
+        dayBuilderShowsBottomCTA
+            ? AppLayout.contentBottomPadding
+            : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
+    }
+
+    private var finalReviewScrollBottomPadding: CGFloat {
+        exerciseDraft == nil && !shouldShowSearchSurface
+            ? AppLayout.contentBottomPadding
+            : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
+    }
+
+    private func planDayScrollContent(topPadding: CGFloat, bottomPadding: CGFloat? = nil) -> some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
@@ -363,7 +380,7 @@ struct CreatePlanView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.top, topPadding)
-                .padding(.bottom, 24)
+                .padding(.bottom, bottomPadding ?? planDayScrollBottomPadding)
             }
             .frame(maxWidth: .infinity)
             .clipped()
@@ -427,6 +444,10 @@ struct CreatePlanView: View {
         }
 
         return planDays[index]
+    }
+
+    private func resumeSearchIfNeeded(forDayAt index: Int) {
+        isAddingExercise = !exercisesForDay(at: index).isEmpty
     }
 
     private func startBuildingPlan() {
@@ -565,7 +586,6 @@ struct CreatePlanView: View {
 
         Haptics.tap(.medium)
         completedDays = max(completedDays, currentDayIndex + 1)
-        isAddingExercise = false
         resetExerciseEntry()
 
         if currentDayIndex >= daysPerWeek - 1 {
@@ -573,12 +593,14 @@ struct CreatePlanView: View {
             withAnimation(AppNavigationAnimation.push) {
                 stage = .finalReview
             }
+            resumeSearchIfNeeded(forDayAt: currentDayIndex)
         } else {
             daySlideDirection = .forward
             withAnimation(AppNavigationAnimation.push) {
                 currentDayIndex += 1
                 stage = .search
             }
+            resumeSearchIfNeeded(forDayAt: currentDayIndex)
         }
     }
 
@@ -589,7 +611,6 @@ struct CreatePlanView: View {
 
         Haptics.tap()
         let shouldRemainInReview = stage == .finalReview || stage == .activatePrompt
-        isAddingExercise = false
         resetExerciseEntry()
 
         daySlideDirection = .forIndexChange(from: currentDayIndex, to: index)
@@ -598,6 +619,8 @@ struct CreatePlanView: View {
             currentDayIndex = index
             stage = shouldRemainInReview ? .finalReview : .search
         }
+
+        resumeSearchIfNeeded(forDayAt: index)
     }
 
     private func deleteExercise(_ id: UUID) {
