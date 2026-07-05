@@ -18,7 +18,10 @@ struct RootView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
-                currentScreen
+                tabContent(for: selectedTab)
+                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+
+                routeContent
                     .id(screenIdentity)
                     .transition(AppScreenTransition.slide(navigationDirection))
                     .transaction { transaction in
@@ -26,6 +29,7 @@ struct RootView: View {
                             transaction.disablesAnimations = true
                         }
                     }
+                    .allowsHitTesting(route != nil)
                     .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
 
                 AppTabBar(selectedTab: $selectedTab, route: route) { tab in
@@ -64,7 +68,7 @@ struct RootView: View {
     }
 
     @ViewBuilder
-    private var currentScreen: some View {
+    private var routeContent: some View {
         switch route {
         case .startWorkout:
             StartWorkoutView(day: store.nextWorkoutDay, onStart: {
@@ -184,67 +188,72 @@ struct RootView: View {
                 }
             )
         case nil:
-            switch selectedTab {
-            case .home:
-                HomeView(
-                    activePlan: store.activePlan,
-                    nextWorkout: store.nextWorkoutDay,
-                    recentWorkout: store.recentWorkout,
-                    workoutDaysThisMonth: store.workoutDaysThisMonth,
-                    accountSession: accountController.session,
-                    accountSyncState: accountController.syncState,
-                    onOpenActivePlan: {
-                        push {
-                            route = .activePlanDetail
-                        }
-                    },
-                    onOpenNextWorkout: {
-                        push {
-                            route = .nextWorkoutPreview
-                        }
-                    },
-                    onOpenAccount: {
-                        isAccountPresented = true
-                    }
-                )
-            case .plans:
-                PlansView(
-                    activePlan: store.activePlan,
-                    savedPlans: store.savedPlans,
-                    onNewPlan: {
-                        push {
-                            route = .createPlan
-                        }
-                    },
-                    onOpenPlan: { plan in
-                        push {
-                            route = .planDetail(plan.id)
-                        }
-                    }
-                )
-            case .workout:
-                StartWorkoutView(day: store.nextWorkoutDay, onStart: {
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private func tabContent(for tab: AppTab) -> some View {
+        switch tab {
+        case .home:
+            HomeView(
+                activePlan: store.activePlan,
+                nextWorkout: store.nextWorkoutDay,
+                recentWorkout: store.recentWorkout,
+                workoutDaysThisMonth: store.workoutDaysThisMonth,
+                accountSession: accountController.session,
+                accountSyncState: accountController.syncState,
+                onOpenActivePlan: {
                     push {
-                        beginWorkout()
+                        route = .activePlanDetail
                     }
-                })
-            case .stats:
-                StatsView(
-                    topExercises: store.topLoggedExercises,
-                    onOpenExercise: { exerciseName in
-                        push {
-                            route = .exerciseStats(exerciseName)
-                        }
+                },
+                onOpenNextWorkout: {
+                    push {
+                        route = .nextWorkoutPreview
                     }
-                )
-            }
+                },
+                onOpenAccount: {
+                    isAccountPresented = true
+                }
+            )
+        case .plans:
+            PlansView(
+                activePlan: store.activePlan,
+                savedPlans: store.savedPlans,
+                onNewPlan: {
+                    push {
+                        route = .createPlan
+                    }
+                },
+                onOpenPlan: { plan in
+                    push {
+                        route = .planDetail(plan.id)
+                    }
+                }
+            )
+        case .workout:
+            StartWorkoutView(day: store.nextWorkoutDay, onStart: {
+                push {
+                    beginWorkout()
+                }
+            })
+        case .stats:
+            StatsView(
+                topExercises: store.topLoggedExercises,
+                onOpenExercise: { exerciseName in
+                    push {
+                        route = .exerciseStats(exerciseName)
+                    }
+                }
+            )
         }
     }
 
     private var screenIdentity: String {
         switch route {
         case nil:
-            return "tab-\(selectedTab)"
+            return "route-overlay-empty"
         case .logWorkout:
             let day = workoutSessionDay ?? store.nextWorkoutDay
             let index = min(activeExerciseIndex, max(day.exercises.count - 1, 0))
