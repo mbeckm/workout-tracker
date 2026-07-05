@@ -1267,10 +1267,13 @@ struct DayStepProgress: View {
 
 extension String {
     var planDisplayName: String {
-        guard let parenthesis = firstIndex(of: "(") else {
-            return self
+        let base: String
+        if let parenthesis = firstIndex(of: "(") {
+            base = String(self[..<parenthesis]).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+            base = self
         }
 
-        return String(self[..<parenthesis]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return base.exerciseCatalogDisplayText
     }
 }

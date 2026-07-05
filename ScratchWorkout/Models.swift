@@ -413,4 +413,17 @@ extension String {
             .lowercased()
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    var exerciseCatalogDisplayText: String {
+        lowercased()
+            .split(separator: " ")
+            .map { word in
+                guard let first = word.first else {
+                    return ""
+                }
+
+                return first.uppercased() + word.dropFirst()
+            }
+            .joined(separator: " ")
+    }
 }
