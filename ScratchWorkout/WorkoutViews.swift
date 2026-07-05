@@ -48,6 +48,10 @@ struct LogWorkoutView: View {
     var exercise: ExercisePrescription
     var exerciseIndex: Int
     var exerciseCount: Int
+    var previousBestWeight: Int?
+    var username: String?
+    var hasFiredAchievementForExercise: Bool
+    var onAchievementUnlocked: (Achievement, [LoggedSet]?) -> Void
     var onExerciseComplete: ([LoggedSet]) -> Void
 
     @State private var weight = 0
@@ -58,11 +62,19 @@ struct LogWorkoutView: View {
         exercise: ExercisePrescription,
         exerciseIndex: Int,
         exerciseCount: Int,
+        previousBestWeight: Int? = nil,
+        username: String? = nil,
+        hasFiredAchievementForExercise: Bool = false,
+        onAchievementUnlocked: @escaping (Achievement, [LoggedSet]?) -> Void = { _, _ in },
         onExerciseComplete: @escaping ([LoggedSet]) -> Void
     ) {
         self.exercise = exercise
         self.exerciseIndex = exerciseIndex
         self.exerciseCount = exerciseCount
+        self.previousBestWeight = previousBestWeight
+        self.username = username
+        self.hasFiredAchievementForExercise = hasFiredAchievementForExercise
+        self.onAchievementUnlocked = onAchievementUnlocked
         self.onExerciseComplete = onExerciseComplete
         _sets = State(initialValue: Self.initialSets(for: exercise))
     }
@@ -107,6 +119,9 @@ struct LogWorkoutView: View {
             return
         }
 
+        let sessionLoggedMaxWeight = AchievementDetector.sessionLoggedMaxWeight(in: sets)
+        let isLastSet = nextIndex >= sets.count - 1
+
         var updatedSets = sets
         updatedSets[nextIndex].weight = weight
         updatedSets[nextIndex].reps = reps
@@ -115,7 +130,27 @@ struct LogWorkoutView: View {
             sets = updatedSets
         }
 
-        if nextIndex >= updatedSets.count - 1 {
+        if AchievementDetector.shouldUnlock(
+            weight: weight,
+            reps: reps,
+            previousBestWeight: previousBestWeight,
+            sessionLoggedMaxWeight: sessionLoggedMaxWeight,
+            hasAlreadyFiredThisExercise: hasFiredAchievementForExercise
+        ) {
+            let achievement = Achievement(
+                exerciseName: exercise.name,
+                weight: weight,
+                reps: reps,
+                date: Date(),
+                username: username
+            )
+            onAchievementUnlocked(achievement, isLastSet ? updatedSets : nil)
+            if isLastSet {
+                return
+            }
+        }
+
+        if isLastSet {
             onExerciseComplete(updatedSets)
         }
     }
