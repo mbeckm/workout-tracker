@@ -29,7 +29,7 @@ This is a **starting decision**. Implementation tickets (MAR-19, MAR-26, and rel
 
 ## Module boundary map (MAR-53)
 
-The account module lives under `ScratchWorkout/ScratchWorkout/` (`AccountModels.swift`, `AccountServices.swift`, `AccountView.swift`, plus session/storage/config types introduced in the auth hardening pass). The rest of the app integrates through **narrow adapters only** — workout logging, plan creation, and main navigation are **not** rewritten by auth.
+The account module lives under `ScratchWorkout/` (`AccountModels.swift`, `AccountServices.swift`, `AccountView.swift`, plus session/storage/config types introduced in the auth hardening pass). The rest of the app integrates through **narrow adapters only** — workout logging, plan creation, and main navigation are **not** rewritten by auth.
 
 ### Account module owns
 
@@ -210,10 +210,10 @@ Remaining work is tracked in Linear; this document does not replace those ticket
 
 | File | Role |
 |------|------|
-| `ScratchWorkout/ScratchWorkout/AccountModels.swift` | `AccountUser`, `AuthSession`, `WorkoutCloudSnapshot`, `AccountSyncState` |
-| `ScratchWorkout/ScratchWorkout/AccountServices.swift` | Protocols, `AccountController`, preview implementations |
-| `ScratchWorkout/ScratchWorkout/AccountView.swift` | Sign-in, sync, sign-out, delete UI |
-| `ScratchWorkout/ScratchWorkout/RootView.swift` | Session restore, hydration adapter, sync triggers |
-| `ScratchWorkout/ScratchWorkout/WorkoutStore.swift` | Local persistence; `cloudSnapshot` / `hydrate(from:)` |
-| `ScratchWorkout/ScratchWorkout/ExerciseCatalog.swift` | Config precedence pattern mirrored by `AuthConfig` |
+| `ScratchWorkout/AccountModels.swift` | `AccountUser`, `AuthSession`, `WorkoutCloudSnapshot`, `AccountSyncState` |
+| `ScratchWorkout/AccountServices.swift` | Protocols, `AccountController`, preview implementations |
+| `ScratchWorkout/AccountView.swift` | Sign-in, sync, sign-out, delete UI |
+| `ScratchWorkout/RootView.swift` | Session restore, hydration adapter, sync triggers |
+| `ScratchWorkout/WorkoutStore.swift` | Local persistence; `cloudSnapshot` / `hydrate(from:)` |
+| `ScratchWorkout/ExerciseCatalog.swift` | Config precedence pattern mirrored by `AuthConfig` |
 | `ScratchWorkout/ScratchWorkout.entitlements` | Sign in with Apple capability |

@@ -5,8 +5,8 @@
 ### What this repo is
 
 - Single product: **ScratchWorkout**, a native **iOS / SwiftUI** workout tracker.
-- Active Xcode project: `ScratchWorkout/ScratchWorkout.xcodeproj` (scheme `ScratchWorkout`, iPhone-only, `IPHONEOS_DEPLOYMENT_TARGET = 17.0`, Swift 5.0).
-- App source lives in `ScratchWorkout/ScratchWorkout/`. Root `*.md` files (`PRODUCT.md`, `DESIGN.md`, `MOBBIN_RESEARCH.md`, `APP_STORE_RELEASE_GUIDE.md`) are product/design context only.
+- Active Xcode project: `ScratchWorkout.xcodeproj` (scheme `ScratchWorkout`, iPhone-only, `IPHONEOS_DEPLOYMENT_TARGET = 17.0`, Swift 5.0).
+- App source lives in `ScratchWorkout/`. Root `*.md` files (`PRODUCT.md`, `DESIGN.md`, `MOBBIN_RESEARCH.md`, `APP_STORE_RELEASE_GUIDE.md`) are product/design context only.
 
 ### Build/run/test cannot happen on the Cloud Agent (Linux) VM
 
@@ -16,9 +16,9 @@
 
 ### How to build/run/test (on macOS with Xcode)
 
-- Open in Xcode: `open ScratchWorkout/ScratchWorkout.xcodeproj`, then Run (Cmd+R) against an iPhone simulator.
+- Open in Xcode: `open ScratchWorkout.xcodeproj`, then Run (Cmd+R) against an iPhone simulator.
 - Command-line build:
-  `cd ScratchWorkout && xcodebuild -project ScratchWorkout.xcodeproj -scheme ScratchWorkout -destination 'platform=iOS Simulator,name=iPhone 15' build`
+  `xcodebuild -project ScratchWorkout.xcodeproj -scheme ScratchWorkout -destination 'platform=iOS Simulator,name=iPhone 15' build`
 - Tests: the project currently has no test target; there is no `xcodebuild test` scheme configured.
 
 ### Runtime/behavior notes

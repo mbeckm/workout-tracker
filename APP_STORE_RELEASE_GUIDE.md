@@ -1,10 +1,10 @@
 # App Store Release Guide for ScratchWorkout
 
-This guide is tailored to the active app in this workspace: `ScratchWorkout/`.
+This guide is tailored to the active app in this repository.
 
 Current project facts:
 
-- Active Xcode project: `ScratchWorkout/ScratchWorkout.xcodeproj`
+- Active Xcode project: `ScratchWorkout.xcodeproj`
 - Scheme: `ScratchWorkout`
 - App target: iPhone only
 - Bundle identifier: `com.marvinbeckmann.ScratchWorkout`
@@ -14,10 +14,10 @@ Current project facts:
 - Storage today: local `UserDefaults` persistence for workout data
 - Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev`
 - Current permissions found in source: no HealthKit, location, camera, photos, notifications, accounts, or analytics
-- Privacy manifest: `ScratchWorkout/ScratchWorkout/PrivacyInfo.xcprivacy` is included in the app target for UserDefaults required-reason API usage
+- Privacy manifest: `ScratchWorkout/PrivacyInfo.xcprivacy` is included in the app target for UserDefaults required-reason API usage
 - Current app icon state: an `AppIcon.appiconset` exists, but it only has `Contents.json`; a real 1024 x 1024 app icon image still needs to be added
 
-Important workspace note: the old tracked `Kinetic` project files currently appear deleted in the Git working tree. Treat `ScratchWorkout/` as the release candidate unless you intentionally restore and release `Kinetic` instead.
+Workspace note: the repository root is the project root. Treat `ScratchWorkout.xcodeproj` and the `ScratchWorkout/` source folder as the release candidate.
 
 ## Best Release Path
 
@@ -66,7 +66,7 @@ Do this before upload because the bundle ID and uploaded build must match the ap
 
 ## Phase 3: Prepare the Xcode Project
 
-Open `ScratchWorkout/ScratchWorkout.xcodeproj` in Xcode.
+Open `ScratchWorkout.xcodeproj` in Xcode.
 
 1. Select the `ScratchWorkout` project in the navigator.
 2. Select the `ScratchWorkout` target.
@@ -83,7 +83,7 @@ Open `ScratchWorkout/ScratchWorkout.xcodeproj` in Xcode.
 Then fix release blockers:
 
 1. Add a real app icon.
-   - Add a 1024 x 1024 PNG to `ScratchWorkout/ScratchWorkout/Assets.xcassets/AppIcon.appiconset`.
+   - Add a 1024 x 1024 PNG to `ScratchWorkout/Assets.xcassets/AppIcon.appiconset`.
    - Make sure the asset catalog references the image.
    - Avoid transparency for the App Store icon.
 2. Review the included privacy manifest.
@@ -268,7 +268,7 @@ Official link:
 
 In Xcode:
 
-1. Open `ScratchWorkout/ScratchWorkout.xcodeproj`.
+1. Open `ScratchWorkout.xcodeproj`.
 2. Select the `ScratchWorkout` scheme.
 3. Select Any iOS Device or a connected physical iPhone as the run destination.
 4. Choose Product > Clean Build Folder.

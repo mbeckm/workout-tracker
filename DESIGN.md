@@ -6,8 +6,8 @@ platform: iOS / SwiftUI
 source:
   figma: https://www.figma.com/design/NRr5uUZX4oAK3enRLXZi7j/Scratch
   product: PRODUCT.md
-  tokens: ScratchWorkout/ScratchWorkout/Theme.swift
-  components: ScratchWorkout/ScratchWorkout/Components.swift
+  tokens: ScratchWorkout/Theme.swift
+  components: ScratchWorkout/Components.swift
 colors:
   base: "#0D0D0D"
   surface-1: "#1A1A1A"
@@ -355,4 +355,4 @@ Respect Dynamic Type where possible through `AppFont` relative styles, but prote
 - Don't add large shadows, blurred glass, gradient backgrounds, or ornamental texture beyond the subtle dark base.
 - Don't make dense workout rows expand unpredictably when labels, numbers, or search results change.
 - Don't hide primary actions behind menus during workout or plan creation flows.
-- Don't add new root product names, duplicate app targets, or legacy Kinetic language.
+- Don't add new root product names, duplicate app targets, or legacy project language.
