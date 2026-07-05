@@ -9,6 +9,7 @@ enum AppColor {
     static let secondaryText = Color(hex: 0x8A8A8A)
     static let tertiaryText = Color(hex: 0x4A4A4A)
     static let accent = Color(hex: 0xA8FF3E)
+    static let destructive = Color(hex: 0xFF6B6B)
 }
 
 enum AppFont {
