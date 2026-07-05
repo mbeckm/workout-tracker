@@ -10,18 +10,21 @@ struct AchievementCardOverlay: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var backdropOpacity: Double = 0
-    @State private var cardOffsetY: CGFloat = -520
-    @State private var cardScale: CGFloat = 1
-    @State private var cardOpacity: Double = 1
-    @State private var shakeOffsetY: CGFloat = 0
-    @State private var displayedWeight: Int = 0
-    @State private var showGlow = false
-    @State private var glowOpacity: Double = 0
-    @State private var showSparks = false
-    @State private var dragTiltX: Double = 0
-    @State private var dragTiltY: Double = 0
-    @State private var highlightPoint: CGPoint = CGPoint(x: 177, y: 200)
-    @State private var hasLanded = false
+    @State private var cardOffsetY: CGFloat = 60
+    @State private var cardScale: CGFloat = 0.9
+    @State private var cardOpacity: Double = 0
+    @State private var cardRotationY: Double = 360
+    @State private var chargeProgress: CGFloat = 0
+    @State private var trophyChargeProgress: Double = 0
+    @State private var borderIsComplete = false
+    @State private var showWeight = false
+    @State private var weightScale: CGFloat = 1.3
+    @State private var weightOpacity: Double = 0
+    @State private var showEcho = false
+    @State private var echoScale: CGFloat = 1
+    @State private var echoOpacity: Double = 0
+    @State private var showContinue = false
+    @State private var haptics: AchievementCardHaptics?
 
     var body: some View {
         ZStack {
@@ -33,149 +36,150 @@ struct AchievementCardOverlay: View {
                 }
 
             VStack(spacing: 24) {
-                cardStack
-                    .offset(y: cardOffsetY + shakeOffsetY)
+                cardView
+                    .offset(y: cardOffsetY)
                     .scaleEffect(cardScale)
                     .opacity(cardOpacity)
+                    .rotation3DEffect(
+                        .degrees(cardRotationY),
+                        axis: (x: 0, y: 1, z: 0),
+                        perspective: 0.5
+                    )
 
                 Button("Continue") {
                     dismiss()
                 }
                 .font(AppFont.subheading)
                 .foregroundStyle(AppColor.secondaryText)
-                .opacity(hasLanded ? 1 : 0)
+                .opacity(showContinue ? 1 : 0)
             }
             .padding(.horizontal, 24)
         }
-        .onAppear(perform: startEntrance)
-    }
-
-    private var cardStack: some View {
-        ZStack {
-            if showGlow {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppColor.accent.opacity(0.18))
-                    .frame(width: 354, height: 520)
-                    .blur(radius: 28)
-                    .opacity(glowOpacity)
-            }
-
-            ZStack {
-                AchievementCardContent(
-                    achievement: achievement,
-                    displayedWeight: displayedWeight,
-                    highlightPoint: highlightPoint,
-                    showInteractiveHighlight: hasLanded,
-                    rendersForShare: false
-                )
-
-                if showSparks {
-                    SparkBurstView()
-                        .frame(width: 354, height: 520)
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(width: 354)
-            .rotation3DEffect(.degrees(dragTiltX), axis: (x: 1, y: 0, z: 0), perspective: 0.6)
-            .rotation3DEffect(.degrees(dragTiltY), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
-            .gesture(dragGesture)
+        .onAppear(perform: startSequence)
+        .onDisappear {
+            haptics?.release()
         }
     }
 
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard hasLanded else { return }
+    private var cardView: some View {
+        ZStack {
+            AchievementCardContent(
+                achievement: achievement,
+                showWeight: showWeight,
+                weightScale: weightScale,
+                weightOpacity: weightOpacity,
+                chargeProgress: chargeProgress,
+                trophyChargeProgress: trophyChargeProgress,
+                borderIsComplete: borderIsComplete,
+                rendersForShare: false
+            )
 
-                highlightPoint = CGPoint(
-                    x: min(max(value.location.x, 0), 354),
-                    y: min(max(value.location.y, 0), 520)
-                )
-                dragTiltX = Double(value.translation.height / 18).clamped(to: -10...10)
-                dragTiltY = Double(-value.translation.width / 18).clamped(to: -10...10)
+            if showEcho {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppColor.accent, lineWidth: 1)
+                    .scaleEffect(echoScale)
+                    .opacity(echoOpacity)
+                    .allowsHitTesting(false)
             }
-            .onEnded { _ in
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.72)) {
-                    dragTiltX = 0
-                    dragTiltY = 0
-                    highlightPoint = CGPoint(x: 177, y: 200)
-                }
-            }
+        }
+        .frame(width: 354)
     }
 
-    private func startEntrance() {
+    private func startSequence() {
+        let engine = AchievementCardHaptics(reduceMotion: reduceMotion)
+        haptics = engine
+        engine.prepare()
+
         if reduceMotion {
-            backdropOpacity = 0.85
-            cardOffsetY = 0
-            hasLanded = true
-            displayedWeight = achievement.weight
+            engine.playReduceMotionEntrance()
+            withAnimation(.easeOut(duration: 0.3)) {
+                backdropOpacity = 0.85
+                cardOpacity = 1
+                cardOffsetY = 0
+                cardScale = 1
+            }
+            applySettledState(showContinueImmediately: true)
             return
         }
 
-        withAnimation(.easeOut(duration: 0.25)) {
+        engine.playRise()
+
+        withAnimation(.easeOut(duration: 0.3)) {
             backdropOpacity = 0.85
         }
 
-        withAnimation(.spring(response: 0.52, dampingFraction: 0.62)) {
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.85)) {
             cardOffsetY = 0
+            cardScale = 1
+            cardRotationY = 0
+            cardOpacity = 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.48) {
-            handleLanding()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            beginCharge()
         }
     }
 
-    private func handleLanding() {
-        hasLanded = true
-        Haptics.tap(.heavy)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        showSparks = true
+    private func beginCharge() {
+        haptics?.playSettle()
+        haptics?.playCharge()
 
-        withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 3 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = -2 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 1 }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.21) {
-            withAnimation(.easeInOut(duration: 0.07)) { shakeOffsetY = 0 }
+        withAnimation(.easeIn(duration: 0.7)) {
+            chargeProgress = 1
+            trophyChargeProgress = 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-            showSparks = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            stampRecord()
         }
-
-        animateWeightCountUp()
     }
 
-    private func animateWeightCountUp() {
-        let target = achievement.weight
-        let steps = max(target, 1)
-        let stepDuration = 0.6 / Double(steps)
+    private func stampRecord() {
+        borderIsComplete = true
+        showWeight = true
+        haptics?.playStamp()
 
-        for step in 0...steps {
-            DispatchQueue.main.asyncAfter(deadline: .now() + stepDuration * Double(step)) {
-                withAnimation(.easeOut(duration: 0.05)) {
-                    displayedWeight = Int(round(Double(target) * Double(step) / Double(steps)))
-                }
-            }
+        withAnimation(.easeOut(duration: 0.1)) {
+            weightOpacity = 1
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
-            displayedWeight = target
-            Haptics.tap(.light)
-            showGlow = true
-            withAnimation(.easeOut(duration: 0.35)) {
-                glowOpacity = 1
-            }
-            withAnimation(.easeIn(duration: 0.45).delay(0.2)) {
-                glowOpacity = 0
-            }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            weightScale = 1
+        }
+
+        showEcho = true
+        echoScale = 1
+        echoOpacity = 1
+
+        withAnimation(.easeOut(duration: 0.35)) {
+            echoScale = 1.06
+            echoOpacity = 0
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            showEcho = false
+        }
+
+        showContinue = true
+    }
+
+    private func applySettledState(showContinueImmediately: Bool) {
+        chargeProgress = 1
+        trophyChargeProgress = 1
+        borderIsComplete = true
+        showWeight = true
+        weightScale = 1
+        weightOpacity = 1
+        cardRotationY = 0
+        if showContinueImmediately {
+            showContinue = true
         }
     }
 
     private func dismiss() {
+        haptics?.release()
+        haptics = nil
+
         if reduceMotion {
             onDismiss()
             return
@@ -197,49 +201,40 @@ struct AchievementCardOverlay: View {
 
 struct AchievementCardContent: View {
     var achievement: Achievement
-    var displayedWeight: Int
-    var highlightPoint: CGPoint = CGPoint(x: 177, y: 200)
-    var showInteractiveHighlight = false
+    var showWeight = true
+    var weightScale: CGFloat = 1
+    var weightOpacity: Double = 1
+    var chargeProgress: CGFloat = 1
+    var trophyChargeProgress: Double = 1
+    var borderIsComplete = true
     var rendersForShare = false
 
     var body: some View {
         VStack(spacing: 24) {
             trophySection
 
-            EmbossedText(
-                text: "Achievement Unlocked",
-                font: AppFont.subheading,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
+            Text("Achievement Unlocked")
+                .font(AppFont.subheading)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
 
             captionRow
 
             cardDivider
 
-            EmbossedText(
-                text: achievement.exerciseName,
-                font: AppFont.display,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(achievement.exerciseName)
+                .font(AppFont.display)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
 
-            Text("\(displayedWeight)KG")
-                .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
-                .tracking(-2.88)
-                .foregroundStyle(AppColor.accent)
-                .contentTransition(.numericText())
-                .shadow(color: Color.black.opacity(0.35), radius: 0, x: 0, y: -1)
-                .shadow(color: Color.white.opacity(0.12), radius: 0, x: 0, y: 1)
+            weightSection
 
-            EmbossedText(
-                text: achievement.repsLabel,
-                font: AppFont.h2,
-                color: AppColor.primaryText
-            )
-            .multilineTextAlignment(.center)
+            Text(achievement.repsLabel)
+                .font(AppFont.h2)
+                .foregroundStyle(AppColor.primaryText)
+                .multilineTextAlignment(.center)
 
             cardDivider
 
@@ -247,25 +242,49 @@ struct AchievementCardContent: View {
         }
         .padding(16)
         .frame(width: 354)
-        .background { metalBackground }
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(borderIsComplete ? AppColor.accent : AppColor.border, lineWidth: 1)
+        }
+        .overlay {
+            if !borderIsComplete, chargeProgress > 0 {
+                ChargeBorderView(progress: chargeProgress)
+            }
         }
     }
 
     private var trophySection: some View {
         ZStack {
-            WeightPlateMotif()
-                .frame(width: 180, height: 180)
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 64, weight: .semibold))
+                .foregroundStyle(AppColor.secondaryText)
 
             Image(systemName: "trophy.fill")
                 .font(.system(size: 64, weight: .semibold))
                 .foregroundStyle(AppColor.accent)
-                .shadow(color: AppColor.accent.opacity(0.35), radius: 12, y: 4)
+                .opacity(trophyChargeProgress)
         }
-        .frame(height: 96)
+        .frame(height: 64)
+    }
+
+    private var weightSection: some View {
+        ZStack {
+            Text(achievement.weightLabel)
+                .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                .tracking(-2.88)
+                .foregroundStyle(AppColor.accent)
+                .opacity(0)
+
+            if showWeight {
+                Text(achievement.weightLabel)
+                    .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                    .tracking(-2.88)
+                    .foregroundStyle(AppColor.accent)
+                    .scaleEffect(weightScale)
+                    .opacity(weightOpacity)
+            }
+        }
     }
 
     @ViewBuilder
@@ -316,134 +335,42 @@ struct AchievementCardContent: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: Capsule())
+        .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            Capsule()
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         }
     }
+}
 
-    private var metalBackground: some View {
+private struct ChargeBorderView: View {
+    var progress: CGFloat
+
+    private let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+    private let headTrimLength: CGFloat = 0.012
+
+    var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    AppColor.surface2,
-                    AppColor.surface1,
-                    AppColor.base.opacity(0.92)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.08),
-                    Color.clear
-                ],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 220
-            )
-
-            if showInteractiveHighlight {
-                RadialGradient(
-                    colors: [
-                        Color.white.opacity(0.14),
-                        Color.clear
-                    ],
-                    center: UnitPoint(
-                        x: highlightPoint.x / 354,
-                        y: highlightPoint.y / 520
-                    ),
-                    startRadius: 0,
-                    endRadius: 140
+            shape
+                .trim(from: 0, to: progress)
+                .stroke(
+                    AppColor.accent,
+                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
                 )
-                .blendMode(.screen)
-            }
+                .rotationEffect(.degrees(-90))
 
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.06),
-                    Color.clear,
-                    Color.black.opacity(0.12)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-    }
-}
-
-private struct EmbossedText: View {
-    var text: String
-    var font: Font
-    var color: Color
-
-    var body: some View {
-        ZStack {
-            Text(text)
-                .font(font)
-                .foregroundStyle(Color.black.opacity(0.4))
-                .offset(y: -1)
-
-            Text(text)
-                .font(font)
-                .foregroundStyle(Color.white.opacity(0.15))
-                .offset(y: 1)
-
-            Text(text)
-                .font(font)
-                .foregroundStyle(color)
-        }
-    }
-}
-
-private struct WeightPlateMotif: View {
-    var body: some View {
-        ZStack {
-            ForEach([140.0, 110.0, 80.0], id: \.self) { diameter in
-                Circle()
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                    .frame(width: diameter, height: diameter)
-            }
-
-            Circle()
-                .stroke(Color.white.opacity(0.08), lineWidth: 1.5)
-                .frame(width: 48, height: 48)
-        }
-    }
-}
-
-private struct SparkBurstView: View {
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
-            Canvas { context, size in
-                let elapsed = timeline.date.timeIntervalSinceReferenceDate
-                let local = elapsed.truncatingRemainder(dividingBy: 0.45)
-
-                for index in 0..<14 {
-                    let seed = Double(index)
-                    let progress = min(local / 0.45, 1)
-                    let angle = (-Double.pi / 2) + (seed - 6.5) * 0.18
-                    let speed = 90 + seed * 8
-                    let x = size.width * 0.5 + cos(angle) * speed * progress
-                    let y = size.height - 8 - sin(abs(angle)) * speed * progress * 0.85
-                    let opacity = (1 - progress) * 0.85
-                    let particleSize = 3 + seed * 0.15
-
-                    let rect = CGRect(
-                        x: x - particleSize / 2,
-                        y: y - particleSize / 2,
-                        width: particleSize,
-                        height: particleSize
+            if progress > headTrimLength {
+                shape
+                    .trim(from: progress - headTrimLength, to: progress)
+                    .stroke(
+                        AppColor.accent,
+                        style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
                     )
-                    context.fill(
-                        Path(ellipseIn: rect),
-                        with: .color(AppColor.accent.opacity(opacity))
-                    )
-                }
+                    .blur(radius: 2)
+                    .rotationEffect(.degrees(-90))
             }
         }
+        .allowsHitTesting(false)
     }
 }
 
@@ -463,7 +390,6 @@ struct ShareCardPayload: Transferable {
         let renderer = ImageRenderer(
             content: AchievementCardContent(
                 achievement: achievement,
-                displayedWeight: achievement.weight,
                 rendersForShare: true
             )
             .frame(width: 354)
@@ -481,39 +407,30 @@ struct ShareCardPayload: Transferable {
     }
 }
 
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
-    }
-}
-
 #if DEBUG
 struct AchievementCardPreview: PreviewProvider {
+    static var sampleAchievement: Achievement {
+        Achievement(
+            exerciseName: "Incline Barbell Bench Press",
+            weight: 70,
+            reps: 10,
+            date: Date(timeIntervalSince1970: 1_781_500_800),
+            username: "marvin"
+        )
+    }
+
     static var previews: some View {
         ZStack {
             AppColor.base.ignoresSafeArea()
 
             AchievementCardContent(
-                achievement: Achievement(
-                    exerciseName: "Incline Barbell Bench Press",
-                    weight: 70,
-                    reps: 10,
-                    date: Date(timeIntervalSince1970: 1_781_500_800),
-                    username: "marvin"
-                ),
-                displayedWeight: 70
+                achievement: sampleAchievement
             )
         }
-        .previewDisplayName("Achievement Card")
+        .previewDisplayName("Achievement Card — Charged")
 
         AchievementCardOverlay(
-            achievement: Achievement(
-                exerciseName: "Incline Barbell Bench Press",
-                weight: 70,
-                reps: 10,
-                date: Date(timeIntervalSince1970: 1_781_500_800),
-                username: "marvin"
-            ),
+            achievement: sampleAchievement,
             onDismiss: {}
         )
         .previewDisplayName("Achievement Overlay")
