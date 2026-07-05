@@ -16,6 +16,62 @@ struct RootView: View {
     @State private var navigationDirection: AppNavigationDirection = .forward
 
     var body: some View {
+        Group {
+            if #available(iOS 18.0, *) {
+                nativeTabRoot
+            } else {
+                legacyTabRoot
+            }
+        }
+        .task {
+            await accountController.restoreSession()
+        }
+        .onChange(of: accountController.hydratedSnapshot) { _, newValue in
+            if let snap = newValue {
+                store.hydrate(from: snap)
+                accountController.hydratedSnapshot = nil
+            }
+        }
+        .sheet(isPresented: $isAccountPresented) {
+            AccountView(controller: accountController, currentSnapshot: store.cloudSnapshot)
+                .preferredColorScheme(.dark)
+        }
+    }
+
+    @available(iOS 18.0, *)
+    private var nativeTabRoot: some View {
+        ZStack {
+            NativeAppTabView(
+                selectedTab: $selectedTab,
+                route: route,
+                onSelect: selectTab,
+                tabContent: { tab in
+                    tabContent(for: tab)
+                },
+                routeOverlay: {
+                    routeContent
+                        .id(screenIdentity)
+                        .transition(AppScreenTransition.slide(navigationDirection))
+                        .transaction { transaction in
+                            if navigationDirection == .none {
+                                transaction.disablesAnimations = true
+                            }
+                        }
+                }
+            )
+
+            if let activeAchievement {
+                AchievementCardOverlay(achievement: activeAchievement) {
+                    dismissAchievement()
+                }
+                .zIndex(100)
+            }
+        }
+        .environment(\.usesNativeTabBar, true)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+
+    private var legacyTabRoot: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 tabContent(for: selectedTab)
@@ -50,21 +106,9 @@ struct RootView: View {
             .frame(width: proxy.size.width, height: proxy.size.height)
             .background(AppColor.base)
         }
+        .environment(\.usesNativeTabBar, false)
         .ignoresSafeArea(.container, edges: .bottom)
         .ignoresSafeArea(.keyboard, edges: .bottom)
-        .task {
-            await accountController.restoreSession()
-        }
-        .onChange(of: accountController.hydratedSnapshot) { _, newValue in
-            if let snap = newValue {
-                store.hydrate(from: snap)
-                accountController.hydratedSnapshot = nil
-            }
-        }
-        .sheet(isPresented: $isAccountPresented) {
-            AccountView(controller: accountController, currentSnapshot: store.cloudSnapshot)
-                .preferredColorScheme(.dark)
-        }
     }
 
     @ViewBuilder
@@ -378,11 +422,25 @@ private struct ScreenPreviewShell<Content: View>: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            content
+        Group {
+            if #available(iOS 18.0, *) {
+                TabView(selection: $selectedTab) {
+                    ForEach(AppTab.allCases) { tab in
+                        Tab(tab.title, systemImage: tab.icon, value: tab) {
+                            content
+                        }
+                    }
+                }
+                .tint(AppColor.accent)
+                .liquidGlassTabBarBehavior()
+            } else {
+                ZStack(alignment: .bottom) {
+                    content
 
-            AppTabBar(selectedTab: $selectedTab, route: route) { tab in
-                selectedTab = tab
+                    AppTabBar(selectedTab: $selectedTab, route: route) { tab in
+                        selectedTab = tab
+                    }
+                }
             }
         }
         .frame(width: 402, height: 874)

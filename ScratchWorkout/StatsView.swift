@@ -51,7 +51,7 @@ struct StatsView: View {
                     searchState: searchState,
                     onSelect: openExercise
                 )
-                .padding(.bottom, 106)
+                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
         }

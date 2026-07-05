@@ -1,5 +1,40 @@
 import SwiftUI
 
+enum AppLayout {
+    static let tabBarHeight: CGFloat = 82
+    static let legacyTabBarClearance: CGFloat = 106
+    static let contentBottomPadding: CGFloat = 24
+
+    static func bottomChromePadding(usesNativeTabBar: Bool) -> CGFloat {
+        usesNativeTabBar ? contentBottomPadding : legacyTabBarClearance
+    }
+}
+
+private struct UsesNativeTabBarKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var usesNativeTabBar: Bool {
+        get { self[UsesNativeTabBarKey.self] }
+        set { self[UsesNativeTabBarKey.self] = newValue }
+    }
+}
+
+extension View {
+    func appBottomChromePadding() -> some View {
+        modifier(AppBottomChromePadding())
+    }
+}
+
+private struct AppBottomChromePadding: ViewModifier {
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+
+    func body(content: Content) -> some View {
+        content.padding(.bottom, AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar))
+    }
+}
+
 struct GrainBackground: View {
     var body: some View {
         AppColor.base
@@ -31,18 +66,7 @@ struct AppTabBar: View {
     var onSelect: (AppTab) -> Void
 
     private var activeTab: AppTab {
-        switch route {
-        case .createPlan, .activePlanDetail, .planDetail:
-            .plans
-        case .logWorkout, .workoutComplete:
-            .workout
-        case .startWorkout, .nextWorkoutPreview:
-            .home
-        case .exerciseStats:
-            .stats
-        case nil:
-            selectedTab
-        }
+        AppTab.highlighted(selectedTab: selectedTab, route: route)
     }
 
     var body: some View {
@@ -84,6 +108,63 @@ struct AppTabBar: View {
         .transaction { transaction in
             transaction.animation = nil
         }
+    }
+}
+
+private struct LiquidGlassTabBarBehavior: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func liquidGlassTabBarBehavior() -> some View {
+        modifier(LiquidGlassTabBarBehavior())
+    }
+}
+
+@available(iOS 18.0, *)
+struct NativeAppTabView<TabContent: View, RouteOverlay: View>: View {
+    @Binding var selectedTab: AppTab
+    var route: AppRoute?
+    var onSelect: (AppTab) -> Void
+    @ViewBuilder var tabContent: (AppTab) -> TabContent
+    @ViewBuilder var routeOverlay: () -> RouteOverlay
+
+    var body: some View {
+        TabView(selection: tabSelection) {
+            ForEach(AppTab.allCases) { tab in
+                Tab(tab.title, systemImage: tab.icon, value: tab) {
+                    ZStack(alignment: .topLeading) {
+                        tabContent(tab)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                        if route != nil {
+                            routeOverlay()
+                                .allowsHitTesting(true)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        }
+                    }
+                    .background(AppColor.base)
+                }
+            }
+        }
+        .tint(AppColor.accent)
+        .liquidGlassTabBarBehavior()
+    }
+
+    private var tabSelection: Binding<AppTab> {
+        Binding(
+            get: { AppTab.highlighted(selectedTab: selectedTab, route: route) },
+            set: { tab in
+                Haptics.tap()
+                onSelect(tab)
+            }
+        )
     }
 }
 

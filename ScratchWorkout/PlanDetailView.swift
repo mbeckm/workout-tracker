@@ -22,6 +22,7 @@ struct PlanDetailView: View {
     @State private var daySlideDirection: AppNavigationDirection = .forward
     @State private var entrySurfaceID = UUID()
     @State private var entryScrollSuppressionCount = 0
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
 
     init(
         plan: WorkoutPlan,
@@ -82,7 +83,7 @@ struct PlanDetailView: View {
                         }
                         Spacer()
                     }
-                    .padding(.bottom, 106)
+                    .appBottomChromePadding()
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
@@ -148,6 +149,12 @@ struct PlanDetailView: View {
         .frame(height: 30, alignment: .leading)
     }
 
+    private var planDetailScrollBottomPadding: CGFloat {
+        exerciseDraft == nil
+            ? AppLayout.contentBottomPadding
+            : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
+    }
+
     private var dayContent: some View {
         ScrollViewReader { proxy in
             ScrollView(showsIndicators: false) {
@@ -201,7 +208,7 @@ struct PlanDetailView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.top, 12)
-                .padding(.bottom, 24)
+                .padding(.bottom, planDetailScrollBottomPadding)
             }
             .clipped()
             .frame(maxWidth: .infinity)
