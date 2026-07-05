@@ -66,15 +66,35 @@ spacing:
   24: 96pt
 layout:
   reference-frame: 402x874pt
+  status-reservation-height: 46pt
   horizontal-padding: 24pt
+  content-width: 354pt
   screen-title-top: 66pt
+  screen-title-height: 38pt
+  section-title-height: 30pt
   card-gap: 12pt
   section-gap: 24pt
   large-section-gap: 36pt
   bottom-tab-height: 82pt
+  bottom-tab-y: 792pt
+  bottom-tab-inner-x: 46pt
+  bottom-tab-inner-width: 310pt
+  bottom-tab-inner-top: 12pt
   bottom-cta-width: 312pt
   bottom-cta-height: 56pt
+  bottom-cta-x: 45pt
+  bottom-cta-y: 712pt
   bottom-cta-clearance: 106pt
+  cta-to-tab-gap: 24pt
+  card-padding: 16pt
+  card-trailing-icon: 36pt
+  card-trailing-icon-x: 302pt
+  heatmap-cell: 24pt
+  heatmap-gap: 24pt
+  day-chip-height: 24pt
+  day-chip-gap: 45pt
+  circular-control: 45pt
+  search-row-height: 26pt
 rounded:
   progress: 6pt
   control: 12pt
@@ -170,15 +190,69 @@ Long exercise names should stay on one line in compact lists. Use truncation or 
 
 The Figma reference frame is 402x874pt. Preserve the mobile-first geometry unless there is a concrete device reason to adapt.
 
-- Screen content starts 66pt from the top for standard views and uses 24pt horizontal padding.
-- The custom bottom tab bar is 82pt tall and pinned to the bottom.
-- Bottom CTAs sit above the tab bar with 106pt bottom clearance and are usually 312x56pt.
-- Card lists use 12pt gaps. Sections usually step by 24pt; the Overview heatmap to Active Plan break uses 36pt.
+- Reserve the top 46pt for the status area. Screen titles start at y=66pt and are 38pt tall.
+- Use 24pt horizontal screen padding. This creates the standard 354pt content rail.
+- The custom bottom tab bar is 82pt tall at y=792pt. Its inner nav rail is 310pt wide, starts at x=46pt, and has 12pt top padding.
+- Bottom CTAs are 312x56pt at x=45pt and y=712pt. They leave 24pt before the tab bar and 106pt from the bottom of the frame.
+- Card lists use 12pt gaps. Sections usually step by 24pt; the Overview heatmap to Active Plan break uses roughly 36pt.
 - Cards and controls should span the available content width unless the Figma intentionally centers a fixed control, such as the frequency stepper.
 - Scrollable lists must leave enough bottom padding so the tab bar and CTA never hide content.
 - Avoid floating card stacks inside cards. Cards are for repeated objects, panels, tables, modals, and contained tools.
 
 Use stable dimensions for repeated controls: 24pt progress cells, 36pt tab icons, 45pt circular steppers, 56pt CTA height, 80/84/102pt list cards, and 354pt content width inside the 24pt margins.
+
+## Figma Sizing & Spacing
+
+These values come from the Scratch Figma frames and should be treated as the default sizing system for new SwiftUI work.
+
+- Screen frame: 402x874pt.
+- Main rail: x=24pt, width=354pt.
+- Primary action rail: x=45pt, width=312pt.
+- Status reservation: y=0pt, height=46pt.
+- Screen title: x=24pt, y=66pt, height=38pt.
+- Section title: height=30pt.
+- Section-to-card gap: 12pt.
+- Major section gap: 24pt after a card or compact group.
+- Overview heatmap-to-next-section gap: 36-38pt.
+- Bottom CTA: y=712pt, height=56pt.
+- Bottom tab: y=792pt, height=82pt.
+- CTA-to-tab gap: 24pt.
+- Tab icon: 36x36pt.
+- Tab label: 16pt high, placed 4pt below the icon.
+- Tab item visual height: 56-58pt.
+
+Card rules:
+
+- Overview compact plan cards are 354x80pt.
+- Plan inventory cards are 354x102pt.
+- Exercise rows are 354x84pt.
+- Empty-day panels are 354x142pt.
+- Search fields are 354x56pt before expansion.
+- Expanded search/result panels keep 16pt side padding, 16pt row gaps, 26pt result rows, and a 322pt divider.
+- Card interior padding is 16pt for list cards and 24pt for larger panels/draft surfaces.
+- Trailing card icons use a 36x36pt box at x=302pt, leaving 16pt right padding.
+- List titles sit at x=16pt, y=16pt. Metadata starts about 30-34pt below the title.
+- Metadata pairs in exercise rows use a 25pt horizontal gap.
+- Multi-line metadata stacks use 18pt line height and 4pt internal spacing, or a 22pt y offset between metadata lines when matching Figma rows.
+
+Progress and selection rules:
+
+- Heatmap cells are 24x24pt with 24pt gaps, arranged on a 48pt pitch.
+- Workout progress and day progress bars are 24pt high with 6pt radius.
+- Three-day progress uses 90pt bars with 45pt gaps.
+- Four-day progress uses 55pt bars with 45pt gaps.
+- Five or more day/exercise progress bars should compress within the 354pt rail rather than overflow.
+- Day progress sits at y=128pt. Day titles sit at y=176-177pt, about 24-25pt below the progress bar.
+
+Form and control rules:
+
+- Frequency selection is a centered 221x105pt group at x=93pt, y=361pt.
+- Frequency stepper buttons are 45x45pt, vertically centered at y=30pt inside that group.
+- The frequency number is 83x105pt with 24pt gaps to each circular button.
+- The `Workouts per week` label sits 16pt below the stepper.
+- Circular buttons are 45x45pt.
+- Search rows use a 22pt icon, 16pt icon-to-text gap, and 26pt row height.
+- Draft configuration surfaces use 24pt padding, 45pt circular controls, and a fixed 164pt numeric stepper group.
 
 ## Navigation
 
