@@ -13,18 +13,23 @@ struct RootView: View {
     @State private var activeAchievement: Achievement?
     @State private var achievementFiredExerciseKeys: Set<String> = []
     @State private var deferredExerciseCompletion: (sets: [LoggedSet], day: WorkoutDay, index: Int)?
+    @State private var navigationDirection: AppNavigationDirection = .forward
 
     var body: some View {
         GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 currentScreen
+                    .id(screenIdentity)
+                    .transition(AppScreenTransition.slide(navigationDirection))
+                    .transaction { transaction in
+                        if navigationDirection == .none {
+                            transaction.disablesAnimations = true
+                        }
+                    }
                     .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
 
                 AppTabBar(selectedTab: $selectedTab, route: route) { tab in
-                    selectedTab = tab
-                    route = nil
-                    completedWorkout = nil
-                    clearWorkoutSession()
+                    selectTab(tab)
                 }
                 .frame(width: proxy.size.width, height: 82)
                 .position(x: proxy.size.width / 2, y: proxy.size.height - 41)
@@ -63,13 +68,13 @@ struct RootView: View {
         switch route {
         case .startWorkout:
             StartWorkoutView(day: store.nextWorkoutDay, onStart: {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                push {
                     beginWorkout()
                 }
             })
         case .nextWorkoutPreview:
             StartWorkoutView(day: store.nextWorkoutDay, onStart: {
-                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                push {
                     beginWorkout(day: store.nextWorkoutDay)
                 }
             })
@@ -78,7 +83,7 @@ struct RootView: View {
                 plan: store.activePlan,
                 allowsEditing: false,
                 onStartWorkout: { day in
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    push {
                         beginWorkout(day: day)
                     }
                 },
@@ -93,7 +98,7 @@ struct RootView: View {
                     plan: plan,
                     allowsEditing: true,
                     onStartWorkout: { day in
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        push {
                             beginWorkout(day: day)
                         }
                     },
@@ -107,12 +112,12 @@ struct RootView: View {
                     activePlan: store.activePlan,
                     savedPlans: store.savedPlans,
                     onNewPlan: {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .createPlan
                         }
                     },
                     onOpenPlan: { plan in
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .planDetail(plan.id)
                         }
                     }
@@ -122,7 +127,7 @@ struct RootView: View {
             let day = workoutSessionDay ?? store.nextWorkoutDay
             if day.exercises.isEmpty {
                 StartWorkoutView(day: day, onStart: {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    push {
                         beginWorkout(day: day)
                     }
                 })
@@ -144,7 +149,7 @@ struct RootView: View {
                         }
                     },
                     onExerciseComplete: { sets in
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        push {
                             completeExercise(sets, in: day, at: index)
                         }
                     }
@@ -153,7 +158,7 @@ struct RootView: View {
             }
         case .workoutComplete:
             WorkoutCompleteView(workout: completedWorkout, onFinish: {
-                withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
+                pop {
                     selectedTab = .home
                     route = nil
                     clearWorkoutSession()
@@ -163,7 +168,7 @@ struct RootView: View {
             CreatePlanView { plan, activate in
                 store.savePlan(plan, activate: activate)
                 syncAccount(reason: .planSaved)
-                withAnimation(.spring(response: 0.44, dampingFraction: 0.86)) {
+                pop {
                     selectedTab = .plans
                     route = nil
                 }
@@ -172,7 +177,7 @@ struct RootView: View {
             ExerciseStatsView(
                 stats: store.exerciseStats(for: exerciseName),
                 onBack: {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                    pop {
                         selectedTab = .stats
                         route = nil
                     }
@@ -189,12 +194,12 @@ struct RootView: View {
                     accountSession: accountController.session,
                     accountSyncState: accountController.syncState,
                     onOpenActivePlan: {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .activePlanDetail
                         }
                     },
                     onOpenNextWorkout: {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .nextWorkoutPreview
                         }
                     },
@@ -207,19 +212,19 @@ struct RootView: View {
                     activePlan: store.activePlan,
                     savedPlans: store.savedPlans,
                     onNewPlan: {
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .createPlan
                         }
                     },
                     onOpenPlan: { plan in
-                        withAnimation(.spring(response: 0.42, dampingFraction: 0.84)) {
+                        push {
                             route = .planDetail(plan.id)
                         }
                     }
                 )
             case .workout:
                 StartWorkoutView(day: store.nextWorkoutDay, onStart: {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    push {
                         beginWorkout()
                     }
                 })
@@ -227,13 +232,57 @@ struct RootView: View {
                 StatsView(
                     topExercises: store.topLoggedExercises,
                     onOpenExercise: { exerciseName in
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                        push {
                             route = .exerciseStats(exerciseName)
                         }
                     }
                 )
             }
         }
+    }
+
+    private var screenIdentity: String {
+        switch route {
+        case nil:
+            return "tab-\(selectedTab)"
+        case .logWorkout:
+            let day = workoutSessionDay ?? store.nextWorkoutDay
+            let index = min(activeExerciseIndex, max(day.exercises.count - 1, 0))
+            let exerciseID = day.exercises.indices.contains(index) ? day.exercises[index].id.uuidString : "empty"
+            return "logWorkout-\(index)-\(exerciseID)"
+        case .planDetail(let planID):
+            return "planDetail-\(planID.uuidString)"
+        case .exerciseStats(let exerciseName):
+            return "exerciseStats-\(exerciseName)"
+        case .startWorkout:
+            return "startWorkout"
+        case .nextWorkoutPreview:
+            return "nextWorkoutPreview"
+        case .activePlanDetail:
+            return "activePlanDetail"
+        case .workoutComplete:
+            return "workoutComplete"
+        case .createPlan:
+            return "createPlan"
+        }
+    }
+
+    private func push(_ changes: () -> Void) {
+        navigationDirection = .forward
+        withAnimation(AppNavigationAnimation.push, changes)
+    }
+
+    private func pop(_ changes: () -> Void) {
+        navigationDirection = .backward
+        withAnimation(AppNavigationAnimation.push, changes)
+    }
+
+    private func selectTab(_ tab: AppTab) {
+        navigationDirection = .none
+        selectedTab = tab
+        route = nil
+        completedWorkout = nil
+        clearWorkoutSession()
     }
 
     private func beginWorkout(day selectedDay: WorkoutDay? = nil) {
@@ -256,6 +305,7 @@ struct RootView: View {
         loggedExerciseSets[index] = sets
 
         if index >= day.exercises.count - 1 {
+            navigationDirection = .forward
             completedWorkout = store.completeWorkout(day: day, exerciseSets: loggedExerciseSets)
             syncAccount(reason: .workoutCompleted)
             route = .workoutComplete
