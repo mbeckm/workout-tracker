@@ -13,7 +13,6 @@ enum AchievementStaggerGroup: Int, CaseIterable {
     case reps
     case divider2
     case share
-    case wordmark
 }
 
 // MARK: - Tap Ripple
@@ -147,7 +146,7 @@ struct AchievementCardOverlay: View {
     @State private var isEntranceSettled = false
     @State private var activeRipples: [AchievementTapRipple] = []
 
-    private static let entranceDuration: TimeInterval = 0.9
+    private static let entranceDuration: TimeInterval = 0.55
     private static let staggerStep: TimeInterval = 0.07
     private static let weightCountDuration: TimeInterval = 0.5
 
@@ -415,14 +414,6 @@ struct AchievementCardContent: View {
             staggerGroup(.share) {
                 sharePill
             }
-
-            staggerGroup(.wordmark) {
-                Text("SCRATCH")
-                    .font(AppFont.caption)
-                    .foregroundStyle(AppColor.tertiaryText)
-                    .textCase(.uppercase)
-                    .tracking(4)
-            }
         }
         .padding(16)
         .frame(width: AchievementCardSurface.width)
@@ -455,8 +446,12 @@ struct AchievementCardContent: View {
                 )
                 .shadow(color: AppColor.accent.opacity(0.45), radius: 2)
         }
+        .compositingGroup()
         .contentTransition(.numericText())
         .scaleEffect(weightScale)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 12)
+        .frame(minHeight: 132)
     }
 
     private var weightNumberText: some View {
@@ -486,11 +481,11 @@ struct AchievementCardContent: View {
                 Text(achievement.formattedDate)
                 Text(usernameCaption)
             }
-            .font(AppFont.label)
+            .font(AppFont.subheading)
             .foregroundStyle(AppColor.secondaryText)
         } else {
             Text(achievement.formattedDate)
-                .font(AppFont.label)
+                .font(AppFont.subheading)
                 .foregroundStyle(AppColor.secondaryText)
         }
     }

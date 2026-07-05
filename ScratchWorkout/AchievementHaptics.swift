@@ -166,7 +166,7 @@ final class AchievementHaptics {
                     CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
                 ],
                 relativeTime: 0,
-                duration: 0.9
+                duration: 0.55
             )
         ]
     }
@@ -177,7 +177,7 @@ final class AchievementHaptics {
                 parameterID: .hapticIntensityControl,
                 controlPoints: [
                     .init(relativeTime: 0, value: 0.1),
-                    .init(relativeTime: 0.9, value: 0.45)
+                    .init(relativeTime: 0.55, value: 0.45)
                 ],
                 relativeTime: 0
             )
