@@ -168,7 +168,7 @@ struct PlanDetailView: View {
                             .frame(maxWidth: .infinity)
                             .transition(.scale(scale: 0.98, anchor: .top).combined(with: .opacity))
                         } else if !isEditing {
-                            ExerciseCard(exercise: exercise)
+                            ExerciseCard(exercise: exercise, showsChevron: false)
                                 .matchedGeometryEffect(id: exercise.id, in: entryNamespace)
                                 .frame(maxWidth: .infinity)
                                 .contentShape(Rectangle())

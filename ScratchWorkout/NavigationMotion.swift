@@ -133,3 +133,69 @@ extension AppNavigationDirection {
         return .none
     }
 }
+
+private struct SwipeBackModifier: ViewModifier {
+    var isEnabled: Bool
+    var onBack: () -> Void
+
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDraggingBack = false
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: max(0, dragOffset))
+            .simultaneousGesture(backGesture)
+    }
+
+    private var backGesture: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .onChanged { value in
+                guard isEnabled else {
+                    return
+                }
+
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+
+                if !isDraggingBack {
+                    guard value.startLocation.x <= 44,
+                          horizontal > 0,
+                          abs(horizontal) > abs(vertical) * 1.15 else {
+                        return
+                    }
+                    isDraggingBack = true
+                }
+
+                dragOffset = horizontal
+            }
+            .onEnded { value in
+                defer {
+                    isDraggingBack = false
+                }
+
+                guard isEnabled, isDraggingBack else {
+                    withAnimation(AppNavigationAnimation.push) {
+                        dragOffset = 0
+                    }
+                    return
+                }
+
+                let threshold: CGFloat = 88
+                if value.translation.width > threshold {
+                    Haptics.tap()
+                    dragOffset = 0
+                    onBack()
+                } else {
+                    withAnimation(AppNavigationAnimation.push) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func swipeToGoBack(isEnabled: Bool = true, onBack: @escaping () -> Void) -> some View {
+        modifier(SwipeBackModifier(isEnabled: isEnabled, onBack: onBack))
+    }
+}

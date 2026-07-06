@@ -17,6 +17,10 @@ enum AppLayout {
     static func floatingBottomChromeClearance(usesNativeTabBar: Bool) -> CGFloat {
         bottomCTAHeight + floatingChromeFadeHeight + bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
     }
+
+    static func logWorkoutChromeClearance(usesNativeTabBar: Bool) -> CGFloat {
+        196 + floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
+    }
 }
 
 private struct UsesNativeTabBarKey: EnvironmentKey {
@@ -377,8 +381,12 @@ struct ScreenTitleBar<Accessory: View>: View {
             Text(title)
                 .font(AppFont.display)
                 .lineLimit(1)
-
-            Spacer(minLength: 12)
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: AppLayout.screenTitleHeight,
+                    maxHeight: AppLayout.screenTitleHeight,
+                    alignment: .leading
+                )
 
             accessory()
         }
@@ -643,6 +651,7 @@ struct CollapsibleSectionHeader: View {
 
 struct ExerciseCard: View {
     var exercise: ExercisePrescription
+    var showsChevron: Bool = true
 
     var body: some View {
         CardShell(height: 84) {
@@ -662,10 +671,12 @@ struct ExerciseCard: View {
 
                 Spacer(minLength: 12)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(AppColor.secondaryText)
-                    .frame(width: 36, height: 36)
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(AppColor.secondaryText)
+                        .frame(width: 36, height: 36)
+                }
             }
         }
         .accessibilityElement(children: .combine)
@@ -696,19 +707,41 @@ struct CTAButton: View {
 
 struct StepProgress: View {
     var count: Int
-    var active: Int
+    var isSegmentComplete: (Int) -> Bool
+    var currentIndex: Int
     var width: CGFloat
     var spacing: CGFloat
 
     var body: some View {
         HStack(spacing: spacing) {
             ForEach(0..<count, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(index < active ? AppColor.accent : AppColor.border)
-                    .frame(width: width, height: 24)
+                progressBar(at: index)
             }
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: active)
+        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: progressAnimationToken)
+    }
+
+    private var progressAnimationToken: String {
+        (0..<count).map { index in
+            "\(index)-\(isSegmentComplete(index))-\(index == currentIndex)"
+        }.joined(separator: "|")
+    }
+
+    @ViewBuilder
+    private func progressBar(at index: Int) -> some View {
+        let isComplete = isSegmentComplete(index)
+        let isCurrent = index == currentIndex && !isComplete
+
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(isComplete ? AppColor.accent : AppColor.border)
+            .frame(width: width, height: 24)
+            .overlay {
+                if isCurrent {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(AppColor.accent.opacity(0.85), lineWidth: 2)
+                        .shadow(color: AppColor.accent.opacity(0.42), radius: 10, x: 0, y: 0)
+                }
+            }
     }
 }
 

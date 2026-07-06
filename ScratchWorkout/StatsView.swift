@@ -146,17 +146,12 @@ struct StatsView: View {
 
 struct ExerciseStatsView: View {
     var stats: ExerciseStatsDetails
-    var onBack: () -> Void
 
     var body: some View {
         AppScreen {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenNavigationTitle(
-                        title: stats.exerciseName,
-                        backAccessibilityLabel: "Back to stats",
-                        onBack: onBack
-                    )
+                    ScreenTitle(title: stats.exerciseName, minimumScaleFactor: 0.72)
                         .padding(.top, AppLayout.screenTitleTopPadding)
 
                     chartSectionHeader

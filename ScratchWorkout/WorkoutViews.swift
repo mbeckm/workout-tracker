@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StartWorkoutView: View {
     var day: WorkoutDay
+    var showsExerciseChevrons: Bool = false
     var onStart: () -> Void
 
     var body: some View {
@@ -21,7 +22,7 @@ struct StartWorkoutView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 12) {
                         ForEach(day.exercises) { exercise in
-                            ExerciseCard(exercise: exercise)
+                            ExerciseCard(exercise: exercise, showsChevron: showsExerciseChevrons)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -36,6 +37,281 @@ struct StartWorkoutView: View {
             }
         }
     }
+}
+
+struct LogWorkoutSessionView: View {
+    var day: WorkoutDay
+    @Binding var activeExerciseIndex: Int
+    @Binding var exerciseSlideDirection: AppNavigationDirection
+    var previousBestWeight: (String) -> Int?
+    var username: String?
+    var achievementFiredExerciseKeys: Set<String>
+    var initialLoggedSets: [[LoggedSet]]
+    var onAchievementUnlocked: (Achievement, [LoggedSet]?) -> Void
+    var onSetsChange: (Int, [LoggedSet]) -> Void
+    var onExerciseComplete: ([LoggedSet]) -> Void
+
+    @State private var exerciseStates: [ExerciseLogState]
+    @State private var feedbackResetTask: Task<Void, Never>?
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+
+    init(
+        day: WorkoutDay,
+        activeExerciseIndex: Binding<Int>,
+        exerciseSlideDirection: Binding<AppNavigationDirection>,
+        previousBestWeight: @escaping (String) -> Int?,
+        username: String? = nil,
+        achievementFiredExerciseKeys: Set<String> = [],
+        initialLoggedSets: [[LoggedSet]] = [],
+        onAchievementUnlocked: @escaping (Achievement, [LoggedSet]?) -> Void = { _, _ in },
+        onSetsChange: @escaping (Int, [LoggedSet]) -> Void = { _, _ in },
+        onExerciseComplete: @escaping ([LoggedSet]) -> Void
+    ) {
+        self.day = day
+        _activeExerciseIndex = activeExerciseIndex
+        _exerciseSlideDirection = exerciseSlideDirection
+        self.previousBestWeight = previousBestWeight
+        self.username = username
+        self.achievementFiredExerciseKeys = achievementFiredExerciseKeys
+        self.initialLoggedSets = initialLoggedSets
+        self.onAchievementUnlocked = onAchievementUnlocked
+        self.onSetsChange = onSetsChange
+        self.onExerciseComplete = onExerciseComplete
+
+        let states = day.exercises.enumerated().map { index, exercise in
+            let savedSets = initialLoggedSets.indices.contains(index) && !initialLoggedSets[index].isEmpty
+                ? initialLoggedSets[index]
+                : LogWorkoutView.initialSets(for: exercise)
+            return ExerciseLogState(sets: savedSets)
+        }
+        _exerciseStates = State(initialValue: states)
+    }
+
+    var body: some View {
+        AppScreen {
+            VStack(alignment: .leading, spacing: 0) {
+                StepProgress(
+                    count: progressCount,
+                    isSegmentComplete: isExerciseComplete,
+                    currentIndex: activeExerciseIndex,
+                    width: progressBarWidth,
+                    spacing: progressBarSpacing
+                )
+                .padding(.top, AppLayout.screenTitleTopPadding)
+
+                HorizontalSwipePager(
+                    selection: $activeExerciseIndex,
+                    pageCount: day.exercises.count,
+                    direction: $exerciseSlideDirection
+                ) {
+                    exerciseContent(for: min(activeExerciseIndex, day.exercises.count - 1))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .padding(.horizontal, 24)
+            .floatingBottomChrome {
+                VStack(spacing: 16) {
+                    VStack(alignment: .center, spacing: 24) {
+                        NumberStepper(label: "Weight", value: weightBinding, minimum: 0, maximum: 300)
+                        NumberStepper(label: "Reps", value: repsBinding, minimum: 0, maximum: 50)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    CTAButton(title: logButtonTitle, width: 312) {
+                        logSet()
+                    }
+                    .scaleEffect(recentlyLoggedSetID == nil ? 1 : 1.025)
+                    .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.22), radius: 14, x: 0, y: 0)
+                    .animation(.spring(response: 0.2, dampingFraction: 0.72), value: recentlyLoggedSetID)
+                }
+            }
+        }
+        .onDisappear {
+            persistCurrentExerciseSets()
+            feedbackResetTask?.cancel()
+            feedbackResetTask = nil
+        }
+    }
+
+    @ViewBuilder
+    private func exerciseContent(for index: Int) -> some View {
+        let exercise = day.exercises[index]
+
+        VStack(alignment: .leading, spacing: 0) {
+            SectionTitle(text: exercise.name)
+                .padding(.top, 24)
+
+            SetTable(
+                sets: exerciseStates[index].sets,
+                recentlyLoggedSetID: exerciseStates[index].recentlyLoggedSetID
+            )
+            .padding(.top, 22)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.bottom, AppLayout.logWorkoutChromeClearance(usesNativeTabBar: usesNativeTabBar))
+    }
+
+    private var weightBinding: Binding<Int> {
+        Binding(
+            get: {
+                guard exerciseStates.indices.contains(activeExerciseIndex) else {
+                    return 0
+                }
+                return exerciseStates[activeExerciseIndex].weight
+            },
+            set: { newValue in
+                guard exerciseStates.indices.contains(activeExerciseIndex) else {
+                    return
+                }
+                exerciseStates[activeExerciseIndex].weight = newValue
+            }
+        )
+    }
+
+    private var repsBinding: Binding<Int> {
+        Binding(
+            get: {
+                guard exerciseStates.indices.contains(activeExerciseIndex) else {
+                    return 0
+                }
+                return exerciseStates[activeExerciseIndex].reps
+            },
+            set: { newValue in
+                guard exerciseStates.indices.contains(activeExerciseIndex) else {
+                    return
+                }
+                exerciseStates[activeExerciseIndex].reps = newValue
+            }
+        )
+    }
+
+    private var recentlyLoggedSetID: LoggedSet.ID? {
+        guard exerciseStates.indices.contains(activeExerciseIndex) else {
+            return nil
+        }
+        return exerciseStates[activeExerciseIndex].recentlyLoggedSetID
+    }
+
+    private func logSet() {
+        guard exerciseStates.indices.contains(activeExerciseIndex),
+              day.exercises.indices.contains(activeExerciseIndex) else {
+            return
+        }
+
+        let exercise = day.exercises[activeExerciseIndex]
+        var state = exerciseStates[activeExerciseIndex]
+        let weight = state.weight
+        let reps = state.reps
+
+        guard let nextIndex = state.sets.firstIndex(where: { $0.weight == nil || $0.reps == nil }) else {
+            onExerciseComplete(state.sets)
+            return
+        }
+
+        let sessionLoggedMaxWeight = AchievementDetector.sessionLoggedMaxWeight(in: state.sets)
+        let isLastSet = nextIndex >= state.sets.count - 1
+
+        state.sets[nextIndex].weight = weight
+        state.sets[nextIndex].reps = reps
+        state.recentlyLoggedSetID = state.sets[nextIndex].id
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            exerciseStates[activeExerciseIndex] = state
+        }
+
+        onSetsChange(activeExerciseIndex, state.sets)
+        showLogFeedback(for: state.sets[nextIndex].id, at: activeExerciseIndex)
+
+        if AchievementDetector.shouldUnlock(
+            weight: weight,
+            reps: reps,
+            previousBestWeight: previousBestWeight(exercise.name),
+            sessionLoggedMaxWeight: sessionLoggedMaxWeight,
+            hasAlreadyFiredThisExercise: achievementFiredExerciseKeys.contains(exercise.name.normalizedStatsKey)
+        ) {
+            let achievement = Achievement(
+                exerciseName: exercise.name,
+                weight: weight,
+                reps: reps,
+                date: Date(),
+                username: username,
+                previousBest: max(previousBestWeight(exercise.name) ?? 0, sessionLoggedMaxWeight)
+            )
+            onAchievementUnlocked(achievement, isLastSet ? state.sets : nil)
+            if isLastSet {
+                return
+            }
+        }
+
+        if isLastSet {
+            onExerciseComplete(state.sets)
+        }
+    }
+
+    private func showLogFeedback(for setID: LoggedSet.ID, at index: Int) {
+        feedbackResetTask?.cancel()
+        feedbackResetTask = Task {
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                guard exerciseStates.indices.contains(index),
+                      exerciseStates[index].recentlyLoggedSetID == setID else {
+                    return
+                }
+
+                withAnimation(.spring(response: 0.18, dampingFraction: 0.9)) {
+                    exerciseStates[index].recentlyLoggedSetID = nil
+                }
+                feedbackResetTask = nil
+            }
+        }
+    }
+
+    private func persistCurrentExerciseSets() {
+        guard exerciseStates.indices.contains(activeExerciseIndex) else {
+            return
+        }
+        onSetsChange(activeExerciseIndex, exerciseStates[activeExerciseIndex].sets)
+    }
+
+    private func isExerciseComplete(at index: Int) -> Bool {
+        guard exerciseStates.indices.contains(index) else {
+            return false
+        }
+
+        return exerciseStates[index].sets.allSatisfy(\.isLogged)
+    }
+
+    private var progressCount: Int {
+        max(day.exercises.count, 1)
+    }
+
+    private var progressBarSpacing: CGFloat {
+        progressCount <= 5 ? 24 : 12
+    }
+
+    private var progressBarWidth: CGFloat {
+        guard progressCount > 5 else {
+            return 48
+        }
+
+        let availableWidth = 336 - (progressBarSpacing * CGFloat(progressCount - 1))
+        return floor(availableWidth / CGFloat(progressCount))
+    }
+
+    private var logButtonTitle: String {
+        recentlyLoggedSetID == nil ? "Log" : "Logged"
+    }
+}
+
+private struct ExerciseLogState {
+    var sets: [LoggedSet]
+    var weight: Int = 0
+    var reps: Int = 0
+    var recentlyLoggedSetID: LoggedSet.ID?
 }
 
 struct LogWorkoutView: View {
@@ -82,7 +358,13 @@ struct LogWorkoutView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                StepProgress(count: progressCount, active: activeProgress, width: progressBarWidth, spacing: progressBarSpacing)
+                StepProgress(
+                    count: progressCount,
+                    isSegmentComplete: { _ in sets.allSatisfy(\.isLogged) },
+                    currentIndex: exerciseIndex,
+                    width: progressBarWidth,
+                    spacing: progressBarSpacing
+                )
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
                 SectionTitle(text: exercise.name)
@@ -184,7 +466,7 @@ struct LogWorkoutView: View {
         }
     }
 
-    private static func initialSets(for exercise: ExercisePrescription) -> [LoggedSet] {
+    static func initialSets(for exercise: ExercisePrescription) -> [LoggedSet] {
         (1...exercise.sets).map { index in
             LoggedSet(index: index, weight: nil, reps: nil)
         }
@@ -192,10 +474,6 @@ struct LogWorkoutView: View {
 
     private var progressCount: Int {
         max(exerciseCount, 1)
-    }
-
-    private var activeProgress: Int {
-        min(exerciseIndex + 1, progressCount)
     }
 
     private var progressBarSpacing: CGFloat {
