@@ -52,6 +52,7 @@ struct LogWorkoutView: View {
     var username: String?
     var hasFiredAchievementForExercise: Bool
     var onAchievementUnlocked: (Achievement, [LoggedSet]?) -> Void
+    var onSetsChange: ([LoggedSet]) -> Void
     var onExerciseComplete: ([LoggedSet]) -> Void
 
     @State private var weight = 0
@@ -65,7 +66,9 @@ struct LogWorkoutView: View {
         previousBestWeight: Int? = nil,
         username: String? = nil,
         hasFiredAchievementForExercise: Bool = false,
+        initialSets: [LoggedSet]? = nil,
         onAchievementUnlocked: @escaping (Achievement, [LoggedSet]?) -> Void = { _, _ in },
+        onSetsChange: @escaping ([LoggedSet]) -> Void = { _ in },
         onExerciseComplete: @escaping ([LoggedSet]) -> Void
     ) {
         self.exercise = exercise
@@ -75,8 +78,9 @@ struct LogWorkoutView: View {
         self.username = username
         self.hasFiredAchievementForExercise = hasFiredAchievementForExercise
         self.onAchievementUnlocked = onAchievementUnlocked
+        self.onSetsChange = onSetsChange
         self.onExerciseComplete = onExerciseComplete
-        _sets = State(initialValue: Self.initialSets(for: exercise))
+        _sets = State(initialValue: initialSets ?? Self.initialSets(for: exercise))
     }
 
     var body: some View {
@@ -111,6 +115,9 @@ struct LogWorkoutView: View {
             }
             .padding(.horizontal, 24)
         }
+        .onDisappear {
+            onSetsChange(sets)
+        }
     }
 
     private func logSet() {
@@ -129,6 +136,7 @@ struct LogWorkoutView: View {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
             sets = updatedSets
         }
+        onSetsChange(updatedSets)
 
         if AchievementDetector.shouldUnlock(
             weight: weight,
