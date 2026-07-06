@@ -1,5 +1,9 @@
 import Foundation
 
+enum WorkoutStats {
+    static let topLoggedExerciseLimit = 5
+}
+
 struct WorkoutStore {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
@@ -71,32 +75,8 @@ struct WorkoutStore {
     }
 
     var topLoggedExercises: [ExerciseSetSummary] {
-        let summaries = statsWorkouts
-            .flatMap(\.exercises)
-            .reduce(into: [String: ExerciseSetSummary]()) { partialResult, exercise in
-                let setCount = exercise.sets.filter(\.hasLoggedValues).count
-                guard setCount > 0 else {
-                    return
-                }
-
-                let key = exercise.exerciseName.normalizedStatsKey
-                if var existing = partialResult[key] {
-                    existing.setCount += setCount
-                    partialResult[key] = existing
-                } else {
-                    partialResult[key] = ExerciseSetSummary(exerciseName: exercise.exerciseName, setCount: setCount)
-                }
-            }
-            .values
-            .sorted { lhs, rhs in
-                if lhs.setCount == rhs.setCount {
-                    return lhs.exerciseName < rhs.exerciseName
-                }
-
-                return lhs.setCount > rhs.setCount
-            }
-
-        return Array(summaries.prefix(3))
+        let summaries = Self.aggregateExerciseSetSummaries(from: statsWorkouts)
+        return Array(summaries.prefix(WorkoutStats.topLoggedExerciseLimit))
     }
 
     func personalBestWeight(for exerciseName: String) -> Int? {
@@ -313,8 +293,46 @@ struct WorkoutStore {
     }
 
     private var statsWorkouts: [LoggedWorkout] {
-        let detailedWorkouts = workoutHistory.filter { !$0.exercises.isEmpty }
-        return detailedWorkouts.isEmpty ? SampleData.loggedStatsHistory : detailedWorkouts
+        if Self.hasLoggedExerciseData(in: workoutHistory) {
+            return workoutHistory
+        }
+
+        return SampleData.loggedStatsHistory
+    }
+
+    private static func hasLoggedExerciseData(in workouts: [LoggedWorkout]) -> Bool {
+        workouts.contains { workout in
+            workout.exercises.contains { exercise in
+                exercise.sets.contains(where: \.hasLoggedValues)
+            }
+        }
+    }
+
+    private static func aggregateExerciseSetSummaries(from workouts: [LoggedWorkout]) -> [ExerciseSetSummary] {
+        workouts
+            .flatMap(\.exercises)
+            .reduce(into: [String: ExerciseSetSummary]()) { partialResult, exercise in
+                let setCount = exercise.sets.filter(\.hasLoggedValues).count
+                guard setCount > 0 else {
+                    return
+                }
+
+                let key = exercise.exerciseName.normalizedStatsKey
+                if var existing = partialResult[key] {
+                    existing.setCount += setCount
+                    partialResult[key] = existing
+                } else {
+                    partialResult[key] = ExerciseSetSummary(exerciseName: exercise.exerciseName, setCount: setCount)
+                }
+            }
+            .values
+            .sorted { lhs, rhs in
+                if lhs.setCount == rhs.setCount {
+                    return lhs.exerciseName < rhs.exerciseName
+                }
+
+                return lhs.setCount > rhs.setCount
+            }
     }
 
     private mutating func advancePastCompletedDay(_ day: WorkoutDay) {

@@ -63,32 +63,35 @@ struct StatsView: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScreenTitle(title: "Stats")
-                .padding(.top, AppLayout.screenTitleTopPadding)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                ScreenTitle(title: "Stats")
+                    .padding(.top, AppLayout.screenTitleTopPadding)
 
-            SectionTitle(text: "Most logged")
-                .padding(.top, 24)
+                SectionTitle(text: "Most logged")
+                    .padding(.top, 24)
 
-            VStack(spacing: 12) {
-                if topExercises.isEmpty {
-                    EmptyStatsCard()
-                } else {
-                    ForEach(topExercises) { exercise in
-                        Button {
-                            openExercise(exercise.exerciseName)
-                        } label: {
-                            FrequentExerciseCard(summary: exercise)
+                VStack(spacing: 12) {
+                    if topExercises.isEmpty {
+                        EmptyStatsCard()
+                    } else {
+                        ForEach(topExercises) { exercise in
+                            Button {
+                                openExercise(exercise.exerciseName)
+                            } label: {
+                                FrequentExerciseCard(summary: exercise)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
                     }
                 }
+                .padding(.top, 12)
+                .padding(.bottom, 220)
             }
-            .padding(.top, 12)
-
-            Spacer(minLength: 220)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .scrollDismissesKeyboard(.interactively)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
