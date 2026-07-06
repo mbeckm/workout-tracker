@@ -85,6 +85,7 @@ layout:
   bottom-cta-x: 45pt
   bottom-cta-y: 712pt
   bottom-cta-clearance: 106pt
+  floating-chrome-fade: 48pt
   cta-to-tab-gap: 24pt
   card-padding: 16pt
   card-trailing-icon: 36pt
@@ -122,6 +123,11 @@ components:
     rounded: "{rounded.control}"
     width: "{layout.bottom-cta-width}"
     height: "{layout.bottom-cta-height}"
+  floating-bottom-chrome:
+    fadeHeight: "{layout.floating-chrome-fade}"
+    fadeGradient: "base transparent to base 88% opacity"
+    buttonRowBackground: "base 88% opacity"
+    scrollClearance: "CTA height + fade height + bottom chrome padding"
   progress-cell:
     activeColor: "{colors.accent}"
     inactiveColor: "{colors.border}"
@@ -194,9 +200,11 @@ The Figma reference frame is 402x874pt. Preserve the mobile-first geometry unles
 - Use 24pt horizontal screen padding. This creates the standard 354pt content rail.
 - The custom bottom tab bar is 82pt tall at y=792pt. Its inner nav rail is 310pt wide, starts at x=46pt, and has 12pt top padding.
 - Bottom CTAs are 312x56pt at x=45pt and y=712pt. They leave 24pt before the tab bar and 106pt from the bottom of the frame.
+- Bottom CTAs and anchored search surfaces float above scrollable content. They use `FloatingBottomChrome`: a 48pt fade from transparent to 88% base opacity, then the control row on an 88% base scrim. Content scrolls underneath and stays visible through the fade.
+- Scrollable lists must leave `floatingBottomChromeClearance` bottom padding when a floating CTA or bottom search is present so the last card can scroll behind the chrome instead of being clipped by an opaque footer.
+- Avoid solid opaque footers behind bottom actions. The tab bar is the only persistent opaque bottom surface.
 - Card lists use 12pt gaps. Sections usually step by 24pt; the Overview heatmap to Active Plan break uses roughly 36pt.
 - Cards and controls should span the available content width unless the Figma intentionally centers a fixed control, such as the frequency stepper.
-- Scrollable lists must leave enough bottom padding so the tab bar and CTA never hide content.
 - Avoid floating card stacks inside cards. Cards are for repeated objects, panels, tables, modals, and contained tools.
 
 Use stable dimensions for repeated controls: 24pt progress cells, 36pt tab icons, 45pt circular steppers, 56pt CTA height, 80/84/102pt list cards, and 354pt content width inside the 24pt margins.
@@ -275,6 +283,8 @@ Use `CardShell` for plan cards, exercise cards, frequent exercise cards, empty c
 
 Use `CTAButton` for the single primary action at the bottom of task screens. Keep labels direct: `New Plan`, `Next`, `Save Day`, `Save Plan`, `Start Workout`, `Log`, `Finish`, `Sync Now`.
 
+Use `FloatingBottomChrome` for every bottom CTA and anchored search surface. Place it with `.floatingBottomChrome { ... }` so content scrolls behind a translucent fade instead of an opaque footer. Pair scrollable content with `.floatingBottomChromeScrollPadding()`.
+
 Use `PlanCard` for plan-like rows with a title, one or two metadata lines, optional date, and trailing chevron. Use `ExerciseCard` for exercise prescriptions with name, sets/reps metadata, and trailing chevron.
 
 Use `StepProgress` for active workout exercise progress. Use `DayStepProgress` for plan days. Green means completed or current depending on the flow; inactive cells are border gray; selected-only mode may show the next adjacent day in `surface2`.
@@ -350,9 +360,10 @@ Respect Dynamic Type where possible through `AppFont` relative styles, but prote
 - Do keep active workout logging stripped down to the current exercise and set entry.
 - Do use cards for repeated plans, exercises, stats rows, tables, summaries, and contained entry surfaces.
 - Do keep search, draft configuration, and activation prompts compact and contextual.
+- Do use `FloatingBottomChrome` so bottom actions float above content with a translucent fade; never block scrollable cards with a solid base footer.
 - Don't introduce a light theme, marketing hero, image-heavy wellness surface, or separate design system.
 - Don't use green as decoration or general body text.
-- Don't add large shadows, blurred glass, gradient backgrounds, or ornamental texture beyond the subtle dark base.
+- Don't add large shadows, blurred glass, ornamental texture, or decorative gradients beyond the subtle dark base and the bottom-chrome fade scrim.
 - Don't make dense workout rows expand unpredictably when labels, numbers, or search results change.
 - Don't hide primary actions behind menus during workout or plan creation flows.
 - Don't add new root product names, duplicate app targets, or legacy project language.

@@ -60,15 +60,11 @@ struct PlansView: View {
                 .padding(.top, 12)
 
                 Spacer(minLength: 24)
-
-                HStack {
-                    Spacer()
-                    CTAButton(title: "New Plan", width: 312, action: onNewPlan)
-                    Spacer()
-                }
-                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
+            .floatingBottomChrome {
+                CTAButton(title: "New Plan", width: 312, action: onNewPlan)
+            }
         }
     }
 
