@@ -131,6 +131,7 @@ private struct MonthlyWorkoutCalendar: View {
                         .minimumScaleFactor(0.8)
                 }
             }
+            .frame(maxWidth: .infinity)
 
             ForEach(dayRows.indices, id: \.self) { row in
                 HStack(spacing: calendarColumnSpacing) {
@@ -145,8 +146,10 @@ private struct MonthlyWorkoutCalendar: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Workouts this month")
         .accessibilityValue("\(workoutDays.count) workouts logged")
