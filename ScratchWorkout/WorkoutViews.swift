@@ -52,6 +52,8 @@ struct LogWorkoutView: View {
     @State private var weight = 0
     @State private var reps = 0
     @State private var sets: [LoggedSet]
+    @State private var recentlyLoggedSetID: LoggedSet.ID?
+    @State private var feedbackResetTask: Task<Void, Never>?
 
     init(
         exercise: ExercisePrescription,
@@ -86,7 +88,7 @@ struct LogWorkoutView: View {
                 SectionTitle(text: exercise.name)
                     .padding(.top, 24)
 
-                SetTable(sets: sets)
+                SetTable(sets: sets, recentlyLoggedSetID: recentlyLoggedSetID)
                     .padding(.top, 22)
 
                 Spacer(minLength: 0)
@@ -100,13 +102,18 @@ struct LogWorkoutView: View {
             }
             .padding(.horizontal, 24)
             .floatingBottomChrome {
-                CTAButton(title: "Log", width: 312) {
+                CTAButton(title: logButtonTitle, width: 312) {
                     logSet()
                 }
+                .scaleEffect(recentlyLoggedSetID == nil ? 1 : 1.025)
+                .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.22), radius: 14, x: 0, y: 0)
+                .animation(.spring(response: 0.2, dampingFraction: 0.72), value: recentlyLoggedSetID)
             }
         }
         .onDisappear {
             onSetsChange(sets)
+            feedbackResetTask?.cancel()
+            feedbackResetTask = nil
         }
     }
 
@@ -125,8 +132,10 @@ struct LogWorkoutView: View {
 
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
             sets = updatedSets
+            recentlyLoggedSetID = updatedSets[nextIndex].id
         }
         onSetsChange(updatedSets)
+        showLogFeedback(for: updatedSets[nextIndex].id)
 
         if AchievementDetector.shouldUnlock(
             weight: weight,
@@ -151,6 +160,27 @@ struct LogWorkoutView: View {
 
         if isLastSet {
             onExerciseComplete(updatedSets)
+        }
+    }
+
+    private func showLogFeedback(for setID: LoggedSet.ID) {
+        feedbackResetTask?.cancel()
+        feedbackResetTask = Task {
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
+
+            await MainActor.run {
+                guard recentlyLoggedSetID == setID else {
+                    return
+                }
+
+                withAnimation(.spring(response: 0.18, dampingFraction: 0.9)) {
+                    recentlyLoggedSetID = nil
+                }
+                feedbackResetTask = nil
+            }
         }
     }
 
@@ -180,29 +210,47 @@ struct LogWorkoutView: View {
         let availableWidth = 336 - (progressBarSpacing * CGFloat(progressCount - 1))
         return floor(availableWidth / CGFloat(progressCount))
     }
+
+    private var logButtonTitle: String {
+        recentlyLoggedSetID == nil ? "Log" : "Logged"
+    }
 }
 
 private struct SetTable: View {
     var sets: [LoggedSet]
+    var recentlyLoggedSetID: LoggedSet.ID?
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 34, verticalSpacing: 12) {
-            GridRow {
-                header("Set")
-                header("kg")
-                header("Reps")
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            headerRow
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: isScrollable) {
+                    VStack(spacing: rowSpacing) {
+                        ForEach(sets) { set in
+                            SetTableRow(
+                                set: set,
+                                phase: phase(for: set),
+                                isRecentlyLogged: set.id == recentlyLoggedSetID
+                            )
+                            .id(set.id)
+                        }
+                    }
+                }
+                .frame(height: rowViewportHeight)
+                .scrollDisabled(!isScrollable)
+                .onChange(of: activeSetID) { _, newValue in
+                    guard isScrollable, let newValue else {
+                        return
+                    }
 
-            ForEach(sets) { set in
-                GridRow {
-                    cell("\(set.index)", isEmpty: set.weight == nil)
-                    cell(set.weight.map(String.init) ?? "-", isEmpty: set.weight == nil)
-                    cell(set.reps.map(String.init) ?? "-", isEmpty: set.reps == nil)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+                        proxy.scrollTo(newValue, anchor: .center)
+                    }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(12)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -210,18 +258,233 @@ private struct SetTable: View {
         )
     }
 
+    private var headerRow: some View {
+        HStack(spacing: 12) {
+            header("Set")
+                .frame(width: 68, alignment: .leading)
+            header("kg")
+            header("Reps")
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 2)
+    }
+
     private func header(_ text: String) -> some View {
         Text(text)
-            .font(AppFont.body)
+            .font(AppFont.caption)
             .foregroundStyle(AppColor.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func cell(_ text: String, isEmpty: Bool) -> some View {
+    private func phase(for set: LoggedSet) -> SetRowPhase {
+        if set.isLogged {
+            return .completed
+        }
+
+        if set.id == activeSetID {
+            return .active
+        }
+
+        return .upcoming
+    }
+
+    private var activeSetID: LoggedSet.ID? {
+        sets.first { !$0.isLogged }?.id
+    }
+
+    private var isScrollable: Bool {
+        sets.count > maxFullyVisibleRows
+    }
+
+    private var rowViewportHeight: CGFloat {
+        guard isScrollable else {
+            return fullRowsHeight
+        }
+
+        let rowCount = scrollVisibleRows
+        return ceil((rowCount * rowHeight) + ((rowCount - 1) * rowSpacing))
+    }
+
+    private var fullRowsHeight: CGFloat {
+        guard !sets.isEmpty else {
+            return 0
+        }
+
+        return (CGFloat(sets.count) * rowHeight) + (CGFloat(sets.count - 1) * rowSpacing)
+    }
+
+    private var maxFullyVisibleRows: Int {
+        5
+    }
+
+    private var scrollVisibleRows: CGFloat {
+        4.35
+    }
+
+    private var rowHeight: CGFloat {
+        58
+    }
+
+    private var rowSpacing: CGFloat {
+        8
+    }
+}
+
+private struct SetTableRow: View {
+    var set: LoggedSet
+    var phase: SetRowPhase
+    var isRecentlyLogged: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            setCell
+                .frame(width: 68, alignment: .leading)
+            valueCell(set.weight.map(String.init) ?? "-", isEmpty: set.weight == nil)
+            valueCell(set.reps.map(String.init) ?? "-", isEmpty: set.reps == nil)
+        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 58, maxHeight: 58, alignment: .leading)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(phase.fill)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isRecentlyLogged ? AppColor.accent.opacity(0.08) : .clear)
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(isRecentlyLogged ? AppColor.accent : phase.stroke, lineWidth: isRecentlyLogged || phase == .active ? 1.5 : 1)
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: phase)
+        .animation(.spring(response: 0.18, dampingFraction: 0.86), value: isRecentlyLogged)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var setCell: some View {
+        HStack(spacing: 8) {
+            Image(systemName: phase.symbol)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(phase.symbolColor)
+                .frame(width: 18, height: 18)
+
+            Text("\(set.index)")
+                .font(AppFont.h2)
+                .foregroundStyle(phase.numberColor)
+                .monospacedDigit()
+        }
+    }
+
+    private func valueCell(_ text: String, isEmpty: Bool) -> some View {
         Text(text)
-            .font(AppFont.body)
-            .foregroundStyle(isEmpty ? AppColor.tertiaryText : AppColor.primaryText)
+            .font(Font.inter(size: 24, weight: .semibold, relativeTo: .title3))
+            .monospacedDigit()
+            .foregroundStyle(isEmpty ? phase.emptyValueColor : phase.valueColor)
+            .contentTransition(.numericText())
             .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var accessibilityLabel: String {
+        let weightText = set.weight.map { "\($0) kilograms" } ?? "no weight logged"
+        let repsText = set.reps.map { "\($0) reps" } ?? "no reps logged"
+        return "Set \(set.index), \(phase.accessibilityText), \(weightText), \(repsText)"
+    }
+}
+
+private enum SetRowPhase: Equatable {
+    case completed
+    case active
+    case upcoming
+
+    var accessibilityText: String {
+        switch self {
+        case .completed:
+            return "logged"
+        case .active:
+            return "next to log"
+        case .upcoming:
+            return "upcoming"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .completed:
+            return "checkmark.circle.fill"
+        case .active:
+            return "circle.fill"
+        case .upcoming:
+            return "circle"
+        }
+    }
+
+    var fill: Color {
+        switch self {
+        case .completed:
+            return AppColor.surface2
+        case .active:
+            return AppColor.surface2
+        case .upcoming:
+            return AppColor.surface1
+        }
+    }
+
+    var stroke: Color {
+        switch self {
+        case .completed:
+            return AppColor.border
+        case .active:
+            return AppColor.accent.opacity(0.72)
+        case .upcoming:
+            return AppColor.border.opacity(0.65)
+        }
+    }
+
+    var symbolColor: Color {
+        switch self {
+        case .completed, .active:
+            return AppColor.accent
+        case .upcoming:
+            return AppColor.tertiaryText
+        }
+    }
+
+    var numberColor: Color {
+        switch self {
+        case .completed:
+            return AppColor.primaryText
+        case .active:
+            return AppColor.accent
+        case .upcoming:
+            return AppColor.secondaryText
+        }
+    }
+
+    var valueColor: Color {
+        switch self {
+        case .completed:
+            return AppColor.primaryText
+        case .active:
+            return AppColor.accent
+        case .upcoming:
+            return AppColor.tertiaryText
+        }
+    }
+
+    var emptyValueColor: Color {
+        switch self {
+        case .active:
+            return AppColor.secondaryText
+        case .completed, .upcoming:
+            return AppColor.tertiaryText
+        }
+    }
+}
+
+private extension LoggedSet {
+    var isLogged: Bool {
+        weight != nil && reps != nil
     }
 }
 
