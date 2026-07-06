@@ -7,9 +7,15 @@ enum AppLayout {
     static let tabBarHeight: CGFloat = 82
     static let legacyTabBarClearance: CGFloat = 106
     static let contentBottomPadding: CGFloat = 24
+    static let bottomCTAHeight: CGFloat = 56
+    static let floatingChromeFadeHeight: CGFloat = 48
 
     static func bottomChromePadding(usesNativeTabBar: Bool) -> CGFloat {
         usesNativeTabBar ? contentBottomPadding : legacyTabBarClearance
+    }
+
+    static func floatingBottomChromeClearance(usesNativeTabBar: Bool) -> CGFloat {
+        bottomCTAHeight + floatingChromeFadeHeight + bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
     }
 }
 
@@ -27,6 +33,62 @@ extension EnvironmentValues {
 extension View {
     func appBottomChromePadding() -> some View {
         modifier(AppBottomChromePadding())
+    }
+
+    func floatingBottomChromeScrollPadding() -> some View {
+        modifier(FloatingBottomChromeScrollPadding())
+    }
+
+    @ViewBuilder
+    func floatingBottomChrome<Chrome: View>(
+        isVisible: Bool = true,
+        @ViewBuilder chrome: () -> Chrome
+    ) -> some View {
+        if isVisible {
+            ZStack(alignment: .bottom) {
+                self
+                FloatingBottomChrome(content: chrome)
+            }
+        } else {
+            self
+        }
+    }
+}
+
+private struct FloatingBottomChromeScrollPadding: ViewModifier {
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+
+    func body(content: Content) -> some View {
+        content.padding(
+            .bottom,
+            AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
+        )
+    }
+}
+
+struct FloatingBottomChrome<Content: View>: View {
+    @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(
+                colors: [AppColor.base.opacity(0), AppColor.base.opacity(0.88)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: AppLayout.floatingChromeFadeHeight)
+            .allowsHitTesting(false)
+
+            HStack {
+                Spacer(minLength: 0)
+                content()
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar))
+            .background(AppColor.base.opacity(0.88))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

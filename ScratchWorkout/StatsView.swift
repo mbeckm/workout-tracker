@@ -44,6 +44,9 @@ struct StatsView: View {
 
                 content
 
+            }
+            .padding(.horizontal, 24)
+            .floatingBottomChrome {
                 StatsSearchSurface(
                     query: $searchQuery,
                     focused: $searchFocused,
@@ -51,9 +54,7 @@ struct StatsView: View {
                     searchState: searchState,
                     onSelect: openExercise
                 )
-                .appBottomChromePadding()
             }
-            .padding(.horizontal, 24)
         }
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: searchQuery.isEmpty)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: searchResults.count)

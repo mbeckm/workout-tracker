@@ -26,18 +26,14 @@ struct StartWorkoutView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.top, 12)
-                    .padding(.bottom, 24)
+                    .floatingBottomChromeScrollPadding()
                 }
                 .scrollDismissesKeyboard(.interactively)
-
-                HStack {
-                    Spacer()
-                    CTAButton(title: "Start Workout", width: 312, action: onStart)
-                    Spacer()
-                }
-                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
+            .floatingBottomChrome {
+                CTAButton(title: "Start Workout", width: 312, action: onStart)
+            }
         }
     }
 }
@@ -101,17 +97,13 @@ struct LogWorkoutView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 16)
-
-                HStack {
-                    Spacer()
-                    CTAButton(title: "Log", width: 312) {
-                        logSet()
-                    }
-                    Spacer()
-                }
-                .appBottomChromePadding()
             }
             .padding(.horizontal, 24)
+            .floatingBottomChrome {
+                CTAButton(title: "Log", width: 312) {
+                    logSet()
+                }
+            }
         }
         .onDisappear {
             onSetsChange(sets)
@@ -261,11 +253,11 @@ struct WorkoutCompleteView: View {
                 .padding(.horizontal, 24)
 
                 Spacer(minLength: 24)
-
-                CTAButton(title: "Finish", width: 312, action: onFinish)
-                    .appBottomChromePadding()
             }
             .frame(maxWidth: .infinity)
+            .floatingBottomChrome {
+                CTAButton(title: "Finish", width: 312, action: onFinish)
+            }
         }
     }
 }

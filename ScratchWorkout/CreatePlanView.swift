@@ -131,15 +131,11 @@ struct CreatePlanView: View {
             .padding(.top, 257)
 
             Spacer(minLength: 24)
-
-            HStack {
-                Spacer()
-                CTAButton(title: "Next", width: 312) {
-                    startBuildingPlan()
-                }
-                Spacer()
+        }
+        .floatingBottomChrome {
+            CTAButton(title: "Next", width: 312) {
+                startBuildingPlan()
             }
-            .appBottomChromePadding()
         }
     }
 
@@ -175,17 +171,10 @@ struct CreatePlanView: View {
                     planDayScrollContent(topPadding: currentDayExercises.isEmpty ? 24 : 12)
                 }
             }
-
-            if !currentDayExercises.isEmpty && exerciseDraft == nil {
-                HStack {
-                    Spacer()
-                    CTAButton(title: "Save Day", width: 312) {
-                        saveCurrentDay()
-                    }
-                    Spacer()
-                }
-                .appBottomChromePadding()
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+        }
+        .floatingBottomChrome(isVisible: dayBuilderShowsBottomCTA) {
+            CTAButton(title: "Save Day", width: 312) {
+                saveCurrentDay()
             }
         }
     }
@@ -222,24 +211,15 @@ struct CreatePlanView: View {
                     planDayScrollContent(topPadding: 12, bottomPadding: finalReviewScrollBottomPadding)
                 }
             }
-
-            HStack {
-                Spacer()
-                if stage == .finalReview && exerciseDraft == nil && !shouldShowSearchSurface {
-                    CTAButton(title: "Save Plan", width: 294) {
-                        stageDirection = .forward
-                        withAnimation(AppNavigationAnimation.push) {
-                            stage = .activatePrompt
-                        }
-                    }
-                    .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
-                } else {
-                    Color.clear
-                        .frame(width: 294, height: 56)
+        }
+        .floatingBottomChrome(isVisible: stage == .finalReview && exerciseDraft == nil && !shouldShowSearchSurface) {
+            CTAButton(title: "Save Plan", width: 294) {
+                stageDirection = .forward
+                withAnimation(AppNavigationAnimation.push) {
+                    stage = .activatePrompt
                 }
-                Spacer()
             }
-            .appBottomChromePadding()
+            .matchedGeometryEffect(id: "activation-surface", in: activationNamespace)
         }
     }
 
@@ -305,13 +285,13 @@ struct CreatePlanView: View {
 
     private var planDayScrollBottomPadding: CGFloat {
         dayBuilderShowsBottomCTA
-            ? AppLayout.contentBottomPadding
+            ? AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
             : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
     }
 
     private var finalReviewScrollBottomPadding: CGFloat {
         exerciseDraft == nil && !shouldShowSearchSurface
-            ? AppLayout.contentBottomPadding
+            ? AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
             : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
     }
 

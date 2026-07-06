@@ -70,24 +70,17 @@ struct PlanDetailView: View {
                 ) {
                     dayContent
                 }
-
-                if exerciseDraft == nil {
-                    HStack {
-                        Spacer()
-                        CTAButton(title: isEditing ? "Save" : "Start this Workout", width: 312) {
-                            if isEditing {
-                                savePlanEdits()
-                            } else if let day = currentDay {
-                                onStartWorkout(day)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .appBottomChromePadding()
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
             }
             .padding(.horizontal, 24)
+            .floatingBottomChrome(isVisible: exerciseDraft == nil) {
+                CTAButton(title: isEditing ? "Save" : "Start this Workout", width: 312) {
+                    if isEditing {
+                        savePlanEdits()
+                    } else if let day = currentDay {
+                        onStartWorkout(day)
+                    }
+                }
+            }
         }
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isEditing)
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: exerciseDraft)
@@ -151,7 +144,7 @@ struct PlanDetailView: View {
 
     private var planDetailScrollBottomPadding: CGFloat {
         exerciseDraft == nil
-            ? AppLayout.contentBottomPadding
+            ? AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
             : AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar)
     }
 

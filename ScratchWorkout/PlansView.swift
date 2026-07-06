@@ -97,16 +97,14 @@ struct PlansView: View {
                         }
                     }
 
-                    HStack {
-                        Spacer()
-                        CTAButton(title: "New Plan", width: 312, action: onNewPlan)
-                        Spacer()
-                    }
-                    .padding(.top, 24)
-                    .appBottomChromePadding()
+                    Spacer(minLength: 24)
                 }
                 .padding(.horizontal, 24)
+                .floatingBottomChromeScrollPadding()
                 .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isArchivedExpanded)
+            }
+            .floatingBottomChrome {
+                CTAButton(title: "New Plan", width: 312, action: onNewPlan)
             }
         }
     }
