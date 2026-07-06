@@ -2,6 +2,8 @@ import SwiftUI
 
 enum AppLayout {
     static let screenTitleTopPadding: CGFloat = 66
+    static let screenTitleHeight: CGFloat = 38
+    static let sectionTitleHeight: CGFloat = 30
     static let tabBarHeight: CGFloat = 82
     static let legacyTabBarClearance: CGFloat = 106
     static let contentBottomPadding: CGFloat = 24
@@ -282,6 +284,77 @@ private struct StatsTabIcon: View {
     }
 }
 
+struct ScreenTitle: View {
+    var title: String
+    var minimumScaleFactor: CGFloat = 1
+
+    var body: some View {
+        Text(title)
+            .font(AppFont.display)
+            .lineLimit(1)
+            .minimumScaleFactor(minimumScaleFactor)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: AppLayout.screenTitleHeight,
+                maxHeight: AppLayout.screenTitleHeight,
+                alignment: .leading
+            )
+    }
+}
+
+struct ScreenTitleBar<Accessory: View>: View {
+    var title: String
+    @ViewBuilder var accessory: () -> Accessory
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(title)
+                .font(AppFont.display)
+                .lineLimit(1)
+
+            Spacer(minLength: 12)
+
+            accessory()
+        }
+        .frame(
+            maxWidth: .infinity,
+            minHeight: AppLayout.screenTitleHeight,
+            maxHeight: AppLayout.screenTitleHeight,
+            alignment: .leading
+        )
+    }
+}
+
+struct ScreenNavigationTitle: View {
+    var title: String
+    var backAccessibilityLabel: String
+    var minimumScaleFactor: CGFloat = 0.72
+    var onBack: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                Haptics.tap()
+                onBack()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(AppColor.primaryText)
+                    .frame(width: 36, height: AppLayout.screenTitleHeight)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(backAccessibilityLabel)
+
+            Text(title)
+                .font(AppFont.display)
+                .lineLimit(1)
+                .minimumScaleFactor(minimumScaleFactor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: AppLayout.screenTitleHeight, alignment: .leading)
+    }
+}
+
 struct SectionTitle: View {
     var text: String
 
@@ -290,6 +363,23 @@ struct SectionTitle: View {
             .font(AppFont.h1)
             .lineLimit(1)
             .foregroundStyle(AppColor.primaryText)
+            .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+    }
+}
+
+struct ScreenSectionRow<Trailing: View>: View {
+    var title: String
+    @ViewBuilder var trailing: () -> Trailing
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            SectionTitle(text: title)
+
+            Spacer(minLength: 12)
+
+            trailing()
+        }
+        .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 }
 

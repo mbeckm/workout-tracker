@@ -14,13 +14,7 @@ struct PlansView: View {
         AppScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center, spacing: 12) {
-                        Text("Plans")
-                            .font(AppFont.display)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 12)
-
+                    ScreenTitleBar(title: "Plans") {
                         Button {
                             Haptics.tap(.medium)
                             onNewPlan()

@@ -7,16 +7,14 @@ struct StartWorkoutView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Start Workout")
-                    .font(AppFont.display)
+                ScreenTitle(title: "Start Workout")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                HStack(alignment: .firstTextBaseline) {
-                    SectionTitle(text: day.title)
-                    Spacer()
+                ScreenSectionRow(title: day.title) {
                     Text("\(day.exercises.count) Exercises")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.secondaryText)
+                        .lineLimit(1)
                 }
                 .padding(.top, 24)
 
@@ -242,8 +240,7 @@ struct WorkoutCompleteView: View {
     var body: some View {
         AppScreen {
             VStack(spacing: 0) {
-                Text("Well done!")
-                    .font(AppFont.display)
+                ScreenTitle(title: "Well done!")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
                 VStack(spacing: 16) {

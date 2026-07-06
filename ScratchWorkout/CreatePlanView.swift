@@ -104,8 +104,7 @@ struct CreatePlanView: View {
 
     private var frequencyView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Create Plan")
-                .font(AppFont.display)
+            ScreenTitle(title: "Create Plan")
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
             VStack(spacing: 16) {
@@ -146,8 +145,7 @@ struct CreatePlanView: View {
 
     private var dayBuilderView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Create Plan")
-                .font(AppFont.display)
+            ScreenTitle(title: "Create Plan")
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
             DayStepProgress(
@@ -194,8 +192,7 @@ struct CreatePlanView: View {
 
     private var finalReviewView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Review")
-                .font(AppFont.display)
+            ScreenTitle(title: "Review")
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
             DayStepProgress(
