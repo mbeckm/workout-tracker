@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var achievementFiredExerciseKeys: Set<String> = []
     @State private var deferredExerciseCompletion: (sets: [LoggedSet], day: WorkoutDay, index: Int)?
     @State private var navigationDirection: AppNavigationDirection = .forward
+    @State private var exerciseSlideDirection: AppNavigationDirection = .forward
 
     var body: some View {
         Group {
@@ -180,29 +181,38 @@ struct RootView: View {
                     }
                 })
             } else {
-                let index = min(activeExerciseIndex, day.exercises.count - 1)
-                let exercise = day.exercises[index]
-                LogWorkoutView(
-                    exercise: exercise,
-                    exerciseIndex: index,
-                    exerciseCount: day.exercises.count,
-                    previousBestWeight: store.personalBestWeight(for: exercise.name),
-                    username: accountUsername,
-                    hasFiredAchievementForExercise: achievementFiredExerciseKeys.contains(exercise.name.normalizedStatsKey),
-                    onAchievementUnlocked: { achievement, pendingSets in
-                        activeAchievement = achievement
-                        achievementFiredExerciseKeys.insert(exercise.name.normalizedStatsKey)
-                        if let pendingSets {
-                            deferredExerciseCompletion = (pendingSets, day, index)
+                HorizontalSwipePager(
+                    selection: $activeExerciseIndex,
+                    pageCount: day.exercises.count,
+                    direction: $exerciseSlideDirection
+                ) {
+                    let index = min(activeExerciseIndex, day.exercises.count - 1)
+                    let exercise = day.exercises[index]
+                    LogWorkoutView(
+                        exercise: exercise,
+                        exerciseIndex: index,
+                        exerciseCount: day.exercises.count,
+                        previousBestWeight: store.personalBestWeight(for: exercise.name),
+                        username: accountUsername,
+                        hasFiredAchievementForExercise: achievementFiredExerciseKeys.contains(exercise.name.normalizedStatsKey),
+                        initialSets: savedSets(for: index, exercise: exercise, in: day),
+                        onAchievementUnlocked: { achievement, pendingSets in
+                            activeAchievement = achievement
+                            achievementFiredExerciseKeys.insert(exercise.name.normalizedStatsKey)
+                            if let pendingSets {
+                                deferredExerciseCompletion = (pendingSets, day, index)
+                            }
+                        },
+                        onSetsChange: { sets in
+                            persistExerciseSets(sets, at: index, in: day)
+                        },
+                        onExerciseComplete: { sets in
+                            push {
+                                completeExercise(sets, in: day, at: index)
+                            }
                         }
-                    },
-                    onExerciseComplete: { sets in
-                        push {
-                            completeExercise(sets, in: day, at: index)
-                        }
-                    }
-                )
-                .id(exercise.id)
+                    )
+                }
             }
         case .workoutComplete:
             WorkoutCompleteView(workout: completedWorkout, onFinish: {
@@ -300,9 +310,7 @@ struct RootView: View {
             return "route-overlay-empty"
         case .logWorkout:
             let day = workoutSessionDay ?? store.nextWorkoutDay
-            let index = min(activeExerciseIndex, max(day.exercises.count - 1, 0))
-            let exerciseID = day.exercises.indices.contains(index) ? day.exercises[index].id.uuidString : "empty"
-            return "logWorkout-\(index)-\(exerciseID)"
+            return "logWorkout-\(day.id.uuidString)"
         case .planDetail(let planID):
             return "planDetail-\(planID.uuidString)"
         case .exerciseStats(let exerciseName):
@@ -347,7 +355,25 @@ struct RootView: View {
         achievementFiredExerciseKeys = []
         deferredExerciseCompletion = nil
         activeAchievement = nil
+        exerciseSlideDirection = .forward
         route = .logWorkout
+    }
+
+    private func savedSets(for index: Int, exercise: ExercisePrescription, in day: WorkoutDay) -> [LoggedSet]? {
+        guard loggedExerciseSets.indices.contains(index),
+              !loggedExerciseSets[index].isEmpty else {
+            return nil
+        }
+
+        return loggedExerciseSets[index]
+    }
+
+    private func persistExerciseSets(_ sets: [LoggedSet], at index: Int, in day: WorkoutDay) {
+        if loggedExerciseSets.count != day.exercises.count {
+            loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
+        }
+
+        loggedExerciseSets[index] = sets
     }
 
     private func completeExercise(_ sets: [LoggedSet], in day: WorkoutDay, at index: Int) {
@@ -363,6 +389,7 @@ struct RootView: View {
             syncAccount(reason: .workoutCompleted)
             route = .workoutComplete
         } else {
+            exerciseSlideDirection = .forward
             activeExerciseIndex = index + 1
         }
     }
