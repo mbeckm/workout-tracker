@@ -3,6 +3,7 @@ import Foundation
 struct WorkoutStore {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
+    var archivedPlans: [WorkoutPlan]
     private(set) var workoutHistory: [LoggedWorkout]
     private(set) var nextDayIndex: Int
 
@@ -23,7 +24,11 @@ struct WorkoutStore {
             return activePlan
         }
 
-        return savedPlans.first { $0.id == id }
+        if let savedPlan = savedPlans.first(where: { $0.id == id }) {
+            return savedPlan
+        }
+
+        return archivedPlans.first { $0.id == id }
     }
 
     var recentWorkout: LoggedWorkout? {
@@ -34,6 +39,7 @@ struct WorkoutStore {
         WorkoutCloudSnapshot(
             activePlan: activePlan,
             savedPlans: savedPlans,
+            archivedPlans: archivedPlans,
             workoutHistory: workoutHistory,
             nextDayIndex: normalizedNextDayIndex,
             capturedAt: Date()
@@ -177,11 +183,13 @@ struct WorkoutStore {
            let snapshot = try? JSONDecoder().decode(WorkoutSnapshot.self, from: data) {
             activePlan = Self.normalizedPlan(snapshot.activePlan)
             savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
+            archivedPlans = snapshot.archivedPlans?.map(Self.normalizedPlan) ?? []
             workoutHistory = snapshot.workoutHistory
             nextDayIndex = snapshot.nextDayIndex ?? 0
         } else {
             activePlan = SampleData.activePlan
             savedPlans = Self.defaultSavedPlans
+            archivedPlans = []
             workoutHistory = []
             nextDayIndex = 0
         }
@@ -190,6 +198,7 @@ struct WorkoutStore {
     mutating func hydrate(from snapshot: WorkoutCloudSnapshot) {
         activePlan = Self.normalizedPlan(snapshot.activePlan)
         savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
+        archivedPlans = snapshot.archivedPlans.map(Self.normalizedPlan)
         workoutHistory = snapshot.workoutHistory
         nextDayIndex = snapshot.nextDayIndex
         persist()
@@ -198,6 +207,7 @@ struct WorkoutStore {
     mutating func savePlan(_ plan: WorkoutPlan, activate: Bool) {
         let normalizedPlan = Self.normalizedPlan(plan)
         savedPlans.removeAll { $0.id == normalizedPlan.id }
+        archivedPlans.removeAll { $0.id == normalizedPlan.id }
         savedPlans.insert(normalizedPlan, at: 0)
 
         if activate {
@@ -218,6 +228,8 @@ struct WorkoutStore {
 
         if let index = savedPlans.firstIndex(where: { $0.id == normalizedPlan.id }) {
             savedPlans[index] = normalizedPlan
+        } else if let index = archivedPlans.firstIndex(where: { $0.id == normalizedPlan.id }) {
+            archivedPlans[index] = normalizedPlan
         } else {
             savedPlans.insert(normalizedPlan, at: 0)
         }
@@ -225,10 +237,24 @@ struct WorkoutStore {
         persist()
     }
 
+    mutating func archivePlan(_ plan: WorkoutPlan) {
+        guard plan.id != activePlan.id else {
+            return
+        }
+
+        let normalizedPlan = Self.normalizedPlan(plan)
+        savedPlans.removeAll { $0.id == normalizedPlan.id }
+        archivedPlans.removeAll { $0.id == normalizedPlan.id }
+        archivedPlans.insert(normalizedPlan, at: 0)
+        persist()
+    }
+
     mutating func activatePlan(_ plan: WorkoutPlan) {
         let normalizedPlan = Self.normalizedPlan(plan)
         activePlan = normalizedPlan
         nextDayIndex = 0
+
+        archivedPlans.removeAll { $0.id == normalizedPlan.id }
 
         if let index = savedPlans.firstIndex(where: { $0.id == plan.id }) {
             savedPlans[index] = normalizedPlan
@@ -266,6 +292,7 @@ struct WorkoutStore {
         let snapshot = WorkoutSnapshot(
             activePlan: activePlan,
             savedPlans: savedPlans,
+            archivedPlans: archivedPlans,
             workoutHistory: workoutHistory,
             nextDayIndex: normalizedNextDayIndex
         )
@@ -436,6 +463,7 @@ struct WorkoutStore {
 private struct WorkoutSnapshot: Codable {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
+    var archivedPlans: [WorkoutPlan]?
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int?
 }

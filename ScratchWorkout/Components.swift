@@ -381,6 +381,110 @@ struct PlanCard: View {
     }
 }
 
+struct SwipeablePlanCard: View {
+    var plan: WorkoutPlan
+    var onOpen: () -> Void
+    var onDelete: () -> Void
+
+    @State private var horizontalOffset: CGFloat = 0
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            if horizontalOffset < -1 {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(AppColor.destructive.opacity(0.22))
+                    .opacity(deleteBackgroundOpacity)
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(AppColor.primaryText)
+                            .padding(.trailing, 22)
+                            .opacity(deleteBackgroundOpacity)
+                    }
+                    .transition(.opacity)
+            }
+
+            PlanCard(
+                title: plan.name,
+                lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"],
+                date: nil
+            )
+            .offset(x: horizontalOffset)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if horizontalOffset < -1 {
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                        horizontalOffset = 0
+                    }
+                } else {
+                    Haptics.tap(.medium)
+                    onOpen()
+                }
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 20)
+                    .onChanged { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else {
+                            return
+                        }
+
+                        horizontalOffset = min(0, value.translation.width)
+                    }
+                    .onEnded { value in
+                        guard value.translation.width < -90 else {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                                horizontalOffset = 0
+                            }
+                            return
+                        }
+
+                        Haptics.tap(.medium)
+                        onDelete()
+                    }
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .accessibilityLabel("Open \(plan.name)")
+        .accessibilityAction(named: "Archive") {
+            onDelete()
+        }
+    }
+
+    private var deleteBackgroundOpacity: Double {
+        min(1, max(0, Double(-horizontalOffset / 48)))
+    }
+}
+
+struct CollapsibleSectionHeader: View {
+    var title: String
+    var isExpanded: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(AppFont.h1)
+                    .lineLimit(1)
+                    .foregroundStyle(AppColor.primaryText)
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppColor.secondaryText)
+                    .rotationEffect(.degrees(isExpanded ? 0 : -90))
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+    }
+}
+
 struct ExerciseCard: View {
     var exercise: ExercisePrescription
 

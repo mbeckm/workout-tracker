@@ -136,7 +136,34 @@ enum WorkoutSyncReason: String {
 struct WorkoutCloudSnapshot: Equatable, Codable {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
+    var archivedPlans: [WorkoutPlan]
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int
     var capturedAt: Date
+
+    init(
+        activePlan: WorkoutPlan,
+        savedPlans: [WorkoutPlan],
+        archivedPlans: [WorkoutPlan] = [],
+        workoutHistory: [LoggedWorkout],
+        nextDayIndex: Int,
+        capturedAt: Date
+    ) {
+        self.activePlan = activePlan
+        self.savedPlans = savedPlans
+        self.archivedPlans = archivedPlans
+        self.workoutHistory = workoutHistory
+        self.nextDayIndex = nextDayIndex
+        self.capturedAt = capturedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        activePlan = try container.decode(WorkoutPlan.self, forKey: .activePlan)
+        savedPlans = try container.decode([WorkoutPlan].self, forKey: .savedPlans)
+        archivedPlans = try container.decodeIfPresent([WorkoutPlan].self, forKey: .archivedPlans) ?? []
+        workoutHistory = try container.decode([LoggedWorkout].self, forKey: .workoutHistory)
+        nextDayIndex = try container.decode(Int.self, forKey: .nextDayIndex)
+        capturedAt = try container.decode(Date.self, forKey: .capturedAt)
+    }
 }

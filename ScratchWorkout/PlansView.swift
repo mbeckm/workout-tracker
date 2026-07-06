@@ -3,72 +3,117 @@ import SwiftUI
 struct PlansView: View {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
+    var archivedPlans: [WorkoutPlan]
     var onNewPlan: () -> Void
     var onOpenPlan: (WorkoutPlan) -> Void
+    var onArchivePlan: (WorkoutPlan) -> Void
+
+    @State private var isArchivedExpanded = false
 
     var body: some View {
         AppScreen {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center, spacing: 12) {
-                    Text("Plans")
-                        .font(AppFont.display)
-                        .lineLimit(1)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .center, spacing: 12) {
+                        Text("Plans")
+                            .font(AppFont.display)
+                            .lineLimit(1)
 
-                    Spacer(minLength: 12)
+                        Spacer(minLength: 12)
+
+                        Button {
+                            Haptics.tap(.medium)
+                            onNewPlan()
+                        } label: {
+                            Text("+")
+                                .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
+                                .foregroundStyle(.black)
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("New plan")
+                    }
+                    .padding(.top, AppLayout.screenTitleTopPadding)
+
+                    SectionTitle(text: "Active Plan")
+                        .padding(.top, 24)
 
                     Button {
                         Haptics.tap(.medium)
-                        onNewPlan()
+                        onOpenPlan(activePlan)
                     } label: {
-                        Text("+")
-                            .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
-                            .foregroundStyle(.black)
-                            .frame(width: 44, height: 44)
+                        PlanCard(
+                            title: activePlan.name,
+                            lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"],
+                            date: nil
+                        )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("New plan")
-                }
-                .padding(.top, AppLayout.screenTitleTopPadding)
-
-                SectionTitle(text: "Active Plan")
-                    .padding(.top, 24)
-
-                Button {
-                    Haptics.tap(.medium)
-                    onOpenPlan(activePlan)
-                } label: {
-                    PlanCard(title: activePlan.name, lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"], date: nil)
-                }
-                .buttonStyle(.plain)
                     .padding(.top, 12)
 
-                SectionTitle(text: "Saved Plans")
-                    .padding(.top, 24)
+                    SectionTitle(text: "Saved Plans")
+                        .padding(.top, 24)
 
-                VStack(spacing: 12) {
-                    ForEach(displaySavedPlans.prefix(3)) { plan in
-                        Button {
-                            Haptics.tap(.medium)
-                            onOpenPlan(plan)
-                        } label: {
-                            PlanCard(title: plan.name, lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"], date: nil)
+                    VStack(spacing: 12) {
+                        ForEach(displaySavedPlans) { plan in
+                            SwipeablePlanCard(
+                                plan: plan,
+                                onOpen: {
+                                    onOpenPlan(plan)
+                                },
+                                onDelete: {
+                                    onArchivePlan(plan)
+                                }
+                            )
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Open \(plan.name)")
                     }
-                }
-                .padding(.top, 12)
+                    .padding(.top, 12)
 
-                Spacer(minLength: 24)
+                    if !archivedPlans.isEmpty {
+                        CollapsibleSectionHeader(
+                            title: "Archived Plans",
+                            isExpanded: isArchivedExpanded,
+                            action: {
+                                withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+                                    isArchivedExpanded.toggle()
+                                }
+                            }
+                        )
+                        .padding(.top, 24)
 
-                HStack {
-                    Spacer()
-                    CTAButton(title: "New Plan", width: 312, action: onNewPlan)
-                    Spacer()
+                        if isArchivedExpanded {
+                            VStack(spacing: 12) {
+                                ForEach(archivedPlans) { plan in
+                                    Button {
+                                        Haptics.tap(.medium)
+                                        onOpenPlan(plan)
+                                    } label: {
+                                        PlanCard(
+                                            title: plan.name,
+                                            lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"],
+                                            date: nil
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("Open archived plan \(plan.name)")
+                                }
+                            }
+                            .padding(.top, 12)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+
+                    HStack {
+                        Spacer()
+                        CTAButton(title: "New Plan", width: 312, action: onNewPlan)
+                        Spacer()
+                    }
+                    .padding(.top, 24)
+                    .appBottomChromePadding()
                 }
-                .appBottomChromePadding()
+                .padding(.horizontal, 24)
+                .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isArchivedExpanded)
             }
-            .padding(.horizontal, 24)
         }
     }
 

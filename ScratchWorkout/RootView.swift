@@ -159,6 +159,7 @@ struct RootView: View {
                 PlansView(
                     activePlan: store.activePlan,
                     savedPlans: store.savedPlans,
+                    archivedPlans: store.archivedPlans,
                     onNewPlan: {
                         push {
                             route = .createPlan
@@ -168,6 +169,10 @@ struct RootView: View {
                         push {
                             route = .planDetail(plan.id)
                         }
+                    },
+                    onArchivePlan: { plan in
+                        store.archivePlan(plan)
+                        syncAccount(reason: .planUpdated)
                     }
                 )
             }
@@ -265,6 +270,7 @@ struct RootView: View {
             PlansView(
                 activePlan: store.activePlan,
                 savedPlans: store.savedPlans,
+                archivedPlans: store.archivedPlans,
                 onNewPlan: {
                     push {
                         route = .createPlan
@@ -274,6 +280,10 @@ struct RootView: View {
                     push {
                         route = .planDetail(plan.id)
                     }
+                },
+                onArchivePlan: { plan in
+                    store.archivePlan(plan)
+                    syncAccount(reason: .planUpdated)
                 }
             )
         case .workout:
@@ -464,6 +474,10 @@ private enum PreviewFixtures {
         ])
     ]
 
+    static let archivedPlans = [
+        WorkoutPlan(name: "Old PPL", daysPerWeek: 3, createdAt: "01.01.26", days: Array(SampleData.activePlan.days.prefix(3)))
+    ]
+
     static let loggedWorkout = LoggedWorkout(
         title: "Push",
         completedAt: Date(timeIntervalSince1970: 1_783_000_000),
@@ -529,8 +543,10 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                 PlansView(
                     activePlan: SampleData.activePlan,
                     savedPlans: PreviewFixtures.savedPlans,
+                    archivedPlans: PreviewFixtures.archivedPlans,
                     onNewPlan: {},
-                    onOpenPlan: { _ in }
+                    onOpenPlan: { _ in },
+                    onArchivePlan: { _ in }
                 )
             }
             .previewDisplayName("Plans")
