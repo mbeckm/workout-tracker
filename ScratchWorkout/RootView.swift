@@ -127,6 +127,12 @@ struct RootView: View {
                     beginWorkout(day: store.nextWorkoutDay)
                 }
             })
+            .swipeToGoBack {
+                pop {
+                    selectedTab = .home
+                    route = nil
+                }
+            }
         case .activePlanDetail:
             PlanDetailView(
                 plan: store.activePlan,
@@ -141,6 +147,12 @@ struct RootView: View {
                     syncAccount(reason: .planUpdated)
                 }
             )
+            .swipeToGoBack {
+                pop {
+                    selectedTab = .home
+                    route = nil
+                }
+            }
         case .planDetail(let planID):
             if let plan = store.plan(for: planID) {
                 PlanDetailView(
@@ -156,6 +168,12 @@ struct RootView: View {
                         syncAccount(reason: .planUpdated)
                     }
                 )
+                .swipeToGoBack {
+                    pop {
+                        selectedTab = .plans
+                        route = nil
+                    }
+                }
             } else {
                 PlansView(
                     activePlan: store.activePlan,
@@ -186,38 +204,31 @@ struct RootView: View {
                     }
                 })
             } else {
-                HorizontalSwipePager(
-                    selection: $activeExerciseIndex,
-                    pageCount: day.exercises.count,
-                    direction: $exerciseSlideDirection
-                ) {
-                    let index = min(activeExerciseIndex, day.exercises.count - 1)
-                    let exercise = day.exercises[index]
-                    LogWorkoutView(
-                        exercise: exercise,
-                        exerciseIndex: index,
-                        exerciseCount: day.exercises.count,
-                        previousBestWeight: store.personalBestWeight(for: exercise.name),
-                        username: accountUsername,
-                        hasFiredAchievementForExercise: achievementFiredExerciseKeys.contains(exercise.name.normalizedStatsKey),
-                        initialSets: savedSets(for: index, exercise: exercise, in: day),
-                        onAchievementUnlocked: { achievement, pendingSets in
-                            activeAchievement = achievement
-                            achievementFiredExerciseKeys.insert(exercise.name.normalizedStatsKey)
-                            if let pendingSets {
-                                deferredExerciseCompletion = (pendingSets, day, index)
-                            }
-                        },
-                        onSetsChange: { sets in
-                            persistExerciseSets(sets, at: index, in: day)
-                        },
-                        onExerciseComplete: { sets in
-                            push {
-                                completeExercise(sets, in: day, at: index)
-                            }
+                LogWorkoutSessionView(
+                    day: day,
+                    activeExerciseIndex: $activeExerciseIndex,
+                    exerciseSlideDirection: $exerciseSlideDirection,
+                    previousBestWeight: { store.personalBestWeight(for: $0) },
+                    username: accountUsername,
+                    achievementFiredExerciseKeys: achievementFiredExerciseKeys,
+                    initialLoggedSets: loggedExerciseSets,
+                    onAchievementUnlocked: { achievement, pendingSets in
+                        activeAchievement = achievement
+                        let index = min(activeExerciseIndex, day.exercises.count - 1)
+                        achievementFiredExerciseKeys.insert(day.exercises[index].name.normalizedStatsKey)
+                        if let pendingSets {
+                            deferredExerciseCompletion = (pendingSets, day, index)
                         }
-                    )
-                }
+                    },
+                    onSetsChange: { index, sets in
+                        persistExerciseSets(sets, at: index, in: day)
+                    },
+                    onExerciseComplete: { sets in
+                        push {
+                            completeExercise(sets, in: day, at: activeExerciseIndex)
+                        }
+                    }
+                )
             }
         case .workoutComplete:
             WorkoutCompleteView(workout: completedWorkout, onFinish: {
@@ -238,14 +249,14 @@ struct RootView: View {
             }
         case .exerciseStats(let exerciseName):
             ExerciseStatsView(
-                stats: store.exerciseStats(for: exerciseName),
-                onBack: {
-                    pop {
-                        selectedTab = .stats
-                        route = nil
-                    }
-                }
+                stats: store.exerciseStats(for: exerciseName)
             )
+            .swipeToGoBack {
+                pop {
+                    selectedTab = .stats
+                    route = nil
+                }
+            }
         case nil:
             EmptyView()
         }
@@ -367,15 +378,6 @@ struct RootView: View {
         activeAchievement = nil
         exerciseSlideDirection = .forward
         route = .logWorkout
-    }
-
-    private func savedSets(for index: Int, exercise: ExercisePrescription, in day: WorkoutDay) -> [LoggedSet]? {
-        guard loggedExerciseSets.indices.contains(index),
-              !loggedExerciseSets[index].isEmpty else {
-            return nil
-        }
-
-        return loggedExerciseSets[index]
     }
 
     private func persistExerciseSets(_ sets: [LoggedSet], at index: Int, in day: WorkoutDay) {

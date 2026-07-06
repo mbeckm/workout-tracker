@@ -13,48 +13,50 @@ struct HomeView: View {
 
     var body: some View {
         AppScreen {
-            VStack(alignment: .leading, spacing: 0) {
-                ScreenTitleBar(title: "Overview") {
-                    AccountEntryButton(
-                        session: accountSession,
-                        syncState: accountSyncState,
-                        action: onOpenAccount
-                    )
-                }
-                .padding(.top, AppLayout.screenTitleTopPadding)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ScreenTitleBar(title: "Overview") {
+                        AccountEntryButton(
+                            session: accountSession,
+                            syncState: accountSyncState,
+                            action: onOpenAccount
+                        )
+                    }
+                    .padding(.top, AppLayout.screenTitleTopPadding)
 
-                SectionTitle(text: "Workouts this month")
-                    .padding(.top, 24)
+                    SectionTitle(text: "Workouts this month")
+                        .padding(.top, 24)
 
-                MonthlyWorkoutCalendar(workoutDays: workoutDaysThisMonth)
+                    MonthlyWorkoutCalendar(workoutDays: workoutDaysThisMonth)
+                        .padding(.top, 12)
+
+                    SectionTitle(text: "Active Plan")
+                        .padding(.top, 36)
+
+                    Button {
+                        Haptics.tap(.medium)
+                        onOpenActivePlan()
+                    } label: {
+                        PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
+                    }
+                    .buttonStyle(.plain)
                     .padding(.top, 12)
 
-                SectionTitle(text: "Active Plan")
-                    .padding(.top, 36)
+                    SectionTitle(text: "Next in plan")
+                        .padding(.top, 24)
 
-                Button {
-                    Haptics.tap(.medium)
-                    onOpenActivePlan()
-                } label: {
-                    PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
+                    Button {
+                        Haptics.tap(.medium)
+                        onOpenNextWorkout()
+                    } label: {
+                        PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 12)
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 12)
-
-                SectionTitle(text: "Next in plan")
-                    .padding(.top, 24)
-
-                Button {
-                    Haptics.tap(.medium)
-                    onOpenNextWorkout()
-                } label: {
-                    PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 12)
-
-                Spacer(minLength: 96)
+                .padding(.bottom, AppLayout.legacyTabBarClearance)
             }
+            .scrollDismissesKeyboard(.interactively)
             .padding(.horizontal, 24)
         }
     }
