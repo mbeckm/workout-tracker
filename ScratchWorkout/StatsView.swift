@@ -64,8 +64,7 @@ struct StatsView: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Stats")
-                .font(AppFont.display)
+            ScreenTitle(title: "Stats")
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
             SectionTitle(text: "Most logged")
@@ -149,7 +148,11 @@ struct ExerciseStatsView: View {
         AppScreen {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    header
+                    ScreenNavigationTitle(
+                        title: stats.exerciseName,
+                        backAccessibilityLabel: "Back to stats",
+                        onBack: onBack
+                    )
                         .padding(.top, AppLayout.screenTitleTopPadding)
 
                     chartSectionHeader
@@ -176,29 +179,6 @@ struct ExerciseStatsView: View {
             .scrollDismissesKeyboard(.interactively)
             .padding(.horizontal, 24)
         }
-    }
-
-    private var header: some View {
-        HStack(spacing: 8) {
-            Button {
-                Haptics.tap()
-                onBack()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundStyle(AppColor.primaryText)
-                    .frame(width: 36, height: 38)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Back to stats")
-
-            Text(stats.exerciseName)
-                .font(AppFont.display)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(height: 38, alignment: .leading)
     }
 
     private var chartSectionHeader: some View {

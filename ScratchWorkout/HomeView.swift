@@ -14,13 +14,7 @@ struct HomeView: View {
     var body: some View {
         AppScreen {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center, spacing: 12) {
-                    Text("Overview")
-                        .font(AppFont.display)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 12)
-
+                ScreenTitleBar(title: "Overview") {
                     AccountEntryButton(
                         session: accountSession,
                         syncState: accountSyncState,

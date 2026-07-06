@@ -121,13 +121,7 @@ struct AccountView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Text("Account")
-                .font(AppFont.display)
-                .lineLimit(1)
-
-            Spacer(minLength: 12)
-
+        ScreenTitleBar(title: "Account") {
             Button {
                 Haptics.tap()
                 dismiss()
