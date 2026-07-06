@@ -68,7 +68,11 @@ private struct FloatingBottomChromeScrollPadding: ViewModifier {
 
 struct FloatingBottomChrome<Content: View>: View {
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
-    @ViewBuilder var content: () -> Content
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,7 +86,7 @@ struct FloatingBottomChrome<Content: View>: View {
 
             HStack {
                 Spacer(minLength: 0)
-                content()
+                content
                 Spacer(minLength: 0)
             }
             .padding(.bottom, AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar))
