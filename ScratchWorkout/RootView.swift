@@ -351,20 +351,45 @@ struct RootView: View {
     }
 
     private func completeExercise(_ sets: [LoggedSet], in day: WorkoutDay, at index: Int) {
-        if loggedExerciseSets.count != day.exercises.count {
-            loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
-        }
+        let sessionDay = workoutSessionDay ?? day
+        loggedExerciseSets = normalizedLoggedExerciseSets(
+            loggedExerciseSets,
+            for: sessionDay,
+            assigning: sets,
+            at: index
+        )
 
-        loggedExerciseSets[index] = sets
-
-        if index >= day.exercises.count - 1 {
+        if index >= sessionDay.exercises.count - 1 {
             navigationDirection = .forward
-            completedWorkout = store.completeWorkout(day: day, exerciseSets: loggedExerciseSets)
+            completedWorkout = store.completeWorkout(day: sessionDay, exerciseSets: loggedExerciseSets)
             syncAccount(reason: .workoutCompleted)
             route = .workoutComplete
         } else {
             activeExerciseIndex = index + 1
         }
+    }
+
+    private func normalizedLoggedExerciseSets(
+        _ exerciseSets: [[LoggedSet]],
+        for day: WorkoutDay,
+        assigning sets: [LoggedSet],
+        at index: Int
+    ) -> [[LoggedSet]] {
+        let targetCount = day.exercises.count
+        var normalized = exerciseSets
+
+        if normalized.count < targetCount {
+            normalized.append(contentsOf: Array(repeating: [], count: targetCount - normalized.count))
+        } else if normalized.count > targetCount {
+            normalized = Array(normalized.prefix(targetCount))
+        }
+
+        guard normalized.indices.contains(index) else {
+            return normalized
+        }
+
+        normalized[index] = sets
+        return normalized
     }
 
     private func clearWorkoutSession() {
