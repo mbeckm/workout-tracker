@@ -4,6 +4,7 @@ struct HomeView: View {
     var activePlan: WorkoutPlan
     var nextWorkout: WorkoutDay
     var recentWorkout: LoggedWorkout?
+    var workoutsThisMonth: Int
     var workoutDaysThisMonth: Set<Date>
     var accountSession: AuthSession
     var accountSyncState: AccountSyncState
@@ -24,7 +25,7 @@ struct HomeView: View {
                     }
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                    SectionTitle(text: "Workouts this month")
+                    MetricLabel(value: "\(workoutsThisMonth)", label: "workouts this month")
                         .padding(.top, 24)
 
                     MonthlyWorkoutCalendar(workoutDays: workoutDaysThisMonth)
