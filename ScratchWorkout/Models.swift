@@ -68,6 +68,178 @@ struct WorkoutDay: Identifiable, Equatable, Codable {
     var exercises: [ExercisePrescription]
 }
 
+enum ExerciseTrackingMode: String, CaseIterable, Codable, Identifiable {
+    case weightAndReps
+    case counterweightAndReps
+    case reps
+    case repsAndDuration
+    case duration
+    case distanceAndDuration
+    case weightAndDistance
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .weightAndReps: "Weight + reps"
+        case .counterweightAndReps: "Counterweight + reps"
+        case .reps: "Reps"
+        case .repsAndDuration: "Reps + duration"
+        case .duration: "Duration"
+        case .distanceAndDuration: "Distance + duration"
+        case .weightAndDistance: "Weight + distance"
+        }
+    }
+
+    var example: String {
+        switch self {
+        case .weightAndReps: "e.g. Curls, Weighted Dips"
+        case .counterweightAndReps: "e.g. Assisted Dips"
+        case .reps: "e.g. Ab Rollouts"
+        case .repsAndDuration: "e.g. Burpees"
+        case .duration: "e.g. Planks"
+        case .distanceAndDuration: "e.g. Running"
+        case .weightAndDistance: "e.g. Sled Push"
+        }
+    }
+
+    var prescriptionMetrics: [ExercisePrescriptionMetric] {
+        switch self {
+        case .weightAndReps:
+            [.weight, .reps]
+        case .counterweightAndReps:
+            [.counterweight, .reps]
+        case .reps:
+            [.reps]
+        case .repsAndDuration:
+            [.reps, .duration]
+        case .duration:
+            [.duration]
+        case .distanceAndDuration:
+            [.distance, .duration]
+        case .weightAndDistance:
+            [.weight, .distance]
+        }
+    }
+}
+
+enum ExercisePrescriptionMetric: String, Codable, Identifiable {
+    case weight
+    case counterweight
+    case reps
+    case duration
+    case distance
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .weight: "Weight"
+        case .counterweight: "Assistance"
+        case .reps: "Reps"
+        case .duration: "Duration"
+        case .distance: "Distance"
+        }
+    }
+
+    var editorTitle: String {
+        switch self {
+        case .weight: "Weight in kilograms"
+        case .counterweight: "Assistance in kilograms"
+        case .reps: "Number of reps"
+        case .duration: "Duration in seconds"
+        case .distance: "Distance in meters"
+        }
+    }
+
+    var defaultValue: Int {
+        switch self {
+        case .weight, .counterweight: 20
+        case .reps: 12
+        case .duration: 30
+        case .distance: 100
+        }
+    }
+
+    var step: Int {
+        switch self {
+        case .weight, .counterweight: 5
+        case .reps: 1
+        case .duration: 5
+        case .distance: 25
+        }
+    }
+
+    var maximum: Int {
+        switch self {
+        case .weight, .counterweight: 1_000
+        case .reps: 999
+        case .duration: 86_400
+        case .distance: 100_000
+        }
+    }
+}
+
+enum CustomExerciseType: String, CaseIterable, Codable, Identifiable {
+    case strength
+    case endurance
+    case mobility
+    case stability
+    case health
+    case other
+
+    var id: Self { self }
+    var title: String { rawValue.capitalized }
+
+    var symbol: String {
+        switch self {
+        case .strength: "figure.strengthtraining.traditional"
+        case .endurance: "figure.run"
+        case .mobility: "figure.flexibility"
+        case .stability: "shield.fill"
+        case .health: "heart.fill"
+        case .other: "square.grid.3x3.fill"
+        }
+    }
+}
+
+struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
+    var id = UUID()
+    var name: String
+    var equipment: String
+    var muscle: String
+    var exerciseType: CustomExerciseType
+    var trackingMode: ExerciseTrackingMode
+    var createdAt = Date()
+
+    var imageAssetName: String {
+        "Muscle" + muscle
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "delts", with: "Delts")
+            .replacingOccurrences(of: "back", with: "Back")
+    }
+
+    func prescription() -> ExercisePrescription {
+        ExercisePrescription(
+            id: id,
+            name: name,
+            sets: 3,
+            reps: trackingMode.prescriptionMetrics.contains(.reps) ? 12 : 0,
+            exerciseType: exerciseType.title,
+            bodyParts: [],
+            targetMuscles: [muscle],
+            equipments: [equipment],
+            trackingMode: trackingMode,
+            targetWeight: trackingMode == .weightAndReps || trackingMode == .weightAndDistance ? 20 : nil,
+            targetCounterweight: trackingMode == .counterweightAndReps ? 20 : nil,
+            durationSeconds: trackingMode.prescriptionMetrics.contains(.duration) ? 30 : nil,
+            distanceMeters: trackingMode.prescriptionMetrics.contains(.distance) ? 100 : nil,
+            customExerciseID: id,
+            localImageAssetName: imageAssetName
+        )
+    }
+}
+
 struct ExercisePrescription: Identifiable, Equatable, Codable {
     var id = UUID()
     var name: String
@@ -82,6 +254,13 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
     var imageURL: URL?
     var imageURLs: [String: URL]
     var videoURL: URL?
+    var trackingMode: ExerciseTrackingMode
+    var targetWeight: Int?
+    var targetCounterweight: Int?
+    var durationSeconds: Int?
+    var distanceMeters: Int?
+    var customExerciseID: UUID?
+    var localImageAssetName: String?
 
     init(
         id: UUID = UUID(),
@@ -96,7 +275,14 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         thumbnailURL: URL? = nil,
         imageURL: URL? = nil,
         imageURLs: [String: URL] = [:],
-        videoURL: URL? = nil
+        videoURL: URL? = nil,
+        trackingMode: ExerciseTrackingMode = .weightAndReps,
+        targetWeight: Int? = nil,
+        targetCounterweight: Int? = nil,
+        durationSeconds: Int? = nil,
+        distanceMeters: Int? = nil,
+        customExerciseID: UUID? = nil,
+        localImageAssetName: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -111,6 +297,13 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         self.imageURL = imageURL
         self.imageURLs = imageURLs
         self.videoURL = videoURL
+        self.trackingMode = trackingMode
+        self.targetWeight = targetWeight
+        self.targetCounterweight = targetCounterweight
+        self.durationSeconds = durationSeconds
+        self.distanceMeters = distanceMeters
+        self.customExerciseID = customExerciseID
+        self.localImageAssetName = localImageAssetName
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -127,6 +320,13 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         case imageURL
         case imageURLs
         case videoURL
+        case trackingMode
+        case targetWeight
+        case targetCounterweight
+        case durationSeconds
+        case distanceMeters
+        case customExerciseID
+        case localImageAssetName
     }
 
     init(from decoder: Decoder) throws {
@@ -144,6 +344,41 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         imageURL = try container.decodeIfPresent(URL.self, forKey: .imageURL)
         imageURLs = try container.decodeIfPresent([String: URL].self, forKey: .imageURLs) ?? [:]
         videoURL = try container.decodeIfPresent(URL.self, forKey: .videoURL)
+        trackingMode = try container.decodeIfPresent(ExerciseTrackingMode.self, forKey: .trackingMode) ?? .weightAndReps
+        targetWeight = try container.decodeIfPresent(Int.self, forKey: .targetWeight)
+        targetCounterweight = try container.decodeIfPresent(Int.self, forKey: .targetCounterweight)
+        durationSeconds = try container.decodeIfPresent(Int.self, forKey: .durationSeconds)
+        distanceMeters = try container.decodeIfPresent(Int.self, forKey: .distanceMeters)
+        customExerciseID = try container.decodeIfPresent(UUID.self, forKey: .customExerciseID)
+        localImageAssetName = try container.decodeIfPresent(String.self, forKey: .localImageAssetName)
+    }
+
+    var equipmentLabel: String {
+        if let equipment = equipments.first { return equipment }
+        let value = name.lowercased()
+        if value.contains("dumbbell") { return "Dumbbells" }
+        if value.contains("barbell") || value.contains("bench press") || value.contains("deadlift") || value.contains("squat") { return "Barbell" }
+        if value.contains("cable") || value.contains("pulldown") || value.contains("pushdown") || value.contains("face pull") { return "Cable" }
+        if value.contains("machine") || value.contains("leg press") || value.contains("leg curl") || value.contains("leg extension") { return "Machine" }
+        if value.contains("kettlebell") { return "Kettlebells" }
+        return "Bodyweight"
+    }
+
+    var muscleLabel: String {
+        if let muscle = targetMuscles.first ?? bodyParts.first { return muscle }
+        let value = name.lowercased()
+        if value.contains("bench") || value.contains("chest") || value.contains("fly") { return "Chest" }
+        if value.contains("tricep") || value.contains("skull") || value.contains("dip") { return "Triceps" }
+        if value.contains("curl") { return "Biceps" }
+        if value.contains("pulldown") || value.contains("pull-up") || value.contains("pull up") { return "Lats" }
+        if value.contains("row") { return "Upper back" }
+        if value.contains("rear delt") || value.contains("face pull") { return "Rear delts" }
+        if value.contains("lateral") { return "Side delts" }
+        if value.contains("overhead press") { return "Front delts" }
+        if value.contains("calf") { return "Calves" }
+        if value.contains("deadlift") || value.contains("leg curl") { return "Hams" }
+        if value.contains("squat") || value.contains("leg press") || value.contains("leg extension") || value.contains("lunge") { return "Quads" }
+        return "Other"
     }
 }
 

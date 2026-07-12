@@ -8,6 +8,7 @@ struct WorkoutStore {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     var archivedPlans: [WorkoutPlan]
+    private(set) var customExercises: [CustomExerciseDefinition]
     private(set) var workoutHistory: [LoggedWorkout]
     private(set) var nextDayIndex: Int
 
@@ -44,6 +45,7 @@ struct WorkoutStore {
             activePlan: activePlan,
             savedPlans: savedPlans,
             archivedPlans: archivedPlans,
+            customExercises: customExercises,
             workoutHistory: workoutHistory,
             nextDayIndex: normalizedNextDayIndex,
             capturedAt: Date()
@@ -164,12 +166,14 @@ struct WorkoutStore {
             activePlan = Self.normalizedPlan(snapshot.activePlan)
             savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
             archivedPlans = snapshot.archivedPlans?.map(Self.normalizedPlan) ?? []
+            customExercises = snapshot.customExercises ?? []
             workoutHistory = snapshot.workoutHistory
             nextDayIndex = snapshot.nextDayIndex ?? 0
         } else {
             activePlan = SampleData.activePlan
             savedPlans = Self.defaultSavedPlans
             archivedPlans = []
+            customExercises = []
             workoutHistory = []
             nextDayIndex = 0
         }
@@ -179,6 +183,7 @@ struct WorkoutStore {
         activePlan = Self.normalizedPlan(snapshot.activePlan)
         savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
         archivedPlans = snapshot.archivedPlans.map(Self.normalizedPlan)
+        customExercises = Self.mergedCustomExercises(remote: snapshot.customExercises, local: customExercises)
         workoutHistory = snapshot.workoutHistory
         nextDayIndex = snapshot.nextDayIndex
         persist()
@@ -195,6 +200,12 @@ struct WorkoutStore {
             nextDayIndex = 0
         }
 
+        persist()
+    }
+
+    mutating func saveCustomExercise(_ exercise: CustomExerciseDefinition) {
+        customExercises.removeAll { $0.id == exercise.id || $0.name.caseInsensitiveCompare(exercise.name) == .orderedSame }
+        customExercises.insert(exercise, at: 0)
         persist()
     }
 
@@ -273,6 +284,7 @@ struct WorkoutStore {
             activePlan: activePlan,
             savedPlans: savedPlans,
             archivedPlans: archivedPlans,
+            customExercises: customExercises,
             workoutHistory: workoutHistory,
             nextDayIndex: normalizedNextDayIndex
         )
@@ -359,6 +371,16 @@ struct WorkoutStore {
                 WorkoutDay(title: "Legs 2", exercises: SampleData.legExercises)
             ])
         ]
+    }
+
+    private static func mergedCustomExercises(
+        remote: [CustomExerciseDefinition],
+        local: [CustomExerciseDefinition]
+    ) -> [CustomExerciseDefinition] {
+        var seenNames = Set<String>()
+        return (remote + local).filter { exercise in
+            seenNames.insert(exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)).inserted
+        }
     }
 
     private static func normalizedPlan(_ plan: WorkoutPlan) -> WorkoutPlan {
@@ -482,6 +504,7 @@ private struct WorkoutSnapshot: Codable {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     var archivedPlans: [WorkoutPlan]?
+    var customExercises: [CustomExerciseDefinition]?
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int?
 }
