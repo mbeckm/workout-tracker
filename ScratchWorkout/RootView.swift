@@ -15,6 +15,7 @@ struct RootView: View {
     @State private var deferredExerciseCompletion: (sets: [LoggedSet], day: WorkoutDay, index: Int)?
     @State private var navigationDirection: AppNavigationDirection = .forward
     @State private var exerciseSlideDirection: AppNavigationDirection = .forward
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
@@ -52,7 +53,7 @@ struct RootView: View {
                 routeOverlay: {
                     routeContent
                         .id(screenIdentity)
-                        .transition(AppScreenTransition.slide(navigationDirection))
+                        .transition(AppScreenTransition.slide(navigationDirection, reduceMotion: reduceMotion))
                         .transaction { transaction in
                             if navigationDirection == .none {
                                 transaction.disablesAnimations = true
@@ -80,7 +81,7 @@ struct RootView: View {
 
                 routeContent
                     .id(screenIdentity)
-                    .transition(AppScreenTransition.slide(navigationDirection))
+                    .transition(AppScreenTransition.slide(navigationDirection, reduceMotion: reduceMotion))
                     .transaction { transaction in
                         if navigationDirection == .none {
                             transaction.disablesAnimations = true
@@ -358,12 +359,12 @@ struct RootView: View {
 
     private func push(_ changes: () -> Void) {
         navigationDirection = .forward
-        withAnimation(AppNavigationAnimation.push, changes)
+        withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion), changes)
     }
 
     private func pop(_ changes: () -> Void) {
         navigationDirection = .backward
-        withAnimation(AppNavigationAnimation.push, changes)
+        withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion), changes)
     }
 
     private func selectTab(_ tab: AppTab) {

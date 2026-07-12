@@ -13,6 +13,7 @@ struct CreatePlanView: View {
     var onSaveCustomExercise: (CustomExerciseDefinition) -> Void
     private let exerciseCatalog: any ExerciseCatalogService
 
+    @Namespace private var searchCardNamespace
     @FocusState private var searchFocused: Bool
     @FocusState private var dayNameFocused: Bool
     @FocusState private var customNameFocused: Bool
@@ -36,6 +37,7 @@ struct CreatePlanView: View {
     @State private var stageDirection: AppNavigationDirection = .forward
     @State private var daySlideDirection: AppNavigationDirection = .forward
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         initialStage: Stage = .frequency,
@@ -81,7 +83,7 @@ struct CreatePlanView: View {
 
                 if stage == .activatePrompt {
                     activationPrompt
-                        .transition(.scale(scale: 0.94, anchor: .bottom).combined(with: .opacity))
+                        .transition(activationTransition)
                         .zIndex(10)
                 }
             }
@@ -116,8 +118,8 @@ struct CreatePlanView: View {
             }
         }
         .id(contentIdentity)
-        .transition(AppScreenTransition.slide(stageDirection))
-        .animation(AppNavigationAnimation.push, value: contentIdentity)
+        .transition(AppScreenTransition.slide(stageDirection, reduceMotion: reduceMotion))
+        .animation(navigationAnimation, value: contentIdentity)
     }
 
     private var contentIdentity: String {
@@ -173,7 +175,7 @@ struct CreatePlanView: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
                 .accessibilityLabel("Add exercise")
             }
             .padding(.top, AppLayout.screenTitleTopPadding)
@@ -205,7 +207,7 @@ struct CreatePlanView: View {
                         .foregroundStyle(AppColor.secondaryText)
                         .frame(width: 32, height: 32)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
                 .accessibilityLabel("Edit day name")
             }
             .frame(height: AppLayout.sectionTitleHeight)
@@ -264,10 +266,12 @@ struct CreatePlanView: View {
                                 draft: configurationBinding(fallback: draft),
                                 onAdvance: advanceConfiguration
                             )
+                            .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
                         } else {
                             ExerciseSearchResultCard(exercise: exercise) {
                                 configure(exercise)
                             }
+                            .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
                         }
                     }
 
@@ -290,7 +294,7 @@ struct CreatePlanView: View {
                                     .stroke(AppColor.border, lineWidth: 1)
                             )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text("Exercise data by ExerciseDB")
@@ -335,7 +339,7 @@ struct CreatePlanView: View {
         }
         .floatingBottomChrome(isVisible: stage == .finalReview) {
             CTAButton(title: "Save Plan", width: 312) {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+                withAnimation(cardExpansionAnimation) {
                     stage = .activatePrompt
                 }
             }
@@ -376,7 +380,7 @@ struct CreatePlanView: View {
                 .frame(maxWidth: .infinity, minHeight: 45)
                 .background(isPrimary ? AppColor.accent : AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
     }
 
     @ViewBuilder
@@ -490,7 +494,7 @@ struct CreatePlanView: View {
                                 .stroke(customType == type ? AppColor.accent : AppColor.border, lineWidth: 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle())
                 }
             }
         }
@@ -519,7 +523,7 @@ struct CreatePlanView: View {
                                 .stroke(customTrackingMode == mode ? AppColor.accent : AppColor.border, lineWidth: 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
                 }
             }
         }
@@ -583,6 +587,20 @@ struct CreatePlanView: View {
         AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
     }
 
+    private var navigationAnimation: Animation {
+        AppNavigationAnimation.push(reduceMotion: reduceMotion)
+    }
+
+    private var cardExpansionAnimation: Animation {
+        reduceMotion ? AppNavigationAnimation.reduced : .spring(response: 0.24, dampingFraction: 0.96)
+    }
+
+    private var activationTransition: AnyTransition {
+        reduceMotion
+            ? .opacity
+            : .scale(scale: 0.94, anchor: .bottom).combined(with: .opacity)
+    }
+
     private var displayedSearchExercises: [ExercisePrescription] {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let customMatches = customExercises
@@ -629,7 +647,7 @@ struct CreatePlanView: View {
         currentDayIndex = 0
         completedDays = 0
         stageDirection = .forward
-        withAnimation(AppNavigationAnimation.push) { stage = .composer }
+        withAnimation(navigationAnimation) { stage = .composer }
     }
 
     private func openExerciseSearch() {
@@ -640,14 +658,14 @@ struct CreatePlanView: View {
         searchState = .idle
         customRoute = nil
         stageDirection = .forward
-        withAnimation(AppNavigationAnimation.push) { stage = .search }
+        withAnimation(navigationAnimation) { stage = .search }
     }
 
     private func returnToComposer() {
         searchFocused = false
         configurationDraft = nil
         stageDirection = .backward
-        withAnimation(AppNavigationAnimation.push) { stage = .composer }
+        withAnimation(navigationAnimation) { stage = .composer }
     }
 
     private func focusSearch() {
@@ -656,7 +674,7 @@ struct CreatePlanView: View {
 
     private func configure(_ exercise: ExercisePrescription, editingID: UUID? = nil) {
         Haptics.tap(.medium)
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
+        withAnimation(cardExpansionAnimation) {
             configurationDraft = PlanExerciseConfigurationDraft(exercise: exercise, editingID: editingID)
         }
         searchFocused = false
@@ -676,7 +694,7 @@ struct CreatePlanView: View {
         Haptics.tap(.medium)
         if draft.stepIndex < draft.steps.count - 1 {
             draft.stepIndex += 1
-            withAnimation(.spring(response: 0.24, dampingFraction: 0.88)) { configurationDraft = draft }
+            withAnimation(cardExpansionAnimation) { configurationDraft = draft }
         } else {
             saveConfiguration(draft)
         }
@@ -707,7 +725,7 @@ struct CreatePlanView: View {
         completedDays = max(completedDays, currentDayIndex + 1)
         if currentDayIndex >= daysPerWeek - 1 {
             stageDirection = .forward
-            withAnimation(AppNavigationAnimation.push) { stage = .finalReview }
+            withAnimation(navigationAnimation) { stage = .finalReview }
         } else {
             daySlideDirection = .forward
             currentDayIndex += 1
@@ -727,7 +745,7 @@ struct CreatePlanView: View {
 
     private func deleteExercise(_ id: UUID) {
         guard planDays.indices.contains(currentDayIndex) else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+        withAnimation(cardExpansionAnimation) {
             planDays[currentDayIndex].removeAll { $0.id == id }
         }
     }
@@ -953,7 +971,7 @@ private struct RedesignedEmptyDayState: View {
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
         }
         .padding(16)
         .padding(.vertical, 8)
@@ -992,7 +1010,7 @@ private struct PlanAddExerciseButton: View {
             .frame(maxWidth: .infinity, minHeight: 52)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
         .accessibilityLabel("Add exercise")
     }
 }
@@ -1023,7 +1041,7 @@ private struct RedesignedExerciseSearchField: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(AppColor.secondaryText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.9))
                 .accessibilityLabel("Clear search")
             }
         }
@@ -1053,7 +1071,7 @@ private struct ExerciseSearchResultCard: View {
                     .frame(width: 56, height: 112)
                     .background(AppColor.accent)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
             .accessibilityLabel("Configure \(exercise.name)")
         }
         .frame(maxWidth: .infinity, minHeight: 112)
@@ -1100,7 +1118,7 @@ private struct ExerciseSearchConfigurationCard: View {
                     .frame(maxHeight: .infinity)
                     .background(AppColor.accent)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
             .accessibilityLabel(draft.isLastStep ? "Add exercise to plan" : "Next metric")
         }
         .frame(maxWidth: .infinity, minHeight: 190)
@@ -1125,7 +1143,7 @@ private struct ExerciseSearchConfigurationCard: View {
                 .background(AppColor.surface2, in: Circle())
                 .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
     }
 }
 
@@ -1249,7 +1267,7 @@ private struct PlanExerciseSummaryCard: View {
                     .stroke(AppColor.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
         .contextMenu {
             if let onDelete {
                 Button(role: .destructive, action: onDelete) {
@@ -1290,7 +1308,7 @@ private struct CustomExercisePropertyRow: View {
                     .stroke(AppColor.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
     }
 }
 
@@ -1329,7 +1347,7 @@ private struct VisualPickerTile: View {
                     .stroke(isSelected ? AppColor.accent : AppColor.border, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
     }
 }
 
