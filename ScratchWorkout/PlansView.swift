@@ -19,9 +19,9 @@ struct PlansView: View {
                             Haptics.tap(.medium)
                             onNewPlan()
                         } label: {
-                            Text("+")
-                                .font(.custom("Inter", size: 40, relativeTo: .largeTitle).weight(.bold))
-                                .foregroundStyle(.black)
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(AppColor.primaryText)
                                 .frame(width: 44, height: 44)
                         }
                         .buttonStyle(.plain)

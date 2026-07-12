@@ -114,6 +114,7 @@ struct StatsView: View {
             return
         }
 
+        PerformanceTrace.event(PerformanceTrace.Name.searchQueryChanged)
         searchState = .loading
 
         do {
@@ -133,6 +134,7 @@ struct StatsView: View {
         }
 
         searchResults = response.exercises
+        PerformanceTrace.event(PerformanceTrace.Name.searchResultsUpdated)
 
         if response.exercises.isEmpty {
             searchState = .message(response.notice?.message ?? "No matching exercises")

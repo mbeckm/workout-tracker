@@ -36,6 +36,7 @@
 		A10000000000000000000030 /* AchievementShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* AchievementShaders.metal */; };
 		A10000000000000000000033 /* CreatePlanRedesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* CreatePlanRedesign.swift */; };
 		A10000000000000000000034 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* Assets.xcassets */; };
+		A10000000000000000000035 /* PerformanceTrace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* PerformanceTrace.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -72,6 +73,7 @@
 		A20000000000000000000031 /* NavigationMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationMotion.swift; sourceTree = "<group>"; };
 		A20000000000000000000032 /* ScratchWorkout-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ScratchWorkout-Debug.entitlements"; sourceTree = "<group>"; };
 		A20000000000000000000033 /* CreatePlanRedesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePlanRedesign.swift; sourceTree = "<group>"; };
+		A20000000000000000000035 /* PerformanceTrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTrace.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 				A20000000000000000000017 /* ExerciseCatalog.swift */,
 				A20000000000000000000004 /* Components.swift */,
 				A20000000000000000000031 /* NavigationMotion.swift */,
+				A20000000000000000000035 /* PerformanceTrace.swift */,
 				A20000000000000000000005 /* RootView.swift */,
 				A20000000000000000000006 /* HomeView.swift */,
 				A20000000000000000000007 /* PlansView.swift */,
@@ -219,6 +222,7 @@
 				A10000000000000000000017 /* ExerciseCatalog.swift in Sources */,
 				A10000000000000000000004 /* Components.swift in Sources */,
 				A10000000000000000000026 /* NavigationMotion.swift in Sources */,
+				A10000000000000000000035 /* PerformanceTrace.swift in Sources */,
 				A10000000000000000000005 /* RootView.swift in Sources */,
 				A10000000000000000000006 /* HomeView.swift in Sources */,
 				A10000000000000000000007 /* PlansView.swift in Sources */,
