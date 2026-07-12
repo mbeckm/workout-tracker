@@ -80,7 +80,7 @@ final class LocalPreviewAuthService: AuthServicing {
     }
 }
 
-final class LocalPreviewWorkoutRepository: CloudWorkoutRepository {
+actor LocalPreviewWorkoutRepository: CloudWorkoutRepository {
     private let defaults: UserDefaults
     private let keyPrefix = "scratchWorkout.account.previewCloudSnapshot.v1"
 
@@ -125,6 +125,8 @@ final class AccountController: ObservableObject {
     private let repository: CloudWorkoutRepository
     private let migrationCoordinator: AccountMigrating
     private var didRestoreSession = false
+    private var pendingSync: PendingWorkoutSync?
+    private var syncWorker: Task<Void, Never>?
 
     init(
         authService: AuthServicing = LocalPreviewAuthService(),
@@ -146,6 +148,11 @@ final class AccountController: ObservableObject {
 
         didRestoreSession = true
         session = .loading
+
+        let signpostID = PerformanceTrace.begin(PerformanceTrace.Name.accountRestore)
+        defer {
+            PerformanceTrace.end(PerformanceTrace.Name.accountRestore, id: signpostID)
+        }
 
         do {
             if let stored = try await authService.restoreSession() {
@@ -230,9 +237,40 @@ final class AccountController: ObservableObject {
     }
 
     func sync(snapshot: WorkoutCloudSnapshot, reason: WorkoutSyncReason) async {
+        enqueueSync(snapshot: snapshot, reason: reason)
+        await syncWorker?.value
+    }
+
+    func enqueueSync(snapshot: WorkoutCloudSnapshot, reason: WorkoutSyncReason) {
+        pendingSync = PendingWorkoutSync(snapshot: snapshot, reason: reason)
+        startSyncWorkerIfNeeded()
+    }
+
+    private func startSyncWorkerIfNeeded() {
+        guard syncWorker == nil else { return }
+
+        syncWorker = Task {
+            while let request = pendingSync {
+                pendingSync = nil
+                await performSync(snapshot: request.snapshot, reason: request.reason)
+            }
+
+            syncWorker = nil
+            if pendingSync != nil {
+                startSyncWorkerIfNeeded()
+            }
+        }
+    }
+
+    private func performSync(snapshot: WorkoutCloudSnapshot, reason: WorkoutSyncReason) async {
         guard let user = session.user else {
             syncState = .signedOut
             return
+        }
+
+        let signpostID = PerformanceTrace.begin(PerformanceTrace.Name.cloudSync)
+        defer {
+            PerformanceTrace.end(PerformanceTrace.Name.cloudSync, id: signpostID)
         }
 
         await performAccountWork {
@@ -276,4 +314,9 @@ final class AccountController: ObservableObject {
 
         return error.localizedDescription
     }
+}
+
+private struct PendingWorkoutSync {
+    var snapshot: WorkoutCloudSnapshot
+    var reason: WorkoutSyncReason
 }

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 enum WorkoutStats {
     static let topLoggedExerciseLimit = 5
@@ -11,6 +12,7 @@ struct WorkoutStore {
     private(set) var customExercises: [CustomExerciseDefinition]
     private(set) var workoutHistory: [LoggedWorkout]
     private(set) var nextDayIndex: Int
+    private let persistence: WorkoutSnapshotPersistence
 
     var nextWorkoutDay: WorkoutDay {
         guard !activePlan.days.isEmpty else {
@@ -155,13 +157,12 @@ struct WorkoutStore {
         )
     }
 
-    private let defaults: UserDefaults
-    private let storageKey = "scratchWorkout.appState.v2"
+    private static let storageKey = "scratchWorkout.appState.v2"
 
     init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+        persistence = WorkoutSnapshotPersistence(defaults: defaults, storageKey: Self.storageKey)
 
-        if let data = defaults.data(forKey: storageKey),
+        if let data = defaults.data(forKey: Self.storageKey),
            let snapshot = try? JSONDecoder().decode(WorkoutSnapshot.self, from: data) {
             activePlan = Self.normalizedPlan(snapshot.activePlan)
             savedPlans = snapshot.savedPlans.map(Self.normalizedPlan)
@@ -279,6 +280,10 @@ struct WorkoutStore {
         return workout
     }
 
+    func flushPersistence() {
+        persistence.flush()
+    }
+
     private func persist() {
         let snapshot = WorkoutSnapshot(
             activePlan: activePlan,
@@ -289,11 +294,7 @@ struct WorkoutStore {
             nextDayIndex: normalizedNextDayIndex
         )
 
-        guard let data = try? JSONEncoder().encode(snapshot) else {
-            return
-        }
-
-        defaults.set(data, forKey: storageKey)
+        persistence.schedule(snapshot)
     }
 
     private var normalizedNextDayIndex: Int {
@@ -507,6 +508,41 @@ private struct WorkoutSnapshot: Codable {
     var customExercises: [CustomExerciseDefinition]?
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int?
+}
+
+private final class WorkoutSnapshotPersistence: @unchecked Sendable {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.marvinbeckmann.ScratchWorkout",
+        category: "Persistence"
+    )
+    private let defaults: UserDefaults
+    private let storageKey: String
+    private let queue = DispatchQueue(label: "com.marvinbeckmann.ScratchWorkout.persistence", qos: .utility)
+
+    init(defaults: UserDefaults, storageKey: String) {
+        self.defaults = defaults
+        self.storageKey = storageKey
+    }
+
+    func schedule(_ snapshot: WorkoutSnapshot) {
+        queue.async { [defaults, storageKey] in
+            let signpostID = PerformanceTrace.begin(PerformanceTrace.Name.persistenceWrite)
+            defer {
+                PerformanceTrace.end(PerformanceTrace.Name.persistenceWrite, id: signpostID)
+            }
+
+            do {
+                let data = try JSONEncoder().encode(snapshot)
+                defaults.set(data, forKey: storageKey)
+            } catch {
+                Self.logger.error("Failed to encode workout snapshot: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    func flush() {
+        queue.sync {}
+    }
 }
 
 private extension WorkoutDay {

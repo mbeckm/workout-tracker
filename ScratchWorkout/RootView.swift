@@ -15,7 +15,9 @@ struct RootView: View {
     @State private var deferredExerciseCompletion: (sets: [LoggedSet], day: WorkoutDay, index: Int)?
     @State private var navigationDirection: AppNavigationDirection = .forward
     @State private var exerciseSlideDirection: AppNavigationDirection = .forward
+    @State private var didTraceFirstRender = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -28,10 +30,20 @@ struct RootView: View {
         .task {
             await accountController.restoreSession()
         }
+        .onAppear {
+            guard !didTraceFirstRender else { return }
+            didTraceFirstRender = true
+            PerformanceTrace.event(PerformanceTrace.Name.firstRender)
+        }
         .onChange(of: accountController.hydratedSnapshot) { _, newValue in
             if let snap = newValue {
                 store.hydrate(from: snap)
                 accountController.hydratedSnapshot = nil
+            }
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            if newValue == .background {
+                store.flushPersistence()
             }
         }
         .sheet(isPresented: $isAccountPresented) {
@@ -358,16 +370,19 @@ struct RootView: View {
     }
 
     private func push(_ changes: () -> Void) {
+        PerformanceTrace.event(PerformanceTrace.Name.routePush)
         navigationDirection = .forward
         withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion), changes)
     }
 
     private func pop(_ changes: () -> Void) {
+        PerformanceTrace.event(PerformanceTrace.Name.routePop)
         navigationDirection = .backward
         withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion), changes)
     }
 
     private func selectTab(_ tab: AppTab) {
+        PerformanceTrace.event(PerformanceTrace.Name.tabSwitch)
         navigationDirection = .none
         selectedTab = tab
         route = nil
@@ -376,6 +391,7 @@ struct RootView: View {
     }
 
     private func beginWorkout(day selectedDay: WorkoutDay? = nil) {
+        PerformanceTrace.event(PerformanceTrace.Name.workoutStart)
         let day = selectedDay ?? store.nextWorkoutDay
         selectedTab = .workout
         workoutSessionDay = day
@@ -389,6 +405,7 @@ struct RootView: View {
     }
 
     private func persistExerciseSets(_ sets: [LoggedSet], at index: Int, in day: WorkoutDay) {
+        PerformanceTrace.event(PerformanceTrace.Name.logSet)
         if loggedExerciseSets.count != day.exercises.count {
             loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
         }
@@ -397,6 +414,7 @@ struct RootView: View {
     }
 
     private func completeExercise(_ sets: [LoggedSet], in day: WorkoutDay, at index: Int) {
+        PerformanceTrace.event(PerformanceTrace.Name.exerciseComplete)
         let sessionDay = workoutSessionDay ?? day
         loggedExerciseSets = normalizedLoggedExerciseSets(
             loggedExerciseSets,
@@ -406,6 +424,7 @@ struct RootView: View {
         )
 
         if index >= sessionDay.exercises.count - 1 {
+            PerformanceTrace.event(PerformanceTrace.Name.workoutFinish)
             navigationDirection = .forward
             completedWorkout = store.completeWorkout(day: sessionDay, exerciseSets: loggedExerciseSets)
             syncAccount(reason: .workoutCompleted)
@@ -474,10 +493,7 @@ struct RootView: View {
 
     private func syncAccount(reason: WorkoutSyncReason) {
         let snapshot = store.cloudSnapshot
-
-        Task {
-            await accountController.sync(snapshot: snapshot, reason: reason)
-        }
+        accountController.enqueueSync(snapshot: snapshot, reason: reason)
     }
 }
 

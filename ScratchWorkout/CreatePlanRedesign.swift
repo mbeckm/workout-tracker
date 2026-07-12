@@ -25,6 +25,7 @@ struct CreatePlanView: View {
     @State private var dayNames: [String]
     @State private var searchQuery: String
     @State private var searchResults: [ExercisePrescription] = []
+    @State private var customSearchResults: [ExercisePrescription] = []
     @State private var searchState: PlanEntrySearchState = .idle
     @State private var configurationDraft: PlanExerciseConfigurationDraft?
     @State private var customExercises: [CustomExerciseDefinition]
@@ -602,15 +603,15 @@ struct CreatePlanView: View {
     }
 
     private var displayedSearchExercises: [ExercisePrescription] {
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        let customMatches = customExercises
-            .filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
-            .map { $0.prescription() }
         var seen = Set<String>()
-        var exercises = (customMatches + searchResults).filter { exercise in
-            let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            return seen.insert(key).inserted
-        }
+        var exercises = Array(
+            (customSearchResults + searchResults)
+                .filter { exercise in
+                    let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                    return seen.insert(key).inserted
+                }
+                .prefix(20)
+        )
 
         if let configuredSource = configurationDraft?.source {
             let configuredKey = configuredSource.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -651,10 +652,12 @@ struct CreatePlanView: View {
     }
 
     private func openExerciseSearch() {
+        PerformanceTrace.event(PerformanceTrace.Name.createPlanSearchOpen)
         Haptics.tap(.medium)
         configurationDraft = nil
         searchQuery = ""
         searchResults = []
+        customSearchResults = Array(customExercises.prefix(20)).map { $0.prescription() }
         searchState = .idle
         customRoute = nil
         stageDirection = .forward
@@ -673,6 +676,7 @@ struct CreatePlanView: View {
     }
 
     private func configure(_ exercise: ExercisePrescription, editingID: UUID? = nil) {
+        PerformanceTrace.event(PerformanceTrace.Name.exerciseConfigure)
         Haptics.tap(.medium)
         withAnimation(cardExpansionAnimation) {
             configurationDraft = PlanExerciseConfigurationDraft(exercise: exercise, editingID: editingID)
@@ -722,6 +726,7 @@ struct CreatePlanView: View {
 
     private func saveCurrentDay() {
         guard !currentDayExercises.isEmpty else { return }
+        PerformanceTrace.event(PerformanceTrace.Name.saveDay)
         completedDays = max(completedDays, currentDayIndex + 1)
         if currentDayIndex >= daysPerWeek - 1 {
             stageDirection = .forward
@@ -805,6 +810,7 @@ struct CreatePlanView: View {
         onSaveCustomExercise(definition)
         searchQuery = definition.name
         searchResults = []
+        customSearchResults = [definition.prescription()]
         customRoute = nil
         configure(definition.prescription())
     }
@@ -812,6 +818,34 @@ struct CreatePlanView: View {
     private func updateExerciseSearch() async {
         guard stage == .search, customRoute == nil else { return }
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let customExerciseSnapshot = customExercises
+        if !query.isEmpty {
+            PerformanceTrace.event(PerformanceTrace.Name.searchQueryChanged)
+        }
+
+        let localSearchTask = Task.detached(priority: .userInitiated) { () -> [ExercisePrescription] in
+            var matches: [ExercisePrescription] = []
+
+            for exercise in customExerciseSnapshot {
+                guard !Task.isCancelled else { return [] }
+                guard query.isEmpty || exercise.name.localizedCaseInsensitiveContains(query) else { continue }
+                matches.append(exercise.prescription())
+                if matches.count == 20 { break }
+            }
+
+            return matches
+        }
+        let localMatches = await withTaskCancellationHandler {
+            await localSearchTask.value
+        } onCancel: {
+            localSearchTask.cancel()
+        }
+        guard !Task.isCancelled else { return }
+        customSearchResults = localMatches
+        if !query.isEmpty {
+            PerformanceTrace.event(PerformanceTrace.Name.searchResultsUpdated)
+        }
+
         guard !query.isEmpty else {
             searchResults = []
             searchState = .idle
@@ -824,6 +858,7 @@ struct CreatePlanView: View {
         let response = await exerciseCatalog.search(query: query)
         guard !Task.isCancelled else { return }
         searchResults = response.exercises
+        PerformanceTrace.event(PerformanceTrace.Name.searchResultsUpdated)
         if response.exercises.isEmpty {
             searchState = .message(response.notice?.message ?? "No matching exercises")
         } else if let notice = response.notice {
@@ -834,6 +869,7 @@ struct CreatePlanView: View {
     }
 
     private func finish(activate: Bool) {
+        PerformanceTrace.event(PerformanceTrace.Name.savePlan)
         let days = planDays.indices.map { index in
             WorkoutDay(title: dayNames.indices.contains(index) ? dayNames[index] : "Day \(index + 1)", exercises: planDays[index])
         }
