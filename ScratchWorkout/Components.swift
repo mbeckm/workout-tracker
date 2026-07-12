@@ -716,8 +716,24 @@ struct CTAButton: View {
                 .frame(width: width, height: 56)
                 .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(title)
+    }
+}
+
+struct AppPressFeedbackStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var pressedScale: CGFloat = 0.97
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? pressedScale : 1))
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(
+                .easeOut(duration: configuration.isPressed ? 0.1 : 0.14),
+                value: configuration.isPressed
+            )
     }
 }
 
@@ -778,7 +794,7 @@ struct RoundStepButton: View {
                 .frame(width: 45, height: 45)
                 .background(fill, in: Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
         .accessibilityLabel(accessibilityLabel ?? defaultAccessibilityLabel)
     }
 
@@ -857,7 +873,7 @@ private struct RepeatingRoundStepButton: View {
                         .stroke(AppColor.border, lineWidth: 1)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
         .accessibilityLabel(accessibilityLabel)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)

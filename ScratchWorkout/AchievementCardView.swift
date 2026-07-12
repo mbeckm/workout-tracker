@@ -231,16 +231,24 @@ struct AchievementCardOverlay: View {
     private func startEntrance() {
         if reduceMotion {
             AchievementHaptics.shared.playReduceMotionFallback()
-            withAnimation(.easeOut(duration: 0.3)) {
-                backdropOpacity = 0.85
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
                 cardOffsetY = 0
                 cardRotationY = 0
                 cardScale = 1
+                cardOpacity = 0
                 revealedGroups = Set(AchievementStaggerGroup.allCases)
                 displayedWeight = achievement.weight
                 weightBloomOpacity = 0.30
                 showContinue = true
                 isEntranceSettled = true
+            }
+
+            withAnimation(.easeOut(duration: 0.18)) {
+                backdropOpacity = 0.85
+                cardOpacity = 1
             }
             return
         }
@@ -335,17 +343,23 @@ struct AchievementCardOverlay: View {
         AchievementHaptics.shared.release()
 
         if reduceMotion {
-            onDismiss()
+            withAnimation(.easeOut(duration: 0.16)) {
+                backdropOpacity = 0
+                cardOpacity = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                onDismiss()
+            }
             return
         }
 
-        withAnimation(.easeIn(duration: 0.22)) {
+        withAnimation(.timingCurve(0.23, 1, 0.32, 1, duration: 0.18)) {
             backdropOpacity = 0
             cardScale = 0.92
             cardOpacity = 0
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
             onDismiss()
         }
     }
