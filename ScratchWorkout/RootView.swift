@@ -290,6 +290,7 @@ struct RootView: View {
                 activePlan: store.activePlan,
                 nextWorkout: store.nextWorkoutDay,
                 recentWorkout: store.recentWorkout,
+                workoutsThisMonth: store.workoutsThisMonth,
                 workoutDaysThisMonth: store.workoutDaysThisMonth,
                 accountSession: accountController.session,
                 accountSyncState: accountController.syncState,
@@ -573,17 +574,39 @@ private enum PreviewFixtures {
     )
 
     static let logExercise = ExercisePrescription(name: "Incline Bench Press", sets: 4, reps: 12)
+
+    static let sampleWorkoutDaysThisMonth: Set<Date> = {
+        let calendar = Calendar.current
+        let today = Date()
+        guard let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) else {
+            return []
+        }
+
+        let seedPattern = [
+            true, false, true, false, true, true, false,
+            false, true, false, true, false, true, false,
+            false, true, false, true, false, true, false,
+            false, true, false, true, false, true, true
+        ]
+        let daysInMonth = calendar.range(of: .day, in: .month, for: today)?.count ?? 30
+        var days = Set<Date>()
+
+        for day in 1...daysInMonth {
+            let patternIndex = day - 1
+            guard patternIndex < seedPattern.count, seedPattern[patternIndex],
+                  let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) else {
+                continue
+            }
+
+            days.insert(calendar.startOfDay(for: date))
+        }
+
+        return days
+    }()
 }
 
 struct ScratchWorkoutScreenPreviews: PreviewProvider {
-    private static let previewWorkoutDays: Set<Date> = {
-        let suiteName = "com.scratchworkout.preview.home-calendar"
-        guard let defaults = UserDefaults(suiteName: suiteName) else {
-            return []
-        }
-        defaults.removePersistentDomain(forName: suiteName)
-        return WorkoutStore(defaults: defaults).workoutDaysThisMonth
-    }()
+    private static let previewWorkoutDays: Set<Date> = PreviewFixtures.sampleWorkoutDaysThisMonth
 
     static var previews: some View {
         Group {
@@ -592,6 +615,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     nextWorkout: SampleData.activePlan.days[0],
                     recentWorkout: nil,
+                    workoutsThisMonth: previewWorkoutDays.count,
                     workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedOut,
                     accountSyncState: .signedOut,
@@ -607,6 +631,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     activePlan: SampleData.activePlan,
                     nextWorkout: WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
                     recentWorkout: PreviewFixtures.recentWorkout,
+                    workoutsThisMonth: previewWorkoutDays.count,
                     workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedIn(AccountUser(id: "preview-apple", displayName: "Apple Account", email: nil, provider: .apple, createdAt: Date())),
                     accountSyncState: .synced(Date()),
