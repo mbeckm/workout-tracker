@@ -5,6 +5,7 @@ struct PlanDetailView: View {
     var allowsEditing: Bool
     var onStartWorkout: (WorkoutDay) -> Void
     var onSave: (WorkoutPlan) -> Void
+    var onSaveCustomExercise: (CustomExerciseDefinition) -> Void
     private let exerciseCatalog: any ExerciseCatalogService
 
     @Namespace private var entryNamespace
@@ -29,57 +30,24 @@ struct PlanDetailView: View {
         allowsEditing: Bool,
         exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
         onStartWorkout: @escaping (WorkoutDay) -> Void,
-        onSave: @escaping (WorkoutPlan) -> Void
+        onSave: @escaping (WorkoutPlan) -> Void,
+        onSaveCustomExercise: @escaping (CustomExerciseDefinition) -> Void = { _ in }
     ) {
         self.plan = plan
         self.allowsEditing = allowsEditing
         self.exerciseCatalog = exerciseCatalog
         self.onStartWorkout = onStartWorkout
         self.onSave = onSave
+        self.onSaveCustomExercise = onSaveCustomExercise
         _draftPlan = State(initialValue: Self.editableDisplayPlan(plan))
     }
 
     var body: some View {
-        AppScreen {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                    .padding(.top, AppLayout.screenTitleTopPadding)
-
-                DayStepProgress(
-                    count: max(draftPlan.days.count, 1),
-                    completed: 0,
-                    current: currentDayIndex,
-                    selectedOnly: true,
-                    onSelect: switchToDay,
-                    onReorder: isEditing ? reorderDay : nil,
-                    onDelete: isEditing ? deleteDay : nil
-                )
-                .padding(.top, 24)
-
-                dayTitle
-                    .padding(.top, 24)
-
-                HorizontalSwipePager(
-                    selection: $currentDayIndex,
-                    pageCount: max(draftPlan.days.count, 1),
-                    isEnabled: exerciseDraft == nil,
-                    direction: $daySlideDirection,
-                    onPageChange: {
-                        resetEntryState(keepSearchVisible: isEditing)
-                    }
-                ) {
-                    dayContent
-                }
-            }
-            .padding(.horizontal, 24)
-            .floatingBottomChrome(isVisible: exerciseDraft == nil) {
-                CTAButton(title: isEditing ? "Save" : "Start this Workout", width: 312) {
-                    if isEditing {
-                        savePlanEdits()
-                    } else if let day = currentDay {
-                        onStartWorkout(day)
-                    }
-                }
+        Group {
+            if isEditing {
+                planEditor
+            } else {
+                planDetail
             }
         }
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: isEditing)
@@ -90,6 +58,65 @@ struct PlanDetailView: View {
         }
         .onChange(of: plan) { _, newPlan in
             syncDraftPlan(with: newPlan)
+        }
+    }
+
+    private var planEditor: some View {
+        CreatePlanView(
+            editingPlan: draftPlan,
+            exerciseCatalog: exerciseCatalog,
+            onCancel: {
+                withAnimation(.snappy(duration: 0.24, extraBounce: 0)) {
+                    isEditing = false
+                }
+            },
+            onSaveCustomExercise: onSaveCustomExercise,
+            onFinish: { updatedPlan, _ in
+                draftPlan = updatedPlan
+                currentDayIndex = min(currentDayIndex, max(updatedPlan.days.count - 1, 0))
+                onSave(updatedPlan)
+                withAnimation(.snappy(duration: 0.24, extraBounce: 0)) {
+                    isEditing = false
+                }
+            }
+        )
+    }
+
+    private var planDetail: some View {
+        AppScreen {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                    .padding(.top, AppLayout.screenTitleTopPadding)
+
+                DayStepProgress(
+                    count: max(draftPlan.days.count, 1),
+                    completed: 0,
+                    current: currentDayIndex,
+                    selectedOnly: true,
+                    onSelect: switchToDay
+                )
+                .padding(.top, 24)
+
+                dayTitle
+                    .padding(.top, 24)
+
+                HorizontalSwipePager(
+                    selection: $currentDayIndex,
+                    pageCount: max(draftPlan.days.count, 1),
+                    isEnabled: true,
+                    direction: $daySlideDirection
+                ) {
+                    dayContent
+                }
+            }
+            .padding(.horizontal, 24)
+            .floatingBottomChrome {
+                CTAButton(title: "Start this Workout", width: 312) {
+                    if let day = currentDay {
+                        onStartWorkout(day)
+                    }
+                }
+            }
         }
     }
 
@@ -311,17 +338,8 @@ struct PlanDetailView: View {
     private func beginEditing() {
         Haptics.tap(.medium)
 
-        withAnimation(.spring(response: 0.26, dampingFraction: 0.88)) {
+        withAnimation(.snappy(duration: 0.24, extraBounce: 0)) {
             isEditing = true
-            isAddingExercise = true
-            searchQuery = ""
-            exerciseDraft = nil
-            exerciseDraftStep = .sets
-            entrySurfaceID = UUID()
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            planNameFocused = true
         }
     }
 

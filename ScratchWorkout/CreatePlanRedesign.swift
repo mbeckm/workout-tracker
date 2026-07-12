@@ -13,12 +13,15 @@ struct CreatePlanView: View {
     var onSaveCustomExercise: (CustomExerciseDefinition) -> Void
     var onArchiveCustomExercise: (UUID) -> Void
     private let exerciseCatalog: any ExerciseCatalogService
+    private let editingPlan: WorkoutPlan?
+    private let onCancel: (() -> Void)?
 
-    @Namespace private var searchCardNamespace
     @FocusState private var searchFocused: Bool
+    @FocusState private var planNameFocused: Bool
     @FocusState private var dayNameFocused: Bool
     @FocusState private var customNameFocused: Bool
     @State private var stage: Stage
+    @State private var planName: String
     @State private var daysPerWeek: Int
     @State private var currentDayIndex = 0
     @State private var completedDays = 0
@@ -51,18 +54,24 @@ struct CreatePlanView: View {
         daysPerWeek: Int = 3,
         searchQuery: String = "",
         selectedTypeFilter: WorkoutItemType? = nil,
+        editingPlan: WorkoutPlan? = nil,
         customExercises: [CustomExerciseDefinition] = [],
         exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
+        onCancel: (() -> Void)? = nil,
         onSaveCustomExercise: @escaping (CustomExerciseDefinition) -> Void = { _ in },
         onArchiveCustomExercise: @escaping (UUID) -> Void = { _ in },
         onFinish: @escaping (WorkoutPlan, Bool) -> Void
     ) {
-        let safeDayCount = min(7, max(1, daysPerWeek))
+        let safeDayCount = min(7, max(1, editingPlan?.days.count ?? daysPerWeek))
         let seededDays: [[ExercisePrescription]]
         let seededNames: [String]
         let seededCompletedDays: Int
 
-        if initialStage == .finalReview || initialStage == .activatePrompt {
+        if let editingPlan {
+            seededDays = editingPlan.days.map(\.exercises)
+            seededNames = editingPlan.days.map(\.title)
+            seededCompletedDays = editingPlan.days.count
+        } else if initialStage == .finalReview || initialStage == .activatePrompt {
             let sampleDays = Array(SampleData.activePlan.days.prefix(safeDayCount))
             seededDays = sampleDays.map(\.exercises) + Array(repeating: [], count: max(0, safeDayCount - sampleDays.count))
             seededNames = sampleDays.map(\.title) + (sampleDays.count..<safeDayCount).map { "Day \($0 + 1)" }
@@ -77,7 +86,10 @@ struct CreatePlanView: View {
         self.onSaveCustomExercise = onSaveCustomExercise
         self.onArchiveCustomExercise = onArchiveCustomExercise
         self.exerciseCatalog = exerciseCatalog
-        _stage = State(initialValue: initialStage)
+        self.editingPlan = editingPlan
+        self.onCancel = onCancel
+        _stage = State(initialValue: editingPlan == nil ? initialStage : .composer)
+        _planName = State(initialValue: editingPlan?.name ?? (initialStage == .finalReview || initialStage == .activatePrompt ? "Push Pull Legs" : ""))
         _daysPerWeek = State(initialValue: safeDayCount)
         _planDays = State(initialValue: seededDays)
         _dayNames = State(initialValue: seededNames)
@@ -191,17 +203,7 @@ struct CreatePlanView: View {
 
     private var composerView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScreenTitleBar(title: "Create Plan") {
-                Button(action: openExerciseSearch) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(AppColor.primaryText)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
-                .accessibilityLabel("Add exercise")
-            }
+            composerHeader
             .padding(.top, AppLayout.screenTitleTopPadding)
 
             DayStepProgress(
@@ -216,12 +218,16 @@ struct CreatePlanView: View {
 
             HStack(spacing: 4) {
                 TextField("Day \(currentDayIndex + 1)", text: currentDayNameBinding)
+                    .id(currentDayIndex)
                     .focused($dayNameFocused)
                     .font(AppFont.h1)
                     .foregroundStyle(AppColor.primaryText)
                     .tint(AppColor.accent)
                     .submitLabel(.done)
-                    .disabled(!dayNameFocused)
+                    .onSubmit {
+                        commitCurrentDayName()
+                        dayNameFocused = false
+                    }
 
                 Button {
                     dayNameFocused = true
@@ -245,7 +251,9 @@ struct CreatePlanView: View {
                         ForEach(currentDayExercises) { exercise in
                             PlanExerciseSummaryCard(
                                 exercise: exercise,
+                                draft: configurationBinding(for: exercise),
                                 onEdit: { editExercise(exercise) },
+                                onAdvance: advanceConfiguration,
                                 onDelete: { deleteExercise(exercise.id) }
                             )
                         }
@@ -261,6 +269,30 @@ struct CreatePlanView: View {
         .floatingBottomChrome(isVisible: !currentDayExercises.isEmpty) {
             CTAButton(title: "Save Day", width: 312, action: saveCurrentDay)
         }
+    }
+
+    private var composerHeader: some View {
+        HStack(spacing: 8) {
+            if editingPlan != nil {
+                Button {
+                    Haptics.tap()
+                    onCancel?()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(AppColor.primaryText)
+                        .frame(width: 36, height: AppLayout.screenTitleHeight)
+                }
+                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+                .accessibilityLabel("Cancel editing")
+            }
+
+            Text(editingPlan == nil ? "Create Plan" : "Edit Plan")
+                .font(AppFont.display)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: AppLayout.screenTitleHeight)
     }
 
     private var exerciseSearchView: some View {
@@ -329,22 +361,14 @@ struct CreatePlanView: View {
                     }
 
                     ForEach(unselectedDisplayedSearchExercises, id: \.stableCatalogID) { exercise in
-                        if configurationDraft?.source.id == exercise.id,
-                           let draft = configurationDraft {
-                            ExerciseSearchConfigurationCard(
-                                draft: configurationBinding(fallback: draft),
-                                onAdvance: advanceConfiguration
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
-                        } else {
-                            ExerciseSearchResultCard(
-                                exercise: exercise,
-                                isSelected: false,
-                                onToggle: { toggleLibrarySelection(exercise) }
-                            )
-                            .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
-                            .contextMenu { customExerciseActions(for: exercise) }
-                        }
+                        ExerciseSearchCard(
+                            exercise: exercise,
+                            draft: configurationBinding(for: exercise),
+                            onAction: configurationDraft?.source.id == exercise.id
+                                ? advanceConfiguration
+                                : { configure(exercise) }
+                        )
+                        .contextMenu { customExerciseActions(for: exercise) }
                     }
 
                     if unselectedDisplayedSearchExercises.isEmpty && !shouldOfferCreateExercise && searchState != .loading {
@@ -373,8 +397,24 @@ struct CreatePlanView: View {
 
     private var reviewView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScreenTitle(title: "Review")
+            ScreenTitle(title: editingPlan == nil ? "Review" : "Review Changes")
                 .padding(.top, AppLayout.screenTitleTopPadding)
+
+            TextField("Name your plan", text: $planName)
+                .focused($planNameFocused)
+                .font(AppFont.display)
+                .foregroundStyle(AppColor.primaryText)
+                .tint(AppColor.accent)
+                .lineLimit(1)
+                .submitLabel(.done)
+                .onSubmit { planNameFocused = false }
+                .padding(.bottom, 10)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(planNameFocused ? AppColor.accent : AppColor.border)
+                        .frame(height: 1)
+                }
+                .padding(.top, 28)
 
             DayStepProgress(
                 count: daysPerWeek,
@@ -383,7 +423,7 @@ struct CreatePlanView: View {
                 selectedOnly: true,
                 onSelect: switchReviewDay
             )
-            .padding(.top, 24)
+            .padding(.top, 28)
 
             SectionTitle(text: currentDayName)
                 .padding(.top, 24)
@@ -399,11 +439,19 @@ struct CreatePlanView: View {
             }
         }
         .floatingBottomChrome(isVisible: stage == .finalReview) {
-            CTAButton(title: "Save Plan", width: 312) {
-                withAnimation(cardExpansionAnimation) {
-                    stage = .activatePrompt
+            CTAButton(title: editingPlan == nil ? "Save Plan" : "Save Changes", width: 312) {
+                if editingPlan != nil {
+                    finish(activate: false)
+                } else {
+                    withAnimation(cardExpansionAnimation) {
+                        stage = .activatePrompt
+                    }
                 }
             }
+            .opacity(isPlanNameValid ? 1 : 0.45)
+            .allowsHitTesting(isPlanNameValid)
+            .disabled(!isPlanNameValid)
+            .accessibilityHint(isPlanNameValid ? "" : "Enter a plan name first")
         }
     }
 
@@ -645,7 +693,12 @@ struct CreatePlanView: View {
 
     private var currentDayNameBinding: Binding<String> {
         Binding(
-            get: { currentDayName },
+            get: {
+                guard dayNames.indices.contains(currentDayIndex) else {
+                    return "Day \(currentDayIndex + 1)"
+                }
+                return dayNames[currentDayIndex]
+            },
             set: { newValue in
                 guard dayNames.indices.contains(currentDayIndex) else { return }
                 dayNames[currentDayIndex] = newValue
@@ -673,11 +726,20 @@ struct CreatePlanView: View {
 
     private var displayedSearchExercises: [ExercisePrescription] {
         var seen = Set<String>()
-        var exercises = (customSearchResults + searchResults)
+        let uniqueExercises = (customSearchResults + searchResults)
             .filter { exercise in
                 let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
                 return seen.insert(key).inserted
             }
+
+        var exercises = uniqueExercises
+            .enumerated()
+            .sorted { lhs, rhs in
+                let lhsPriority = searchArtworkPriority(for: lhs.element)
+                let rhsPriority = searchArtworkPriority(for: rhs.element)
+                return lhsPriority == rhsPriority ? lhs.offset < rhs.offset : lhsPriority < rhsPriority
+            }
+            .map(\.element)
 
         if let configuredSource = configurationDraft?.source {
             let configuredKey = configuredSource.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -737,6 +799,12 @@ struct CreatePlanView: View {
         return "Add \(count) \(noun) to \(currentDayName)"
     }
 
+    private func searchArtworkPriority(for exercise: ExercisePrescription) -> Int {
+        if exercise.customExerciseID != nil { return 0 }
+        if exercise.thumbnailURL != nil || exercise.imageURLs["360p"] != nil || exercise.imageURL != nil { return 1 }
+        return 2
+    }
+
     private var searchEmptyMessage: String {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         if query.isEmpty {
@@ -749,6 +817,10 @@ struct CreatePlanView: View {
     private var isCustomExerciseValid: Bool {
         !customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
             customEquipment != nil && customMuscle != nil && customType != nil && customTrackingMode != nil
+    }
+
+    private var isPlanNameValid: Bool {
+        !planName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private func startComposing() {
@@ -830,11 +902,6 @@ struct CreatePlanView: View {
     }
 
     private func editExercise(_ exercise: ExercisePrescription) {
-        searchQuery = exercise.name
-        searchResults = [exercise]
-        customRoute = nil
-        stageDirection = .forward
-        stage = .search
         configure(exercise, editingID: exercise.id)
     }
 
@@ -853,6 +920,15 @@ struct CreatePlanView: View {
         var exercise = draft.configuredExercise
         guard planDays.indices.contains(currentDayIndex) else { return }
 
+        if stage == .search {
+            withAnimation(cardExpansionAnimation) {
+                selectedLibraryExercises.removeAll { $0.stableCatalogID == exercise.stableCatalogID }
+                selectedLibraryExercises.append(exercise)
+                configurationDraft = nil
+            }
+            return
+        }
+
         if let editingID = draft.editingID,
            let index = planDays[currentDayIndex].firstIndex(where: { $0.id == editingID }) {
             exercise.id = editingID
@@ -862,15 +938,31 @@ struct CreatePlanView: View {
         }
 
         Task { await exerciseCatalog.recordSelection(exercise) }
-        returnToComposer()
+        if stage == .composer {
+            withAnimation(cardExpansionAnimation) {
+                configurationDraft = nil
+            }
+        } else {
+            returnToComposer()
+        }
     }
 
     private func configurationBinding(fallback: PlanExerciseConfigurationDraft) -> Binding<PlanExerciseConfigurationDraft> {
         Binding(get: { configurationDraft ?? fallback }, set: { configurationDraft = $0 })
     }
 
+    private func configurationBinding(for exercise: ExercisePrescription) -> Binding<PlanExerciseConfigurationDraft>? {
+        guard let draft = configurationDraft, draft.source.id == exercise.id else {
+            return nil
+        }
+
+        return configurationBinding(fallback: draft)
+    }
+
     private func saveCurrentDay() {
         guard !currentDayExercises.isEmpty else { return }
+        commitCurrentDayName()
+        dayNameFocused = false
         PerformanceTrace.event(PerformanceTrace.Name.saveDay)
         completedDays = max(completedDays, currentDayIndex + 1)
         if currentDayIndex >= daysPerWeek - 1 {
@@ -884,8 +976,16 @@ struct CreatePlanView: View {
 
     private func switchToDay(_ index: Int) {
         guard planDays.indices.contains(index) else { return }
+        commitCurrentDayName()
+        dayNameFocused = false
         daySlideDirection = .forIndexChange(from: currentDayIndex, to: index)
         currentDayIndex = index
+    }
+
+    private func commitCurrentDayName() {
+        guard dayNames.indices.contains(currentDayIndex) else { return }
+        let trimmedName = dayNames[currentDayIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        dayNames[currentDayIndex] = trimmedName.isEmpty ? "Day \(currentDayIndex + 1)" : trimmedName
     }
 
     private func switchReviewDay(_ index: Int) {
@@ -1076,7 +1176,14 @@ struct CreatePlanView: View {
         let days = planDays.indices.map { index in
             WorkoutDay(title: dayNames.indices.contains(index) ? dayNames[index] : "Day \(index + 1)", exercises: planDays[index])
         }
-        let plan = WorkoutPlan(name: "Custom Plan", daysPerWeek: daysPerWeek, createdAt: Self.todayFormatted, days: days)
+        let finalPlanName = planName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let plan = WorkoutPlan(
+            id: editingPlan?.id ?? UUID(),
+            name: finalPlanName,
+            daysPerWeek: daysPerWeek,
+            createdAt: editingPlan?.createdAt ?? Self.todayFormatted,
+            days: days
+        )
         onFinish(plan, activate)
     }
 
@@ -1429,42 +1536,63 @@ private struct ExerciseSearchResultCard: View {
         .frame(maxWidth: .infinity, minHeight: 112)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(AppColor.border).frame(height: 1)
-        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(exercise.name), \(exercise.itemType.title), \(exercise.equipmentLabel), \(exercise.muscleLabel), \(isSelected ? "selected" : "not selected")")
     }
 }
 
-private struct ExerciseSearchConfigurationCard: View {
-    @Binding var draft: PlanExerciseConfigurationDraft
-    var onAdvance: () -> Void
+private struct ExerciseSearchCard: View {
+    var exercise: ExercisePrescription
+    var draft: Binding<PlanExerciseConfigurationDraft>?
+    var onAction: () -> Void
 
     var body: some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                ExerciseIdentityContent(exercise: draft.source)
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                ExerciseIdentityContent(exercise: exercise)
+                    .padding(10)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(draft.currentStep.title)
-                        .font(AppFont.label)
+                if let draft {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Rectangle()
+                            .fill(AppColor.border)
+                            .frame(height: 1)
 
-                    HStack {
-                        metricButton(symbol: "minus", delta: -draft.currentStepAmount)
-                        Spacer()
-                        Text("\(draft.currentValue)")
-                            .font(AppFont.display)
-                            .contentTransition(.numericText())
-                        Spacer()
-                        metricButton(symbol: "plus", delta: draft.currentStepAmount)
+                        Text(draft.wrappedValue.currentStep.title)
+                            .font(AppFont.subheading)
+                            .foregroundStyle(AppColor.primaryText)
+
+                        HStack {
+                            metricButton(
+                                symbol: "minus",
+                                delta: -draft.wrappedValue.currentStepAmount,
+                                draft: draft
+                            )
+                            Spacer()
+                            Text("\(draft.wrappedValue.currentValue)")
+                                .font(AppFont.display)
+                                .contentTransition(.numericText())
+                            Spacer()
+                            metricButton(
+                                symbol: "plus",
+                                delta: draft.wrappedValue.currentStepAmount,
+                                draft: draft
+                            )
+                        }
                     }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
                 }
             }
-            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
 
-            Button(action: onAdvance) {
-                Image(systemName: draft.isLastStep ? "checkmark" : "chevron.right")
+            Button(action: onAction) {
+                Image(systemName: actionSymbol)
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundStyle(AppColor.base)
                     .frame(width: 56)
@@ -1472,21 +1600,38 @@ private struct ExerciseSearchConfigurationCard: View {
                     .background(AppColor.accent)
             }
             .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
-            .accessibilityLabel(draft.isLastStep ? "Add exercise to plan" : "Next metric")
+            .accessibilityLabel(actionAccessibilityLabel)
         }
-        .frame(maxWidth: .infinity, minHeight: 190)
+        .frame(maxWidth: .infinity, minHeight: 112)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: draft.stepIndex)
+        .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
+        .animation(.snappy(duration: 0.2, extraBounce: 0), value: draft?.wrappedValue.stepIndex)
     }
 
-    private func metricButton(symbol: String, delta: Int) -> some View {
+    private var actionSymbol: String {
+        guard let draft else { return "plus" }
+        return draft.wrappedValue.isLastStep ? "checkmark" : "chevron.right"
+    }
+
+    private var actionAccessibilityLabel: String {
+        guard let draft else { return "Configure \(exercise.name)" }
+        return draft.wrappedValue.isLastStep ? "Add exercise to plan" : "Next metric"
+    }
+
+    private func metricButton(
+        symbol: String,
+        delta: Int,
+        draft: Binding<PlanExerciseConfigurationDraft>
+    ) -> some View {
         Button {
-            draft.currentValue = min(draft.currentMaximum, max(1, draft.currentValue + delta))
+            var value = draft.wrappedValue
+            value.currentValue = min(value.currentMaximum, max(1, value.currentValue + delta))
+            draft.wrappedValue = value
             Haptics.tap()
         } label: {
             Image(systemName: symbol)
@@ -1506,29 +1651,29 @@ private struct ExerciseIdentityContent: View {
     var body: some View {
         HStack(spacing: 10) {
             ExerciseArtwork(exercise: exercise)
-                .frame(width: 80, height: 80)
+                .frame(width: 88, height: 88)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(exercise.name.planDisplayName)
-                    .font(AppFont.body)
+                    .font(AppFont.h2)
                     .foregroundStyle(AppColor.primaryText)
-                    .lineLimit(2)
-
-                Text(exercise.equipmentLabel)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.primaryText)
-                    .lineLimit(1)
+                    .lineLimit(2, reservesSpace: true)
+                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48, alignment: .leading)
+                    .layoutPriority(1)
 
                 HStack(spacing: 6) {
                     Text(exercise.itemType.title)
-                        .font(AppFont.caption)
-                        .foregroundStyle(AppColor.secondaryText)
-                    Circle().fill(AppColor.border).frame(width: 4, height: 4)
+                    Text("·")
+                    Text(exercise.equipmentLabel)
+                    Text("·")
                     Text(exercise.muscleLabel)
-                        .font(AppFont.caption)
-                        .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 0)
                 }
+                .font(AppFont.caption)
+                .foregroundStyle(AppColor.secondaryText)
+                .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -1540,21 +1685,27 @@ struct ExerciseArtwork: View {
 
     var body: some View {
         Group {
-            if let localName = exercise.localImageAssetName {
-                Image(localName)
-                    .resizable()
-                    .scaledToFill()
-            } else if let url = exercise.thumbnailURL ?? exercise.imageURL {
+            if let url = exercise.thumbnailURL ?? exercise.imageURLs["360p"] ?? exercise.imageURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
-                    case .success(let image): image.resizable().scaledToFill()
-                    case .empty: ProgressView().tint(AppColor.accent)
-                    case .failure: fallback
-                    @unknown default: fallback
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    case .empty:
+                        AppColor.surface2
+                            .overlay {
+                                ProgressView()
+                                    .tint(AppColor.secondaryText)
+                            }
+                    case .failure:
+                        exerciseImageFallback
+                    @unknown default:
+                        exerciseImageFallback
                     }
                 }
             } else {
-                fallback
+                exerciseImageFallback
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1566,12 +1717,10 @@ struct ExerciseArtwork: View {
         )
     }
 
-    @ViewBuilder
-    private var fallback: some View {
-        if let asset = CustomExerciseAssets.muscleAssetName(for: exercise.muscleLabel) {
-            Image(asset).resizable().scaledToFill()
-        } else {
-            Image(systemName: exercise.itemType.symbol)
+    private var exerciseImageFallback: some View {
+        ZStack {
+            AppColor.surface2
+            Image(systemName: "figure.strengthtraining.traditional")
                 .font(.system(size: 28, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
         }
@@ -1580,53 +1729,102 @@ struct ExerciseArtwork: View {
 
 private struct PlanExerciseSummaryCard: View {
     var exercise: ExercisePrescription
+    var draft: Binding<PlanExerciseConfigurationDraft>? = nil
     var onEdit: () -> Void
+    var onAdvance: () -> Void = {}
     var onDelete: (() -> Void)?
 
     var body: some View {
-        Button(action: onEdit) {
-            HStack(spacing: 12) {
-                ExerciseArtwork(exercise: exercise)
-                    .frame(width: 80, height: 80)
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onEdit) {
+                HStack(spacing: 12) {
+                    ExerciseArtwork(exercise: exercise)
+                        .frame(width: 80, height: 80)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(exercise.name.planDisplayName)
-                        .font(AppFont.body)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(exercise.name.planDisplayName)
+                            .font(AppFont.body)
+                            .foregroundStyle(AppColor.primaryText)
+                            .lineLimit(2)
+                        Text(exercise.equipmentLabel)
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.primaryText)
+                        HStack(spacing: 4) {
+                            Circle().fill(AppColor.accent).frame(width: 6, height: 6)
+                            Text(exercise.muscleLabel)
+                                .font(AppFont.caption)
+                                .foregroundStyle(AppColor.secondaryText)
+                        }
+                    }
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(exercise.sets) sets")
+                        Text(exercise.prescriptionSummary)
+                    }
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, minHeight: 112)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+
+            if let draft {
+                VStack(alignment: .leading, spacing: 12) {
+                    Rectangle()
+                        .fill(AppColor.border)
+                        .frame(height: 1)
+
+                    Text(draft.wrappedValue.currentStep.title)
+                        .font(AppFont.subheading)
                         .foregroundStyle(AppColor.primaryText)
-                        .lineLimit(2)
-                    Text(exercise.equipmentLabel)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.primaryText)
-                    HStack(spacing: 6) {
-                        Text(exercise.itemType.title)
-                            .font(AppFont.caption)
-                            .foregroundStyle(AppColor.secondaryText)
-                        Circle().fill(AppColor.border).frame(width: 4, height: 4)
-                        Text(exercise.muscleLabel)
-                            .font(AppFont.caption)
-                            .foregroundStyle(AppColor.secondaryText)
+
+                    HStack(spacing: 12) {
+                        configurationButton(
+                            symbol: "minus",
+                            delta: -draft.wrappedValue.currentStepAmount,
+                            draft: draft
+                        )
+
+                        Text("\(draft.wrappedValue.currentValue)")
+                            .font(AppFont.display)
+                            .contentTransition(.numericText())
+                            .frame(maxWidth: .infinity)
+
+                        configurationButton(
+                            symbol: "plus",
+                            delta: draft.wrappedValue.currentStepAmount,
+                            draft: draft
+                        )
+
+                        Button(action: onAdvance) {
+                            Image(systemName: draft.wrappedValue.isLastStep ? "checkmark" : "chevron.right")
+                                .font(.system(size: 19, weight: .bold))
+                                .foregroundStyle(AppColor.base)
+                                .frame(width: 44, height: 44)
+                                .background(AppColor.accent, in: Circle())
+                        }
+                        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
+                        .accessibilityLabel(draft.wrappedValue.isLastStep ? "Save exercise settings" : "Next exercise setting")
                     }
                 }
-
-                Spacer(minLength: 8)
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(exercise.sets) sets")
-                    Text(exercise.prescriptionSummary)
-                }
-                .font(AppFont.caption)
-                .foregroundStyle(AppColor.secondaryText)
-                .lineLimit(1)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 14)
+                .transition(.opacity)
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, minHeight: 112)
-            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
-            )
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
+        .animation(.snappy(duration: 0.2, extraBounce: 0), value: draft?.wrappedValue.stepIndex)
         .contextMenu {
             if let onDelete {
                 Button(role: .destructive, action: onDelete) {
@@ -1634,6 +1832,27 @@ private struct PlanExerciseSummaryCard: View {
                 }
             }
         }
+    }
+
+    private func configurationButton(
+        symbol: String,
+        delta: Int,
+        draft: Binding<PlanExerciseConfigurationDraft>
+    ) -> some View {
+        Button {
+            var value = draft.wrappedValue
+            value.currentValue = min(value.currentMaximum, max(1, value.currentValue + delta))
+            draft.wrappedValue = value
+            Haptics.tap()
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(AppColor.primaryText)
+                .frame(width: 40, height: 40)
+                .background(AppColor.surface2, in: Circle())
+                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+        }
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
     }
 }
 

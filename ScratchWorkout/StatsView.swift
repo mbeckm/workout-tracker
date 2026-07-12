@@ -54,6 +54,7 @@ struct StatsView: View {
                     searchState: searchState,
                     onSelect: openExercise
                 )
+                .frame(maxWidth: 312)
             }
         }
         .animation(.spring(response: 0.24, dampingFraction: 0.88), value: searchQuery.isEmpty)

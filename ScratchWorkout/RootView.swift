@@ -179,6 +179,10 @@ struct RootView: View {
                     onSave: { plan in
                         store.updatePlan(plan)
                         syncAccount(reason: .planUpdated)
+                    },
+                    onSaveCustomExercise: { exercise in
+                        store.saveCustomExercise(exercise)
+                        syncAccount(reason: .exerciseLibraryUpdated)
                     }
                 )
                 .swipeToGoBack {
