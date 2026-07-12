@@ -11,6 +11,7 @@ struct CreatePlanView: View {
 
     var onFinish: (WorkoutPlan, Bool) -> Void
     var onSaveCustomExercise: (CustomExerciseDefinition) -> Void
+    var onArchiveCustomExercise: (UUID) -> Void
     private let exerciseCatalog: any ExerciseCatalogService
 
     @Namespace private var searchCardNamespace
@@ -26,6 +27,9 @@ struct CreatePlanView: View {
     @State private var searchQuery: String
     @State private var searchResults: [ExercisePrescription] = []
     @State private var customSearchResults: [ExercisePrescription] = []
+    @State private var selectedLibraryExercises: [ExercisePrescription] = []
+    @State private var selectedTypeFilter: WorkoutItemType?
+    @State private var isDiscardSelectionConfirmationPresented = false
     @State private var searchState: PlanEntrySearchState = .idle
     @State private var configurationDraft: PlanExerciseConfigurationDraft?
     @State private var customExercises: [CustomExerciseDefinition]
@@ -35,6 +39,8 @@ struct CreatePlanView: View {
     @State private var customMuscle: String?
     @State private var customType: CustomExerciseType?
     @State private var customTrackingMode: ExerciseTrackingMode?
+    @State private var customErrorMessage: String?
+    @State private var editingCustomExerciseID: UUID?
     @State private var stageDirection: AppNavigationDirection = .forward
     @State private var daySlideDirection: AppNavigationDirection = .forward
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
@@ -44,9 +50,11 @@ struct CreatePlanView: View {
         initialStage: Stage = .frequency,
         daysPerWeek: Int = 3,
         searchQuery: String = "",
+        selectedTypeFilter: WorkoutItemType? = nil,
         customExercises: [CustomExerciseDefinition] = [],
         exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
         onSaveCustomExercise: @escaping (CustomExerciseDefinition) -> Void = { _ in },
+        onArchiveCustomExercise: @escaping (UUID) -> Void = { _ in },
         onFinish: @escaping (WorkoutPlan, Bool) -> Void
     ) {
         let safeDayCount = min(7, max(1, daysPerWeek))
@@ -67,6 +75,7 @@ struct CreatePlanView: View {
 
         self.onFinish = onFinish
         self.onSaveCustomExercise = onSaveCustomExercise
+        self.onArchiveCustomExercise = onArchiveCustomExercise
         self.exerciseCatalog = exerciseCatalog
         _stage = State(initialValue: initialStage)
         _daysPerWeek = State(initialValue: safeDayCount)
@@ -74,7 +83,8 @@ struct CreatePlanView: View {
         _dayNames = State(initialValue: seededNames)
         _completedDays = State(initialValue: seededCompletedDays)
         _searchQuery = State(initialValue: searchQuery)
-        _customExercises = State(initialValue: customExercises)
+        _selectedTypeFilter = State(initialValue: selectedTypeFilter)
+        _customExercises = State(initialValue: customExercises.filter(\.isAvailable))
     }
 
     var body: some View {
@@ -97,6 +107,19 @@ struct CreatePlanView: View {
             if newValue == .search, customRoute == nil {
                 focusSearch()
             }
+        }
+        .confirmationDialog(
+            "Discard selected exercises?",
+            isPresented: $isDiscardSelectionConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Selection", role: .destructive) {
+                selectedLibraryExercises = []
+                returnToComposer()
+            }
+            Button("Keep Selecting", role: .cancel) {}
+        } message: {
+            Text("Your current day will remain unchanged.")
         }
     }
 
@@ -242,25 +265,70 @@ struct CreatePlanView: View {
 
     private var exerciseSearchView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScreenNavigationTitle(title: "Create Plan", backAccessibilityLabel: "Back to plan", onBack: returnToComposer)
+            HStack(spacing: 12) {
+                Button(action: attemptReturnToComposer) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AppColor.primaryText)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+                .accessibilityLabel("Close exercise library")
+
+                Text("Add Exercise")
+                    .font(AppFont.h1)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Spacer(minLength: 8)
+
+                Button("Create New", action: beginCustomExercise)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(minHeight: 44)
+                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.96))
+            }
+            .frame(height: AppLayout.screenTitleHeight)
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
-            Text("Add exercise")
-                .font(AppFont.h2)
-                .padding(.top, 24)
-
             RedesignedExerciseSearchField(query: $searchQuery, focused: $searchFocused)
+                .padding(.top, 20)
+
+            WorkoutItemTypeFilters(selection: $selectedTypeFilter)
                 .padding(.top, 12)
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 8) {
+                    if !selectedLibraryExercises.isEmpty {
+                        LibrarySectionLabel(title: "Selected", count: selectedLibraryExercises.count)
+
+                        ForEach(selectedLibraryExercises, id: \.stableCatalogID) { exercise in
+                            ExerciseSearchResultCard(
+                                exercise: exercise,
+                                isSelected: true,
+                                onToggle: { toggleLibrarySelection(exercise) }
+                            )
+                            .contextMenu { customExerciseActions(for: exercise) }
+                        }
+
+                        LibrarySectionLabel(title: searchQuery.isEmpty ? "Library" : "Results")
+                            .padding(.top, 8)
+                    }
+
                     if searchState == .loading && displayedSearchExercises.isEmpty {
                         ProgressView()
                             .tint(AppColor.accent)
                             .frame(maxWidth: .infinity, minHeight: 88)
                     }
 
-                    ForEach(displayedSearchExercises) { exercise in
+                    if shouldOfferCreateExercise {
+                        CreateExerciseResultRow(name: normalizedCreateName, action: beginCustomExercise)
+                    }
+
+                    ForEach(unselectedDisplayedSearchExercises, id: \.stableCatalogID) { exercise in
                         if configurationDraft?.source.id == exercise.id,
                            let draft = configurationDraft {
                             ExerciseSearchConfigurationCard(
@@ -269,34 +337,22 @@ struct CreatePlanView: View {
                             )
                             .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
                         } else {
-                            ExerciseSearchResultCard(exercise: exercise) {
-                                configure(exercise)
-                            }
+                            ExerciseSearchResultCard(
+                                exercise: exercise,
+                                isSelected: false,
+                                onToggle: { toggleLibrarySelection(exercise) }
+                            )
                             .matchedGeometryEffect(id: exercise.id, in: searchCardNamespace)
+                            .contextMenu { customExerciseActions(for: exercise) }
                         }
                     }
 
-                    if displayedSearchExercises.isEmpty && searchState != .loading {
+                    if unselectedDisplayedSearchExercises.isEmpty && !shouldOfferCreateExercise && searchState != .loading {
                         Text(searchEmptyMessage)
                             .font(AppFont.body)
                             .foregroundStyle(AppColor.secondaryText)
                             .frame(maxWidth: .infinity, minHeight: 72, alignment: .center)
                     }
-
-                    Button(action: beginCustomExercise) {
-                        Text("Add custom exercise")
-                            .font(AppFont.label)
-                            .foregroundStyle(AppColor.primaryText)
-                            .padding(.horizontal, 16)
-                            .frame(minHeight: 48)
-                            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .stroke(AppColor.border, lineWidth: 1)
-                            )
-                    }
-                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
-                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text("Exercise data by ExerciseDB")
                         .font(AppFont.caption)
@@ -305,9 +361,13 @@ struct CreatePlanView: View {
                         .padding(.top, 4)
                 }
                 .padding(.top, 8)
-                .padding(.bottom, AppLayout.bottomChromePadding(usesNativeTabBar: usesNativeTabBar) + 24)
+                .padding(.bottom, selectedLibraryExercises.isEmpty ? 24 : composerBottomPadding)
             }
             .scrollDismissesKeyboard(.interactively)
+        }
+        .background(AppColor.surface1.opacity(0.16))
+        .floatingBottomChrome(isVisible: !selectedLibraryExercises.isEmpty) {
+            CTAButton(title: addSelectedButtonTitle, width: 312, action: addSelectedExercisesToDay)
         }
     }
 
@@ -434,6 +494,14 @@ struct CreatePlanView: View {
             }
             .padding(.top, 12)
 
+            if let customErrorMessage {
+                Text(customErrorMessage)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.destructive)
+                    .padding(.top, 12)
+                    .accessibilityLabel("Custom exercise error: \(customErrorMessage)")
+            }
+
             Spacer(minLength: 0)
         }
         .floatingBottomChrome {
@@ -475,6 +543,7 @@ struct CreatePlanView: View {
                 ForEach(CustomExerciseType.allCases) { type in
                     Button {
                         customType = type
+                        customTrackingMode = type.defaultTrackingMode
                         customRoute = .details
                     } label: {
                         VStack(spacing: 12) {
@@ -604,14 +673,11 @@ struct CreatePlanView: View {
 
     private var displayedSearchExercises: [ExercisePrescription] {
         var seen = Set<String>()
-        var exercises = Array(
-            (customSearchResults + searchResults)
-                .filter { exercise in
-                    let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                    return seen.insert(key).inserted
-                }
-                .prefix(20)
-        )
+        var exercises = (customSearchResults + searchResults)
+            .filter { exercise in
+                let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                return seen.insert(key).inserted
+            }
 
         if let configuredSource = configurationDraft?.source {
             let configuredKey = configuredSource.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -625,7 +691,50 @@ struct CreatePlanView: View {
             }
         }
 
-        return exercises
+        guard let selectedTypeFilter else {
+            return exercises
+        }
+
+        return exercises.filter { $0.itemType == selectedTypeFilter }
+    }
+
+    private var unselectedDisplayedSearchExercises: [ExercisePrescription] {
+        let selectedIDs = Set(selectedLibraryExercises.map(\.stableCatalogID))
+        return displayedSearchExercises.filter { !selectedIDs.contains($0.stableCatalogID) }
+    }
+
+    private var normalizedSearchQuery: String {
+        searchQuery
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+    }
+
+    private var normalizedCreateName: String {
+        searchQuery
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: \.isWhitespace)
+            .map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }
+            .joined(separator: " ")
+    }
+
+    private var shouldOfferCreateExercise: Bool {
+        guard normalizedSearchQuery.filter({ !$0.isWhitespace }).count >= 3 else {
+            return false
+        }
+
+        return !(customSearchResults + searchResults).contains {
+            $0.name
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+                .lowercased() == normalizedSearchQuery
+        }
+    }
+
+    private var addSelectedButtonTitle: String {
+        let count = selectedLibraryExercises.count
+        let noun = count == 1 ? "Exercise" : "Exercises"
+        return "Add \(count) \(noun) to \(currentDayName)"
     }
 
     private var searchEmptyMessage: String {
@@ -658,6 +767,8 @@ struct CreatePlanView: View {
         searchQuery = ""
         searchResults = []
         customSearchResults = Array(customExercises.prefix(20)).map { $0.prescription() }
+        selectedLibraryExercises = []
+        selectedTypeFilter = nil
         searchState = .idle
         customRoute = nil
         stageDirection = .forward
@@ -669,6 +780,40 @@ struct CreatePlanView: View {
         configurationDraft = nil
         stageDirection = .backward
         withAnimation(navigationAnimation) { stage = .composer }
+    }
+
+    private func attemptReturnToComposer() {
+        if selectedLibraryExercises.isEmpty {
+            returnToComposer()
+        } else {
+            isDiscardSelectionConfirmationPresented = true
+        }
+    }
+
+    private func toggleLibrarySelection(_ exercise: ExercisePrescription) {
+        Haptics.tap()
+        withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+            if let index = selectedLibraryExercises.firstIndex(where: { $0.stableCatalogID == exercise.stableCatalogID }) {
+                selectedLibraryExercises.remove(at: index)
+            } else {
+                selectedLibraryExercises.append(exercise)
+            }
+        }
+    }
+
+    private func addSelectedExercisesToDay() {
+        guard planDays.indices.contains(currentDayIndex), !selectedLibraryExercises.isEmpty else {
+            return
+        }
+
+        let existingIDs = Set(planDays[currentDayIndex].map(\.stableCatalogID))
+        let newExercises = selectedLibraryExercises.filter { !existingIDs.contains($0.stableCatalogID) }
+        planDays[currentDayIndex].append(contentsOf: newExercises)
+        for exercise in newExercises {
+            Task { await exerciseCatalog.recordSelection(exercise) }
+        }
+        selectedLibraryExercises = []
+        returnToComposer()
     }
 
     private func focusSearch() {
@@ -776,11 +921,13 @@ struct CreatePlanView: View {
     private func beginCustomExercise() {
         searchFocused = false
         configurationDraft = nil
-        customName = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        customName = normalizedCreateName
         customEquipment = nil
         customMuscle = nil
         customType = nil
         customTrackingMode = nil
+        customErrorMessage = nil
+        editingCustomExerciseID = nil
         customRoute = .details
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { customNameFocused = customName.isEmpty }
     }
@@ -791,6 +938,42 @@ struct CreatePlanView: View {
         focusSearch()
     }
 
+    @ViewBuilder
+    private func customExerciseActions(for exercise: ExercisePrescription) -> some View {
+        if let customID = exercise.customExerciseID {
+            Button {
+                beginEditingCustomExercise(id: customID)
+            } label: {
+                Label("Edit custom exercise", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                archiveCustomExercise(id: customID)
+            } label: {
+                Label("Archive custom exercise", systemImage: "archivebox")
+            }
+        }
+    }
+
+    private func beginEditingCustomExercise(id: UUID) {
+        guard let existing = customExercises.first(where: { $0.id == id }) else { return }
+        editingCustomExerciseID = id
+        customName = existing.name
+        customEquipment = existing.equipment
+        customMuscle = existing.muscle
+        customType = existing.exerciseType
+        customTrackingMode = existing.trackingMode
+        customErrorMessage = nil
+        customRoute = .details
+    }
+
+    private func archiveCustomExercise(id: UUID) {
+        customExercises.removeAll { $0.id == id }
+        selectedLibraryExercises.removeAll { $0.customExerciseID == id }
+        customSearchResults.removeAll { $0.customExerciseID == id }
+        onArchiveCustomExercise(id)
+    }
+
     private func saveCustomExercise() {
         guard isCustomExerciseValid,
               let equipment = customEquipment,
@@ -798,12 +981,31 @@ struct CreatePlanView: View {
               let type = customType,
               let trackingMode = customTrackingMode else { return }
 
+        let trimmedName = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if editingCustomExerciseID == nil, let existing = customExercises.first(where: {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(trimmedName) == .orderedSame
+        }) {
+            customErrorMessage = "This exercise already exists. The saved version has been selected."
+            customRoute = nil
+            searchQuery = existing.name
+            toggleLibrarySelection(existing.prescription())
+            return
+        }
+
+        let existingDefinition = editingCustomExerciseID.flatMap { id in
+            customExercises.first(where: { $0.id == id })
+        }
         let definition = CustomExerciseDefinition(
-            name: customName.trimmingCharacters(in: .whitespacesAndNewlines),
+            id: editingCustomExerciseID ?? UUID(),
+            name: trimmedName,
             equipment: equipment,
             muscle: muscle,
             exerciseType: type,
-            trackingMode: trackingMode
+            trackingMode: trackingMode,
+            createdAt: existingDefinition?.createdAt ?? Date(),
+            updatedAt: Date(),
+            isArchived: false,
+            notes: existingDefinition?.notes
         )
         customExercises.removeAll { $0.id == definition.id || $0.name.caseInsensitiveCompare(definition.name) == .orderedSame }
         customExercises.insert(definition, at: 0)
@@ -812,7 +1014,10 @@ struct CreatePlanView: View {
         searchResults = []
         customSearchResults = [definition.prescription()]
         customRoute = nil
-        configure(definition.prescription())
+        customErrorMessage = nil
+        editingCustomExerciseID = nil
+        selectedLibraryExercises.removeAll { $0.customExerciseID == definition.id }
+        toggleLibrarySelection(definition.prescription())
     }
 
     private func updateExerciseSearch() async {
@@ -846,14 +1051,12 @@ struct CreatePlanView: View {
             PerformanceTrace.event(PerformanceTrace.Name.searchResultsUpdated)
         }
 
-        guard !query.isEmpty else {
-            searchResults = []
+        if !query.isEmpty {
+            searchState = .loading
+            do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+        } else {
             searchState = .idle
-            return
         }
-
-        searchState = .loading
-        do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
         guard !Task.isCancelled else { return }
         let response = await exerciseCatalog.search(query: query)
         guard !Task.isCancelled else { return }
@@ -914,6 +1117,9 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     var targetCounterweight: Int
     var durationSeconds: Int
     var distanceMeters: Int
+    var restSeconds: Int
+    var intensityZone: Int
+    var rounds: Int
 
     init(exercise: ExercisePrescription, editingID: UUID? = nil) {
         self.editingID = editingID
@@ -924,14 +1130,23 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         targetCounterweight = exercise.targetCounterweight ?? 20
         durationSeconds = exercise.durationSeconds ?? 30
         distanceMeters = exercise.distanceMeters ?? 100
+        restSeconds = exercise.restSeconds ?? 60
+        intensityZone = exercise.intensityZone ?? 2
+        rounds = exercise.rounds ?? 4
     }
 
     var steps: [PlanConfigurationStep] {
-        let metrics: [ExercisePrescriptionMetric]
-        if source.customExerciseID == nil {
-            metrics = [.reps]
-        } else {
-            metrics = source.trackingMode.prescriptionMetrics
+        var metrics = source.trackingMode.prescriptionMetrics
+        switch source.itemType {
+        case .strength:
+            if source.restSeconds != nil { metrics.append(.rest) }
+        case .cardio:
+            if source.intensityZone != nil { metrics.append(.zone) }
+        case .timer:
+            metrics.append(.rounds)
+            if source.restSeconds != nil { metrics.append(.rest) }
+        case .mobility, .stability, .stretch:
+            break
         }
         return [.sets] + metrics.map(PlanConfigurationStep.metric)
     }
@@ -949,6 +1164,9 @@ private struct PlanExerciseConfigurationDraft: Equatable {
             case .metric(.reps): reps
             case .metric(.duration): durationSeconds
             case .metric(.distance): distanceMeters
+            case .metric(.rest): restSeconds
+            case .metric(.zone): intensityZone
+            case .metric(.rounds): rounds
             }
         }
         set {
@@ -959,6 +1177,9 @@ private struct PlanExerciseConfigurationDraft: Equatable {
             case .metric(.reps): reps = newValue
             case .metric(.duration): durationSeconds = newValue
             case .metric(.distance): distanceMeters = newValue
+            case .metric(.rest): restSeconds = newValue
+            case .metric(.zone): intensityZone = newValue
+            case .metric(.rounds): rounds = newValue
             }
         }
     }
@@ -982,11 +1203,14 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     var configuredExercise: ExercisePrescription {
         var exercise = source
         exercise.sets = sets
-        exercise.reps = source.trackingMode.prescriptionMetrics.contains(.reps) || source.customExerciseID == nil ? reps : 0
-        exercise.targetWeight = source.customExerciseID != nil && source.trackingMode.prescriptionMetrics.contains(.weight) ? targetWeight : nil
+        exercise.reps = source.trackingMode.prescriptionMetrics.contains(.reps) ? reps : 0
+        exercise.targetWeight = source.trackingMode.prescriptionMetrics.contains(.weight) ? targetWeight : nil
         exercise.targetCounterweight = source.trackingMode.prescriptionMetrics.contains(.counterweight) ? targetCounterweight : nil
         exercise.durationSeconds = source.trackingMode.prescriptionMetrics.contains(.duration) ? durationSeconds : nil
         exercise.distanceMeters = source.trackingMode.prescriptionMetrics.contains(.distance) ? distanceMeters : nil
+        exercise.restSeconds = steps.contains(.metric(.rest)) ? restSeconds : nil
+        exercise.intensityZone = steps.contains(.metric(.zone)) ? intensityZone : nil
+        exercise.rounds = steps.contains(.metric(.rounds)) ? rounds : nil
         return exercise
     }
 }
@@ -1091,32 +1315,125 @@ private struct RedesignedExerciseSearchField: View {
     }
 }
 
+private struct WorkoutItemTypeFilters: View {
+    @Binding var selection: WorkoutItemType?
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterButton(title: "All", type: nil)
+                ForEach(WorkoutItemType.allCases) { type in
+                    filterButton(title: type.title, type: type)
+                }
+            }
+            .padding(.horizontal, 1)
+        }
+        .accessibilityLabel("Exercise type filters")
+    }
+
+    private func filterButton(title: String, type: WorkoutItemType?) -> some View {
+        let isSelected = selection == type
+        return Button {
+            Haptics.tap()
+            selection = type
+        } label: {
+            Text(title)
+                .font(AppFont.label)
+                .foregroundStyle(isSelected ? AppColor.base : AppColor.secondaryText)
+                .padding(.horizontal, 14)
+                .frame(height: 36)
+                .background(isSelected ? AppColor.accent : AppColor.surface2, in: Capsule())
+        }
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.96))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct LibrarySectionLabel: View {
+    var title: String
+    var count: Int?
+
+    init(title: String, count: Int? = nil) {
+        self.title = title
+        self.count = count
+    }
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.secondaryText)
+            Spacer()
+            if let count {
+                Text("\(count)")
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+        }
+        .frame(height: 28)
+    }
+}
+
+private struct CreateExerciseResultRow: View {
+    var name: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(AppColor.accent)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Create \"\(name)\"")
+                        .font(AppFont.subheading)
+                        .foregroundStyle(AppColor.primaryText)
+                        .lineLimit(1)
+                    Text("Add it to your personal exercise library")
+                        .font(AppFont.caption)
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+
+                Spacer(minLength: 8)
+            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+        .accessibilityLabel("Create custom exercise \(name)")
+    }
+}
+
 private struct ExerciseSearchResultCard: View {
     var exercise: ExercisePrescription
-    var onAdd: () -> Void
+    var isSelected: Bool
+    var onToggle: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             ExerciseIdentityContent(exercise: exercise)
                 .padding(10)
 
-            Button(action: onAdd) {
-                Image(systemName: "plus")
+            Button(action: onToggle) {
+                Image(systemName: isSelected ? "checkmark" : "plus")
                     .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(AppColor.base)
+                    .foregroundStyle(isSelected ? AppColor.base : AppColor.primaryText)
                     .frame(width: 56, height: 112)
-                    .background(AppColor.accent)
+                    .background(isSelected ? AppColor.accent : AppColor.surface2)
             }
             .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
-            .accessibilityLabel("Configure \(exercise.name)")
+            .accessibilityLabel(isSelected ? "Remove \(exercise.name) from selection" : "Add \(exercise.name) to selection")
         }
         .frame(maxWidth: .infinity, minHeight: 112)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(AppColor.border).frame(height: 1)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(exercise.name), \(exercise.itemType.title), \(exercise.equipmentLabel), \(exercise.muscleLabel), \(isSelected ? "selected" : "not selected")")
     }
 }
 
@@ -1202,8 +1519,11 @@ private struct ExerciseIdentityContent: View {
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
-                    Circle().fill(AppColor.accent).frame(width: 6, height: 6)
+                HStack(spacing: 6) {
+                    Text(exercise.itemType.title)
+                        .font(AppFont.caption)
+                        .foregroundStyle(AppColor.secondaryText)
+                    Circle().fill(AppColor.border).frame(width: 4, height: 4)
                     Text(exercise.muscleLabel)
                         .font(AppFont.caption)
                         .foregroundStyle(AppColor.secondaryText)
@@ -1251,9 +1571,9 @@ struct ExerciseArtwork: View {
         if let asset = CustomExerciseAssets.muscleAssetName(for: exercise.muscleLabel) {
             Image(asset).resizable().scaledToFill()
         } else {
-            Image(systemName: "figure.strengthtraining.traditional")
+            Image(systemName: exercise.itemType.symbol)
                 .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(AppColor.accent)
+                .foregroundStyle(AppColor.secondaryText)
         }
     }
 }
@@ -1277,8 +1597,11 @@ private struct PlanExerciseSummaryCard: View {
                     Text(exercise.equipmentLabel)
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.primaryText)
-                    HStack(spacing: 4) {
-                        Circle().fill(AppColor.accent).frame(width: 6, height: 6)
+                    HStack(spacing: 6) {
+                        Text(exercise.itemType.title)
+                            .font(AppFont.caption)
+                            .foregroundStyle(AppColor.secondaryText)
+                        Circle().fill(AppColor.border).frame(width: 4, height: 4)
                         Text(exercise.muscleLabel)
                             .font(AppFont.caption)
                             .foregroundStyle(AppColor.secondaryText)
@@ -1440,6 +1763,10 @@ extension ExercisePrescription {
         if reps > 0 { parts.append("\(reps) reps") }
         if let durationSeconds { parts.append(Self.durationText(durationSeconds)) }
         if let distanceMeters { parts.append(Self.distanceText(distanceMeters)) }
+        if let intensityZone { parts.append("Zone \(intensityZone)") }
+        if let rounds { parts.append("\(rounds) rounds") }
+        if let side, !side.isEmpty { parts.append(side) }
+        if let restSeconds { parts.append("\(restSeconds)s rest") }
         return parts.isEmpty ? trackingMode.title : parts.joined(separator: " · ")
     }
 

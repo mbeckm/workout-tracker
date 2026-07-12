@@ -25,11 +25,13 @@ Product principles:
 - Progress should feel concrete through counts, completion, and recent activity before complex analytics.
 - The app should feel athletic, focused, and tactile without becoming noisy.
 - Copy should be short, direct, and training-native.
+- Strength, cardio, mobility, stability, stretch, and timer work are first-class plan items.
 
 Feature focus:
 - Overview: monthly workout count, activity heatmap, active plan, and next planned workout.
 - Plans: active plan, saved plans, plan activation, and entry into plan creation.
 - Plan creation: choose frequency, search exercises, configure sets/reps, review, and activate.
+- Exercise library: full-screen search, type filters, media-backed multi-select, and embedded custom recovery.
 - Workout start: show the day and exercises before beginning.
 - Workout logging: move exercise by exercise, log weight and reps, and complete the session.
 - Workout completion: summarize duration, exercise count, and set count.

@@ -4,6 +4,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
     var providerExerciseId: String?
     var name: String
     var exerciseType: String?
+    var itemType: WorkoutItemType?
     var bodyParts: [String]
     var targetMuscles: [String]
     var equipments: [String]
@@ -20,6 +21,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         providerExerciseId: String? = nil,
         name: String,
         exerciseType: String? = nil,
+        itemType: WorkoutItemType? = nil,
         bodyParts: [String] = [],
         targetMuscles: [String] = [],
         equipments: [String] = [],
@@ -31,6 +33,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         self.providerExerciseId = providerExerciseId
         self.name = name.exerciseCatalogDisplayText
         self.exerciseType = exerciseType?.exerciseCatalogDisplayText
+        self.itemType = itemType
         self.bodyParts = bodyParts.map(\.exerciseCatalogDisplayText)
         self.targetMuscles = targetMuscles.map(\.exerciseCatalogDisplayText)
         self.equipments = equipments.map(\.exerciseCatalogDisplayText)
@@ -45,6 +48,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             providerExerciseId: prescription.providerExerciseId,
             name: prescription.name,
             exerciseType: prescription.exerciseType,
+            itemType: prescription.itemType,
             bodyParts: prescription.bodyParts,
             targetMuscles: prescription.targetMuscles,
             equipments: prescription.equipments,
@@ -57,6 +61,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
 
     func prescription(defaultSets: Int = 3, defaultReps: Int = 12) -> ExercisePrescription {
         ExercisePrescription(
+            id: UUID.catalogStableID(for: id),
             name: name,
             sets: defaultSets,
             reps: defaultReps,
@@ -68,7 +73,8 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             thumbnailURL: thumbnailURL,
             imageURL: imageURL,
             imageURLs: imageURLs,
-            videoURL: videoURL
+            videoURL: videoURL,
+            itemType: itemType
         )
     }
 }
@@ -136,7 +142,10 @@ final class LiveExerciseCatalogService: ExerciseCatalogService {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !trimmedQuery.isEmpty else {
-            return ExerciseCatalogSearchResponse(exercises: [], notice: nil)
+            let exercises = seedProvider.allItems.map {
+                $0.catalogItem.prescription(defaultSets: $0.seedSets, defaultReps: $0.seedReps)
+            }
+            return ExerciseCatalogSearchResponse(exercises: exercises, notice: nil)
         }
 
         let recentItemIDs = await cache.recentItemIDs()
@@ -234,7 +243,9 @@ final class SeedExerciseCatalogService: ExerciseCatalogService {
     }
 
     func search(query: String) async -> ExerciseCatalogSearchResponse {
-        let items = provider.searchSeed(query: query, limit: 20)
+        let items = query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? provider.allItems
+            : provider.searchSeed(query: query, limit: 20)
         return ExerciseCatalogSearchResponse(
             exercises: items.map { $0.catalogItem.prescription(defaultSets: $0.seedSets, defaultReps: $0.seedReps) },
             notice: nil
@@ -448,6 +459,8 @@ struct SeedExerciseCatalogProvider: ExerciseCatalogProvider {
     var priorityNames: [String] {
         items.map { $0.catalogItem.name.normalizedExerciseCatalogKey }
     }
+
+    var allItems: [SeedExerciseCatalogItem] { items }
 
     func catalogItems(for query: String) -> [ExerciseCatalogItem] {
         searchSeed(query: query, limit: items.count).map(\.catalogItem)
@@ -738,6 +751,22 @@ private extension String {
         normalizedExerciseCatalogKey
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }
+    }
+}
+
+private extension UUID {
+    static func catalogStableID(for key: String) -> UUID {
+        var high: UInt64 = 0xcbf29ce484222325
+        var low: UInt64 = 0x84222325cbf29ce4
+
+        for byte in key.utf8 {
+            high = (high ^ UInt64(byte)) &* 0x100000001b3
+            low = (low ^ UInt64(byte &+ 31)) &* 0x100000001b3
+        }
+
+        let hex = String(format: "%016llx%016llx", high, low)
+        let uuidString = "\(hex.prefix(8))-\(hex.dropFirst(8).prefix(4))-\(hex.dropFirst(12).prefix(4))-\(hex.dropFirst(16).prefix(4))-\(hex.dropFirst(20).prefix(12))"
+        return UUID(uuidString: uuidString) ?? UUID()
     }
 }
 

@@ -307,6 +307,8 @@ Plan Detail is a day-selection and start-workout screen. In read mode, the main 
 
 Create Plan is progressive. Start with workouts per week, then build one day at a time, then review, then optionally activate. Do not expose all decisions at once.
 
+Add Exercise is a dedicated full-screen library launched from the composer. Keep its 56pt search field and 36pt type filters pinned while fixed-height media rows scroll. Selection is multi-select and returns to the originating day only through the bottom confirmation action. No-match custom creation remains inside the library and returns the saved item to its selected state.
+
 Start Workout is a confirmation screen. Show the day title, exercise count, exercise list, and one `Start Workout` CTA.
 
 Log Workout is the highest-focus surface. Show progress, current exercise, set table, weight/reps steppers, and `Log`. Do not add secondary navigation, timers, charts, or plan-editing controls here.

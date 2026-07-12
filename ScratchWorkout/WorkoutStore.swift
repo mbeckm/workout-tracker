@@ -196,8 +196,18 @@ struct WorkoutStore {
     }
 
     mutating func saveCustomExercise(_ exercise: CustomExerciseDefinition) {
+        var updatedExercise = exercise
+        updatedExercise.updatedAt = Date()
+        updatedExercise.isArchived = false
         customExercises.removeAll { $0.id == exercise.id || $0.name.caseInsensitiveCompare(exercise.name) == .orderedSame }
-        customExercises.insert(exercise, at: 0)
+        customExercises.insert(updatedExercise, at: 0)
+        persist()
+    }
+
+    mutating func archiveCustomExercise(id: UUID) {
+        guard let index = customExercises.firstIndex(where: { $0.id == id }) else { return }
+        customExercises[index].isArchived = true
+        customExercises[index].updatedAt = Date()
         persist()
     }
 
@@ -251,7 +261,7 @@ struct WorkoutStore {
     mutating func completeWorkout(day: WorkoutDay, exerciseSets: [[LoggedSet]]) -> LoggedWorkout {
         let completedSetCount = exerciseSets
             .flatMap { $0 }
-            .filter { $0.weight != nil && $0.reps != nil }
+            .filter(\.hasLoggedValues)
             .count
         let prescribedSetCount = day.exercises.reduce(0) { $0 + $1.sets }
         let loggedExercises = zip(day.exercises, exerciseSets).map { exercise, sets in
@@ -365,13 +375,26 @@ struct WorkoutStore {
         ]
     }
 
-    private static func mergedCustomExercises(
+    static func mergedCustomExercises(
         remote: [CustomExerciseDefinition],
         local: [CustomExerciseDefinition]
     ) -> [CustomExerciseDefinition] {
-        var seenNames = Set<String>()
-        return (remote + local).filter { exercise in
-            seenNames.insert(exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)).inserted
+        var newestByName: [String: CustomExerciseDefinition] = [:]
+
+        for exercise in remote + local {
+            let key = exercise.name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            let exerciseModifiedAt = exercise.updatedAt ?? exercise.createdAt
+            let shouldReplace = newestByName[key].map {
+                exerciseModifiedAt >= ($0.updatedAt ?? $0.createdAt)
+            } ?? true
+
+            if shouldReplace {
+                newestByName[key] = exercise
+            }
+        }
+
+        return newestByName.values.sorted {
+            ($0.updatedAt ?? $0.createdAt) > ($1.updatedAt ?? $1.createdAt)
         }
     }
 
