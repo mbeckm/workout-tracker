@@ -129,6 +129,7 @@ enum WorkoutSyncReason: String {
     case signIn
     case planSaved
     case planUpdated
+    case exerciseLibraryUpdated
     case workoutCompleted
     case manual
 }
@@ -137,6 +138,7 @@ struct WorkoutCloudSnapshot: Equatable, Codable {
     var activePlan: WorkoutPlan
     var savedPlans: [WorkoutPlan]
     var archivedPlans: [WorkoutPlan]
+    var customExercises: [CustomExerciseDefinition]
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int
     var capturedAt: Date
@@ -145,6 +147,7 @@ struct WorkoutCloudSnapshot: Equatable, Codable {
         activePlan: WorkoutPlan,
         savedPlans: [WorkoutPlan],
         archivedPlans: [WorkoutPlan] = [],
+        customExercises: [CustomExerciseDefinition] = [],
         workoutHistory: [LoggedWorkout],
         nextDayIndex: Int,
         capturedAt: Date
@@ -152,6 +155,7 @@ struct WorkoutCloudSnapshot: Equatable, Codable {
         self.activePlan = activePlan
         self.savedPlans = savedPlans
         self.archivedPlans = archivedPlans
+        self.customExercises = customExercises
         self.workoutHistory = workoutHistory
         self.nextDayIndex = nextDayIndex
         self.capturedAt = capturedAt
@@ -162,6 +166,7 @@ struct WorkoutCloudSnapshot: Equatable, Codable {
         activePlan = try container.decode(WorkoutPlan.self, forKey: .activePlan)
         savedPlans = try container.decode([WorkoutPlan].self, forKey: .savedPlans)
         archivedPlans = try container.decodeIfPresent([WorkoutPlan].self, forKey: .archivedPlans) ?? []
+        customExercises = try container.decodeIfPresent([CustomExerciseDefinition].self, forKey: .customExercises) ?? []
         workoutHistory = try container.decode([LoggedWorkout].self, forKey: .workoutHistory)
         nextDayIndex = try container.decode(Int.self, forKey: .nextDayIndex)
         capturedAt = try container.decode(Date.self, forKey: .capturedAt)

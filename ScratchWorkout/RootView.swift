@@ -239,14 +239,21 @@ struct RootView: View {
                 }
             })
         case .createPlan:
-            CreatePlanView { plan, activate in
-                store.savePlan(plan, activate: activate)
-                syncAccount(reason: .planSaved)
-                pop {
-                    selectedTab = .plans
-                    route = nil
+            CreatePlanView(
+                customExercises: store.customExercises,
+                onSaveCustomExercise: { exercise in
+                    store.saveCustomExercise(exercise)
+                    syncAccount(reason: .exerciseLibraryUpdated)
+                },
+                onFinish: { plan, activate in
+                    store.savePlan(plan, activate: activate)
+                    syncAccount(reason: .planSaved)
+                    pop {
+                        selectedTab = .plans
+                        route = nil
+                    }
                 }
-            }
+            )
         case .exerciseStats(let exerciseName):
             ExerciseStatsView(
                 stats: store.exerciseStats(for: exerciseName)
@@ -636,7 +643,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
             .previewDisplayName("Create Plan - Search")
 
             ScreenPreviewShell(tab: .plans, route: .createPlan) {
-                CreatePlanView(initialStage: .search, onFinish: { _, _ in })
+                CreatePlanView(initialStage: .composer, onFinish: { _, _ in })
             }
             .previewDisplayName("Create Plan - Empty Day")
 

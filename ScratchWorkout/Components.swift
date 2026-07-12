@@ -654,28 +654,44 @@ struct ExerciseCard: View {
     var showsChevron: Bool = true
 
     var body: some View {
-        CardShell(height: 84) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(exercise.name)
-                        .font(AppFont.h2)
-                        .lineLimit(1)
+        CardShell(height: 112) {
+            HStack(alignment: .center, spacing: 12) {
+                ExerciseArtwork(exercise: exercise)
+                    .frame(width: 80, height: 80)
 
-                    HStack(spacing: 25) {
-                        Text("\(exercise.sets) Sets")
-                        Text("\(exercise.reps) Reps")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(exercise.name)
+                        .font(AppFont.body)
+                        .lineLimit(2)
+
+                    Text(exercise.equipmentLabel)
+                        .font(AppFont.label)
+
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(AppColor.accent)
+                            .frame(width: 6, height: 6)
+                        Text(exercise.muscleLabel)
                     }
-                    .font(AppFont.label)
+                    .font(AppFont.caption)
                     .foregroundStyle(AppColor.secondaryText)
                 }
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 8)
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(exercise.sets) sets")
+                    Text(exercise.prescriptionSummary)
+                }
+                .font(AppFont.caption)
+                .foregroundStyle(AppColor.secondaryText)
+                .lineLimit(1)
 
                 if showsChevron {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 20, weight: .regular))
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 24, height: 36)
                 }
             }
         }
