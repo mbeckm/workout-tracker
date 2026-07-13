@@ -461,7 +461,11 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
     }
 
     var equipmentLabel: String {
-        if let equipment = equipments.first { return equipment }
+        if let equipment = equipments.first,
+           let normalized = Self.normalizedEquipment(equipment) {
+            return normalized
+        }
+
         let value = name.lowercased()
         if value.contains("dumbbell") { return "Dumbbells" }
         if value.contains("barbell") || value.contains("bench press") || value.contains("deadlift") || value.contains("squat") { return "Barbell" }
@@ -472,7 +476,11 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
     }
 
     var muscleLabel: String {
-        if let muscle = targetMuscles.first ?? bodyParts.first { return muscle }
+        if let muscle = targetMuscles.first ?? bodyParts.first,
+           let normalized = Self.normalizedMuscle(muscle) {
+            return normalized
+        }
+
         let value = name.lowercased()
         if value.contains("bench") || value.contains("chest") || value.contains("fly") { return "Chest" }
         if value.contains("tricep") || value.contains("skull") || value.contains("dip") { return "Triceps" }
@@ -486,6 +494,56 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         if value.contains("deadlift") || value.contains("leg curl") { return "Hams" }
         if value.contains("squat") || value.contains("leg press") || value.contains("leg extension") || value.contains("lunge") { return "Quads" }
         return "Other"
+    }
+
+    private static func normalizedEquipment(_ rawValue: String) -> String? {
+        let value = rawValue
+            .lowercased()
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if value.isEmpty || value == "other" { return nil }
+        if value.contains("dumbbell") { return "Dumbbells" }
+        if value.contains("kettlebell") { return "Kettlebells" }
+        if value.contains("barbell") && !value.contains("ez") { return "Barbell" }
+        if value.contains("ez") && value.contains("bar") { return "EZ Bar" }
+        if value.contains("trap bar") { return "Trap Bar" }
+        if value.contains("smith") { return "Smith Machine" }
+        if value.contains("cable") { return "Cable" }
+        if value.contains("machine") || value.contains("lever") || value == "assisted" { return "Machine" }
+        if value.contains("band") { return "Resistance Bands" }
+        if value.contains("body") || value == "weighted" { return "Bodyweight" }
+        if value.contains("trx") || value.contains("suspension") { return "TRX" }
+        return value.capitalized
+    }
+
+    private static func normalizedMuscle(_ rawValue: String) -> String? {
+        let value = rawValue
+            .lowercased()
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if value.isEmpty || value == "other" { return nil }
+        if value.contains("pector") || value == "chest" { return "Chest" }
+        if value.contains("tricep") { return "Triceps" }
+        if value.contains("bicep") { return "Biceps" }
+        if value.contains("latissimus") || value == "lats" { return "Lats" }
+        if value.contains("hamstring") || value == "hams" { return "Hams" }
+        if value.contains("quadricep") || value == "quads" || value == "upper legs" { return "Quads" }
+        if value.contains("glute") { return "Glutes" }
+        if value.contains("calv") || value.contains("gastrocnemius") { return "Calves" }
+        if value.contains("abdominal") || value == "abs" || value == "waist" { return "Abs" }
+        if value.contains("forearm") { return "Forearms" }
+        if value.contains("trap") { return "Traps" }
+        if value.contains("lower back") || value.contains("spine") { return "Lower back" }
+        if value.contains("upper back") || value.contains("rhomboid") { return "Upper back" }
+        if value.contains("rear delt") { return "Rear delts" }
+        if value.contains("front delt") { return "Front delts" }
+        if value.contains("side delt") || value.contains("lateral delt") { return "Side delts" }
+        if value == "delts" || value.contains("shoulder") { return "Front delts" }
+        if value.contains("adductor") { return "Adductors" }
+        if value.contains("abductor") { return "Abductors" }
+        return value.capitalized
     }
 }
 

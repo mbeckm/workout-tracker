@@ -56,6 +56,7 @@ struct HorizontalSwipePager<Content: View>: View {
 
     @State private var dragOffset: CGFloat = 0
     @State private var isDraggingHorizontally = false
+    @State private var isSettlingPage = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -65,9 +66,6 @@ struct HorizontalSwipePager<Content: View>: View {
             content()
                 .frame(width: pageWidth, alignment: .topLeading)
                 .offset(x: dragOffset)
-                .id(selection)
-                .transition(AppScreenTransition.slide(direction, reduceMotion: reduceMotion))
-                .animation(AppNavigationAnimation.push(reduceMotion: reduceMotion), value: selection)
                 .clipped()
                 .contentShape(Rectangle())
                 .simultaneousGesture(swipeGesture(pageWidth: pageWidth))
@@ -78,7 +76,7 @@ struct HorizontalSwipePager<Content: View>: View {
     private func swipeGesture(pageWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 18, coordinateSpace: .local)
             .onChanged { value in
-                guard isEnabled, pageCount > 1 else {
+                guard isEnabled, pageCount > 1, !isSettlingPage else {
                     return
                 }
 
@@ -120,27 +118,61 @@ struct HorizontalSwipePager<Content: View>: View {
                    selection < pageCount - 1 {
                     direction = .forward
                     Haptics.tap()
-                    withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion)) {
-                        selection += 1
-                        dragOffset = 0
-                    }
-                    onPageChange?()
+                    settlePage(
+                        to: selection + 1,
+                        exitOffset: -pageWidth,
+                        entryOffset: pageWidth
+                    )
                 } else if horizontal > 0,
                           (horizontal > threshold || projectedHorizontal > pageWidth * 0.42),
                           selection > 0 {
                     direction = .backward
                     Haptics.tap()
-                    withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion)) {
-                        selection -= 1
-                        dragOffset = 0
-                    }
-                    onPageChange?()
+                    settlePage(
+                        to: selection - 1,
+                        exitOffset: pageWidth,
+                        entryOffset: -pageWidth
+                    )
                 } else {
                     withAnimation(AppNavigationAnimation.push(reduceMotion: reduceMotion)) {
                         dragOffset = 0
                     }
                 }
             }
+    }
+
+    private func settlePage(to newSelection: Int, exitOffset: CGFloat, entryOffset: CGFloat) {
+        if reduceMotion {
+            selection = newSelection
+            dragOffset = 0
+            onPageChange?()
+            return
+        }
+
+        isSettlingPage = true
+        let settleAnimation = Animation.timingCurve(0.32, 0.72, 0, 1, duration: 0.18)
+
+        withAnimation(settleAnimation) {
+            dragOffset = exitOffset
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                selection = newSelection
+                dragOffset = entryOffset
+            }
+            onPageChange?()
+
+            withAnimation(settleAnimation) {
+                dragOffset = 0
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                isSettlingPage = false
+            }
+        }
     }
 }
 

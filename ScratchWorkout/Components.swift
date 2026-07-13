@@ -110,7 +110,34 @@ private struct AppBottomChromePadding: ViewModifier {
 
 struct GrainBackground: View {
     var body: some View {
-        AppColor.base
+        ZStack {
+            AppColor.base
+
+            Canvas { context, size in
+                let spacing: CGFloat = 3
+                let columns = Int(size.width / spacing) + 1
+                let rows = Int(size.height / spacing) + 1
+
+                for row in 0..<rows {
+                    for column in 0..<columns {
+                        let seed = UInt64(row &* 7_919 &+ column &* 104_729)
+                        let value = (seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407) >> 56
+                        guard value > 205 else { continue }
+
+                        let opacity = Double(value - 205) / 50 * 0.055
+                        let rect = CGRect(
+                            x: CGFloat(column) * spacing,
+                            y: CGFloat(row) * spacing,
+                            width: 1,
+                            height: 1
+                        )
+                        context.fill(Path(rect), with: .color(.white.opacity(opacity)))
+                    }
+                }
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
     }
 }
 
@@ -641,6 +668,7 @@ struct CollapsibleSectionHeader: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(AppColor.secondaryText)
                     .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                    .animation(.snappy(duration: 0.2, extraBounce: 0), value: isExpanded)
             }
         }
         .buttonStyle(.plain)

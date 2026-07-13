@@ -14,19 +14,7 @@ struct PlansView: View {
         AppScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ScreenTitleBar(title: "Plans") {
-                        Button {
-                            Haptics.tap(.medium)
-                            onNewPlan()
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .semibold))
-                                .foregroundStyle(AppColor.primaryText)
-                                .frame(width: 44, height: 44)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("New plan")
-                    }
+                    ScreenTitle(title: "Plans")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
                     SectionTitle(text: "Active Plan")
@@ -68,7 +56,7 @@ struct PlansView: View {
                             title: "Archived Plans",
                             isExpanded: isArchivedExpanded,
                             action: {
-                                withAnimation(.spring(response: 0.22, dampingFraction: 0.88)) {
+                                withAnimation(.snappy(duration: 0.24, extraBounce: 0)) {
                                     isArchivedExpanded.toggle()
                                 }
                             }
@@ -93,7 +81,7 @@ struct PlansView: View {
                                 }
                             }
                             .padding(.top, 12)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                            .transition(.opacity.combined(with: .offset(y: -8)))
                         }
                     }
 
@@ -101,7 +89,6 @@ struct PlansView: View {
                 }
                 .padding(.horizontal, 24)
                 .floatingBottomChromeScrollPadding()
-                .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isArchivedExpanded)
             }
             .floatingBottomChrome {
                 CTAButton(title: "New Plan", width: 312, action: onNewPlan)
