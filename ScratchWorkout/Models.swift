@@ -129,6 +129,9 @@ enum ExercisePrescriptionMetric: String, Codable, Identifiable {
     case reps
     case duration
     case distance
+    case rest
+    case zone
+    case rounds
 
     var id: Self { self }
 
@@ -139,6 +142,9 @@ enum ExercisePrescriptionMetric: String, Codable, Identifiable {
         case .reps: "Reps"
         case .duration: "Duration"
         case .distance: "Distance"
+        case .rest: "Rest"
+        case .zone: "Zone"
+        case .rounds: "Rounds"
         }
     }
 
@@ -149,6 +155,9 @@ enum ExercisePrescriptionMetric: String, Codable, Identifiable {
         case .reps: "Number of reps"
         case .duration: "Duration in seconds"
         case .distance: "Distance in meters"
+        case .rest: "Rest in seconds"
+        case .zone: "Training zone"
+        case .rounds: "Number of rounds"
         }
     }
 
@@ -158,15 +167,19 @@ enum ExercisePrescriptionMetric: String, Codable, Identifiable {
         case .reps: 12
         case .duration: 30
         case .distance: 100
+        case .rest: 60
+        case .zone: 2
+        case .rounds: 4
         }
     }
 
     var step: Int {
         switch self {
         case .weight, .counterweight: 5
-        case .reps: 1
+        case .reps, .zone, .rounds: 1
         case .duration: 5
         case .distance: 25
+        case .rest: 5
         }
     }
 
@@ -176,17 +189,20 @@ enum ExercisePrescriptionMetric: String, Codable, Identifiable {
         case .reps: 999
         case .duration: 86_400
         case .distance: 100_000
+        case .rest: 3_600
+        case .zone: 5
+        case .rounds: 100
         }
     }
 }
 
-enum CustomExerciseType: String, CaseIterable, Codable, Identifiable {
+enum WorkoutItemType: String, CaseIterable, Codable, Identifiable {
     case strength
-    case endurance
+    case cardio
     case mobility
     case stability
-    case health
-    case other
+    case stretch
+    case timer
 
     var id: Self { self }
     var title: String { rawValue.capitalized }
@@ -194,14 +210,43 @@ enum CustomExerciseType: String, CaseIterable, Codable, Identifiable {
     var symbol: String {
         switch self {
         case .strength: "figure.strengthtraining.traditional"
-        case .endurance: "figure.run"
+        case .cardio: "figure.run"
         case .mobility: "figure.flexibility"
         case .stability: "shield.fill"
-        case .health: "heart.fill"
-        case .other: "square.grid.3x3.fill"
+        case .stretch: "figure.cooldown"
+        case .timer: "timer"
         }
     }
+
+    var defaultTrackingMode: ExerciseTrackingMode {
+        switch self {
+        case .strength: .weightAndReps
+        case .cardio: .distanceAndDuration
+        case .mobility, .stability: .repsAndDuration
+        case .stretch, .timer: .duration
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let rawValue = try decoder.singleValueContainer().decode(String.self).lowercased()
+        self = switch rawValue {
+        case "strength": .strength
+        case "cardio", "endurance": .cardio
+        case "mobility", "health": .mobility
+        case "stability": .stability
+        case "stretch": .stretch
+        case "timer": .timer
+        default: .strength
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
 }
+
+typealias CustomExerciseType = WorkoutItemType
 
 struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
     var id = UUID()
@@ -211,6 +256,11 @@ struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
     var exerciseType: CustomExerciseType
     var trackingMode: ExerciseTrackingMode
     var createdAt = Date()
+    var updatedAt: Date? = nil
+    var isArchived: Bool? = nil
+    var notes: String? = nil
+
+    var isAvailable: Bool { isArchived != true }
 
     var imageAssetName: String {
         "Muscle" + muscle
@@ -220,15 +270,21 @@ struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
     }
 
     func prescription() -> ExercisePrescription {
-        ExercisePrescription(
+        let defaultSetCount = switch exerciseType {
+        case .cardio, .stretch, .timer: 1
+        case .strength, .mobility, .stability: 3
+        }
+
+        return ExercisePrescription(
             id: id,
             name: name,
-            sets: 3,
+            sets: defaultSetCount,
             reps: trackingMode.prescriptionMetrics.contains(.reps) ? 12 : 0,
             exerciseType: exerciseType.title,
             bodyParts: [],
             targetMuscles: [muscle],
             equipments: [equipment],
+            itemType: exerciseType,
             trackingMode: trackingMode,
             targetWeight: trackingMode == .weightAndReps || trackingMode == .weightAndDistance ? 20 : nil,
             targetCounterweight: trackingMode == .counterweightAndReps ? 20 : nil,
@@ -254,11 +310,16 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
     var imageURL: URL?
     var imageURLs: [String: URL]
     var videoURL: URL?
+    var itemType: WorkoutItemType
     var trackingMode: ExerciseTrackingMode
     var targetWeight: Int?
     var targetCounterweight: Int?
     var durationSeconds: Int?
     var distanceMeters: Int?
+    var restSeconds: Int?
+    var intensityZone: Int?
+    var side: String?
+    var rounds: Int?
     var customExerciseID: UUID?
     var localImageAssetName: String?
 
@@ -276,11 +337,16 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         imageURL: URL? = nil,
         imageURLs: [String: URL] = [:],
         videoURL: URL? = nil,
+        itemType: WorkoutItemType? = nil,
         trackingMode: ExerciseTrackingMode = .weightAndReps,
         targetWeight: Int? = nil,
         targetCounterweight: Int? = nil,
         durationSeconds: Int? = nil,
         distanceMeters: Int? = nil,
+        restSeconds: Int? = nil,
+        intensityZone: Int? = nil,
+        side: String? = nil,
+        rounds: Int? = nil,
         customExerciseID: UUID? = nil,
         localImageAssetName: String? = nil
     ) {
@@ -297,11 +363,16 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         self.imageURL = imageURL
         self.imageURLs = imageURLs
         self.videoURL = videoURL
+        self.itemType = itemType ?? Self.inferredItemType(exerciseType: exerciseType, trackingMode: trackingMode)
         self.trackingMode = trackingMode
         self.targetWeight = targetWeight
         self.targetCounterweight = targetCounterweight
         self.durationSeconds = durationSeconds
         self.distanceMeters = distanceMeters
+        self.restSeconds = restSeconds
+        self.intensityZone = intensityZone
+        self.side = side
+        self.rounds = rounds
         self.customExerciseID = customExerciseID
         self.localImageAssetName = localImageAssetName
     }
@@ -320,11 +391,16 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         case imageURL
         case imageURLs
         case videoURL
+        case itemType
         case trackingMode
         case targetWeight
         case targetCounterweight
         case durationSeconds
         case distanceMeters
+        case restSeconds
+        case intensityZone
+        case side
+        case rounds
         case customExerciseID
         case localImageAssetName
     }
@@ -345,12 +421,43 @@ struct ExercisePrescription: Identifiable, Equatable, Codable {
         imageURLs = try container.decodeIfPresent([String: URL].self, forKey: .imageURLs) ?? [:]
         videoURL = try container.decodeIfPresent(URL.self, forKey: .videoURL)
         trackingMode = try container.decodeIfPresent(ExerciseTrackingMode.self, forKey: .trackingMode) ?? .weightAndReps
+        itemType = try container.decodeIfPresent(WorkoutItemType.self, forKey: .itemType)
+            ?? Self.inferredItemType(exerciseType: exerciseType, trackingMode: trackingMode)
         targetWeight = try container.decodeIfPresent(Int.self, forKey: .targetWeight)
         targetCounterweight = try container.decodeIfPresent(Int.self, forKey: .targetCounterweight)
         durationSeconds = try container.decodeIfPresent(Int.self, forKey: .durationSeconds)
         distanceMeters = try container.decodeIfPresent(Int.self, forKey: .distanceMeters)
+        restSeconds = try container.decodeIfPresent(Int.self, forKey: .restSeconds)
+        intensityZone = try container.decodeIfPresent(Int.self, forKey: .intensityZone)
+        side = try container.decodeIfPresent(String.self, forKey: .side)
+        rounds = try container.decodeIfPresent(Int.self, forKey: .rounds)
         customExerciseID = try container.decodeIfPresent(UUID.self, forKey: .customExerciseID)
         localImageAssetName = try container.decodeIfPresent(String.self, forKey: .localImageAssetName)
+    }
+
+    var stableCatalogID: String {
+        if let customExerciseID { return "custom-\(customExerciseID.uuidString.lowercased())" }
+        if let providerExerciseId { return "provider-\(providerExerciseId)" }
+        return "bundled-\(name.normalizedStatsKey)"
+    }
+
+    private static func inferredItemType(
+        exerciseType: String?,
+        trackingMode: ExerciseTrackingMode
+    ) -> WorkoutItemType {
+        let value = exerciseType?.lowercased() ?? ""
+        if value.contains("cardio") || value.contains("endurance") { return .cardio }
+        if value.contains("mobility") { return .mobility }
+        if value.contains("stability") { return .stability }
+        if value.contains("stretch") { return .stretch }
+        if value.contains("timer") { return .timer }
+
+        return switch trackingMode {
+        case .distanceAndDuration, .weightAndDistance: .cardio
+        case .duration: .timer
+        case .repsAndDuration: .stability
+        case .weightAndReps, .counterweightAndReps, .reps: .strength
+        }
     }
 
     var equipmentLabel: String {
@@ -387,6 +494,9 @@ struct LoggedSet: Identifiable, Equatable, Codable {
     var index: Int
     var weight: Int?
     var reps: Int?
+    var counterweight: Int? = nil
+    var durationSeconds: Int? = nil
+    var distanceMeters: Int? = nil
 }
 
 struct LoggedExercise: Identifiable, Equatable, Codable {
@@ -486,7 +596,89 @@ enum SampleData {
         ExercisePrescription(name: "Romanian Deadlift", sets: 4, reps: 10),
         ExercisePrescription(name: "Leg Press", sets: 3, reps: 15),
         ExercisePrescription(name: "Leg Curl", sets: 3, reps: 12),
-        ExercisePrescription(name: "Standing Calf Raise", sets: 4, reps: 20)
+        ExercisePrescription(name: "Standing Calf Raise", sets: 4, reps: 20),
+        ExercisePrescription(
+            name: "Zone 2 Bike",
+            sets: 1,
+            reps: 0,
+            exerciseType: "Cardio",
+            targetMuscles: ["Cardiovascular"],
+            equipments: ["Stationary Bike"],
+            itemType: .cardio,
+            trackingMode: .distanceAndDuration,
+            durationSeconds: 1_800,
+            distanceMeters: 10_000,
+            intensityZone: 2
+        ),
+        ExercisePrescription(
+            name: "Copenhagen Plank",
+            sets: 3,
+            reps: 0,
+            exerciseType: "Stability",
+            targetMuscles: ["Adductors"],
+            equipments: ["Bodyweight"],
+            itemType: .stability,
+            trackingMode: .duration,
+            durationSeconds: 30,
+            side: "Each side"
+        ),
+        ExercisePrescription(
+            name: "Tibialis Raises",
+            sets: 3,
+            reps: 15,
+            exerciseType: "Stability",
+            targetMuscles: ["Tibialis Anterior"],
+            equipments: ["Bodyweight"],
+            itemType: .stability,
+            trackingMode: .reps
+        ),
+        ExercisePrescription(
+            name: "Couch Stretch",
+            sets: 1,
+            reps: 0,
+            exerciseType: "Stretch",
+            targetMuscles: ["Hip Flexors"],
+            equipments: ["Bodyweight"],
+            itemType: .stretch,
+            trackingMode: .duration,
+            durationSeconds: 60,
+            side: "Each side"
+        ),
+        ExercisePrescription(
+            name: "Warm-up Walk",
+            sets: 1,
+            reps: 0,
+            exerciseType: "Cardio",
+            targetMuscles: ["Full Body"],
+            equipments: ["Treadmill"],
+            itemType: .cardio,
+            trackingMode: .distanceAndDuration,
+            durationSeconds: 600,
+            distanceMeters: 1_000
+        ),
+        ExercisePrescription(
+            name: "Shoulder CARs",
+            sets: 2,
+            reps: 5,
+            exerciseType: "Mobility",
+            targetMuscles: ["Shoulders"],
+            equipments: ["Bodyweight"],
+            itemType: .mobility,
+            trackingMode: .reps
+        ),
+        ExercisePrescription(
+            name: "Interval Timer",
+            sets: 1,
+            reps: 0,
+            exerciseType: "Timer",
+            targetMuscles: ["Full Body"],
+            equipments: ["None"],
+            itemType: .timer,
+            trackingMode: .duration,
+            durationSeconds: 30,
+            restSeconds: 15,
+            rounds: 8
+        )
     ]
 
     static let pushExercises = [
@@ -642,7 +834,7 @@ enum SampleData {
 
 extension LoggedSet {
     var hasLoggedValues: Bool {
-        weight != nil && reps != nil
+        weight != nil || reps != nil || counterweight != nil || durationSeconds != nil || distanceMeters != nil
     }
 
     var estimatedTenRM: Double? {

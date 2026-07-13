@@ -258,6 +258,10 @@ struct RootView: View {
                     store.saveCustomExercise(exercise)
                     syncAccount(reason: .exerciseLibraryUpdated)
                 },
+                onArchiveCustomExercise: { exerciseID in
+                    store.archiveCustomExercise(id: exerciseID)
+                    syncAccount(reason: .exerciseLibraryUpdated)
+                },
                 onFinish: { plan, activate in
                     store.savePlan(plan, activate: activate)
                     syncAccount(reason: .planSaved)

@@ -82,7 +82,14 @@ struct LogWorkoutSessionView: View {
             let savedSets = initialLoggedSets.indices.contains(index) && !initialLoggedSets[index].isEmpty
                 ? initialLoggedSets[index]
                 : LogWorkoutView.initialSets(for: exercise)
-            return ExerciseLogState(sets: savedSets)
+            return ExerciseLogState(
+                sets: savedSets,
+                weight: exercise.targetWeight ?? 0,
+                counterweight: exercise.targetCounterweight ?? 0,
+                reps: max(exercise.reps, 0),
+                durationSeconds: exercise.durationSeconds ?? 30,
+                distanceMeters: exercise.distanceMeters ?? 100
+            )
         }
         _exerciseStates = State(initialValue: states)
     }
@@ -112,8 +119,14 @@ struct LogWorkoutSessionView: View {
             .floatingBottomChrome {
                 VStack(spacing: 16) {
                     VStack(alignment: .center, spacing: 24) {
-                        NumberStepper(label: "Weight", value: weightBinding, minimum: 0, maximum: 300)
-                        NumberStepper(label: "Reps", value: repsBinding, minimum: 0, maximum: 50)
+                        ForEach(currentTrackingMetrics) { metric in
+                            NumberStepper(
+                                label: metric.title,
+                                value: metricBinding(metric),
+                                minimum: metric == .zone ? 1 : 0,
+                                maximum: metric.maximum
+                            )
+                        }
                     }
                     .frame(maxWidth: .infinity)
 
@@ -143,7 +156,8 @@ struct LogWorkoutSessionView: View {
 
             SetTable(
                 sets: exerciseStates[index].sets,
-                recentlyLoggedSetID: exerciseStates[index].recentlyLoggedSetID
+                recentlyLoggedSetID: exerciseStates[index].recentlyLoggedSetID,
+                trackingMode: exercise.trackingMode
             )
             .padding(.top, 22)
         }
@@ -185,6 +199,41 @@ struct LogWorkoutSessionView: View {
         )
     }
 
+    private var currentTrackingMetrics: [ExercisePrescriptionMetric] {
+        guard day.exercises.indices.contains(activeExerciseIndex) else {
+            return [.weight, .reps]
+        }
+        return day.exercises[activeExerciseIndex].trackingMode.prescriptionMetrics
+    }
+
+    private func metricBinding(_ metric: ExercisePrescriptionMetric) -> Binding<Int> {
+        Binding(
+            get: {
+                guard exerciseStates.indices.contains(activeExerciseIndex) else { return 0 }
+                let state = exerciseStates[activeExerciseIndex]
+                return switch metric {
+                case .weight: state.weight
+                case .counterweight: state.counterweight
+                case .reps: state.reps
+                case .duration: state.durationSeconds
+                case .distance: state.distanceMeters
+                case .rest, .zone, .rounds: 0
+                }
+            },
+            set: { newValue in
+                guard exerciseStates.indices.contains(activeExerciseIndex) else { return }
+                switch metric {
+                case .weight: exerciseStates[activeExerciseIndex].weight = newValue
+                case .counterweight: exerciseStates[activeExerciseIndex].counterweight = newValue
+                case .reps: exerciseStates[activeExerciseIndex].reps = newValue
+                case .duration: exerciseStates[activeExerciseIndex].durationSeconds = newValue
+                case .distance: exerciseStates[activeExerciseIndex].distanceMeters = newValue
+                case .rest, .zone, .rounds: break
+                }
+            }
+        )
+    }
+
     private var recentlyLoggedSetID: LoggedSet.ID? {
         guard exerciseStates.indices.contains(activeExerciseIndex) else {
             return nil
@@ -203,7 +252,7 @@ struct LogWorkoutSessionView: View {
         let weight = state.weight
         let reps = state.reps
 
-        guard let nextIndex = state.sets.firstIndex(where: { $0.weight == nil || $0.reps == nil }) else {
+        guard let nextIndex = state.sets.firstIndex(where: { !$0.isLogged(for: exercise.trackingMode) }) else {
             onExerciseComplete(state.sets)
             return
         }
@@ -211,8 +260,16 @@ struct LogWorkoutSessionView: View {
         let sessionLoggedMaxWeight = AchievementDetector.sessionLoggedMaxWeight(in: state.sets)
         let isLastSet = nextIndex >= state.sets.count - 1
 
-        state.sets[nextIndex].weight = weight
-        state.sets[nextIndex].reps = reps
+        for metric in exercise.trackingMode.prescriptionMetrics {
+            switch metric {
+            case .weight: state.sets[nextIndex].weight = state.weight
+            case .counterweight: state.sets[nextIndex].counterweight = state.counterweight
+            case .reps: state.sets[nextIndex].reps = state.reps
+            case .duration: state.sets[nextIndex].durationSeconds = state.durationSeconds
+            case .distance: state.sets[nextIndex].distanceMeters = state.distanceMeters
+            case .rest, .zone, .rounds: break
+            }
+        }
         state.recentlyLoggedSetID = state.sets[nextIndex].id
 
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
@@ -222,7 +279,9 @@ struct LogWorkoutSessionView: View {
         onSetsChange(activeExerciseIndex, state.sets)
         showLogFeedback(for: state.sets[nextIndex].id, at: activeExerciseIndex)
 
-        if AchievementDetector.shouldUnlock(
+        if exercise.trackingMode.prescriptionMetrics.contains(.weight),
+           exercise.trackingMode.prescriptionMetrics.contains(.reps),
+           AchievementDetector.shouldUnlock(
             weight: weight,
             reps: reps,
             previousBestWeight: previousBestWeight(exercise.name),
@@ -282,7 +341,8 @@ struct LogWorkoutSessionView: View {
             return false
         }
 
-        return exerciseStates[index].sets.allSatisfy(\.isLogged)
+        guard day.exercises.indices.contains(index) else { return false }
+        return exerciseStates[index].sets.allSatisfy { $0.isLogged(for: day.exercises[index].trackingMode) }
     }
 
     private var progressCount: Int {
@@ -310,7 +370,10 @@ struct LogWorkoutSessionView: View {
 private struct ExerciseLogState {
     var sets: [LoggedSet]
     var weight: Int = 0
+    var counterweight: Int = 0
     var reps: Int = 0
+    var durationSeconds: Int = 30
+    var distanceMeters: Int = 100
     var recentlyLoggedSetID: LoggedSet.ID?
 }
 
@@ -360,7 +423,7 @@ struct LogWorkoutView: View {
             VStack(alignment: .leading, spacing: 0) {
                 StepProgress(
                     count: progressCount,
-                    isSegmentComplete: { _ in sets.allSatisfy(\.isLogged) },
+                    isSegmentComplete: { _ in sets.allSatisfy { $0.isLogged(for: exercise.trackingMode) } },
                     currentIndex: exerciseIndex,
                     width: progressBarWidth,
                     spacing: progressBarSpacing
@@ -370,7 +433,7 @@ struct LogWorkoutView: View {
                 SectionTitle(text: exercise.name)
                     .padding(.top, 24)
 
-                SetTable(sets: sets, recentlyLoggedSetID: recentlyLoggedSetID)
+                SetTable(sets: sets, recentlyLoggedSetID: recentlyLoggedSetID, trackingMode: exercise.trackingMode)
                     .padding(.top, 22)
 
                 Spacer(minLength: 0)
@@ -467,7 +530,8 @@ struct LogWorkoutView: View {
     }
 
     static func initialSets(for exercise: ExercisePrescription) -> [LoggedSet] {
-        (1...exercise.sets).map { index in
+        let entryCount = exercise.itemType == .timer ? (exercise.rounds ?? exercise.sets) : exercise.sets
+        return (1...max(entryCount, 1)).map { index in
             LoggedSet(index: index, weight: nil, reps: nil)
         }
     }
@@ -497,6 +561,7 @@ struct LogWorkoutView: View {
 private struct SetTable: View {
     var sets: [LoggedSet]
     var recentlyLoggedSetID: LoggedSet.ID?
+    var trackingMode: ExerciseTrackingMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -508,7 +573,8 @@ private struct SetTable: View {
                             SetTableRow(
                                 set: set,
                                 phase: phase(for: set),
-                                isRecentlyLogged: set.id == recentlyLoggedSetID
+                                isRecentlyLogged: set.id == recentlyLoggedSetID,
+                                trackingMode: trackingMode
                             )
                             .id(set.id)
                         }
@@ -540,8 +606,9 @@ private struct SetTable: View {
         HStack(spacing: 12) {
             header("Set")
                 .frame(width: 68, alignment: .leading)
-            header("kg")
-            header("Reps")
+            ForEach(trackingMode.prescriptionMetrics) { metric in
+                header(metric.tableTitle)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 2)
@@ -555,7 +622,7 @@ private struct SetTable: View {
     }
 
     private func phase(for set: LoggedSet) -> SetRowPhase {
-        if set.isLogged {
+        if set.isLogged(for: trackingMode) {
             return .completed
         }
 
@@ -567,7 +634,7 @@ private struct SetTable: View {
     }
 
     private var activeSetID: LoggedSet.ID? {
-        sets.first { !$0.isLogged }?.id
+        sets.first { !$0.isLogged(for: trackingMode) }?.id
     }
 
     private var isScrollable: Bool {
@@ -612,13 +679,16 @@ private struct SetTableRow: View {
     var set: LoggedSet
     var phase: SetRowPhase
     var isRecentlyLogged: Bool
+    var trackingMode: ExerciseTrackingMode
 
     var body: some View {
         HStack(spacing: 12) {
             setCell
                 .frame(width: 68, alignment: .leading)
-            valueCell(set.weight.map(String.init) ?? "-", isEmpty: set.weight == nil)
-            valueCell(set.reps.map(String.init) ?? "-", isEmpty: set.reps == nil)
+            ForEach(trackingMode.prescriptionMetrics) { metric in
+                let value = set.displayValue(for: metric)
+                valueCell(value ?? "-", isEmpty: value == nil)
+            }
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, minHeight: 58, maxHeight: 58, alignment: .leading)
@@ -664,9 +734,10 @@ private struct SetTableRow: View {
     }
 
     private var accessibilityLabel: String {
-        let weightText = set.weight.map { "\($0) kilograms" } ?? "no weight logged"
-        let repsText = set.reps.map { "\($0) reps" } ?? "no reps logged"
-        return "Set \(set.index), \(phase.accessibilityText), \(weightText), \(repsText)"
+        let values = trackingMode.prescriptionMetrics.map { metric in
+            set.displayValue(for: metric).map { "\(metric.title) \($0)" } ?? "no \(metric.title.lowercased()) logged"
+        }
+        return "Set \(set.index), \(phase.accessibilityText), \(values.joined(separator: ", "))"
     }
 }
 
@@ -761,8 +832,42 @@ private enum SetRowPhase: Equatable {
 }
 
 private extension LoggedSet {
-    var isLogged: Bool {
-        weight != nil && reps != nil
+    func isLogged(for trackingMode: ExerciseTrackingMode) -> Bool {
+        trackingMode.prescriptionMetrics.allSatisfy { metric in
+            switch metric {
+            case .weight: weight != nil
+            case .counterweight: counterweight != nil
+            case .reps: reps != nil
+            case .duration: durationSeconds != nil
+            case .distance: distanceMeters != nil
+            case .rest, .zone, .rounds: true
+            }
+        }
+    }
+
+    func displayValue(for metric: ExercisePrescriptionMetric) -> String? {
+        switch metric {
+        case .weight: weight.map { "\($0)" }
+        case .counterweight: counterweight.map { "\($0)" }
+        case .reps: reps.map { "\($0)" }
+        case .duration: durationSeconds.map(ExercisePrescription.durationText)
+        case .distance: distanceMeters.map(ExercisePrescription.distanceText)
+        case .rest, .zone, .rounds: nil
+        }
+    }
+}
+
+private extension ExercisePrescriptionMetric {
+    var tableTitle: String {
+        switch self {
+        case .weight, .counterweight: "kg"
+        case .reps: "Reps"
+        case .duration: "Time"
+        case .distance: "Distance"
+        case .rest: "Rest"
+        case .zone: "Zone"
+        case .rounds: "Rounds"
+        }
     }
 }
 
