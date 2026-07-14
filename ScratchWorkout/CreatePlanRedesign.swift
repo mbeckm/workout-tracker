@@ -46,6 +46,7 @@ struct CreatePlanView: View {
     @State private var editingCustomExerciseID: UUID?
     @State private var stageDirection: AppNavigationDirection = .forward
     @State private var daySlideDirection: AppNavigationDirection = .forward
+    @State private var didFinish = false
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -101,16 +102,8 @@ struct CreatePlanView: View {
 
     var body: some View {
         AppScreen {
-            ZStack(alignment: .topLeading) {
-                content
-
-                if stage == .activatePrompt {
-                    activationPrompt
-                        .transition(activationTransition)
-                        .zIndex(10)
-                }
-            }
-            .padding(.horizontal, 24)
+            content
+                .padding(.horizontal, 24)
         }
         .task(id: searchTaskID) {
             await updateExerciseSearch()
@@ -396,55 +389,104 @@ struct CreatePlanView: View {
     }
 
     private var reviewView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ScreenTitle(title: editingPlan == nil ? "Review" : "Review Changes")
-                .padding(.top, AppLayout.screenTitleTopPadding)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                SuccessBadge(text: editingPlan == nil ? "PLAN READY" : "CHANGES READY")
 
-            TextField("Name your plan", text: $planName)
-                .focused($planNameFocused)
-                .font(AppFont.display)
-                .foregroundStyle(AppColor.primaryText)
-                .tint(AppColor.accent)
-                .lineLimit(1)
-                .submitLabel(.done)
-                .onSubmit { planNameFocused = false }
-                .padding(.bottom, 10)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(planNameFocused ? AppColor.accent : AppColor.border)
-                        .frame(height: 1)
+                Text(editingPlan == nil ? "Your plan is ready" : "Review your changes")
+                    .font(AppFont.h1)
+                    .padding(.top, 16)
+                    .accessibilityAddTraits(.isHeader)
+
+                Text("Built around \(daysPerWeek) workouts per week.")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .padding(.top, 8)
+
+                Text("PLAN NAME")
+                    .font(AppFont.label)
+                    .tracking(1.3)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .padding(.top, 20)
+
+                TextField("Name your plan", text: $planName)
+                    .focused($planNameFocused)
+                    .font(AppFont.h1)
+                    .foregroundStyle(AppColor.primaryText)
+                    .tint(AppColor.accent)
+                    .lineLimit(1)
+                    .submitLabel(.done)
+                    .onSubmit { planNameFocused = false }
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(planNameFocused ? AppColor.accent : AppColor.border)
+                            .frame(height: 1)
+                    }
+
+                SuccessMetricStrip(metrics: planMetrics)
+                    .padding(.top, 20)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Training focus")
+                        .font(AppFont.h2)
+
+                    Text(trainingFocusText)
+                        .font(AppFont.body)
+                        .foregroundStyle(trainingFocus.isEmpty ? AppColor.secondaryText : AppColor.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.top, 28)
+                .padding(.top, 16)
 
-            DayStepProgress(
-                count: daysPerWeek,
-                completed: daysPerWeek,
-                current: currentDayIndex,
-                selectedOnly: true,
-                onSelect: switchReviewDay
-            )
-            .padding(.top, 28)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Your week")
+                        .font(AppFont.h2)
+                        .padding(.bottom, 12)
 
-            SectionTitle(text: currentDayName)
-                .padding(.top, 24)
+                    ForEach(Array(planDays.indices), id: \.self) { index in
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(displayName(for: index))
+                                .font(AppFont.subheading)
+                                .foregroundStyle(AppColor.primaryText)
 
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 8) {
-                    ForEach(currentDayExercises) { exercise in
-                        PlanExerciseSummaryCard(exercise: exercise, onEdit: {}, onDelete: nil)
+                            Spacer(minLength: 12)
+
+                            Text(exerciseCountText(planDays[index].count))
+                                .font(AppFont.body)
+                                .foregroundStyle(AppColor.secondaryText)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        .padding(.vertical, 14)
+                        .accessibilityElement(children: .combine)
+
+                        if index < planDays.count - 1 {
+                            Rectangle()
+                                .fill(AppColor.border)
+                                .frame(height: 1)
+                                .accessibilityHidden(true)
+                        }
                     }
                 }
-                .padding(.top, 12)
-                .padding(.bottom, composerBottomPadding)
+                .padding(.top, 16)
             }
+            .padding(.top, AppLayout.screenTitleTopPadding)
+            .padding(.bottom, composerBottomPadding + AppLayout.bottomCTAHeight + 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .floatingBottomChrome(isVisible: stage == .finalReview) {
-            CTAButton(title: editingPlan == nil ? "Save Plan" : "Save Changes", width: 312) {
-                if editingPlan != nil {
-                    finish(activate: false)
+        .floatingBottomChrome {
+            VStack(spacing: 12) {
+                if editingPlan == nil {
+                    CTAButton(title: "Save & activate", width: 312) {
+                        finish(activate: true)
+                    }
+
+                    SuccessSecondaryButton(title: "Save only", width: 312) {
+                        finish(activate: false)
+                    }
                 } else {
-                    withAnimation(cardExpansionAnimation) {
-                        stage = .activatePrompt
+                    CTAButton(title: "Save changes", width: 312) {
+                        finish(activate: false)
                     }
                 }
             }
@@ -453,43 +495,6 @@ struct CreatePlanView: View {
             .disabled(!isPlanNameValid)
             .accessibilityHint(isPlanNameValid ? "" : "Enter a plan name first")
         }
-    }
-
-    private var activationPrompt: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Mark plan as active?")
-                    .font(AppFont.subheading)
-                Text("Your active workout plan is shown on your home screen.")
-                    .font(AppFont.body)
-                    .foregroundStyle(AppColor.secondaryText)
-            }
-
-            HStack(spacing: 12) {
-                activationButton(title: "Save to plans", isPrimary: false) { finish(activate: false) }
-                activationButton(title: "Save & activate", isPrimary: true) { finish(activate: true) }
-            }
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
-        .padding(.top, 580)
-    }
-
-    private func activationButton(title: String, isPrimary: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(AppFont.label)
-                .foregroundStyle(isPrimary ? AppColor.base : AppColor.primaryText)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, minHeight: 45)
-                .background(isPrimary ? AppColor.accent : AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(AppPressFeedbackStyle())
     }
 
     @ViewBuilder
@@ -691,6 +696,43 @@ struct CreatePlanView: View {
         return trimmed.isEmpty ? "Day \(currentDayIndex + 1)" : trimmed
     }
 
+    private var planMetrics: [SuccessMetric] {
+        [
+            SuccessMetric(value: "\(daysPerWeek)", label: "Days"),
+            SuccessMetric(value: "\(planDays.reduce(0) { $0 + $1.count })", label: "Exercises"),
+            SuccessMetric(
+                value: "\(planDays.flatMap { $0 }.reduce(0) { $0 + $1.sets })",
+                label: "Sets / week"
+            )
+        ]
+    }
+
+    private var trainingFocus: [String] {
+        var seen = Set<String>()
+        return planDays
+            .flatMap { $0 }
+            .map(\.muscleLabel)
+            .filter { label in
+                seen.insert(label.lowercased()).inserted
+            }
+            .prefix(4)
+            .map { $0 }
+    }
+
+    private var trainingFocusText: String {
+        trainingFocus.isEmpty ? "Add exercises to define your training focus." : trainingFocus.joined(separator: " · ")
+    }
+
+    private func displayName(for index: Int) -> String {
+        guard dayNames.indices.contains(index) else { return "Day \(index + 1)" }
+        let trimmed = dayNames[index].trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Day \(index + 1)" : trimmed
+    }
+
+    private func exerciseCountText(_ count: Int) -> String {
+        "\(count) \(count == 1 ? "exercise" : "exercises")"
+    }
+
     private var currentDayNameBinding: Binding<String> {
         Binding(
             get: {
@@ -716,12 +758,6 @@ struct CreatePlanView: View {
 
     private var cardExpansionAnimation: Animation {
         reduceMotion ? AppNavigationAnimation.reduced : .spring(response: 0.24, dampingFraction: 0.96)
-    }
-
-    private var activationTransition: AnyTransition {
-        reduceMotion
-            ? .opacity
-            : .scale(scale: 0.94, anchor: .bottom).combined(with: .opacity)
     }
 
     private var displayedSearchExercises: [ExercisePrescription] {
@@ -1172,6 +1208,8 @@ struct CreatePlanView: View {
     }
 
     private func finish(activate: Bool) {
+        guard !didFinish else { return }
+        didFinish = true
         PerformanceTrace.event(PerformanceTrace.Name.savePlan)
         let days = planDays.indices.map { index in
             WorkoutDay(title: dayNames.indices.contains(index) ? dayNames[index] : "Day \(index + 1)", exercises: planDays[index])
