@@ -82,10 +82,13 @@ struct LogWorkoutSessionView: View {
             let savedSets = initialLoggedSets.indices.contains(index) && !initialLoggedSets[index].isEmpty
                 ? initialLoggedSets[index]
                 : LogWorkoutView.initialSets(for: exercise)
+            let latestLoggedSet = savedSets.last {
+                $0.weight != nil || $0.counterweight != nil
+            }
             return ExerciseLogState(
                 sets: savedSets,
-                weight: exercise.targetWeight ?? 0,
-                counterweight: exercise.targetCounterweight ?? 0,
+                weight: latestLoggedSet?.weight ?? 0,
+                counterweight: latestLoggedSet?.counterweight ?? 0,
                 reps: max(exercise.reps, 0),
                 durationSeconds: exercise.durationSeconds ?? 30,
                 distanceMeters: exercise.distanceMeters ?? 100
