@@ -148,6 +148,96 @@ struct WorkoutStore {
         )
     }
 
+    func exerciseResults(for workout: LoggedWorkout, day: WorkoutDay) -> [WorkoutExerciseResult] {
+        let eligibleExercises = day.exercises.enumerated().reduce(
+            into: [String: (order: Int, displayName: String)]()
+        ) { partialResult, entry in
+            guard entry.element.trackingMode == .weightAndReps else {
+                return
+            }
+
+            let key = entry.element.name.normalizedStatsKey
+            guard partialResult[key] == nil else {
+                return
+            }
+
+            partialResult[key] = (entry.offset, entry.element.name)
+        }
+
+        let previousBestByExercise = workoutHistory
+            .filter { $0.id != workout.id }
+            .flatMap(\.exercises)
+            .filter { eligibleExercises[$0.exerciseName.normalizedStatsKey] != nil }
+            .reduce(into: [String: Double]()) { partialResult, exercise in
+                let key = exercise.exerciseName.normalizedStatsKey
+                guard let best = exercise.sets.compactMap(\.estimatedTenRM).max() else {
+                    return
+                }
+
+                partialResult[key] = max(partialResult[key] ?? -Double.infinity, best)
+            }
+
+        let currentSetsByExercise = workout.exercises.reduce(into: [String: [LoggedSet]]()) { partialResult, exercise in
+            let key = exercise.exerciseName.normalizedStatsKey
+            guard eligibleExercises[key] != nil else {
+                return
+            }
+
+            partialResult[key, default: []].append(contentsOf: exercise.sets)
+        }
+
+        return currentSetsByExercise.compactMap { key, sets -> (WorkoutExerciseResult, Int)? in
+            guard let exercise = eligibleExercises[key],
+                  let bestSet = sets.compactMap({ set -> (set: LoggedSet, estimatedTenRM: Double)? in
+                      guard let estimatedTenRM = set.estimatedTenRM else {
+                          return nil
+                      }
+                      return (set, estimatedTenRM)
+                  }).max(by: { lhs, rhs in
+                      if lhs.estimatedTenRM != rhs.estimatedTenRM {
+                          return lhs.estimatedTenRM < rhs.estimatedTenRM
+                      }
+
+                      let lhsWeight = lhs.set.weight ?? 0
+                      let rhsWeight = rhs.set.weight ?? 0
+                      if lhsWeight != rhsWeight {
+                          return lhsWeight < rhsWeight
+                      }
+
+                      let lhsReps = lhs.set.reps ?? 0
+                      let rhsReps = rhs.set.reps ?? 0
+                      if lhsReps != rhsReps {
+                          return lhsReps < rhsReps
+                      }
+
+                      return lhs.set.index > rhs.set.index
+                  }),
+                  let weight = bestSet.set.weight,
+                  let reps = bestSet.set.reps else {
+                return nil
+            }
+
+            return (
+                WorkoutExerciseResult(
+                    exerciseName: exercise.displayName,
+                    weight: weight,
+                    reps: reps,
+                    estimatedTenRM: bestSet.estimatedTenRM,
+                    previousBestTenRM: previousBestByExercise[key]
+                ),
+                exercise.order
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.0.isPersonalBest != rhs.0.isPersonalBest {
+                return lhs.0.isPersonalBest && !rhs.0.isPersonalBest
+            }
+
+            return lhs.1 < rhs.1
+        }
+        .map(\.0)
+    }
+
     private static let storageKey = "scratchWorkout.appState.v2"
 
     init(defaults: UserDefaults = .standard) {
@@ -258,21 +348,24 @@ struct WorkoutStore {
         persist()
     }
 
-    mutating func completeWorkout(day: WorkoutDay, exerciseSets: [[LoggedSet]]) -> LoggedWorkout {
+    mutating func completeWorkout(
+        day: WorkoutDay,
+        exerciseSets: [[LoggedSet]],
+        durationMinutes: Int
+    ) -> LoggedWorkout {
         let completedSetCount = exerciseSets
             .flatMap { $0 }
             .filter(\.hasLoggedValues)
             .count
-        let prescribedSetCount = day.exercises.reduce(0) { $0 + $1.sets }
         let loggedExercises = zip(day.exercises, exerciseSets).map { exercise, sets in
             LoggedExercise(exerciseName: exercise.name, sets: sets)
         }
         let workout = LoggedWorkout(
             title: day.title,
             completedAt: Date(),
-            durationMinutes: 93,
+            durationMinutes: max(0, durationMinutes),
             exerciseCount: day.exercises.count,
-            setCount: completedSetCount == 0 ? prescribedSetCount : completedSetCount,
+            setCount: completedSetCount,
             exercises: loggedExercises
         )
         workoutHistory.insert(workout, at: 0)

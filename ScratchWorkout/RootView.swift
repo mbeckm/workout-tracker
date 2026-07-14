@@ -6,7 +6,9 @@ struct RootView: View {
     @State private var route: AppRoute?
     @State private var store = WorkoutStore()
     @State private var completedWorkout: LoggedWorkout?
+    @State private var completedExerciseResults: [WorkoutExerciseResult] = []
     @State private var workoutSessionDay: WorkoutDay?
+    @State private var workoutStartedAt: Date?
     @State private var activeExerciseIndex = 0
     @State private var loggedExerciseSets: [[LoggedSet]] = []
     @State private var isAccountPresented = false
@@ -248,13 +250,19 @@ struct RootView: View {
                 )
             }
         case .workoutComplete:
-            WorkoutCompleteView(workout: completedWorkout, onFinish: {
-                pop {
-                    selectedTab = .home
-                    route = nil
-                    clearWorkoutSession()
-                }
-            })
+            if let completedWorkout {
+                WorkoutCompleteView(
+                    workout: completedWorkout,
+                    exerciseResults: completedExerciseResults,
+                    onFinish: {
+                        pop {
+                            selectedTab = .home
+                            route = nil
+                            clearWorkoutSession()
+                        }
+                    }
+                )
+            }
         case .createPlan:
             CreatePlanView(
                 customExercises: store.customExercises,
@@ -404,6 +412,7 @@ struct RootView: View {
         let day = selectedDay ?? store.nextWorkoutDay
         selectedTab = .workout
         workoutSessionDay = day
+        workoutStartedAt = Date()
         activeExerciseIndex = 0
         loggedExerciseSets = Array(repeating: [], count: day.exercises.count)
         achievementFiredExerciseKeys = []
@@ -435,7 +444,15 @@ struct RootView: View {
         if index >= sessionDay.exercises.count - 1 {
             PerformanceTrace.event(PerformanceTrace.Name.workoutFinish)
             navigationDirection = .forward
-            completedWorkout = store.completeWorkout(day: sessionDay, exerciseSets: loggedExerciseSets)
+            let elapsedSeconds = Date().timeIntervalSince(workoutStartedAt ?? Date())
+            let elapsedMinutes = max(0, Int(elapsedSeconds / 60))
+            let workout = store.completeWorkout(
+                day: sessionDay,
+                exerciseSets: loggedExerciseSets,
+                durationMinutes: elapsedMinutes
+            )
+            completedWorkout = workout
+            completedExerciseResults = store.exerciseResults(for: workout, day: sessionDay)
             syncAccount(reason: .workoutCompleted)
             route = .workoutComplete
         } else {
@@ -469,8 +486,10 @@ struct RootView: View {
 
     private func clearWorkoutSession() {
         workoutSessionDay = nil
+        workoutStartedAt = nil
         activeExerciseIndex = 0
         loggedExerciseSets = []
+        completedExerciseResults = []
         achievementFiredExerciseKeys = []
         deferredExerciseCompletion = nil
         activeAchievement = nil
@@ -566,12 +585,36 @@ private enum PreviewFixtures {
     ]
 
     static let loggedWorkout = LoggedWorkout(
-        title: "Push",
+        title: "Push Day",
         completedAt: Date(timeIntervalSince1970: 1_783_000_000),
-        durationMinutes: 93,
-        exerciseCount: 8,
-        setCount: 32
+        durationMinutes: 47,
+        exerciseCount: 7,
+        setCount: 18
     )
+
+    static let workoutExerciseResults = [
+        WorkoutExerciseResult(
+            exerciseName: "Bench Press",
+            weight: 110,
+            reps: 10,
+            estimatedTenRM: 110,
+            previousBestTenRM: 105
+        ),
+        WorkoutExerciseResult(
+            exerciseName: "Lateral Raises",
+            weight: 35,
+            reps: 10,
+            estimatedTenRM: 35,
+            previousBestTenRM: 31
+        ),
+        WorkoutExerciseResult(
+            exerciseName: "Incline Dumbbell Press",
+            weight: 35,
+            reps: 10,
+            estimatedTenRM: 35,
+            previousBestTenRM: 31
+        )
+    ]
 
     static let recentWorkout = LoggedWorkout(
         title: "Pull",
@@ -678,7 +721,11 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
             .previewDisplayName("Log Workout")
 
             ScreenPreviewShell(tab: .workout, route: .workoutComplete) {
-                WorkoutCompleteView(workout: PreviewFixtures.loggedWorkout, onFinish: {})
+                WorkoutCompleteView(
+                    workout: PreviewFixtures.loggedWorkout,
+                    exerciseResults: PreviewFixtures.workoutExerciseResults,
+                    onFinish: {}
+                )
             }
             .previewDisplayName("Workout Complete")
 

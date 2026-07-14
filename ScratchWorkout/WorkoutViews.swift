@@ -872,86 +872,360 @@ private extension ExercisePrescriptionMetric {
 }
 
 struct WorkoutCompleteView: View {
-    var workout: LoggedWorkout?
+    var workout: LoggedWorkout
+    var exerciseResults: [WorkoutExerciseResult]
     var onFinish: () -> Void
+    @State private var successFeedbackTrigger = false
+    @State private var hasPresented = false
+    @State private var headerPresented = false
+    @State private var heroPresented = false
+    @State private var accentLinePresented = false
+    @State private var progressPresented = false
+    @State private var visibleResultCount = 0
+    @State private var displayedHeroValue = 0
+    @AccessibilityFocusState private var headingFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         AppScreen {
-            VStack(spacing: 0) {
-                ScreenTitle(title: "Well done!")
-                    .padding(.top, AppLayout.screenTitleTopPadding)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(workout.title) complete")
+                        .font(AppFont.display)
+                        .accessibilityFocused($headingFocused)
+                        .accessibilityAddTraits(.isHeader)
 
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColor.accent)
-                            .frame(width: 100, height: 100)
+                    Text(heroEyebrow)
+                        .font(AppFont.label)
+                        .tracking(1.3)
+                        .foregroundStyle(AppColor.accent)
+                        .padding(.top, 24)
 
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 48, weight: .bold))
-                            .foregroundStyle(AppColor.base)
+                    WorkoutResultHero(
+                        value: displayedHeroValue,
+                        title: heroTitle,
+                        detail: heroDetail,
+                        isPresented: heroPresented,
+                        isAccentLinePresented: accentLinePresented,
+                        reduceMotion: reduceMotion
+                    )
+                    .padding(.top, 12)
+
+                    Text(progressEyebrow)
+                        .font(AppFont.label)
+                        .tracking(1.3)
+                        .foregroundStyle(AppColor.accent)
+                        .padding(.top, 36)
+
+                    if topResults.isEmpty {
+                        WorkoutSessionSummaryPanel(workout: workout)
+                            .padding(.top, 12)
+                            .opacity(progressPresented ? 1 : 0)
+                            .offset(y: progressOffset)
+                    } else {
+                        WorkoutProgressTable(
+                            results: topResults,
+                            visibleResultCount: visibleResultCount
+                        )
+                        .padding(.top, 12)
+                        .opacity(progressPresented ? 1 : 0)
+                        .offset(y: progressOffset)
                     }
-                    .frame(width: 120, height: 120)
-
-                    SummaryCard(workout: workout)
                 }
-                .padding(.top, 48)
                 .padding(.horizontal, 24)
-
-                Spacer(minLength: 24)
+                .padding(.top, AppLayout.screenTitleTopPadding)
+                .floatingBottomChromeScrollPadding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(headerPresented ? 1 : 0)
+                .offset(y: headerOffset)
             }
-            .frame(maxWidth: .infinity)
             .floatingBottomChrome {
-                CTAButton(title: "Finish", width: 312, action: onFinish)
+                CTAButton(title: "Done", width: 312, action: onFinish)
             }
+        }
+        .sensoryFeedback(.success, trigger: successFeedbackTrigger)
+        .task {
+            await presentCelebration()
+        }
+    }
+
+    private var topResults: [WorkoutExerciseResult] {
+        Array(exerciseResults.prefix(3))
+    }
+
+    private var personalBestCount: Int {
+        exerciseResults.filter(\.isPersonalBest).count
+    }
+
+    private var heroValue: Int {
+        personalBestCount > 0 ? personalBestCount : workout.setCount
+    }
+
+    private var heroEyebrow: String {
+        personalBestCount > 0 ? "YOU IMPROVED YOURSELF" : "WORKOUT SAVED"
+    }
+
+    private var heroTitle: String {
+        if personalBestCount == 1 {
+            return "Personal Best"
+        }
+        return personalBestCount > 1 ? "Personal Bests" : "Sets Completed"
+    }
+
+    private var heroDetail: String {
+        if personalBestCount > 0 {
+            return "Your strongest \(workout.title) so far."
+        }
+        return "Your workout is logged."
+    }
+
+    private var progressEyebrow: String {
+        topResults.isEmpty ? "YOUR WORKOUT IN NUMBERS" : "YOUR PROGRESS IN NUMBERS"
+    }
+
+    private var headerOffset: CGFloat {
+        reduceMotion || headerPresented ? 0 : 6
+    }
+
+    private var progressOffset: CGFloat {
+        reduceMotion || progressPresented ? 0 : 8
+    }
+
+    @MainActor
+    private func presentCelebration() async {
+        guard !hasPresented else { return }
+        hasPresented = true
+        headingFocused = true
+        successFeedbackTrigger.toggle()
+
+        if reduceMotion {
+            headerPresented = true
+            heroPresented = true
+            accentLinePresented = true
+            progressPresented = true
+            visibleResultCount = topResults.count
+            displayedHeroValue = heroValue
+            return
+        }
+
+        withAnimation(.easeOut(duration: 0.22)) {
+            headerPresented = true
+        }
+
+        guard await pause(milliseconds: 100) else { return }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
+            heroPresented = true
+            accentLinePresented = true
+            displayedHeroValue = heroValue
+        }
+
+        guard await pause(milliseconds: 180) else { return }
+        withAnimation(.easeOut(duration: 0.22)) {
+            progressPresented = true
+        }
+
+        for index in topResults.indices {
+            guard await pause(milliseconds: 60) else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                visibleResultCount = index + 1
+            }
+        }
+    }
+
+    private func pause(milliseconds: UInt64) async -> Bool {
+        do {
+            try await Task.sleep(nanoseconds: milliseconds * 1_000_000)
+            return !Task.isCancelled
+        } catch {
+            return false
         }
     }
 }
 
-private struct SummaryCard: View {
-    var workout: LoggedWorkout?
+private struct WorkoutResultHero: View {
+    var value: Int
+    var title: String
+    var detail: String
+    var isPresented: Bool
+    var isAccentLinePresented: Bool
+    var reduceMotion: Bool
 
     var body: some View {
-        VStack(spacing: 24) {
-            summary(value: durationText, label: "Duration")
-            divider
-            summary(value: "\(workout?.exerciseCount ?? 8)", label: "Exercises")
-            divider
-            summary(value: "\(workout?.setCount ?? 32)", label: "Sets")
+        HStack(spacing: 12) {
+            Text("\(value)")
+                .font(Font.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                .monospacedDigit()
+                .contentTransition(.numericText(value: Double(value)))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Rectangle()
+                .fill(AppColor.accent)
+                .frame(width: 4, height: 96)
+                .scaleEffect(x: 1, y: isAccentLinePresented ? 1 : 0.08, anchor: .top)
+                .shadow(
+                    color: AppColor.accent.opacity(isAccentLinePresented ? 0.22 : 0),
+                    radius: 8
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(AppFont.h1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Text(detail)
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 16)
-        .frame(width: 354, height: 310)
+        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .opacity(isPresented ? 1 : 0)
+        .scaleEffect(reduceMotion || isPresented ? 1 : 0.94, anchor: .leading)
+        .offset(y: reduceMotion || isPresented ? 0 : 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(title). \(detail)")
+    }
+}
+
+private struct WorkoutProgressTable: View {
+    var results: [WorkoutExerciseResult]
+    var visibleResultCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WorkoutProgressColumns(
+                exercise: "Exercise",
+                best: "Best Set 10RM",
+                change: "Change",
+                isHeader: true
+            )
+
+            VStack(spacing: 0) {
+                ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
+                    if index > 0 {
+                        Rectangle()
+                            .fill(AppColor.border)
+                            .frame(height: 1)
+                    }
+
+                    WorkoutProgressResultRow(result: result)
+                        .opacity(index < visibleResultCount ? 1 : 0)
+                        .offset(y: index < visibleResultCount ? 0 : 8)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
+        .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.border, lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+private struct WorkoutProgressResultRow: View {
+    var result: WorkoutExerciseResult
+
+    var body: some View {
+        WorkoutProgressColumns(
+            exercise: result.exerciseName,
+            best: formattedTenRM,
+            change: changeText,
+            isHeader: false,
+            emphasizesChange: result.isPersonalBest
         )
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
     }
 
-    private var durationText: String {
-        guard let minutes = workout?.durationMinutes else {
-            return "1h 33min"
-        }
-
-        return "\(minutes / 60)h \(minutes % 60)min"
+    private var formattedTenRM: String {
+        WorkoutProgressFormatting.weight(result.estimatedTenRM)
     }
 
-    private func summary(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(AppFont.display)
-                .tracking(-0.64)
-            Text(label)
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.secondaryText)
+    private var changeText: String {
+        if let change = result.positiveChange {
+            return "+\(WorkoutProgressFormatting.weight(change))kg"
         }
+        return result.hasBaseline ? "Baseline" : "—"
+    }
+
+    private var accessibilityText: String {
+        var text = "\(result.exerciseName), best estimated ten-rep max \(formattedTenRM) kilograms"
+        if let change = result.positiveChange {
+            text += ", improved by \(WorkoutProgressFormatting.weight(change)) kilograms"
+        } else if result.hasBaseline {
+            text += ", first logged baseline"
+        } else {
+            text += ", no new personal best"
+        }
+        return text
+    }
+}
+
+private struct WorkoutProgressColumns: View {
+    var exercise: String
+    var best: String
+    var change: String
+    var isHeader: Bool
+    var emphasizesChange = false
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text(exercise)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(isHeader ? 1 : 2)
+                .minimumScaleFactor(isHeader ? 0.8 : 0.85)
+
+            Text(best)
+                .frame(width: 96, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .monospacedDigit()
+
+            Text(change)
+                .frame(width: 72, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .monospacedDigit()
+                .foregroundStyle(emphasizesChange ? AppColor.accent : AppColor.secondaryText)
+        }
+        .font(isHeader ? AppFont.label : AppFont.subheading)
+        .foregroundStyle(isHeader ? AppColor.secondaryText : AppColor.primaryText)
+    }
+}
+
+private struct WorkoutSessionSummaryPanel: View {
+    var workout: LoggedWorkout
+
+    var body: some View {
+        SuccessMetricStrip(
+            metrics: [
+                SuccessMetric(value: "\(workout.setCount)", label: "Sets"),
+                SuccessMetric(value: workout.durationMinutes == 0 ? "<1" : "\(workout.durationMinutes)", label: "Minutes"),
+                SuccessMetric(value: "\(workout.exerciseCount)", label: "Exercises")
+            ]
+        )
+        .padding(.vertical, 20)
         .frame(maxWidth: .infinity)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        }
     }
+}
 
-    private var divider: some View {
-        Rectangle()
-            .fill(AppColor.border)
-            .frame(height: 1)
-            .frame(width: 338)
+private enum WorkoutProgressFormatting {
+    static func weight(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%.1f", value)
     }
 }

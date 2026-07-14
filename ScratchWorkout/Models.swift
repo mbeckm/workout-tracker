@@ -612,6 +612,36 @@ struct LoggedWorkout: Identifiable, Equatable, Codable {
     }
 }
 
+struct WorkoutExerciseResult: Identifiable, Equatable {
+    var id: String { exerciseName.normalizedStatsKey }
+    var exerciseName: String
+    var weight: Int
+    var reps: Int
+    var estimatedTenRM: Double
+    var previousBestTenRM: Double?
+
+    var hasBaseline: Bool {
+        previousBestTenRM == nil
+    }
+
+    var positiveChange: Double? {
+        guard let previousBestTenRM,
+              estimatedTenRM - previousBestTenRM >= 0.05 else {
+            return nil
+        }
+
+        return estimatedTenRM - previousBestTenRM
+    }
+
+    var change: Double? {
+        positiveChange
+    }
+
+    var isPersonalBest: Bool {
+        positiveChange != nil
+    }
+}
+
 struct ExerciseSetSummary: Identifiable, Equatable {
     var id: String { exerciseName.normalizedStatsKey }
     var exerciseName: String

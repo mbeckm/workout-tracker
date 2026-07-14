@@ -502,6 +502,82 @@ struct MetricLabel: View {
     }
 }
 
+struct SuccessBadge: View {
+    var text: String
+
+    var body: some View {
+        Text(text)
+            .font(AppFont.label)
+            .foregroundStyle(AppColor.base)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 30)
+            .background(AppColor.accent, in: Capsule())
+    }
+}
+
+struct SuccessMetric: Identifiable {
+    let id: String
+    var value: String
+    var label: String
+
+    init(value: String, label: String) {
+        id = label
+        self.value = value
+        self.label = label
+    }
+}
+
+struct SuccessMetricStrip: View {
+    var metrics: [SuccessMetric]
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(metrics) { metric in
+                VStack(spacing: 4) {
+                    Text(metric.value)
+                        .font(AppFont.h1)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                    Text(metric.label)
+                        .font(AppFont.caption)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+}
+
+struct SuccessSecondaryButton: View {
+    var title: String
+    var width: CGFloat = 312
+    var action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            Text(title)
+                .font(AppFont.h1)
+                .foregroundStyle(AppColor.primaryText)
+                .lineLimit(1)
+                .frame(width: width, height: AppLayout.bottomCTAHeight)
+                .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(AppColor.border, lineWidth: 1)
+                }
+        }
+        .buttonStyle(AppPressFeedbackStyle())
+        .accessibilityLabel(title)
+    }
+}
+
 struct CardShell<Content: View>: View {
     var height: CGFloat?
     var cornerRadius: CGFloat = 12
