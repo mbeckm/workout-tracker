@@ -450,7 +450,6 @@ struct DayStepProgress: View {
         }
         .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
     }
 
     @ViewBuilder
@@ -467,35 +466,34 @@ struct DayStepProgress: View {
 
         if onReorder != nil || onDelete != nil {
             button
-                .draggable(String(index))
-                .dropDestination(for: String.self) { items, _ in
-                    guard let rawIndex = items.first,
-                          let fromIndex = Int(rawIndex),
-                          fromIndex != index else {
-                        return false
+                .contextMenu {
+                    if index > 0, onReorder != nil {
+                        Button {
+                            onReorder?(index, index - 1)
+                        } label: {
+                            Label("Move Earlier", systemImage: "arrow.left")
+                        }
                     }
 
-                    onReorder?(fromIndex, index)
-                    return true
+                    if index < count - 1, onReorder != nil {
+                        Button {
+                            onReorder?(index, index + 1)
+                        } label: {
+                            Label("Move Later", systemImage: "arrow.right")
+                        }
+                    }
+
+                    if count > 1, onDelete != nil {
+                        Button(role: .destructive) {
+                            onDelete?(index)
+                        } label: {
+                            Label("Delete Day", systemImage: "trash")
+                        }
+                    }
                 }
-                .simultaneousGesture(deleteSwipe(for: index))
         } else {
             button
         }
-    }
-
-    private func deleteSwipe(for index: Int) -> some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onEnded { value in
-                let horizontal = value.translation.width
-                let vertical = abs(value.translation.height)
-                guard horizontal < -36,
-                      abs(horizontal) > vertical * 1.4 else {
-                    return
-                }
-
-                onDelete?(index)
-            }
     }
 
     private func fill(for index: Int) -> Color {

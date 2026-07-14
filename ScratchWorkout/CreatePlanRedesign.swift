@@ -27,12 +27,15 @@ struct CreatePlanView: View {
     @State private var completedDays = 0
     @State private var planDays: [[ExercisePrescription]]
     @State private var dayNames: [String]
+    @State private var dayNameDraft: String
     @State private var searchQuery: String
     @State private var searchResults: [ExercisePrescription] = []
     @State private var customSearchResults: [ExercisePrescription] = []
     @State private var selectedLibraryExercises: [ExercisePrescription] = []
     @State private var selectedTypeFilter: WorkoutItemType?
     @State private var isDiscardSelectionConfirmationPresented = false
+    @State private var isSubmittingSelectedExercises = false
+    @State private var searchScrollRequest = 0
     @State private var searchState: PlanEntrySearchState = .idle
     @State private var configurationDraft: PlanExerciseConfigurationDraft?
     @State private var customExercises: [CustomExerciseDefinition]
@@ -44,8 +47,6 @@ struct CreatePlanView: View {
     @State private var customTrackingMode: ExerciseTrackingMode?
     @State private var customErrorMessage: String?
     @State private var editingCustomExerciseID: UUID?
-    @State private var stageDirection: AppNavigationDirection = .forward
-    @State private var daySlideDirection: AppNavigationDirection = .forward
     @State private var didFinish = false
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -94,6 +95,7 @@ struct CreatePlanView: View {
         _daysPerWeek = State(initialValue: safeDayCount)
         _planDays = State(initialValue: seededDays)
         _dayNames = State(initialValue: seededNames)
+        _dayNameDraft = State(initialValue: seededNames.first ?? "Day 1")
         _completedDays = State(initialValue: seededCompletedDays)
         _searchQuery = State(initialValue: searchQuery)
         _selectedTypeFilter = State(initialValue: selectedTypeFilter)
@@ -146,16 +148,6 @@ struct CreatePlanView: View {
                 reviewView
             }
         }
-        .id(contentIdentity)
-        .transition(AppScreenTransition.slide(stageDirection, reduceMotion: reduceMotion))
-        .animation(navigationAnimation, value: contentIdentity)
-    }
-
-    private var contentIdentity: String {
-        if let customRoute {
-            return "custom-\(customRoute.rawValue)"
-        }
-        return stage.rawValue
     }
 
     private var frequencyView: some View {
@@ -210,8 +202,7 @@ struct CreatePlanView: View {
             .padding(.top, 24)
 
             HStack(spacing: 4) {
-                TextField("Day \(currentDayIndex + 1)", text: currentDayNameBinding)
-                    .id(currentDayIndex)
+                TextField("Day \(currentDayIndex + 1)", text: $dayNameDraft)
                     .focused($dayNameFocused)
                     .font(AppFont.h1)
                     .foregroundStyle(AppColor.primaryText)
@@ -261,6 +252,7 @@ struct CreatePlanView: View {
         }
         .floatingBottomChrome(isVisible: !currentDayExercises.isEmpty) {
             CTAButton(title: "Save Day", width: 312, action: saveCurrentDay)
+                .disabled(isSubmittingSelectedExercises)
         }
     }
 
@@ -325,66 +317,93 @@ struct CreatePlanView: View {
             WorkoutItemTypeFilters(selection: $selectedTypeFilter)
                 .padding(.top, 12)
 
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 8) {
-                    if !selectedLibraryExercises.isEmpty {
-                        LibrarySectionLabel(title: "Selected", count: selectedLibraryExercises.count)
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 8) {
+                        if !addableSelectedLibraryExercises.isEmpty {
+                            LibrarySectionLabel(title: "Selected", count: addableSelectedLibraryExercises.count)
+                                .id("selected-library-anchor")
 
-                        ForEach(selectedLibraryExercises, id: \.stableCatalogID) { exercise in
-                            ExerciseSearchResultCard(
+                            ForEach(addableSelectedLibraryExercises, id: \.stableCatalogID) { exercise in
+                                ExerciseSearchResultCard(
+                                    exercise: exercise,
+                                    isSelected: true,
+                                    onToggle: { toggleLibrarySelection(exercise) }
+                                )
+                                .contextMenu { customExerciseActions(for: exercise) }
+                            }
+
+                        }
+
+                        if !existingDayDisplayedSearchExercises.isEmpty {
+                            LibrarySectionLabel(
+                                title: "Already in \(currentDayName)",
+                                count: existingDayDisplayedSearchExercises.count
+                            )
+
+                            ForEach(existingDayDisplayedSearchExercises, id: \.stableCatalogID) { exercise in
+                                ExerciseAlreadyAddedCard(exercise: exercise, dayName: currentDayName)
+                            }
+
+                        }
+
+                        if !addableSelectedLibraryExercises.isEmpty || !existingDayDisplayedSearchExercises.isEmpty {
+                            LibrarySectionLabel(title: searchQuery.isEmpty ? "Library" : "Results")
+                                .padding(.top, 8)
+                        }
+
+                        if searchState == .loading && displayedSearchExercises.isEmpty {
+                            ProgressView()
+                                .tint(AppColor.accent)
+                                .frame(maxWidth: .infinity, minHeight: 88)
+                        }
+
+                        if shouldOfferCreateExercise {
+                            CreateExerciseResultRow(name: normalizedCreateName, action: beginCustomExercise)
+                        }
+
+                        ForEach(unselectedDisplayedSearchExercises, id: \.stableCatalogID) { exercise in
+                            ExerciseSearchCard(
                                 exercise: exercise,
-                                isSelected: true,
-                                onToggle: { toggleLibrarySelection(exercise) }
+                                draft: configurationBinding(for: exercise),
+                                onAction: configurationDraft?.source.id == exercise.id
+                                    ? advanceConfiguration
+                                    : { configure(exercise) }
                             )
                             .contextMenu { customExerciseActions(for: exercise) }
                         }
 
-                        LibrarySectionLabel(title: searchQuery.isEmpty ? "Library" : "Results")
-                            .padding(.top, 8)
-                    }
+                        if unselectedDisplayedSearchExercises.isEmpty && !shouldOfferCreateExercise && searchState != .loading {
+                            Text(searchEmptyMessage)
+                                .font(AppFont.body)
+                                .foregroundStyle(AppColor.secondaryText)
+                                .frame(maxWidth: .infinity, minHeight: 72, alignment: .center)
+                        }
 
-                    if searchState == .loading && displayedSearchExercises.isEmpty {
-                        ProgressView()
-                            .tint(AppColor.accent)
-                            .frame(maxWidth: .infinity, minHeight: 88)
-                    }
-
-                    if shouldOfferCreateExercise {
-                        CreateExerciseResultRow(name: normalizedCreateName, action: beginCustomExercise)
-                    }
-
-                    ForEach(unselectedDisplayedSearchExercises, id: \.stableCatalogID) { exercise in
-                        ExerciseSearchCard(
-                            exercise: exercise,
-                            draft: configurationBinding(for: exercise),
-                            onAction: configurationDraft?.source.id == exercise.id
-                                ? advanceConfiguration
-                                : { configure(exercise) }
-                        )
-                        .contextMenu { customExerciseActions(for: exercise) }
-                    }
-
-                    if unselectedDisplayedSearchExercises.isEmpty && !shouldOfferCreateExercise && searchState != .loading {
-                        Text(searchEmptyMessage)
-                            .font(AppFont.body)
+                        Text("Exercise data by ExerciseDB")
+                            .font(AppFont.caption)
                             .foregroundStyle(AppColor.secondaryText)
-                            .frame(maxWidth: .infinity, minHeight: 72, alignment: .center)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 4)
                     }
-
-                    Text("Exercise data by ExerciseDB")
-                        .font(AppFont.caption)
-                        .foregroundStyle(AppColor.secondaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 4)
+                    .padding(.top, 8)
+                    .padding(.bottom, addableSelectedLibraryExercises.isEmpty ? 24 : composerBottomPadding)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, selectedLibraryExercises.isEmpty ? 24 : composerBottomPadding)
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: searchScrollRequest) { _, request in
+                    guard request > 0 else { return }
+                    DispatchQueue.main.async {
+                        withAnimation(reduceMotion ? nil : .timingCurve(0.23, 1, 0.32, 1, duration: 0.22)) {
+                            proxy.scrollTo("selected-library-anchor", anchor: .top)
+                        }
+                    }
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .background(AppColor.surface1.opacity(0.16))
-        .floatingBottomChrome(isVisible: !selectedLibraryExercises.isEmpty) {
+        .floatingBottomChrome(isVisible: !addableSelectedLibraryExercises.isEmpty) {
             CTAButton(title: addSelectedButtonTitle, width: 312, action: addSelectedExercisesToDay)
+                .disabled(isSubmittingSelectedExercises)
         }
     }
 
@@ -732,28 +751,8 @@ struct CreatePlanView: View {
     private func exerciseCountText(_ count: Int) -> String {
         "\(count) \(count == 1 ? "exercise" : "exercises")"
     }
-
-    private var currentDayNameBinding: Binding<String> {
-        Binding(
-            get: {
-                guard dayNames.indices.contains(currentDayIndex) else {
-                    return "Day \(currentDayIndex + 1)"
-                }
-                return dayNames[currentDayIndex]
-            },
-            set: { newValue in
-                guard dayNames.indices.contains(currentDayIndex) else { return }
-                dayNames[currentDayIndex] = newValue
-            }
-        )
-    }
-
     private var composerBottomPadding: CGFloat {
         AppLayout.floatingBottomChromeClearance(usesNativeTabBar: usesNativeTabBar)
-    }
-
-    private var navigationAnimation: Animation {
-        AppNavigationAnimation.push(reduceMotion: reduceMotion)
     }
 
     private var cardExpansionAnimation: Animation {
@@ -798,7 +797,24 @@ struct CreatePlanView: View {
 
     private var unselectedDisplayedSearchExercises: [ExercisePrescription] {
         let selectedIDs = Set(selectedLibraryExercises.map(\.stableCatalogID))
-        return displayedSearchExercises.filter { !selectedIDs.contains($0.stableCatalogID) }
+        let existingIDs = currentDayExerciseCatalogIDs
+        return displayedSearchExercises.filter {
+            !selectedIDs.contains($0.stableCatalogID) && !existingIDs.contains($0.stableCatalogID)
+        }
+    }
+
+    private var existingDayDisplayedSearchExercises: [ExercisePrescription] {
+        let existingIDs = currentDayExerciseCatalogIDs
+        return displayedSearchExercises.filter { existingIDs.contains($0.stableCatalogID) }
+    }
+
+    private var currentDayExerciseCatalogIDs: Set<String> {
+        Set(currentDayExercises.map(\.stableCatalogID))
+    }
+
+    private var addableSelectedLibraryExercises: [ExercisePrescription] {
+        let existingIDs = currentDayExerciseCatalogIDs
+        return selectedLibraryExercises.filter { !existingIDs.contains($0.stableCatalogID) }
     }
 
     private var normalizedSearchQuery: String {
@@ -830,7 +846,7 @@ struct CreatePlanView: View {
     }
 
     private var addSelectedButtonTitle: String {
-        let count = selectedLibraryExercises.count
+        let count = addableSelectedLibraryExercises.count
         let noun = count == 1 ? "Exercise" : "Exercises"
         return "Add \(count) \(noun) to \(currentDayName)"
     }
@@ -863,31 +879,31 @@ struct CreatePlanView: View {
         planDays = Array(repeating: [], count: daysPerWeek)
         dayNames = (0..<daysPerWeek).map { "Day \($0 + 1)" }
         currentDayIndex = 0
+        dayNameDraft = dayNames[0]
         completedDays = 0
-        stageDirection = .forward
-        withAnimation(navigationAnimation) { stage = .composer }
+        stage = .composer
     }
 
     private func openExerciseSearch() {
         PerformanceTrace.event(PerformanceTrace.Name.createPlanSearchOpen)
         Haptics.tap(.medium)
+        commitCurrentDayName()
+        dayNameFocused = false
         configurationDraft = nil
         searchQuery = ""
         searchResults = []
         customSearchResults = Array(customExercises.prefix(20)).map { $0.prescription() }
         selectedLibraryExercises = []
         selectedTypeFilter = nil
-        searchState = .idle
+        searchState = .loading
         customRoute = nil
-        stageDirection = .forward
-        withAnimation(navigationAnimation) { stage = .search }
+        stage = .search
     }
 
     private func returnToComposer() {
         searchFocused = false
         configurationDraft = nil
-        stageDirection = .backward
-        withAnimation(navigationAnimation) { stage = .composer }
+        stage = .composer
     }
 
     private func attemptReturnToComposer() {
@@ -910,18 +926,28 @@ struct CreatePlanView: View {
     }
 
     private func addSelectedExercisesToDay() {
-        guard planDays.indices.contains(currentDayIndex), !selectedLibraryExercises.isEmpty else {
+        guard planDays.indices.contains(currentDayIndex), !isSubmittingSelectedExercises else {
             return
         }
 
-        let existingIDs = Set(planDays[currentDayIndex].map(\.stableCatalogID))
-        let newExercises = selectedLibraryExercises.filter { !existingIDs.contains($0.stableCatalogID) }
-        planDays[currentDayIndex].append(contentsOf: newExercises)
-        for exercise in newExercises {
+        let exercisesToAdd = addableSelectedLibraryExercises
+        guard !exercisesToAdd.isEmpty else {
+            selectedLibraryExercises.removeAll { currentDayExerciseCatalogIDs.contains($0.stableCatalogID) }
+            return
+        }
+
+        isSubmittingSelectedExercises = true
+        planDays[currentDayIndex].append(contentsOf: exercisesToAdd)
+        for exercise in exercisesToAdd {
             Task { await exerciseCatalog.recordSelection(exercise) }
         }
         selectedLibraryExercises = []
+        configurationDraft = nil
         returnToComposer()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            isSubmittingSelectedExercises = false
+        }
     }
 
     private func focusSearch() {
@@ -957,11 +983,19 @@ struct CreatePlanView: View {
         guard planDays.indices.contains(currentDayIndex) else { return }
 
         if stage == .search {
-            withAnimation(cardExpansionAnimation) {
+            guard !currentDayExerciseCatalogIDs.contains(exercise.stableCatalogID) else {
+                configurationDraft = nil
+                return
+            }
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
                 selectedLibraryExercises.removeAll { $0.stableCatalogID == exercise.stableCatalogID }
                 selectedLibraryExercises.append(exercise)
                 configurationDraft = nil
             }
+            searchScrollRequest += 1
             return
         }
 
@@ -1002,11 +1036,9 @@ struct CreatePlanView: View {
         PerformanceTrace.event(PerformanceTrace.Name.saveDay)
         completedDays = max(completedDays, currentDayIndex + 1)
         if currentDayIndex >= daysPerWeek - 1 {
-            stageDirection = .forward
-            withAnimation(navigationAnimation) { stage = .finalReview }
+            stage = .finalReview
         } else {
-            daySlideDirection = .forward
-            currentDayIndex += 1
+            selectDay(currentDayIndex + 1)
         }
     }
 
@@ -1014,19 +1046,31 @@ struct CreatePlanView: View {
         guard planDays.indices.contains(index) else { return }
         commitCurrentDayName()
         dayNameFocused = false
-        daySlideDirection = .forIndexChange(from: currentDayIndex, to: index)
-        currentDayIndex = index
+        selectDay(index)
     }
 
     private func commitCurrentDayName() {
         guard dayNames.indices.contains(currentDayIndex) else { return }
-        let trimmedName = dayNames[currentDayIndex].trimmingCharacters(in: .whitespacesAndNewlines)
-        dayNames[currentDayIndex] = trimmedName.isEmpty ? "Day \(currentDayIndex + 1)" : trimmedName
+        let trimmedName = dayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedName = trimmedName.isEmpty ? "Day \(currentDayIndex + 1)" : trimmedName
+        dayNames[currentDayIndex] = resolvedName
+        dayNameDraft = resolvedName
+    }
+
+    private func selectDay(_ index: Int) {
+        guard planDays.indices.contains(index), dayNames.indices.contains(index) else { return }
+        configurationDraft = nil
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            currentDayIndex = index
+            dayNameDraft = dayNames[index]
+        }
     }
 
     private func switchReviewDay(_ index: Int) {
         guard planDays.indices.contains(index) else { return }
-        currentDayIndex = index
+        selectDay(index)
     }
 
     private func deleteExercise(_ id: UUID) {
@@ -1042,7 +1086,7 @@ struct CreatePlanView: View {
         let movedName = dayNames.remove(at: fromIndex)
         planDays.insert(movedExercises, at: targetIndex)
         dayNames.insert(movedName, at: targetIndex)
-        currentDayIndex = targetIndex
+        selectDay(targetIndex)
     }
 
     private func deleteDay(_ index: Int) {
@@ -1051,6 +1095,7 @@ struct CreatePlanView: View {
         dayNames.remove(at: index)
         daysPerWeek -= 1
         currentDayIndex = min(currentDayIndex, daysPerWeek - 1)
+        dayNameDraft = dayNames[currentDayIndex]
         completedDays = min(completedDays, daysPerWeek)
     }
 
@@ -1187,11 +1232,9 @@ struct CreatePlanView: View {
             PerformanceTrace.event(PerformanceTrace.Name.searchResultsUpdated)
         }
 
+        searchState = .loading
         if !query.isEmpty {
-            searchState = .loading
             do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
-        } else {
-            searchState = .idle
         }
         guard !Task.isCancelled else { return }
         let response = await exerciseCatalog.search(query: query)
@@ -1281,7 +1324,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     }
 
     var steps: [PlanConfigurationStep] {
-        var metrics = source.trackingMode.prescriptionMetrics
+        var metrics = source.trackingMode.planPrescriptionMetrics
         switch source.itemType {
         case .strength:
             if source.restSeconds != nil { metrics.append(.rest) }
@@ -1347,12 +1390,13 @@ private struct PlanExerciseConfigurationDraft: Equatable {
 
     var configuredExercise: ExercisePrescription {
         var exercise = source
+        let planMetrics = source.trackingMode.planPrescriptionMetrics
         exercise.sets = sets
-        exercise.reps = source.trackingMode.prescriptionMetrics.contains(.reps) ? reps : 0
-        exercise.targetWeight = source.trackingMode.prescriptionMetrics.contains(.weight) ? targetWeight : nil
-        exercise.targetCounterweight = source.trackingMode.prescriptionMetrics.contains(.counterweight) ? targetCounterweight : nil
-        exercise.durationSeconds = source.trackingMode.prescriptionMetrics.contains(.duration) ? durationSeconds : nil
-        exercise.distanceMeters = source.trackingMode.prescriptionMetrics.contains(.distance) ? distanceMeters : nil
+        exercise.reps = planMetrics.contains(.reps) ? reps : 0
+        exercise.targetWeight = nil
+        exercise.targetCounterweight = nil
+        exercise.durationSeconds = planMetrics.contains(.duration) ? durationSeconds : nil
+        exercise.distanceMeters = planMetrics.contains(.distance) ? distanceMeters : nil
         exercise.restSeconds = steps.contains(.metric(.rest)) ? restSeconds : nil
         exercise.intensityZone = steps.contains(.metric(.zone)) ? intensityZone : nil
         exercise.rounds = steps.contains(.metric(.rounds)) ? rounds : nil
@@ -1583,6 +1627,33 @@ private struct ExerciseSearchResultCard: View {
     }
 }
 
+private struct ExerciseAlreadyAddedCard: View {
+    var exercise: ExercisePrescription
+    var dayName: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ExerciseIdentityContent(exercise: exercise)
+                .padding(10)
+
+            Image(systemName: "checkmark")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(AppColor.secondaryText)
+                .frame(width: 56, height: 112)
+                .background(AppColor.surface2)
+        }
+        .frame(maxWidth: .infinity, minHeight: 112)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(exercise.name), already in \(dayName)")
+    }
+}
+
 private struct ExerciseSearchCard: View {
     var exercise: ExercisePrescription
     var draft: Binding<PlanExerciseConfigurationDraft>?
@@ -1658,7 +1729,7 @@ private struct ExerciseSearchCard: View {
 
     private var actionAccessibilityLabel: String {
         guard let draft else { return "Configure \(exercise.name)" }
-        return draft.wrappedValue.isLastStep ? "Add exercise to plan" : "Next metric"
+        return draft.wrappedValue.isLastStep ? "Add exercise to selection" : "Next metric"
     }
 
     private func metricButton(

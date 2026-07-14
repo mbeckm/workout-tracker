@@ -5,6 +5,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
     var name: String
     var exerciseType: String?
     var itemType: WorkoutItemType?
+    var trackingMode: ExerciseTrackingMode?
     var bodyParts: [String]
     var targetMuscles: [String]
     var equipments: [String]
@@ -22,6 +23,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         name: String,
         exerciseType: String? = nil,
         itemType: WorkoutItemType? = nil,
+        trackingMode: ExerciseTrackingMode? = nil,
         bodyParts: [String] = [],
         targetMuscles: [String] = [],
         equipments: [String] = [],
@@ -34,6 +36,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         self.name = name.exerciseCatalogDisplayText
         self.exerciseType = exerciseType?.exerciseCatalogDisplayText
         self.itemType = itemType
+        self.trackingMode = trackingMode
         self.bodyParts = bodyParts.map(\.exerciseCatalogDisplayText)
         self.targetMuscles = targetMuscles.map(\.exerciseCatalogDisplayText)
         self.equipments = equipments.map(\.exerciseCatalogDisplayText)
@@ -49,6 +52,7 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             name: prescription.name,
             exerciseType: prescription.exerciseType,
             itemType: prescription.itemType,
+            trackingMode: prescription.trackingMode,
             bodyParts: prescription.bodyParts,
             targetMuscles: prescription.targetMuscles,
             equipments: prescription.equipments,
@@ -59,12 +63,29 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         )
     }
 
-    func prescription(defaultSets: Int = 3, defaultReps: Int = 12) -> ExercisePrescription {
-        ExercisePrescription(
+    func prescription(defaultSets: Int? = nil, defaultReps: Int? = nil) -> ExercisePrescription {
+        let resolvedItemType = itemType ?? ExerciseCatalogMetadataClassifier.itemType(
+            name: name,
+            exerciseType: exerciseType,
+            bodyParts: bodyParts,
+            targetMuscles: targetMuscles,
+            equipments: equipments
+        )
+        let resolvedTrackingMode = trackingMode ?? ExerciseCatalogMetadataClassifier.trackingMode(
+            name: name,
+            itemType: resolvedItemType,
+            equipments: equipments
+        )
+        let resolvedSets = defaultSets ?? resolvedItemType.defaultPlanSetCount
+        let resolvedReps = resolvedTrackingMode.planPrescriptionMetrics.contains(.reps)
+            ? (defaultReps ?? 12)
+            : 0
+
+        return ExercisePrescription(
             id: UUID.catalogStableID(for: id),
             name: name,
-            sets: defaultSets,
-            reps: defaultReps,
+            sets: resolvedSets,
+            reps: resolvedReps,
             providerExerciseId: providerExerciseId,
             exerciseType: exerciseType,
             bodyParts: bodyParts,
@@ -74,8 +95,80 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             imageURL: imageURL,
             imageURLs: imageURLs,
             videoURL: videoURL,
-            itemType: itemType
+            itemType: resolvedItemType,
+            trackingMode: resolvedTrackingMode,
+            durationSeconds: resolvedTrackingMode.planPrescriptionMetrics.contains(.duration) ? 30 : nil,
+            distanceMeters: resolvedTrackingMode.planPrescriptionMetrics.contains(.distance) ? 100 : nil
         )
+    }
+}
+
+private enum ExerciseCatalogMetadataClassifier {
+    static func itemType(
+        name: String,
+        exerciseType: String?,
+        bodyParts: [String],
+        targetMuscles: [String],
+        equipments: [String]
+    ) -> WorkoutItemType {
+        let nameValue = name.lowercased()
+        let metadata = ([exerciseType ?? ""] + bodyParts + targetMuscles + equipments)
+            .joined(separator: " ")
+            .lowercased()
+
+        if metadata.contains("cardio") || metadata.contains("cardiovascular") {
+            return .cardio
+        }
+        if nameValue.contains("stretch") || nameValue.contains("cooldown") || nameValue.contains("pose") {
+            return .stretch
+        }
+        if nameValue.contains("mobility") || nameValue.contains("rotation") || nameValue.contains("car ") || nameValue.hasSuffix(" cars") {
+            return .mobility
+        }
+        if isTimedHold(nameValue) {
+            return .stability
+        }
+        return .strength
+    }
+
+    static func trackingMode(
+        name: String,
+        itemType: WorkoutItemType,
+        equipments: [String]
+    ) -> ExerciseTrackingMode {
+        let nameValue = name.lowercased()
+        let equipmentValue = equipments.joined(separator: " ").lowercased()
+
+        switch itemType {
+        case .cardio, .stretch, .timer:
+            return .duration
+        case .mobility, .stability:
+            return isTimedHold(nameValue) ? .duration : .reps
+        case .strength:
+            if equipmentValue.contains("assisted") {
+                return .counterweightAndReps
+            }
+            if equipmentValue.contains("body weight") || equipmentValue.contains("bodyweight") || equipmentValue == "none" {
+                return .reps
+            }
+            return .weightAndReps
+        }
+    }
+
+    private static func isTimedHold(_ name: String) -> Bool {
+        ["plank", "wall sit", "dead hang", "isometric", "static hold", " hold"]
+            .contains { name.contains($0) }
+    }
+}
+
+private extension WorkoutItemType {
+    var defaultPlanSetCount: Int {
+        switch self {
+        case .cardio, .stretch, .timer:
+            1
+        case .strength, .mobility, .stability:
+            3
+        }
     }
 }
 
@@ -141,11 +234,30 @@ final class LiveExerciseCatalogService: ExerciseCatalogService {
     func search(query: String) async -> ExerciseCatalogSearchResponse {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !trimmedQuery.isEmpty else {
-            let exercises = seedProvider.allItems.map {
-                $0.catalogItem.prescription(defaultSets: $0.seedSets, defaultReps: $0.seedReps)
+        if trimmedQuery.isEmpty {
+            if let cachedItems = await cache.items(for: ""), !cachedItems.isEmpty {
+                return ExerciseCatalogSearchResponse(
+                    exercises: cachedItems.map { $0.prescription() },
+                    notice: nil
+                )
             }
-            return ExerciseCatalogSearchResponse(exercises: exercises, notice: nil)
+
+            do {
+                let apiItems = try await provider.search(query: "", limit: 25)
+                guard !apiItems.isEmpty else {
+                    throw ExerciseCatalogError.invalidResponse
+                }
+                await cache.save(items: apiItems, for: "")
+                return ExerciseCatalogSearchResponse(
+                    exercises: apiItems.map { $0.prescription() },
+                    notice: nil
+                )
+            } catch {
+                let exercises = seedProvider.allItems.map {
+                    $0.catalogItem.prescription(defaultSets: $0.seedSets, defaultReps: $0.seedReps)
+                }
+                return ExerciseCatalogSearchResponse(exercises: exercises, notice: .seedFallback)
+            }
         }
 
         let recentItemIDs = await cache.recentItemIDs()
@@ -290,10 +402,12 @@ struct OpenExerciseDBProvider: ExerciseCatalogProvider {
             url: configuration.apiBaseURL.appendingPathComponent("api/v1/exercises"),
             resolvingAgainstBaseURL: false
         )
-        components?.queryItems = [
-            URLQueryItem(name: "name", value: query),
-            URLQueryItem(name: "limit", value: String(min(max(limit, 1), 25)))
-        ]
+        var queryItems = [URLQueryItem(name: "limit", value: String(min(max(limit, 1), 25)))]
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedQuery.isEmpty {
+            queryItems.insert(URLQueryItem(name: "name", value: trimmedQuery), at: 0)
+        }
+        components?.queryItems = queryItems
 
         guard let url = components?.url else {
             throw ExerciseCatalogError.invalidResponse
@@ -518,7 +632,7 @@ actor ExerciseCatalogCache {
     }
 
     func items(for query: String) -> [ExerciseCatalogItem]? {
-        let key = query.normalizedExerciseCatalogKey
+        let key = cacheKey(for: query)
         guard let entry = snapshot().queryResults[key],
               Date().timeIntervalSince(entry.createdAt) <= expiry else {
             return nil
@@ -536,10 +650,7 @@ actor ExerciseCatalogCache {
     }
 
     func save(items: [ExerciseCatalogItem], for query: String) {
-        let key = query.normalizedExerciseCatalogKey
-        guard !key.isEmpty else {
-            return
-        }
+        let key = cacheKey(for: query)
 
         var currentSnapshot = snapshot()
         currentSnapshot.queryResults[key] = CacheEntry(createdAt: Date(), items: items)
@@ -559,6 +670,11 @@ actor ExerciseCatalogCache {
         var currentSnapshot = snapshot()
         currentSnapshot.selected[item.id] = item
         persist(currentSnapshot)
+    }
+
+    private func cacheKey(for query: String) -> String {
+        let normalized = query.normalizedExerciseCatalogKey
+        return normalized.isEmpty ? "__library__" : normalized
     }
 
     private func snapshot() -> Snapshot {
