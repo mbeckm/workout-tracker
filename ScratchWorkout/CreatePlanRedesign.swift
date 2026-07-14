@@ -1212,7 +1212,16 @@ struct CreatePlanView: View {
         didFinish = true
         PerformanceTrace.event(PerformanceTrace.Name.savePlan)
         let days = planDays.indices.map { index in
-            WorkoutDay(title: dayNames.indices.contains(index) ? dayNames[index] : "Day \(index + 1)", exercises: planDays[index])
+            let exercises = planDays[index].map { exercise in
+                var workoutTimeLoadExercise = exercise
+                workoutTimeLoadExercise.targetWeight = nil
+                workoutTimeLoadExercise.targetCounterweight = nil
+                return workoutTimeLoadExercise
+            }
+            return WorkoutDay(
+                title: dayNames.indices.contains(index) ? dayNames[index] : "Day \(index + 1)",
+                exercises: exercises
+            )
         }
         let finalPlanName = planName.trimmingCharacters(in: .whitespacesAndNewlines)
         let plan = WorkoutPlan(
@@ -1258,8 +1267,6 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     var stepIndex = 0
     var sets: Int
     var reps: Int
-    var targetWeight: Int
-    var targetCounterweight: Int
     var durationSeconds: Int
     var distanceMeters: Int
     var restSeconds: Int
@@ -1271,8 +1278,6 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         source = exercise
         sets = exercise.sets
         reps = max(1, exercise.reps)
-        targetWeight = exercise.targetWeight ?? 20
-        targetCounterweight = exercise.targetCounterweight ?? 20
         durationSeconds = exercise.durationSeconds ?? 30
         distanceMeters = exercise.distanceMeters ?? 100
         restSeconds = exercise.restSeconds ?? 60
@@ -1281,7 +1286,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     }
 
     var steps: [PlanConfigurationStep] {
-        var metrics = source.trackingMode.prescriptionMetrics
+        var metrics = source.trackingMode.planPrescriptionMetrics
         switch source.itemType {
         case .strength:
             if source.restSeconds != nil { metrics.append(.rest) }
@@ -1304,8 +1309,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         get {
             switch currentStep {
             case .sets: sets
-            case .metric(.weight): targetWeight
-            case .metric(.counterweight): targetCounterweight
+            case .metric(.weight), .metric(.counterweight): 0
             case .metric(.reps): reps
             case .metric(.duration): durationSeconds
             case .metric(.distance): distanceMeters
@@ -1317,8 +1321,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         set {
             switch currentStep {
             case .sets: sets = newValue
-            case .metric(.weight): targetWeight = newValue
-            case .metric(.counterweight): targetCounterweight = newValue
+            case .metric(.weight), .metric(.counterweight): break
             case .metric(.reps): reps = newValue
             case .metric(.duration): durationSeconds = newValue
             case .metric(.distance): distanceMeters = newValue
@@ -1347,12 +1350,13 @@ private struct PlanExerciseConfigurationDraft: Equatable {
 
     var configuredExercise: ExercisePrescription {
         var exercise = source
+        let planMetrics = source.trackingMode.planPrescriptionMetrics
         exercise.sets = sets
-        exercise.reps = source.trackingMode.prescriptionMetrics.contains(.reps) ? reps : 0
-        exercise.targetWeight = source.trackingMode.prescriptionMetrics.contains(.weight) ? targetWeight : nil
-        exercise.targetCounterweight = source.trackingMode.prescriptionMetrics.contains(.counterweight) ? targetCounterweight : nil
-        exercise.durationSeconds = source.trackingMode.prescriptionMetrics.contains(.duration) ? durationSeconds : nil
-        exercise.distanceMeters = source.trackingMode.prescriptionMetrics.contains(.distance) ? distanceMeters : nil
+        exercise.reps = planMetrics.contains(.reps) ? reps : 0
+        exercise.targetWeight = nil
+        exercise.targetCounterweight = nil
+        exercise.durationSeconds = planMetrics.contains(.duration) ? durationSeconds : nil
+        exercise.distanceMeters = planMetrics.contains(.distance) ? distanceMeters : nil
         exercise.restSeconds = steps.contains(.metric(.rest)) ? restSeconds : nil
         exercise.intensityZone = steps.contains(.metric(.zone)) ? intensityZone : nil
         exercise.rounds = steps.contains(.metric(.rounds)) ? rounds : nil
@@ -2015,8 +2019,6 @@ private enum CustomExerciseAssets {
 extension ExercisePrescription {
     var prescriptionSummary: String {
         var parts: [String] = []
-        if let targetWeight { parts.append("\(targetWeight) kg") }
-        if let targetCounterweight { parts.append("\(targetCounterweight) kg assist") }
         if reps > 0 { parts.append("\(reps) reps") }
         if let durationSeconds { parts.append(Self.durationText(durationSeconds)) }
         if let distanceMeters { parts.append(Self.distanceText(distanceMeters)) }

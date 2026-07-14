@@ -121,6 +121,22 @@ enum ExerciseTrackingMode: String, CaseIterable, Codable, Identifiable {
             [.weight, .distance]
         }
     }
+
+    /// Metrics prescribed while building a plan. Load and assistance are entered during the workout.
+    var planPrescriptionMetrics: [ExercisePrescriptionMetric] {
+        switch self {
+        case .weightAndReps, .counterweightAndReps, .reps:
+            [.reps]
+        case .repsAndDuration:
+            [.reps, .duration]
+        case .duration:
+            [.duration]
+        case .distanceAndDuration:
+            [.distance, .duration]
+        case .weightAndDistance:
+            [.distance]
+        }
+    }
 }
 
 enum ExercisePrescriptionMetric: String, Codable, Identifiable {
@@ -279,17 +295,17 @@ struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
             id: id,
             name: name,
             sets: defaultSetCount,
-            reps: trackingMode.prescriptionMetrics.contains(.reps) ? 12 : 0,
+            reps: trackingMode.planPrescriptionMetrics.contains(.reps) ? 12 : 0,
             exerciseType: exerciseType.title,
             bodyParts: [],
             targetMuscles: [muscle],
             equipments: [equipment],
             itemType: exerciseType,
             trackingMode: trackingMode,
-            targetWeight: trackingMode == .weightAndReps || trackingMode == .weightAndDistance ? 20 : nil,
-            targetCounterweight: trackingMode == .counterweightAndReps ? 20 : nil,
-            durationSeconds: trackingMode.prescriptionMetrics.contains(.duration) ? 30 : nil,
-            distanceMeters: trackingMode.prescriptionMetrics.contains(.distance) ? 100 : nil,
+            targetWeight: nil,
+            targetCounterweight: nil,
+            durationSeconds: trackingMode.planPrescriptionMetrics.contains(.duration) ? 30 : nil,
+            distanceMeters: trackingMode.planPrescriptionMetrics.contains(.distance) ? 100 : nil,
             customExerciseID: id,
             localImageAssetName: imageAssetName
         )
