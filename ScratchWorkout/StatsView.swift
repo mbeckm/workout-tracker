@@ -431,6 +431,7 @@ private struct TenRMChartCard: View {
                     .chartPlotStyle { plotArea in
                         plotArea
                             .background(AppColor.surface1)
+                            .clipShape(Rectangle())
                     }
                     .frame(maxWidth: .infinity, minHeight: 156, maxHeight: 156)
 
@@ -492,18 +493,23 @@ private struct TenRMChartCard: View {
             return (lower, lower + step * 3, step)
         }
 
-        let step = niceAxisStep(for: (maxValue - minValue) / 3)
-        let padding = max(step * 0.28, 1)
-        let lower = max(0, floor((minValue - padding) / step) * step)
-        let upper = lower + step * 3
-
-        if upper >= maxValue {
-            return (lower, upper, step)
+        // Keep exactly 3 nice steps (4 labels) while ensuring every data point
+        // stays inside the domain. The previous adjust-from-the-top path could
+        // raise `lower` above `minValue`, which drew the line outside the plot.
+        var step = niceAxisStep(for: (maxValue - minValue) / 3)
+        for _ in 0..<8 {
+            let padding = max(step * 0.28, 1)
+            let lower = max(0, floor((minValue - padding) / step) * step)
+            let upper = lower + step * 3
+            if lower <= minValue && upper >= maxValue {
+                return (lower, upper, step)
+            }
+            step = nextNiceAxisStep(after: step)
         }
 
-        let adjustedUpper = ceil((maxValue + padding) / step) * step
-        let adjustedLower = max(0, adjustedUpper - step * 3)
-        return (adjustedLower, adjustedUpper, step)
+        let padding = max(step * 0.28, 1)
+        let lower = max(0, floor((minValue - padding) / step) * step)
+        return (lower, lower + step * 3, step)
     }
 
     private func axisDateText(for date: Date) -> String {
@@ -531,6 +537,28 @@ private struct TenRMChartCard: View {
         }
 
         return factor * magnitude
+    }
+
+    private func nextNiceAxisStep(after step: Double) -> Double {
+        let magnitude = pow(10, floor(log10(max(step, 1))))
+        let normalized = step / magnitude
+
+        let nextFactor: Double
+        switch normalized {
+        case ..<2:
+            nextFactor = 2
+        case ..<5:
+            nextFactor = 5
+        default:
+            nextFactor = 10
+        }
+
+        let candidate = nextFactor * magnitude
+        if candidate > step {
+            return candidate
+        }
+
+        return 10 * magnitude
     }
 
     private func xAxisAlignment(for index: Int) -> Alignment {
