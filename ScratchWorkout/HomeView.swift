@@ -25,11 +25,11 @@ struct HomeView: View {
                     }
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                    MetricLabel(value: "\(workoutsThisMonth)", label: "workouts this month")
-                        .padding(.top, 24)
-
-                    MonthlyWorkoutCalendar(workoutDays: workoutDaysThisMonth)
-                        .padding(.top, 12)
+                    MonthlyWorkoutSummaryCard(
+                        workoutCount: workoutsThisMonth,
+                        workoutDays: workoutDaysThisMonth
+                    )
+                    .padding(.top, 24)
 
                     SectionTitle(text: "Active Plan")
                         .padding(.top, 36)
@@ -75,15 +75,13 @@ struct HomeView: View {
     }
 }
 
-private struct MonthlyWorkoutCalendar: View {
+private struct MonthlyWorkoutSummaryCard: View {
+    var workoutCount: Int
     var workoutDays: Set<Date>
     var referenceDate: Date = Date()
 
     private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     private let rowSpacing: CGFloat = 16
-    private let dotSize: CGFloat = 24
-
-    private var calendarColumnSpacing: CGFloat { 8 }
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -116,40 +114,85 @@ private struct MonthlyWorkoutCalendar: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: rowSpacing) {
-            HStack(spacing: calendarColumnSpacing) {
-                ForEach(weekdaySymbols, id: \.self) { symbol in
-                    Text(symbol)
-                        .font(AppFont.caption)
-                        .foregroundStyle(AppColor.secondaryText)
-                        .frame(maxWidth: .infinity)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                }
-            }
-            .frame(maxWidth: .infinity)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(workoutCount)")
+                    .font(AppFont.h1)
+                    .foregroundStyle(AppColor.primaryText)
+                    .contentTransition(.numericText())
 
-            ForEach(dayRows.indices, id: \.self) { row in
-                HStack(spacing: calendarColumnSpacing) {
-                    ForEach(0..<7, id: \.self) { column in
-                        if let day = dayRows[row][column] {
-                            WorkoutDayDot(hasWorkout: workoutDays.contains(day))
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            Color.clear
-                                .frame(maxWidth: .infinity)
-                                .frame(height: dotSize)
+                Text(workoutCount == 1 ? "Workout this month" : "Workouts this month")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+
+            Rectangle()
+                .fill(AppColor.border)
+                .frame(height: 1)
+
+            VStack(alignment: .leading, spacing: rowSpacing) {
+                HStack(spacing: 0) {
+                    ForEach(weekdaySymbols.indices, id: \.self) { column in
+                        let symbol = weekdaySymbols[column]
+
+                        Text(symbol)
+                            .font(AppFont.caption)
+                            .foregroundStyle(AppColor.secondaryText)
+                            .frame(width: 24)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        if column < weekdaySymbols.count - 1 {
+                            Spacer(minLength: 8)
                         }
                     }
                 }
-                .frame(maxWidth: .infinity)
+
+                ForEach(dayRows.indices, id: \.self) { row in
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { column in
+                            if let day = dayRows[row][column] {
+                                WorkoutDayDot(hasWorkout: workoutDays.contains(day))
+                                    .accessibilityHidden(true)
+                            } else {
+                                Color.clear
+                                    .frame(width: 24, height: 24)
+                                    .accessibilityHidden(true)
+                            }
+
+                            if column < 6 {
+                                Spacer(minLength: 8)
+                            }
+                        }
+                    }
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: AppColor.base, location: 0.85),
+                            .init(color: AppColor.surface1, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Workouts this month")
-        .accessibilityValue("\(workoutDays.count) workouts logged")
+        .accessibilityValue("\(workoutCount) workouts logged")
     }
 }
 
