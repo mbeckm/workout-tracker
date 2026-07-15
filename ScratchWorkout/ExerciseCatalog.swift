@@ -5,6 +5,15 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
     var name: String
     var exerciseType: String?
     var itemType: WorkoutItemType?
+    var trackingMode: ExerciseTrackingMode?
+    var suggestedSets: Int?
+    var suggestedReps: Int?
+    var durationSeconds: Int?
+    var distanceMeters: Int?
+    var restSeconds: Int?
+    var intensityZone: Int?
+    var side: String?
+    var rounds: Int?
     var bodyParts: [String]
     var targetMuscles: [String]
     var equipments: [String]
@@ -22,6 +31,15 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         name: String,
         exerciseType: String? = nil,
         itemType: WorkoutItemType? = nil,
+        trackingMode: ExerciseTrackingMode? = nil,
+        suggestedSets: Int? = nil,
+        suggestedReps: Int? = nil,
+        durationSeconds: Int? = nil,
+        distanceMeters: Int? = nil,
+        restSeconds: Int? = nil,
+        intensityZone: Int? = nil,
+        side: String? = nil,
+        rounds: Int? = nil,
         bodyParts: [String] = [],
         targetMuscles: [String] = [],
         equipments: [String] = [],
@@ -34,6 +52,15 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
         self.name = name.exerciseCatalogDisplayText
         self.exerciseType = exerciseType?.exerciseCatalogDisplayText
         self.itemType = itemType
+        self.trackingMode = trackingMode
+        self.suggestedSets = suggestedSets
+        self.suggestedReps = suggestedReps
+        self.durationSeconds = durationSeconds
+        self.distanceMeters = distanceMeters
+        self.restSeconds = restSeconds
+        self.intensityZone = intensityZone
+        self.side = side
+        self.rounds = rounds
         self.bodyParts = bodyParts.map(\.exerciseCatalogDisplayText)
         self.targetMuscles = targetMuscles.map(\.exerciseCatalogDisplayText)
         self.equipments = equipments.map(\.exerciseCatalogDisplayText)
@@ -49,6 +76,15 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             name: prescription.name,
             exerciseType: prescription.exerciseType,
             itemType: prescription.itemType,
+            trackingMode: prescription.trackingMode,
+            suggestedSets: prescription.sets,
+            suggestedReps: prescription.reps,
+            durationSeconds: prescription.durationSeconds,
+            distanceMeters: prescription.distanceMeters,
+            restSeconds: prescription.restSeconds,
+            intensityZone: prescription.intensityZone,
+            side: prescription.side,
+            rounds: prescription.rounds,
             bodyParts: prescription.bodyParts,
             targetMuscles: prescription.targetMuscles,
             equipments: prescription.equipments,
@@ -60,11 +96,16 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
     }
 
     func prescription(defaultSets: Int = 3, defaultReps: Int = 12) -> ExercisePrescription {
-        ExercisePrescription(
+        let suggestion = ExerciseCatalogPrescriptionSuggester.suggestion(for: self)
+        let resolvedTrackingMode = trackingMode ?? suggestion.trackingMode
+
+        return ExercisePrescription(
             id: UUID.catalogStableID(for: id),
             name: name,
-            sets: defaultSets,
-            reps: defaultReps,
+            sets: suggestedSets ?? (trackingMode == nil ? suggestion.sets : defaultSets),
+            reps: resolvedTrackingMode.planPrescriptionMetrics.contains(.reps)
+                ? (suggestedReps ?? (trackingMode == nil ? suggestion.reps : defaultReps))
+                : 0,
             providerExerciseId: providerExerciseId,
             exerciseType: exerciseType,
             bodyParts: bodyParts,
@@ -74,8 +115,128 @@ struct ExerciseCatalogItem: Identifiable, Equatable, Codable {
             imageURL: imageURL,
             imageURLs: imageURLs,
             videoURL: videoURL,
-            itemType: itemType
+            itemType: itemType ?? suggestion.itemType,
+            trackingMode: resolvedTrackingMode,
+            durationSeconds: resolvedTrackingMode.planPrescriptionMetrics.contains(.duration)
+                ? (durationSeconds ?? suggestion.durationSeconds)
+                : nil,
+            distanceMeters: resolvedTrackingMode.planPrescriptionMetrics.contains(.distance)
+                ? (distanceMeters ?? suggestion.distanceMeters)
+                : nil,
+            restSeconds: restSeconds,
+            intensityZone: intensityZone,
+            side: side,
+            rounds: rounds
         )
+    }
+}
+
+struct ExerciseCatalogPrescriptionSuggestion: Equatable {
+    var itemType: WorkoutItemType
+    var trackingMode: ExerciseTrackingMode
+    var sets: Int
+    var reps: Int
+    var durationSeconds: Int?
+    var distanceMeters: Int?
+}
+
+enum ExerciseCatalogPrescriptionSuggester {
+    static func suggestion(for item: ExerciseCatalogItem) -> ExerciseCatalogPrescriptionSuggestion {
+        let name = normalized(item.name)
+        let exerciseType = normalized(item.exerciseType ?? "")
+        let bodyParts = item.bodyParts.map(normalized)
+        let targetMuscles = item.targetMuscles.map(normalized)
+        let equipments = item.equipments.map(normalized)
+
+        let hasCardioMetadata = bodyParts.contains(where: { $0 == "cardio" })
+            || targetMuscles.contains(where: { $0.contains("cardiovascular") })
+            || equipments.contains(where: isCardioEquipment)
+        let looksLikeStretch = containsWord("stretch", in: name)
+        let looksLikeTimer = containsWord("timer", in: name)
+        let looksLikeHold = ["plank", "wall sit", "isometric hold", "static hold"]
+            .contains(where: name.contains)
+        let looksLikeMobility = containsWord("mobility", in: name)
+            || name.contains("controlled articular rotation")
+            || name.hasSuffix(" cars")
+
+        let inferredItemType: WorkoutItemType
+        if let itemType = item.itemType {
+            inferredItemType = itemType
+        } else if exerciseType.contains("cardio") || exerciseType.contains("endurance") || hasCardioMetadata {
+            inferredItemType = .cardio
+        } else if exerciseType.contains("stretch") || looksLikeStretch {
+            inferredItemType = .stretch
+        } else if exerciseType.contains("timer") || looksLikeTimer {
+            inferredItemType = .timer
+        } else if exerciseType.contains("mobility") || looksLikeMobility {
+            inferredItemType = .mobility
+        } else if exerciseType.contains("stability") || looksLikeHold {
+            inferredItemType = .stability
+        } else {
+            inferredItemType = .strength
+        }
+
+        let isBodyweight = equipments.contains(where: { $0.contains("body weight") || $0 == "bodyweight" })
+        let isAssisted = equipments.contains(where: { $0.contains("assisted") })
+        let inferredTrackingMode: ExerciseTrackingMode = switch inferredItemType {
+        case .cardio, .stretch, .timer:
+            .duration
+        case .stability:
+            looksLikeHold ? .duration : .reps
+        case .mobility:
+            .reps
+        case .strength:
+            isAssisted ? .counterweightAndReps : (isBodyweight ? .reps : .weightAndReps)
+        }
+        let resolvedTrackingMode = item.trackingMode ?? inferredTrackingMode
+
+        let defaultSets: Int = switch inferredItemType {
+        case .cardio, .stretch, .timer: 1
+        case .mobility: 2
+        case .strength, .stability: 3
+        }
+        let defaultReps: Int = switch inferredItemType {
+        case .mobility: 8
+        case .strength, .stability: 12
+        case .cardio, .stretch, .timer: 0
+        }
+        let defaultDuration: Int? = if resolvedTrackingMode.planPrescriptionMetrics.contains(.duration) {
+            switch inferredItemType {
+            case .cardio: 20 * 60
+            case .stretch: 30
+            case .timer: 60
+            case .mobility, .stability, .strength: 30
+            }
+        } else {
+            nil
+        }
+        let defaultDistance = resolvedTrackingMode.planPrescriptionMetrics.contains(.distance) ? 1_000 : nil
+
+        return ExerciseCatalogPrescriptionSuggestion(
+            itemType: inferredItemType,
+            trackingMode: resolvedTrackingMode,
+            sets: defaultSets,
+            reps: resolvedTrackingMode.planPrescriptionMetrics.contains(.reps) ? defaultReps : 0,
+            durationSeconds: defaultDuration,
+            distanceMeters: defaultDistance
+        )
+    }
+
+    private static func normalized(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func containsWord(_ word: String, in value: String) -> Bool {
+        value.components(separatedBy: CharacterSet.alphanumerics.inverted).contains(word)
+    }
+
+    private static func isCardioEquipment(_ equipment: String) -> Bool {
+        ["stationary bike", "treadmill", "elliptical", "stepmill", "stair machine", "rowing machine"]
+            .contains(where: equipment.contains)
     }
 }
 

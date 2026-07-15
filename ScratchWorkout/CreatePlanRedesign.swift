@@ -1278,8 +1278,8 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         source = exercise
         sets = exercise.sets
         reps = max(1, exercise.reps)
-        durationSeconds = exercise.durationSeconds ?? 30
-        distanceMeters = exercise.distanceMeters ?? 100
+        durationSeconds = exercise.durationSeconds ?? (exercise.itemType == .cardio ? 20 * 60 : 30)
+        distanceMeters = exercise.distanceMeters ?? 1_000
         restSeconds = exercise.restSeconds ?? 60
         intensityZone = exercise.intensityZone ?? 2
         rounds = exercise.rounds ?? 4
@@ -1298,11 +1298,22 @@ private struct PlanExerciseConfigurationDraft: Equatable {
         case .mobility, .stability, .stretch:
             break
         }
-        return [.sets] + metrics.map(PlanConfigurationStep.metric)
+        var result = metrics.map(PlanConfigurationStep.metric)
+        if usesSetPrescription {
+            result.insert(.sets, at: 0)
+        }
+        return result
     }
 
     var currentStep: PlanConfigurationStep {
         steps[min(stepIndex, steps.count - 1)]
+    }
+
+    var currentStepTitle: String {
+        if currentStep == .metric(.duration), usesMinutesForDuration {
+            return "Duration in minutes"
+        }
+        return currentStep.title
     }
 
     var currentValue: Int {
@@ -1311,7 +1322,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
             case .sets: sets
             case .metric(.weight), .metric(.counterweight): 0
             case .metric(.reps): reps
-            case .metric(.duration): durationSeconds
+            case .metric(.duration): usesMinutesForDuration ? max(1, durationSeconds / 60) : durationSeconds
             case .metric(.distance): distanceMeters
             case .metric(.rest): restSeconds
             case .metric(.zone): intensityZone
@@ -1323,7 +1334,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
             case .sets: sets = newValue
             case .metric(.weight), .metric(.counterweight): break
             case .metric(.reps): reps = newValue
-            case .metric(.duration): durationSeconds = newValue
+            case .metric(.duration): durationSeconds = usesMinutesForDuration ? newValue * 60 : newValue
             case .metric(.distance): distanceMeters = newValue
             case .metric(.rest): restSeconds = newValue
             case .metric(.zone): intensityZone = newValue
@@ -1335,6 +1346,7 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     var currentStepAmount: Int {
         switch currentStep {
         case .sets: 1
+        case .metric(.duration) where usesMinutesForDuration: 5
         case .metric(let metric): metric.step
         }
     }
@@ -1342,11 +1354,40 @@ private struct PlanExerciseConfigurationDraft: Equatable {
     var currentMaximum: Int {
         switch currentStep {
         case .sets: 99
+        case .metric(.duration) where usesMinutesForDuration: 24 * 60
         case .metric(let metric): metric.maximum
         }
     }
 
     var isLastStep: Bool { stepIndex >= steps.count - 1 }
+
+    var availableTrackingModes: [ExerciseTrackingMode] {
+        source.itemType.availableTrackingModes
+    }
+
+    mutating func selectTrackingMode(_ trackingMode: ExerciseTrackingMode) {
+        source.trackingMode = trackingMode
+        stepIndex = 0
+        if trackingMode.planPrescriptionMetrics.contains(.duration), durationSeconds <= 0 {
+            durationSeconds = source.itemType == .cardio ? 20 * 60 : 30
+        }
+        if trackingMode.planPrescriptionMetrics.contains(.distance), distanceMeters <= 0 {
+            distanceMeters = 1_000
+        }
+    }
+
+    private var usesMinutesForDuration: Bool {
+        source.itemType == .cardio
+    }
+
+    private var usesSetPrescription: Bool {
+        switch source.itemType {
+        case .strength, .mobility, .stability:
+            true
+        case .cardio, .stretch, .timer:
+            source.trackingMode.planPrescriptionMetrics.contains(.reps)
+        }
+    }
 
     var configuredExercise: ExercisePrescription {
         var exercise = source
@@ -1604,7 +1645,9 @@ private struct ExerciseSearchCard: View {
                             .fill(AppColor.border)
                             .frame(height: 1)
 
-                        Text(draft.wrappedValue.currentStep.title)
+                        PlanTrackingModeMenu(draft: draft)
+
+                        Text(draft.wrappedValue.currentStepTitle)
                             .font(AppFont.subheading)
                             .foregroundStyle(AppColor.primaryText)
 
@@ -1722,6 +1765,43 @@ private struct ExerciseIdentityContent: View {
     }
 }
 
+private struct PlanTrackingModeMenu: View {
+    var draft: Binding<PlanExerciseConfigurationDraft>
+
+    var body: some View {
+        Menu {
+            ForEach(draft.wrappedValue.availableTrackingModes) { trackingMode in
+                Button {
+                    var value = draft.wrappedValue
+                    value.selectTrackingMode(trackingMode)
+                    draft.wrappedValue = value
+                    Haptics.tap()
+                } label: {
+                    if trackingMode == draft.wrappedValue.source.trackingMode {
+                        Label(trackingMode.title, systemImage: "checkmark")
+                    } else {
+                        Text(trackingMode.title)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text("Track by")
+                    .foregroundStyle(AppColor.secondaryText)
+                Text(draft.wrappedValue.source.trackingMode.title)
+                    .foregroundStyle(AppColor.primaryText)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            .font(AppFont.label)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Track by \(draft.wrappedValue.source.trackingMode.title)")
+    }
+}
+
 struct ExerciseArtwork: View {
     var exercise: ExercisePrescription
 
@@ -1802,7 +1882,7 @@ private struct PlanExerciseSummaryCard: View {
                     Spacer(minLength: 8)
 
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(exercise.sets) sets")
+                        Text(exercise.planVolumeSummary)
                         Text(exercise.prescriptionSummary)
                     }
                     .font(AppFont.caption)
@@ -1821,7 +1901,9 @@ private struct PlanExerciseSummaryCard: View {
                         .fill(AppColor.border)
                         .frame(height: 1)
 
-                    Text(draft.wrappedValue.currentStep.title)
+                    PlanTrackingModeMenu(draft: draft)
+
+                    Text(draft.wrappedValue.currentStepTitle)
                         .font(AppFont.subheading)
                         .foregroundStyle(AppColor.primaryText)
 
@@ -2017,6 +2099,15 @@ private enum CustomExerciseAssets {
 }
 
 extension ExercisePrescription {
+    var planVolumeSummary: String {
+        switch itemType {
+        case .strength, .mobility, .stability:
+            "\(sets) sets"
+        case .cardio, .stretch, .timer:
+            trackingMode.planPrescriptionMetrics.contains(.reps) ? "\(sets) sets" : itemType.title
+        }
+    }
+
     var prescriptionSummary: String {
         var parts: [String] = []
         if reps > 0 { parts.append("\(reps) reps") }

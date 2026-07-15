@@ -784,7 +784,7 @@ struct ExerciseCard: View {
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(exercise.sets) sets")
+                    Text(exercise.planVolumeSummary)
                     Text(exercise.prescriptionSummary)
                 }
                 .font(AppFont.caption)
