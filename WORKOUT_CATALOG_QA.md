@@ -27,6 +27,10 @@ QA record for Linear issue MAR-66, last rechecked on July 13, 2026. Simulator au
 | Archive/cloud conflict | Pass in executable DEBUG assertion | the newest timestamp wins, preventing stale remote state from restoring an archived item |
 | Mixed prescription persistence | Pass in code | all new fields are optional Codable additions |
 | Metric-aware workout logging | Pass in code | active logger derives controls and completion from tracking mode |
+| Live API prescription inference | Pass in live simulator route + assertions | ExerciseDB returned Stationary Bike Run with remote media; it becomes Cardio + 20-minute Duration, while Incline Press remains Strength + Reps |
+| Ambiguous API name protection | Pass in simulator assertions | abdominal Air Bike remains reps-based because structured Waist/Abs metadata outranks its name |
+| Bundled prescription preservation | Pass in simulator assertions | Zone 2 Bike retains its authored duration, distance, zone, and tracking mode through catalog mapping |
+| Suggested metric correction | Pass in code and simulator build | expanded plan configuration exposes type-scoped `Track by` choices |
 
 ## Device Release Checklist
 
