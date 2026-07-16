@@ -150,7 +150,7 @@ struct PlanDetailView: View {
                 .accessibilityLabel("Edit plan")
             }
         }
-        .frame(height: AppLayout.screenTitleHeight, alignment: .leading)
+        .frame(minHeight: 44, alignment: .leading)
     }
 
     private var dayTitle: some View {
@@ -166,7 +166,7 @@ struct PlanDetailView: View {
                 SectionTitle(text: currentDay?.title ?? "Day \(currentDayIndex + 1)")
             }
         }
-        .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+        .frame(minHeight: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 
     private var planDetailScrollBottomPadding: CGFloat {

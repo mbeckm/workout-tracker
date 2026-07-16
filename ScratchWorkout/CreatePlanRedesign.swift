@@ -172,9 +172,9 @@ struct CreatePlanView: View {
                     }
 
                     Text("\(daysPerWeek)")
-                        .font(.custom("Inter", size: 128, relativeTo: .largeTitle).weight(.bold))
+                        .font(AppFont.frequencyMetric)
                         .monospacedDigit()
-                        .frame(width: 83, height: 105)
+                        .frame(minWidth: 83, minHeight: 105)
                         .contentTransition(.numericText())
 
                     RoundStepButton(symbol: "plus", fill: AppColor.border, accessibilityLabel: "Increase workouts per week") {
@@ -234,7 +234,7 @@ struct CreatePlanView: View {
                 .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Edit day name")
             }
-            .frame(height: AppLayout.sectionTitleHeight)
+            .frame(minHeight: 44)
             .padding(.top, 24)
 
             ScrollView(showsIndicators: false) {
@@ -286,7 +286,7 @@ struct CreatePlanView: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: AppLayout.screenTitleHeight)
+        .frame(minHeight: 44)
     }
 
     private var exerciseSearchView: some View {
@@ -317,7 +317,7 @@ struct CreatePlanView: View {
                     .frame(minHeight: 44)
                     .buttonStyle(AppPressFeedbackStyle())
             }
-            .frame(height: AppLayout.screenTitleHeight)
+            .frame(minHeight: 44)
                 .padding(.top, AppLayout.screenTitleTopPadding)
 
             RedesignedExerciseSearchField(query: $searchQuery, focused: $searchFocused)
@@ -532,7 +532,7 @@ struct CreatePlanView: View {
                 .tint(AppColor.accent)
                 .submitLabel(.done)
                 .padding(.horizontal, 16)
-                .frame(height: 54)
+                .frame(minHeight: 54)
                 .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1386,9 +1386,9 @@ private struct RedesignedEmptyDayState: View {
         .padding(16)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
     }
@@ -1457,7 +1457,7 @@ private struct RedesignedExerciseSearchField: View {
             }
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(minHeight: 56)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1573,7 +1573,8 @@ private struct ExerciseSearchResultCard: View {
                 ContextualSymbol(activeSymbol: "checkmark", inactiveSymbol: "plus", isActive: isSelected)
                     .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(isSelected ? AppColor.base : AppColor.primaryText)
-                    .frame(width: 56, height: 112)
+                    .frame(width: 56)
+                    .frame(minHeight: 112)
                     .background(isSelected ? AppColor.accent : AppColor.surface2)
             }
             .buttonStyle(AppPressFeedbackStyle(isStatic: true))
@@ -1705,7 +1706,7 @@ private struct ExerciseIdentityContent: View {
                     .font(AppFont.h2)
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(2, reservesSpace: true)
-                    .frame(maxWidth: .infinity, minHeight: 48, maxHeight: 48, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
                     .layoutPriority(1)
 
                 HStack(spacing: 6) {
@@ -1931,7 +1932,7 @@ private struct CustomExercisePropertyRow: View {
                     .lineLimit(1)
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
+            .frame(minHeight: 54)
             .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

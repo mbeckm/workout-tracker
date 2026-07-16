@@ -732,7 +732,7 @@ private struct SetTableRow: View {
 
     private func valueCell(_ text: String, isEmpty: Bool) -> some View {
         Text(text)
-            .font(Font.inter(size: 24, weight: .semibold, relativeTo: .title3))
+            .font(AppFont.metric)
             .monospacedDigit()
             .foregroundStyle(isEmpty ? phase.emptyValueColor : phase.valueColor)
             .contentTransition(.numericText())
@@ -1059,7 +1059,7 @@ private struct WorkoutResultHero: View {
     var body: some View {
         HStack(spacing: 12) {
             Text("\(value)")
-                .font(Font.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                .font(AppFont.heroMetric)
                 .monospacedDigit()
                 .contentTransition(.numericText(value: Double(value)))
                 .lineLimit(1)

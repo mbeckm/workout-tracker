@@ -425,7 +425,7 @@ private struct TenRMChartCard: View {
                                 if let yValue = value.as(Double.self) {
                                     Text(yAxisText(for: yValue))
                                         .font(AppFont.caption)
-                                        .foregroundStyle(AppColor.secondaryText.opacity(0.72))
+                                        .foregroundStyle(AppColor.secondaryText)
                                         .frame(width: 24, alignment: .leading)
                                 }
                             }
@@ -442,7 +442,7 @@ private struct TenRMChartCard: View {
                         ForEach(Array(xAxisDates.enumerated()), id: \.offset) { index, date in
                             Text(axisDateText(for: date))
                                 .font(AppFont.caption)
-                                .foregroundStyle(AppColor.secondaryText.opacity(0.78))
+                                .foregroundStyle(AppColor.secondaryText)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: xAxisAlignment(for: index))
                         }

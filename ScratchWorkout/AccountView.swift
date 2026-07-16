@@ -20,7 +20,7 @@ struct AccountEntryButton: View {
             }
             .foregroundStyle(foregroundColor)
             .padding(.horizontal, 12)
-            .frame(height: 44)
+            .frame(minHeight: 44)
             .background(AppColor.surface1, in: Capsule())
             .overlay(
                 Capsule()
@@ -232,7 +232,7 @@ struct AccountView: View {
             Button {
                 isConfirmingDeletion = true
             } label: {
-                accountActionLabel(title: "Delete Account", foreground: Color(hex: 0xFF6B6B), fill: AppColor.surface1)
+                accountActionLabel(title: "Delete Account", foreground: AppColor.destructive, fill: AppColor.surface1)
             }
             .buttonStyle(AppPressFeedbackStyle())
             .disabled(controller.isWorking)
@@ -300,7 +300,7 @@ struct AccountView: View {
             }
             .foregroundStyle(provider == .apple ? AppColor.base : AppColor.primaryText)
             .padding(.horizontal, 16)
-            .frame(height: 56)
+            .frame(minHeight: 56)
             .background(provider == .apple ? AppColor.primaryText : AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -345,7 +345,7 @@ struct AccountView: View {
             .foregroundStyle(foreground)
             .lineLimit(1)
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
+            .frame(minHeight: 52)
             .background(fill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

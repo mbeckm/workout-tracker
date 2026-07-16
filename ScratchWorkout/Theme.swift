@@ -8,8 +8,8 @@ enum AppColor {
     static let surfaceOutline = Color.white.opacity(0.08)
     static let imageOutline = Color.white.opacity(0.10)
     static let primaryText = Color.white
-    static let secondaryText = Color(hex: 0x8A8A8A)
-    static let tertiaryText = Color(hex: 0x4A4A4A)
+    static let secondaryText = Color(hex: 0x969696)
+    static let tertiaryText = Color(hex: 0x707070)
     static let accent = Color(hex: 0xA8FF3E)
     static let destructive = Color(hex: 0xFF6B6B)
 }
@@ -19,9 +19,12 @@ enum AppFont {
     static let h1 = Font.inter(size: 24, weight: .semibold, relativeTo: .title2)
     static let h2 = Font.inter(size: 20, weight: .semibold, relativeTo: .title3)
     static let subheading = Font.inter(size: 16, weight: .medium, relativeTo: .headline)
-    static let body = Font.inter(size: 15, weight: .regular, relativeTo: .body)
+    static let body = Font.inter(size: 16, weight: .regular, relativeTo: .body)
     static let label = Font.inter(size: 13, weight: .medium, relativeTo: .caption)
     static let caption = Font.inter(size: 12, weight: .regular, relativeTo: .caption2)
+    static let metric = Font.inter(size: 24, weight: .semibold, relativeTo: .title3)
+    static let heroMetric = Font.inter(size: 96, weight: .bold, relativeTo: .largeTitle)
+    static let frequencyMetric = Font.inter(size: 128, weight: .bold, relativeTo: .largeTitle)
 }
 
 extension Font {

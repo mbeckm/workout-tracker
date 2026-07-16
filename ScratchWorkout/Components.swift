@@ -393,7 +393,6 @@ struct ScreenTitle: View {
             .frame(
                 maxWidth: .infinity,
                 minHeight: AppLayout.screenTitleHeight,
-                maxHeight: AppLayout.screenTitleHeight,
                 alignment: .leading
             )
     }
@@ -411,7 +410,6 @@ struct ScreenTitleBar<Accessory: View>: View {
                 .frame(
                     maxWidth: .infinity,
                     minHeight: AppLayout.screenTitleHeight,
-                    maxHeight: AppLayout.screenTitleHeight,
                     alignment: .leading
                 )
 
@@ -419,8 +417,7 @@ struct ScreenTitleBar<Accessory: View>: View {
         }
         .frame(
             maxWidth: .infinity,
-            minHeight: AppLayout.screenTitleHeight,
-            maxHeight: AppLayout.screenTitleHeight,
+            minHeight: 44,
             alignment: .leading
         )
     }
@@ -452,7 +449,7 @@ struct ScreenNavigationTitle: View {
                 .minimumScaleFactor(minimumScaleFactor)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: AppLayout.screenTitleHeight, alignment: .leading)
+        .frame(minHeight: 44, alignment: .leading)
     }
 }
 
@@ -464,7 +461,7 @@ struct SectionTitle: View {
             .font(AppFont.h1)
             .lineLimit(1)
             .foregroundStyle(AppColor.primaryText)
-            .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+            .frame(minHeight: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 }
 
@@ -480,7 +477,7 @@ struct ScreenSectionRow<Trailing: View>: View {
 
             trailing()
         }
-        .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+        .frame(minHeight: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 }
 
@@ -568,7 +565,11 @@ struct SuccessSecondaryButton: View {
                 .font(AppFont.h1)
                 .foregroundStyle(AppColor.primaryText)
                 .lineLimit(1)
-                .frame(width: width, height: AppLayout.bottomCTAHeight)
+                .frame(
+                    minWidth: width,
+                    maxWidth: width,
+                    minHeight: AppLayout.bottomCTAHeight
+                )
                 .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -596,7 +597,7 @@ struct CardShell<Content: View>: View {
     var body: some View {
         content
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .center)
+            .frame(maxWidth: .infinity, minHeight: height, alignment: .center)
             .background(fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -617,7 +618,7 @@ struct PlanCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(AppFont.h2)
-                        .lineLimit(1)
+                        .lineLimit(2)
 
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(lines, id: \.self) { line in
@@ -868,7 +869,7 @@ struct CTAButton: View {
                 .foregroundStyle(AppColor.base)
                 .lineLimit(1)
                 .contentTransition(.opacity)
-                .frame(width: width, height: 56)
+                .frame(minWidth: width, maxWidth: width, minHeight: 56)
                 .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(AppPressFeedbackStyle())
