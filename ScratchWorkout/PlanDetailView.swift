@@ -144,9 +144,9 @@ struct PlanDetailView: View {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Edit plan")
             }
         }

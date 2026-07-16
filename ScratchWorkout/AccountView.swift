@@ -20,14 +20,14 @@ struct AccountEntryButton: View {
             }
             .foregroundStyle(foregroundColor)
             .padding(.horizontal, 12)
-            .frame(height: 38)
+            .frame(height: 44)
             .background(AppColor.surface1, in: Capsule())
             .overlay(
                 Capsule()
                     .stroke(borderColor, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel("Account")
     }
 
@@ -71,7 +71,7 @@ struct AccountEntryButton: View {
         case .signedIn:
             AppColor.accent.opacity(0.55)
         case .loading, .signedOut:
-            AppColor.border
+            AppColor.surfaceOutline
         }
     }
 }
@@ -129,14 +129,14 @@ struct AccountView: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppColor.primaryText)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(AppColor.surface1, in: Circle())
                     .overlay(
                         Circle()
-                            .stroke(AppColor.border, lineWidth: 1)
+                            .stroke(AppColor.surfaceOutline, lineWidth: 1)
                     )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .accessibilityLabel("Close account")
         }
         .padding(.top, 42)
@@ -216,7 +216,7 @@ struct AccountView: View {
                     strokeWidth: 0
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .disabled(controller.isWorking)
 
             Button {
@@ -226,7 +226,7 @@ struct AccountView: View {
             } label: {
                 accountActionLabel(title: "Sign Out", foreground: AppColor.primaryText, fill: AppColor.surface1)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .disabled(controller.isWorking)
 
             Button {
@@ -234,7 +234,7 @@ struct AccountView: View {
             } label: {
                 accountActionLabel(title: "Delete Account", foreground: Color(hex: 0xFF6B6B), fill: AppColor.surface1)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .disabled(controller.isWorking)
         }
     }
@@ -262,7 +262,7 @@ struct AccountView: View {
                         strokeWidth: 0
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle())
                 .disabled(controller.isWorking)
 
                 Button {
@@ -270,7 +270,7 @@ struct AccountView: View {
                 } label: {
                     accountActionLabel(title: "Not Now", foreground: AppColor.primaryText, fill: AppColor.surface1)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(AppPressFeedbackStyle())
                 .disabled(controller.isWorking)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -304,10 +304,10 @@ struct AccountView: View {
             .background(provider == .apple ? AppColor.primaryText : AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(provider == .apple ? Color.clear : AppColor.border, lineWidth: 1)
+                    .stroke(provider == .apple ? Color.clear : AppColor.surfaceOutline, lineWidth: 1)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .disabled(controller.isWorking)
         .accessibilityLabel(provider.buttonTitle)
     }
@@ -349,7 +349,7 @@ struct AccountView: View {
             .background(fill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: strokeWidth)
+                    .stroke(AppColor.surfaceOutline, lineWidth: strokeWidth)
             )
     }
 
@@ -360,7 +360,7 @@ struct AccountView: View {
             .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
+                    .stroke(AppColor.surfaceOutline, lineWidth: 1)
             )
     }
 

@@ -83,7 +83,7 @@ struct StatsView: View {
                             } label: {
                                 FrequentExerciseCard(summary: exercise)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(AppPressFeedbackStyle())
                             .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
                         }
                     }
@@ -259,7 +259,7 @@ private struct StatsSearchSurface: View {
 
     private var resultViewportHeight: CGFloat {
         let visibleRows = max(1, min(results.count + statusRowCount, 5))
-        return CGFloat(visibleRows * 26 + max(0, visibleRows - 1) * 16)
+        return CGFloat(visibleRows * 44 + max(0, visibleRows - 1) * 8)
     }
 
     private var statusMessage: String? {
@@ -281,7 +281,7 @@ private struct StatsSearchSurface: View {
         VStack(alignment: .leading, spacing: 16) {
             if isExpanded {
                 resultList
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .transition(.opacity.combined(with: .offset(y: 12)))
 
                 providerAttribution
                     .transition(.opacity)
@@ -300,7 +300,7 @@ private struct StatsSearchSurface: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
@@ -308,19 +308,19 @@ private struct StatsSearchSurface: View {
 
     private var resultList: some View {
         ScrollView(showsIndicators: results.count > 5) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 if let statusMessage {
                     Text(statusMessage)
                         .font(AppFont.h2)
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 }
 
                 if results.isEmpty && statusMessage == nil {
                     Text("No matching exercises")
                         .font(AppFont.h2)
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 } else {
                     ForEach(results) { exercise in
                         Button {
@@ -330,10 +330,10 @@ private struct StatsSearchSurface: View {
                                 .font(AppFont.h2)
                                 .foregroundStyle(AppColor.primaryText)
                                 .lineLimit(1)
-                                .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(AppPressFeedbackStyle())
                     }
                 }
             }

@@ -441,9 +441,9 @@ struct ScreenNavigationTitle: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(AppColor.primaryText)
-                    .frame(width: 36, height: AppLayout.screenTitleHeight)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .accessibilityLabel(backAccessibilityLabel)
 
             Text(title)
@@ -492,6 +492,7 @@ struct MetricLabel: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
                 .font(AppFont.display)
+                .monospacedDigit()
                 .lineLimit(1)
 
             Text(label)
@@ -536,6 +537,7 @@ struct SuccessMetricStrip: View {
                 VStack(spacing: 4) {
                     Text(metric.value)
                         .font(AppFont.h1)
+                        .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
@@ -570,7 +572,7 @@ struct SuccessSecondaryButton: View {
                 .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 }
         }
         .buttonStyle(AppPressFeedbackStyle())
@@ -598,7 +600,7 @@ struct CardShell<Content: View>: View {
             .background(fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
+                    .stroke(AppColor.surfaceOutline, lineWidth: 1)
             )
     }
 }
@@ -747,7 +749,7 @@ struct CollapsibleSectionHeader: View {
                     .animation(.snappy(duration: 0.2, extraBounce: 0), value: isExpanded)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(title)
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
     }
@@ -828,16 +830,43 @@ struct CTAButton: View {
 struct AppPressFeedbackStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var pressedScale: CGFloat = 0.97
+    var isStatic = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? pressedScale : 1))
+            .scaleEffect(reduceMotion || isStatic ? 1 : (configuration.isPressed ? 0.96 : 1))
             .opacity(configuration.isPressed ? 0.82 : 1)
             .animation(
                 .easeOut(duration: configuration.isPressed ? 0.1 : 0.14),
                 value: configuration.isPressed
             )
+    }
+}
+
+struct ContextualSymbol: View {
+    var activeSymbol: String
+    var inactiveSymbol: String
+    var isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            symbol(activeSymbol, isVisible: isActive)
+            symbol(inactiveSymbol, isVisible: !isActive)
+        }
+        .animation(
+            reduceMotion ? nil : .timingCurve(0.2, 0, 0, 1, duration: 0.3),
+            value: isActive
+        )
+        .accessibilityHidden(true)
+    }
+
+    private func symbol(_ name: String, isVisible: Bool) -> some View {
+        Image(systemName: name)
+            .scaleEffect(isVisible || reduceMotion ? 1 : 0.25)
+            .opacity(isVisible ? 1 : 0)
+            .blur(radius: isVisible || reduceMotion ? 0 : 4)
     }
 }
 
@@ -898,7 +927,7 @@ struct RoundStepButton: View {
                 .frame(width: 45, height: 45)
                 .background(fill, in: Circle())
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(accessibilityLabel ?? defaultAccessibilityLabel)
     }
 
@@ -935,6 +964,7 @@ struct NumberStepper: View {
 
                 Text("\(value)")
                     .font(AppFont.display)
+                    .monospacedDigit()
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
                     .contentTransition(.numericText())
@@ -974,10 +1004,10 @@ private struct RepeatingRoundStepButton: View {
                 .background(AppColor.surface2, in: Circle())
                 .overlay(
                     Circle()
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 )
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(accessibilityLabel)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)

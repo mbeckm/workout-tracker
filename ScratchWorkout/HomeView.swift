@@ -40,7 +40,7 @@ struct HomeView: View {
                     } label: {
                         PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle())
                     .padding(.top, 12)
 
                     SectionTitle(text: "Next in plan")
@@ -52,7 +52,7 @@ struct HomeView: View {
                     } label: {
                         PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle())
                     .padding(.top, 12)
                 }
                 .padding(.bottom, AppLayout.legacyTabBarClearance)
@@ -118,6 +118,7 @@ private struct MonthlyWorkoutSummaryCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(workoutCount)")
                     .font(AppFont.h1)
+                    .monospacedDigit()
                     .foregroundStyle(AppColor.primaryText)
                     .contentTransition(.numericText())
 
@@ -188,7 +189,7 @@ private struct MonthlyWorkoutSummaryCard: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Workouts this month")
