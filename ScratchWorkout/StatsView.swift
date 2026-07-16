@@ -70,25 +70,48 @@ struct StatsView: View {
                 ScreenTitle(title: "Stats")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                SectionTitle(text: "Most logged")
-                    .padding(.top, 24)
+                Group {
+                    if let topExercise = topExercises.first {
+                        Text("TOP EXERCISE")
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.secondaryText)
+                            .tracking(0.7)
+                            .padding(.top, 24)
 
-                VStack(spacing: 12) {
-                    if topExercises.isEmpty {
-                        EmptyStatsCard()
-                    } else {
-                        ForEach(topExercises) { exercise in
-                            Button {
-                                openExercise(exercise.exerciseName)
-                            } label: {
-                                FrequentExerciseCard(summary: exercise)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
+                        Button {
+                            openExercise(topExercise.exerciseName)
+                        } label: {
+                            TopExerciseFeature(summary: topExercise)
                         }
+                        .buttonStyle(.plain)
+                        .padding(.top, 10)
+                        .accessibilityLabel("\(topExercise.exerciseName), \(topExercise.setCount) logged sets")
+
+                        if topExercises.count > 1 {
+                            SectionTitle(text: "More exercises")
+                                .padding(.top, 32)
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(topExercises.dropFirst())) { exercise in
+                                    Button {
+                                        openExercise(exercise.exerciseName)
+                                    } label: {
+                                        SecondaryExerciseRow(summary: exercise)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
+                                }
+                            }
+                            .padding(.top, 6)
+                        } else {
+                            LowDataStatsPrompt()
+                                .padding(.top, 28)
+                        }
+                    } else {
+                        EmptyStatsCard()
+                            .padding(.top, 32)
                     }
                 }
-                .padding(.top, 12)
                 .padding(.bottom, 220)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -200,49 +223,142 @@ struct ExerciseStatsView: View {
     }
 }
 
-private struct FrequentExerciseCard: View {
+private struct TopExerciseFeature: View {
     var summary: ExerciseSetSummary
 
     var body: some View {
-        CardShell(height: 80) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(summary.exerciseName)
-                        .font(AppFont.h2)
-                        .lineLimit(1)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(summary.exerciseName.planDisplayName)
+                        .font(.inter(size: 29, weight: .bold, relativeTo: .title))
+                        .foregroundStyle(AppColor.primaryText)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.75)
 
-                    Text("\(summary.setCount) Sets")
+                    Text("Most logged movement")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.secondaryText)
-                        .lineLimit(1)
                 }
 
                 Spacer(minLength: 12)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(AppColor.secondaryText)
-                    .frame(width: 36, height: 36)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(AppColor.base)
+                    .frame(width: 44, height: 44)
+                    .background(AppColor.accent, in: Circle())
             }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(summary.setCount)")
+                    .font(.inter(size: 48, weight: .bold, relativeTo: .largeTitle))
+                    .foregroundStyle(AppColor.accent)
+                    .contentTransition(.numericText())
+
+                Text(summary.setCount == 1 ? "logged set" : "logged sets")
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, minHeight: 190, alignment: .leading)
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .bottomLeading) {
+            Rectangle()
+                .fill(AppColor.accent)
+                .frame(width: 72, height: 4)
+                .padding(.leading, 20)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(AppColor.border, lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct EmptyStatsCard: View {
+private struct SecondaryExerciseRow: View {
+    var summary: ExerciseSetSummary
+
     var body: some View {
-        CardShell(height: 102) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("No logged sets yet")
+                Text(summary.exerciseName.planDisplayName)
                     .font(AppFont.h2)
                     .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(2)
 
-                Text("Finish a workout to build your stats.")
+                Text("\(summary.setCount) \(summary.setCount == 1 ? "set" : "sets")")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.secondaryText)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer(minLength: 12)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(AppColor.secondaryText)
+                .frame(width: 44, height: 44)
         }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .contentShape(Rectangle())
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(AppColor.border).frame(height: 1)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct LowDataStatsPrompt: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 19, weight: .medium))
+                .foregroundStyle(AppColor.accent)
+                .frame(width: 44, height: 44)
+                .background(AppColor.surface1, in: Circle())
+                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Your trend is just getting started")
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.primaryText)
+
+                Text("Log this exercise again to unlock a progression chart.")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct EmptyStatsCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Image(systemName: "chart.xyaxis.line")
+                .font(.system(size: 28, weight: .medium))
+                .foregroundStyle(AppColor.accent)
+                .frame(width: 56, height: 56)
+                .background(AppColor.surface1, in: Circle())
+                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Nothing to chart yet")
+                    .font(AppFont.h1)
+                    .foregroundStyle(AppColor.primaryText)
+
+                Text("Finish your first workout. Your most logged exercise and progression will appear here automatically.")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

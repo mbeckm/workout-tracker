@@ -199,6 +199,21 @@ struct CreatePlanView: View {
             composerHeader
             .padding(.top, AppLayout.screenTitleTopPadding)
 
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("DAY \(currentDayIndex + 1) OF \(daysPerWeek)")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.accent)
+                    .tracking(0.7)
+
+                Spacer(minLength: 12)
+
+                Text("\(currentDayExercises.count) \(currentDayExercises.count == 1 ? "exercise" : "exercises")")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .contentTransition(.numericText())
+            }
+            .padding(.top, 22)
+
             DayStepProgress(
                 count: daysPerWeek,
                 completed: completedDays,
@@ -207,13 +222,18 @@ struct CreatePlanView: View {
                 onReorder: reorderDay,
                 onDelete: deleteDay
             )
-            .padding(.top, 24)
+            .padding(.top, 10)
+
+            Rectangle()
+                .fill(AppColor.border)
+                .frame(height: 1)
+                .padding(.top, 18)
 
             HStack(spacing: 4) {
                 TextField("Day \(currentDayIndex + 1)", text: currentDayNameBinding)
                     .id(currentDayIndex)
                     .focused($dayNameFocused)
-                    .font(AppFont.h1)
+                    .font(AppFont.display)
                     .foregroundStyle(AppColor.primaryText)
                     .tint(AppColor.accent)
                     .submitLabel(.done)
@@ -228,13 +248,13 @@ struct CreatePlanView: View {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
                 .accessibilityLabel("Edit day name")
             }
-            .frame(height: AppLayout.sectionTitleHeight)
-            .padding(.top, 24)
+            .frame(minHeight: 48)
+            .padding(.top, 14)
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 8) {
@@ -254,7 +274,7 @@ struct CreatePlanView: View {
                         PlanAddExerciseButton(action: openExerciseSearch)
                     }
                 }
-                .padding(.top, 12)
+                .padding(.top, 8)
                 .padding(.bottom, composerBottomPadding)
             }
             .scrollDismissesKeyboard(.interactively)
@@ -1409,28 +1429,47 @@ private struct RedesignedEmptyDayState: View {
     var onAdd: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("No exercises yet")
-                .font(AppFont.subheading)
-                .foregroundStyle(AppColor.secondaryText)
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Build this training day")
+                    .font(AppFont.h2)
+                    .foregroundStyle(AppColor.primaryText)
+
+                Text("Add movements in the order you want to perform them.")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             Button(action: onAdd) {
-                Label("Add first exercise", systemImage: "plus")
-                    .font(AppFont.h1)
-                    .foregroundStyle(AppColor.primaryText)
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                HStack(spacing: 12) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(AppColor.base)
+                        .frame(width: 36, height: 36)
+                        .background(AppColor.accent, in: Circle())
+
+                    Text("Add first exercise")
+                        .font(AppFont.h2)
+                        .foregroundStyle(AppColor.primaryText)
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(AppColor.secondaryText)
+                        .frame(width: 44, height: 44)
+                }
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .contentShape(Rectangle())
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(AppColor.border).frame(height: 1)
+                }
             }
             .buttonStyle(AppPressFeedbackStyle())
         }
-        .padding(16)
-        .padding(.vertical, 8)
+        .padding(.top, 16)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
     }
 }
 
@@ -1722,7 +1761,7 @@ private struct ExerciseSearchCard: View {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
                 .background(AppColor.surface2, in: Circle())
                 .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
         }
@@ -1941,11 +1980,19 @@ private struct PlanExerciseSummaryCard: View {
                 .transition(.opacity)
             }
         }
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(
+            draft == nil ? AppColor.base : AppColor.surface1,
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(draft == nil ? Color.clear : AppColor.border, lineWidth: 1)
         )
+        .overlay(alignment: .bottom) {
+            if draft == nil {
+                Rectangle().fill(AppColor.border).frame(height: 1)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
         .animation(.snappy(duration: 0.2, extraBounce: 0), value: draft?.wrappedValue.stepIndex)
@@ -1972,7 +2019,7 @@ private struct PlanExerciseSummaryCard: View {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
                 .background(AppColor.surface2, in: Circle())
                 .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
         }
