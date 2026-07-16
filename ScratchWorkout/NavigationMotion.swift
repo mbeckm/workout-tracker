@@ -1,5 +1,21 @@
 import SwiftUI
 
+enum AppMotion {
+    static let stateChange = Animation.spring(response: 0.22, dampingFraction: 0.94)
+    static let searchExpansion = Animation.spring(response: 0.22, dampingFraction: 0.92)
+    static let settle = Animation.spring(response: 0.22, dampingFraction: 0.96)
+    static let archiveExit = Animation.timingCurve(0.32, 0.72, 0, 1, duration: 0.2)
+    static let reduced = Animation.easeOut(duration: 0.16)
+
+    static func stateChange(reduceMotion: Bool) -> Animation {
+        reduceMotion ? reduced : stateChange
+    }
+
+    static func searchExpansion(reduceMotion: Bool) -> Animation {
+        reduceMotion ? reduced : searchExpansion
+    }
+}
+
 enum AppNavigationDirection: Equatable {
     case forward
     case backward
@@ -39,7 +55,7 @@ enum AppScreenTransition {
     }
 }
 
-private func rubberBanded(_ offset: CGFloat, dimension: CGFloat) -> CGFloat {
+func appRubberBanded(_ offset: CGFloat, dimension: CGFloat) -> CGFloat {
     guard dimension > 0 else { return offset }
     let magnitude = abs(offset)
     let resisted = (magnitude * dimension * 0.55) / (dimension + 0.55 * magnitude)
@@ -92,10 +108,10 @@ struct HorizontalSwipePager<Content: View>: View {
 
                 var offset = horizontal
                 if selection == 0, offset > 0 {
-                    offset = rubberBanded(offset, dimension: pageWidth)
+                    offset = appRubberBanded(offset, dimension: pageWidth)
                 }
                 if selection >= pageCount - 1, offset < 0 {
-                    offset = rubberBanded(offset, dimension: pageWidth)
+                    offset = appRubberBanded(offset, dimension: pageWidth)
                 }
                 dragOffset = offset
             }
@@ -232,7 +248,7 @@ private struct SwipeBackModifier: ViewModifier {
                 }
 
                 if horizontal > containerWidth {
-                    dragOffset = containerWidth + rubberBanded(horizontal - containerWidth, dimension: containerWidth)
+                    dragOffset = containerWidth + appRubberBanded(horizontal - containerWidth, dimension: containerWidth)
                 } else {
                     dragOffset = horizontal
                 }

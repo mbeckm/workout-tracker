@@ -656,6 +656,9 @@ struct SwipeablePlanCard: View {
     var onDelete: () -> Void
 
     @State private var horizontalOffset: CGFloat = 0
+    @State private var cardWidth: CGFloat = 0
+    @State private var isCommittingArchive = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -679,10 +682,21 @@ struct SwipeablePlanCard: View {
                 date: nil
             )
             .offset(x: horizontalOffset)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            cardWidth = proxy.size.width
+                        }
+                        .onChange(of: proxy.size.width) { _, newWidth in
+                            cardWidth = newWidth
+                        }
+                }
+            }
             .contentShape(Rectangle())
             .onTapGesture {
                 if horizontalOffset < -1 {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                    withAnimation(AppMotion.settle) {
                         horizontalOffset = 0
                     }
                 } else {
@@ -693,22 +707,35 @@ struct SwipeablePlanCard: View {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20)
                     .onChanged { value in
+                        guard !isCommittingArchive else {
+                            return
+                        }
+
                         guard abs(value.translation.width) > abs(value.translation.height) else {
                             return
                         }
 
-                        horizontalOffset = min(0, value.translation.width)
+                        let horizontal = value.translation.width
+                        horizontalOffset = horizontal > 0
+                            ? appRubberBanded(horizontal, dimension: max(cardWidth, 1))
+                            : horizontal
                     }
                     .onEnded { value in
-                        guard value.translation.width < -90 else {
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                        guard !isCommittingArchive else {
+                            return
+                        }
+
+                        let shouldArchive = value.translation.width < -90
+                            || value.predictedEndTranslation.width < -160
+
+                        guard shouldArchive else {
+                            withAnimation(AppMotion.settle) {
                                 horizontalOffset = 0
                             }
                             return
                         }
 
-                        Haptics.tap(.medium)
-                        onDelete()
+                        commitArchive()
                     }
             )
         }
@@ -721,6 +748,27 @@ struct SwipeablePlanCard: View {
 
     private var deleteBackgroundOpacity: Double {
         min(1, max(0, Double(-horizontalOffset / 48)))
+    }
+
+    private func commitArchive() {
+        guard !isCommittingArchive else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        guard !reduceMotion else {
+            onDelete()
+            return
+        }
+
+        isCommittingArchive = true
+
+        withAnimation(AppMotion.archiveExit, completionCriteria: .logicallyComplete) {
+            horizontalOffset = -(max(cardWidth, 320) + 40)
+        } completion: {
+            onDelete()
+        }
     }
 }
 
@@ -819,6 +867,7 @@ struct CTAButton: View {
                 .font(AppFont.h1)
                 .foregroundStyle(AppColor.base)
                 .lineLimit(1)
+                .contentTransition(.opacity)
                 .frame(width: width, height: 56)
                 .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
@@ -877,13 +926,15 @@ struct StepProgress: View {
     var width: CGFloat
     var spacing: CGFloat
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: spacing) {
             ForEach(0..<count, id: \.self) { index in
                 progressBar(at: index)
             }
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: progressAnimationToken)
+        .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: progressAnimationToken)
     }
 
     private var progressAnimationToken: String {
@@ -978,7 +1029,6 @@ struct NumberStepper: View {
                 }
             }
             .frame(width: 164, alignment: .center)
-            .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value)
         }
         .frame(width: 164, alignment: .leading)
         .accessibilityElement(children: .contain)
