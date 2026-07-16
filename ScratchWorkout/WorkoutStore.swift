@@ -400,11 +400,7 @@ struct WorkoutStore {
     }
 
     private var statsWorkouts: [LoggedWorkout] {
-        if Self.hasLoggedExerciseData(in: workoutHistory) {
-            return workoutHistory
-        }
-
-        return SampleData.loggedStatsHistory
+        workoutHistory
     }
 
     private static func hasLoggedExerciseData(in workouts: [LoggedWorkout]) -> Bool {

@@ -196,6 +196,7 @@ struct RootView: View {
             } else {
                 PlansView(
                     activePlan: store.activePlan,
+                    nextWorkoutID: store.nextWorkoutDay.id,
                     savedPlans: store.savedPlans,
                     archivedPlans: store.archivedPlans,
                     onNewPlan: {
@@ -327,6 +328,7 @@ struct RootView: View {
         case .plans:
             PlansView(
                 activePlan: store.activePlan,
+                nextWorkoutID: store.nextWorkoutDay.id,
                 savedPlans: store.savedPlans,
                 archivedPlans: store.archivedPlans,
                 onNewPlan: {

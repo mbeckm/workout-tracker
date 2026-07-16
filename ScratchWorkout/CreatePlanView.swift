@@ -421,49 +421,55 @@ struct DayStepProgress: View {
     var onReorder: ((Int, Int) -> Void)?
     var onDelete: ((Int) -> Void)?
 
-    private var barSpacing: CGFloat {
-        count <= 4 ? 45 : 12
-    }
-
-    private func barWidth(for availableWidth: CGFloat) -> CGFloat {
-        if count <= 3 {
-            return 90
-        }
-
-        if count == 4 {
-            return 55
-        }
-
-        let safeCount = CGFloat(max(count, 1))
-        let usableWidth = availableWidth - (barSpacing * CGFloat(max(count - 1, 0)))
-        return floor(max(0, usableWidth) / safeCount)
-    }
-
     var body: some View {
         GeometryReader { proxy in
-            HStack(spacing: barSpacing) {
-                ForEach(0..<max(count, 1), id: \.self) { index in
-                    dayBar(index: index, width: barWidth(for: proxy.size.width))
+            ZStack {
+                if count > 1 {
+                    Rectangle()
+                        .fill(AppColor.border)
+                        .frame(width: proxy.size.width - (proxy.size.width / CGFloat(max(count, 1))), height: 2)
+                }
+
+                HStack(spacing: 0) {
+                    ForEach(0..<max(count, 1), id: \.self) { index in
+                        dayNode(index: index)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             }
             .frame(width: proxy.size.width, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .leading)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
     }
 
     @ViewBuilder
-    private func dayBar(index: Int, width: CGFloat) -> some View {
+    private func dayNode(index: Int) -> some View {
         let button = Button {
             onSelect?(index)
         } label: {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(fill(for: index))
-                .frame(width: width, height: 24)
+            ZStack {
+                Circle()
+                    .fill(nodeFill(for: index))
+                    .frame(width: index == current ? 28 : 22, height: index == current ? 28 : 22)
+                    .overlay {
+                        Circle()
+                            .strokeBorder(nodeStroke(for: index), lineWidth: 2)
+                    }
+
+                if index < completed && index != current {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(AppColor.base)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .background(AppColor.base)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Day \(index + 1)")
+        .accessibilityValue(index == current ? "Current" : (index < completed ? "Saved" : "Not saved"))
 
         if onReorder != nil || onDelete != nil {
             button
@@ -498,13 +504,12 @@ struct DayStepProgress: View {
             }
     }
 
-    private func fill(for index: Int) -> Color {
+    private func nodeFill(for index: Int) -> Color {
         if selectedOnly {
             if index == current {
                 return AppColor.accent
             }
-
-            return index == current + 1 ? AppColor.surface2 : AppColor.border
+            return AppColor.base
         }
 
         if index < completed {
@@ -512,8 +517,15 @@ struct DayStepProgress: View {
         } else if index == current {
             return AppColor.accent
         } else {
-            return AppColor.border
+            return AppColor.base
         }
+    }
+
+    private func nodeStroke(for index: Int) -> Color {
+        if index == current || (!selectedOnly && index < completed) {
+            return AppColor.accent
+        }
+        return AppColor.secondaryText
     }
 }
 

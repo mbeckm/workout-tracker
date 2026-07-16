@@ -25,35 +25,58 @@ struct HomeView: View {
                     }
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                    MonthlyWorkoutSummaryCard(
-                        workoutCount: workoutsThisMonth,
-                        workoutDays: workoutDaysThisMonth
-                    )
-                    .padding(.top, 24)
-
-                    SectionTitle(text: "Active Plan")
-                        .padding(.top, 36)
-
                     Button {
                         Haptics.tap(.medium)
                         onOpenActivePlan()
                     } label: {
-                        PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("ACTIVE PLAN")
+                                    .font(AppFont.caption.weight(.semibold))
+                                    .tracking(1)
+                                    .foregroundStyle(AppColor.secondaryText)
+
+                                Text(activePlanTitle)
+                                    .font(AppFont.h1)
+                                    .foregroundStyle(AppColor.primaryText)
+                                    .lineLimit(1)
+
+                                Text("\(activePlan.daysPerWeek) \(activePlan.daysPerWeek == 1 ? "day" : "days") / week")
+                                    .font(AppFont.label)
+                                    .foregroundStyle(AppColor.secondaryText)
+                            }
+
+                            Spacer(minLength: 12)
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundStyle(AppColor.secondaryText)
+                                .frame(width: 44, height: 44)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 88, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 12)
+                    .padding(.top, 28)
 
                     SectionTitle(text: "Next in plan")
-                        .padding(.top, 24)
+                        .padding(.top, 28)
 
-                    Button {
-                        Haptics.tap(.medium)
-                        onOpenNextWorkout()
-                    } label: {
-                        PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 12)
+                    PlanRhythmPath(
+                        days: activePlan.days,
+                        highlightedDayID: nextWorkout.id,
+                        maxVisibleDays: 4
+                    )
+                    .padding(.top, 18)
+
+                    CTAButton(title: "Begin \(nextWorkoutTitle)", action: onOpenNextWorkout)
+                        .padding(.top, 4)
+
+                    CompactMonthlyConsistency(
+                        workoutCount: workoutsThisMonth,
+                        workoutDays: workoutDaysThisMonth
+                    )
+                    .padding(.top, 32)
                 }
                 .padding(.bottom, AppLayout.legacyTabBarClearance)
             }
@@ -75,13 +98,13 @@ struct HomeView: View {
     }
 }
 
-private struct MonthlyWorkoutSummaryCard: View {
+private struct CompactMonthlyConsistency: View {
     var workoutCount: Int
     var workoutDays: Set<Date>
     var referenceDate: Date = Date()
 
-    private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    private let rowSpacing: CGFloat = 16
+    private let weekdaySymbols = ["M", "T", "W", "T", "F", "S", "S"]
+    private let rowSpacing: CGFloat = 8
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -114,23 +137,20 @@ private struct MonthlyWorkoutSummaryCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(workoutCount)")
-                    .font(AppFont.h1)
+                Text("This month")
+                    .font(AppFont.h2)
                     .foregroundStyle(AppColor.primaryText)
-                    .contentTransition(.numericText())
 
-                Text(workoutCount == 1 ? "Workout this month" : "Workouts this month")
+                Spacer(minLength: 12)
+
+                Text("\(workoutCount) \(workoutCount == 1 ? "workout" : "workouts")")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.secondaryText)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .contentTransition(.numericText())
             }
-
-            Rectangle()
-                .fill(AppColor.border)
-                .frame(height: 1)
 
             VStack(alignment: .leading, spacing: rowSpacing) {
                 HStack(spacing: 0) {
@@ -140,7 +160,7 @@ private struct MonthlyWorkoutSummaryCard: View {
                         Text(symbol)
                             .font(AppFont.caption)
                             .foregroundStyle(AppColor.secondaryText)
-                            .frame(width: 24)
+                            .frame(width: 14)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
@@ -158,7 +178,7 @@ private struct MonthlyWorkoutSummaryCard: View {
                                     .accessibilityHidden(true)
                             } else {
                                 Color.clear
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 14, height: 14)
                                     .accessibilityHidden(true)
                             }
 
@@ -171,25 +191,8 @@ private struct MonthlyWorkoutSummaryCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        stops: [
-                            .init(color: AppColor.base, location: 0.85),
-                            .init(color: AppColor.surface1, location: 1)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        }
+        .padding(.vertical, 18)
+        .overlay(alignment: .top) { Rectangle().fill(AppColor.border).frame(height: 1) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Workouts this month")
         .accessibilityValue("\(workoutCount) workouts logged")
@@ -202,11 +205,11 @@ private struct WorkoutDayDot: View {
     var body: some View {
         Circle()
             .fill(hasWorkout ? AppColor.accent : Color.clear)
-            .frame(width: 24, height: 24)
+            .frame(width: 14, height: 14)
             .overlay {
                 if !hasWorkout {
                     Circle()
-                        .strokeBorder(AppColor.border, lineWidth: 4)
+                        .strokeBorder(AppColor.border, lineWidth: 2)
                 }
             }
     }

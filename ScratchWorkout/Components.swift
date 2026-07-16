@@ -648,6 +648,127 @@ struct PlanCard: View {
     }
 }
 
+struct PlanRhythmPath: View {
+    var days: [WorkoutDay]
+    var highlightedDayID: UUID?
+    var maxVisibleDays = 4
+
+    private var highlightedIndex: Int {
+        days.firstIndex { $0.id == highlightedDayID } ?? 0
+    }
+
+    private var displayedIndices: [Int] {
+        guard days.count > maxVisibleDays else { return Array(days.indices) }
+
+        let safeCount = max(1, maxVisibleDays)
+        let start = min(max(highlightedIndex - 1, 0), days.count - safeCount)
+        return Array(start..<(start + safeCount))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let first = displayedIndices.first, first > 0 {
+                Text("\(first) earlier \(first == 1 ? "day" : "days")")
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .padding(.leading, 40)
+                    .padding(.bottom, 8)
+            }
+
+            ForEach(Array(displayedIndices.enumerated()), id: \.element) { offset, index in
+                PlanRhythmDayRow(
+                    day: days[index],
+                    ordinal: index + 1,
+                    isHighlighted: index == highlightedIndex,
+                    continues: offset < displayedIndices.count - 1
+                )
+            }
+
+            if let last = displayedIndices.last, last < days.count - 1 {
+                let remaining = days.count - last - 1
+                Text("\(remaining) more \(remaining == 1 ? "day" : "days")")
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .padding(.leading, 40)
+                    .padding(.top, 8)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Workout order")
+        .accessibilityValue(accessibilitySummary)
+    }
+
+    private var accessibilitySummary: String {
+        guard !days.isEmpty else { return "No workout days" }
+
+        return days.enumerated().map { index, day in
+            let status = index == highlightedIndex ? ", next" : ""
+            return "Day \(index + 1), \(day.title), \(day.exercises.count) exercises\(status)"
+        }.joined(separator: "; ")
+    }
+}
+
+private struct PlanRhythmDayRow: View {
+    var day: WorkoutDay
+    var ordinal: Int
+    var isHighlighted: Bool
+    var continues: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            ZStack(alignment: .top) {
+                if continues {
+                    Rectangle()
+                        .fill(isHighlighted ? AppColor.accent : AppColor.border)
+                        .frame(width: 2, height: 64)
+                        .offset(y: 20)
+                }
+
+                Circle()
+                    .fill(isHighlighted ? AppColor.accent : AppColor.base)
+                    .frame(width: 24, height: 24)
+                    .overlay {
+                        Circle()
+                            .strokeBorder(isHighlighted ? AppColor.accent : AppColor.secondaryText, lineWidth: 2)
+                    }
+                    .overlay {
+                        if isHighlighted {
+                            Circle()
+                                .fill(AppColor.base)
+                                .frame(width: 8, height: 8)
+                        }
+                    }
+            }
+            .frame(width: 24, height: 72, alignment: .top)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(day.title.isEmpty ? "Day \(ordinal)" : day.title)
+                    .font(isHighlighted ? AppFont.h2 : AppFont.subheading)
+                    .foregroundStyle(isHighlighted ? AppColor.primaryText : AppColor.secondaryText)
+                    .lineLimit(1)
+
+                Text("\(day.exercises.count) \(day.exercises.count == 1 ? "exercise" : "exercises")")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+            }
+            .padding(.top, 1)
+
+            Spacer(minLength: 0)
+
+            if isHighlighted {
+                Text("NEXT")
+                    .font(AppFont.caption.weight(.semibold))
+                    .tracking(0.8)
+                    .foregroundStyle(AppColor.accent)
+                    .padding(.top, 3)
+            }
+        }
+        .frame(minHeight: 72, alignment: .top)
+    }
+}
+
 struct SwipeablePlanCard: View {
     var plan: WorkoutPlan
     var onOpen: () -> Void

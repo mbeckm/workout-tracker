@@ -199,6 +199,20 @@ struct CreatePlanView: View {
             composerHeader
             .padding(.top, AppLayout.screenTitleTopPadding)
 
+            HStack(alignment: .firstTextBaseline) {
+                Text("DAY \(currentDayIndex + 1) OF \(daysPerWeek)")
+                    .font(AppFont.label)
+                    .tracking(1.1)
+                    .foregroundStyle(AppColor.accent)
+
+                Spacer(minLength: 12)
+
+                Text("\(completedDays) saved")
+                    .font(AppFont.caption)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            .padding(.top, 24)
+
             DayStepProgress(
                 count: daysPerWeek,
                 completed: completedDays,
@@ -207,7 +221,7 @@ struct CreatePlanView: View {
                 onReorder: reorderDay,
                 onDelete: deleteDay
             )
-            .padding(.top, 24)
+            .padding(.top, 8)
 
             HStack(spacing: 4) {
                 TextField("Day \(currentDayIndex + 1)", text: currentDayNameBinding)
@@ -234,7 +248,7 @@ struct CreatePlanView: View {
                 .accessibilityLabel("Edit day name")
             }
             .frame(height: AppLayout.sectionTitleHeight)
-            .padding(.top, 24)
+            .padding(.top, 18)
 
             ScrollView(showsIndicators: false) {
                 LazyVStack(spacing: 8) {

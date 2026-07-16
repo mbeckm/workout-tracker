@@ -204,7 +204,12 @@ private struct FrequentExerciseCard: View {
     var summary: ExerciseSetSummary
 
     var body: some View {
-        CardShell(height: 80) {
+        HStack(alignment: .center, spacing: 12) {
+            Circle()
+                .fill(AppColor.accent)
+                .frame(width: 10, height: 10)
+                .accessibilityHidden(true)
+
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(summary.exerciseName)
@@ -225,24 +230,37 @@ private struct FrequentExerciseCard: View {
                     .frame(width: 36, height: 36)
             }
         }
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 68)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(AppColor.border).frame(height: 1)
+        }
         .accessibilityElement(children: .combine)
     }
 }
 
 private struct EmptyStatsCard: View {
     var body: some View {
-        CardShell(height: 102) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("No logged sets yet")
+        HStack(alignment: .top, spacing: 16) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(AppColor.accent)
+                .frame(width: 4, height: 72)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text("Your history starts here")
                     .font(AppFont.h2)
                     .foregroundStyle(AppColor.primaryText)
 
-                Text("Finish a workout to build your stats.")
-                    .font(AppFont.label)
+                Text("Complete a workout to see real set totals and progress. You can still search any exercise below.")
+                    .font(AppFont.body)
                     .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -577,26 +595,17 @@ private struct ExerciseStatsHistoryList: View {
     var points: [ExerciseStatsPoint]
 
     var body: some View {
-        CardShell {
-            VStack(spacing: 0) {
-                ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
-                    if index > 0 {
-                        historyDivider
-                    }
-
-                    ExerciseStatsHistoryRow(
-                        point: point,
-                        delta: deltaFromPrevious(at: index)
-                    )
-                }
+        VStack(spacing: 0) {
+            ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
+                ExerciseStatsHistoryRow(
+                    point: point,
+                    delta: deltaFromPrevious(at: index),
+                    continues: index < points.count - 1
+                )
             }
         }
-    }
-
-    private var historyDivider: some View {
-        Rectangle()
-            .fill(AppColor.border)
-            .frame(height: 1)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Progress history")
     }
 
     private func deltaFromPrevious(at index: Int) -> Double? {
@@ -611,9 +620,29 @@ private struct ExerciseStatsHistoryList: View {
 private struct ExerciseStatsHistoryRow: View {
     var point: ExerciseStatsPoint
     var delta: Double?
+    var continues: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            ZStack(alignment: .top) {
+                if continues {
+                    Rectangle()
+                        .fill(AppColor.border)
+                        .frame(width: 2, height: 64)
+                        .offset(y: 18)
+                }
+
+                Circle()
+                    .fill(point.isPersonalBest ? AppColor.accent : AppColor.base)
+                    .frame(width: 18, height: 18)
+                    .overlay {
+                        Circle()
+                            .strokeBorder(point.isPersonalBest ? AppColor.accent : AppColor.secondaryText, lineWidth: 2)
+                    }
+            }
+            .frame(width: 20, height: 64, alignment: .top)
+            .accessibilityHidden(true)
+
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text(dateText)
@@ -655,7 +684,7 @@ private struct ExerciseStatsHistoryRow: View {
                 }
             }
         }
-        .padding(.vertical, 14)
+        .frame(minHeight: 64)
         .accessibilityElement(children: .combine)
     }
 
