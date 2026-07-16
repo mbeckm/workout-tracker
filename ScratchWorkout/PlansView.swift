@@ -17,27 +17,33 @@ struct PlansView: View {
                     ScreenTitle(title: "Plans")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                    SectionTitle(text: "Active Plan")
-                        .padding(.top, 24)
+                    Text("ACTIVE PLAN")
+                        .font(AppFont.label)
+                        .tracking(1.2)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .padding(.top, 28)
 
                     Button {
                         Haptics.tap(.medium)
                         onOpenPlan(activePlan)
                     } label: {
-                        PlanCard(
-                            title: activePlan.name,
-                            lines: ["\(activePlan.daysPerWeek) days per week", "Created on \(activePlan.createdAt)"],
-                            date: nil
-                        )
+                        ActivePlanFeature(plan: activePlan)
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 12)
+                    .padding(.top, 10)
 
-                    SectionTitle(text: "Saved Plans")
-                        .padding(.top, 24)
+                    Text("SAVED PLANS")
+                        .font(AppFont.label)
+                        .tracking(1.2)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .padding(.top, 28)
 
-                    VStack(spacing: 12) {
-                        ForEach(displaySavedPlans) { plan in
+                    VStack(spacing: 0) {
+                        ForEach(Array(displaySavedPlans.enumerated()), id: \.element.id) { index, plan in
+                            if index > 0 {
+                                FlatRowDivider(leadingInset: 0)
+                            }
+
                             SwipeablePlanCard(
                                 plan: plan,
                                 onOpen: {
@@ -49,7 +55,7 @@ struct PlansView: View {
                             )
                         }
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 6)
 
                     if !archivedPlans.isEmpty {
                         CollapsibleSectionHeader(
@@ -64,17 +70,17 @@ struct PlansView: View {
                         .padding(.top, 24)
 
                         if isArchivedExpanded {
-                            VStack(spacing: 12) {
-                                ForEach(archivedPlans) { plan in
+                            VStack(spacing: 0) {
+                                ForEach(Array(archivedPlans.enumerated()), id: \.element.id) { index, plan in
+                                    if index > 0 {
+                                        FlatRowDivider(leadingInset: 0)
+                                    }
+
                                     Button {
                                         Haptics.tap(.medium)
                                         onOpenPlan(plan)
                                     } label: {
-                                        PlanCard(
-                                            title: plan.name,
-                                            lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"],
-                                            date: nil
-                                        )
+                                        PlanFlatRow(plan: plan)
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityLabel("Open archived plan \(plan.name)")
@@ -98,5 +104,46 @@ struct PlansView: View {
 
     private var displaySavedPlans: [WorkoutPlan] {
         savedPlans.filter { $0.id != activePlan.id }
+    }
+}
+
+private struct ActivePlanFeature: View {
+    var plan: WorkoutPlan
+
+    private var exerciseCount: Int {
+        plan.days.reduce(0) { $0 + $1.exercises.count }
+    }
+
+    var body: some View {
+        SemanticSurface(style: .feature) {
+            HStack(alignment: .center, spacing: 16) {
+                AccentRail(height: 82)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(plan.name)
+                        .font(AppFont.h1)
+                        .foregroundStyle(AppColor.primaryText)
+                        .lineLimit(1)
+
+                    Text("\(plan.daysPerWeek) \(plan.daysPerWeek == 1 ? "day" : "days") per week")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.secondaryText)
+
+                    Text("\(exerciseCount) \(exerciseCount == 1 ? "exercise" : "exercises") across the plan")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppColor.accent)
+                    .frame(width: 44, height: 44)
+            }
+            .padding(16)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Active plan, \(plan.name)")
     }
 }

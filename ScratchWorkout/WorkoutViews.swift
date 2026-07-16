@@ -11,11 +11,15 @@ struct StartWorkoutView: View {
                 ScreenTitle(title: "Start Workout")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                ScreenSectionRow(title: day.title) {
-                    Text("\(day.exercises.count) Exercises")
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.secondaryText)
-                        .lineLimit(1)
+                HStack(spacing: 12) {
+                    AccentRail(height: AppLayout.sectionTitleHeight)
+
+                    ScreenSectionRow(title: day.title) {
+                        Text("\(day.exercises.count) Exercises")
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.secondaryText)
+                            .lineLimit(1)
+                    }
                 }
                 .padding(.top, 24)
 

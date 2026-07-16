@@ -69,6 +69,21 @@ struct WorkoutStore {
         )
     }
 
+    var workoutDaysThisWeek: Set<Date> {
+        let calendar = Calendar.current
+        let today = Date()
+
+        return Set(
+            workoutHistory
+                .filter { calendar.isDate($0.completedAt, equalTo: today, toGranularity: .weekOfYear) }
+                .map { calendar.startOfDay(for: $0.completedAt) }
+        )
+    }
+
+    var workoutsThisWeek: Int {
+        workoutDaysThisWeek.count
+    }
+
     var topLoggedExercises: [ExerciseSetSummary] {
         let summaries = Self.aggregateExerciseSetSummaries(from: statsWorkouts)
         return Array(summaries.prefix(WorkoutStats.topLoggedExerciseLimit))

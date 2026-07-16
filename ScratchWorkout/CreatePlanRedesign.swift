@@ -199,6 +199,12 @@ struct CreatePlanView: View {
             composerHeader
             .padding(.top, AppLayout.screenTitleTopPadding)
 
+            Text("DAY \(currentDayIndex + 1) OF \(daysPerWeek)")
+                .font(AppFont.label)
+                .tracking(1.2)
+                .foregroundStyle(AppColor.accent)
+                .padding(.top, 22)
+
             DayStepProgress(
                 count: daysPerWeek,
                 completed: completedDays,
@@ -207,7 +213,7 @@ struct CreatePlanView: View {
                 onReorder: reorderDay,
                 onDelete: deleteDay
             )
-            .padding(.top, 24)
+            .padding(.top, 8)
 
             HStack(spacing: 4) {
                 TextField("Day \(currentDayIndex + 1)", text: currentDayNameBinding)
@@ -234,10 +240,10 @@ struct CreatePlanView: View {
                 .accessibilityLabel("Edit day name")
             }
             .frame(height: AppLayout.sectionTitleHeight)
-            .padding(.top, 24)
+            .padding(.top, 18)
 
             ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 0) {
                     if currentDayExercises.isEmpty {
                         RedesignedEmptyDayState(onAdd: openExerciseSearch)
                     } else {
@@ -1941,12 +1947,24 @@ private struct PlanExerciseSummaryCard: View {
                 .transition(.opacity)
             }
         }
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background {
+            if draft != nil {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(AppColor.surface1)
+            }
+        }
+        .overlay {
+            if draft != nil {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppColor.border, lineWidth: 1)
+            } else {
+                Rectangle()
+                    .fill(AppColor.border)
+                    .frame(height: 1)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: draft == nil ? 0 : 12, style: .continuous))
         .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
         .animation(.snappy(duration: 0.2, extraBounce: 0), value: draft?.wrappedValue.stepIndex)
         .contextMenu {

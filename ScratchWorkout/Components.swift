@@ -603,6 +603,144 @@ struct CardShell<Content: View>: View {
     }
 }
 
+enum SemanticSurfaceStyle: Equatable {
+    case feature
+    case standard
+    case flat
+
+    var fill: Color {
+        switch self {
+        case .feature:
+            AppColor.surface1
+        case .standard:
+            AppColor.surface1.opacity(0.72)
+        case .flat:
+            .clear
+        }
+    }
+
+    var border: Color {
+        switch self {
+        case .feature:
+            AppColor.border
+        case .standard:
+            AppColor.border.opacity(0.72)
+        case .flat:
+            .clear
+        }
+    }
+}
+
+struct SemanticSurface<Content: View>: View {
+    var style: SemanticSurfaceStyle = .standard
+    var cornerRadius: CGFloat = 12
+    var content: Content
+
+    init(
+        style: SemanticSurfaceStyle = .standard,
+        cornerRadius: CGFloat = 12,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.style = style
+        self.cornerRadius = cornerRadius
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .background(style.fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(style.border, lineWidth: style == .flat ? 0 : 1)
+            }
+    }
+}
+
+struct AccentRail: View {
+    var height: CGFloat? = nil
+
+    @ViewBuilder
+    var body: some View {
+        if let height {
+            Capsule()
+                .fill(AppColor.accent)
+                .frame(width: 4, height: height)
+                .accessibilityHidden(true)
+        } else {
+            Capsule()
+                .fill(AppColor.accent)
+                .frame(width: 4)
+                .frame(maxHeight: .infinity)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+struct FlatInfoRow: View {
+    var symbol: String
+    var title: String
+    var subtitle: String
+    var value: String? = nil
+    var showsChevron = false
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: symbol)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(AppColor.primaryText)
+                .frame(width: 44, height: 44)
+                .background(AppColor.surface1, in: Circle())
+                .overlay {
+                    Circle().stroke(AppColor.border, lineWidth: 1)
+                }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+
+                Text(subtitle)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            if let value {
+                Text(value)
+                    .font(AppFont.h2)
+                    .foregroundStyle(AppColor.accent)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppColor.secondaryText)
+                    .frame(width: 24, height: 44)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 68)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct FlatRowDivider: View {
+    var leadingInset: CGFloat = 58
+
+    var body: some View {
+        Rectangle()
+            .fill(AppColor.border)
+            .frame(height: 1)
+            .padding(.leading, leadingInset)
+            .accessibilityHidden(true)
+    }
+}
+
 struct PlanCard: View {
     var title: String
     var lines: [String]
@@ -648,6 +786,40 @@ struct PlanCard: View {
     }
 }
 
+struct PlanFlatRow: View {
+    var plan: WorkoutPlan
+    var showsChevron = true
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(plan.name)
+                    .font(AppFont.h2)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+
+                Text("\(plan.daysPerWeek) \(plan.daysPerWeek == 1 ? "day" : "days") per week · Created \(plan.createdAt)")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 8)
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppColor.secondaryText)
+                    .frame(width: 24, height: 44)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
 struct SwipeablePlanCard: View {
     var plan: WorkoutPlan
     var onOpen: () -> Void
@@ -658,7 +830,7 @@ struct SwipeablePlanCard: View {
     var body: some View {
         ZStack(alignment: .trailing) {
             if horizontalOffset < -1 {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                Rectangle()
                     .fill(AppColor.destructive.opacity(0.22))
                     .opacity(deleteBackgroundOpacity)
                     .overlay(alignment: .trailing) {
@@ -671,11 +843,8 @@ struct SwipeablePlanCard: View {
                     .transition(.opacity)
             }
 
-            PlanCard(
-                title: plan.name,
-                lines: ["\(plan.daysPerWeek) days per week", "Created on \(plan.createdAt)"],
-                date: nil
-            )
+            PlanFlatRow(plan: plan)
+            .background(AppColor.base)
             .offset(x: horizontalOffset)
             .contentShape(Rectangle())
             .onTapGesture {
