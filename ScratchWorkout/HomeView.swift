@@ -46,7 +46,9 @@ struct HomeView: View {
                     } label: {
                         EditorialPlanRow(
                             title: activePlanTitle,
-                            detail: "\(activePlan.daysPerWeek) days / week",
+                            detail: activePlan.daysPerWeek == 1
+                                ? "1 day / week"
+                                : "\(activePlan.daysPerWeek) days / week",
                             symbol: "calendar"
                         )
                     }

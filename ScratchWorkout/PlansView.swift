@@ -108,7 +108,7 @@ private struct FeaturedPlanCard: View {
                         .foregroundStyle(AppColor.primaryText)
                         .lineLimit(2)
 
-                    Text("\(plan.daysPerWeek) days per week")
+                    Text(plan.daysPerWeek == 1 ? "1 day per week" : "\(plan.daysPerWeek) days per week")
                         .font(AppFont.subheading)
                         .foregroundStyle(AppColor.secondaryText)
                 }
@@ -179,7 +179,7 @@ private struct EditorialPlanListRow: View {
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
 
-                Text("\(plan.daysPerWeek) days per week · \(plan.createdAt)")
+                Text("\(plan.daysPerWeek) \(plan.daysPerWeek == 1 ? "day" : "days") per week · \(plan.createdAt)")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.secondaryText)
                     .lineLimit(1)
