@@ -491,6 +491,7 @@ struct AchievementCardContent: View {
     private var weightNumberText: some View {
         Text("\(displayedWeight)KG")
             .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+            .monospacedDigit()
             .tracking(-2.88)
     }
 
@@ -553,7 +554,7 @@ struct AchievementCardContent: View {
             ) {
                 sharePillLabel
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
         }
     }
 
@@ -571,7 +572,7 @@ struct AchievementCardContent: View {
         .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         }
     }
 }

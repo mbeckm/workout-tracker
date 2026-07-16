@@ -30,7 +30,7 @@ struct PlansView: View {
                             date: nil
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(AppPressFeedbackStyle())
                     .padding(.top, 12)
 
                     SectionTitle(text: "Saved Plans")
@@ -76,7 +76,7 @@ struct PlansView: View {
                                             date: nil
                                         )
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(AppPressFeedbackStyle())
                                     .accessibilityLabel("Open archived plan \(plan.name)")
                                 }
                             }

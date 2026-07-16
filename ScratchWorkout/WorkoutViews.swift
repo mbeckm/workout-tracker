@@ -601,7 +601,7 @@ private struct SetTable: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
     }
 
@@ -1125,7 +1125,7 @@ private struct WorkoutProgressTable: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
     }
@@ -1219,7 +1219,7 @@ private struct WorkoutSessionSummaryPanel: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         }
     }
 }

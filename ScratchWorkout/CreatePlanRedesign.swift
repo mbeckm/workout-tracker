@@ -173,6 +173,7 @@ struct CreatePlanView: View {
 
                     Text("\(daysPerWeek)")
                         .font(.custom("Inter", size: 128, relativeTo: .largeTitle).weight(.bold))
+                        .monospacedDigit()
                         .frame(width: 83, height: 105)
                         .contentTransition(.numericText())
 
@@ -228,9 +229,9 @@ struct CreatePlanView: View {
                     Image(systemName: "square.and.pencil")
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+                .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Edit day name")
             }
             .frame(height: AppLayout.sectionTitleHeight)
@@ -274,9 +275,9 @@ struct CreatePlanView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundStyle(AppColor.primaryText)
-                        .frame(width: 36, height: AppLayout.screenTitleHeight)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+                .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Cancel editing")
             }
 
@@ -297,7 +298,7 @@ struct CreatePlanView: View {
                         .foregroundStyle(AppColor.primaryText)
                         .frame(width: 44, height: 44)
                 }
-                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+                .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Close exercise library")
 
                 Text("Add Exercise")
@@ -314,7 +315,7 @@ struct CreatePlanView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .frame(minHeight: 44)
-                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.96))
+                    .buttonStyle(AppPressFeedbackStyle())
             }
             .frame(height: AppLayout.screenTitleHeight)
                 .padding(.top, AppLayout.screenTitleTopPadding)
@@ -535,7 +536,7 @@ struct CreatePlanView: View {
                 .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 )
                 .padding(.top, 12)
 
@@ -614,7 +615,7 @@ struct CreatePlanView: View {
                         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(customType == type ? AppColor.accent : AppColor.border, lineWidth: 1)
+                                .stroke(customType == type ? AppColor.accent : AppColor.surfaceOutline, lineWidth: 1)
                         )
                     }
                     .buttonStyle(AppPressFeedbackStyle())
@@ -643,10 +644,10 @@ struct CreatePlanView: View {
                         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(customTrackingMode == mode ? AppColor.accent : AppColor.border, lineWidth: 1)
+                                .stroke(customTrackingMode == mode ? AppColor.accent : AppColor.surfaceOutline, lineWidth: 1)
                         )
                     }
-                    .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+                    .buttonStyle(AppPressFeedbackStyle())
                 }
             }
         }
@@ -1429,7 +1430,7 @@ private struct RedesignedEmptyDayState: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
     }
 }
@@ -1460,7 +1461,7 @@ private struct PlanAddExerciseButton: View {
             .frame(maxWidth: .infinity, minHeight: 52)
             .contentShape(Rectangle())
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel("Add exercise")
     }
 }
@@ -1490,8 +1491,9 @@ private struct RedesignedExerciseSearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(AppColor.secondaryText)
+                        .frame(width: 44, height: 44)
                 }
-                .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.9))
+                .buttonStyle(AppPressFeedbackStyle())
                 .accessibilityLabel("Clear search")
             }
         }
@@ -1500,7 +1502,7 @@ private struct RedesignedExerciseSearchField: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
     }
 }
@@ -1533,8 +1535,9 @@ private struct WorkoutItemTypeFilters: View {
                 .padding(.horizontal, 14)
                 .frame(height: 36)
                 .background(isSelected ? AppColor.accent : AppColor.surface2, in: Capsule())
+                .frame(minHeight: 44)
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.96))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
@@ -1557,6 +1560,7 @@ private struct LibrarySectionLabel: View {
             if let count {
                 Text("\(count)")
                     .font(AppFont.caption)
+                    .monospacedDigit()
                     .foregroundStyle(AppColor.secondaryText)
             }
         }
@@ -1591,7 +1595,7 @@ private struct CreateExerciseResultRow: View {
             .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
             .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel("Create custom exercise \(name)")
     }
 }
@@ -1607,13 +1611,13 @@ private struct ExerciseSearchResultCard: View {
                 .padding(10)
 
             Button(action: onToggle) {
-                Image(systemName: isSelected ? "checkmark" : "plus")
+                ContextualSymbol(activeSymbol: "checkmark", inactiveSymbol: "plus", isActive: isSelected)
                     .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(isSelected ? AppColor.base : AppColor.primaryText)
                     .frame(width: 56, height: 112)
                     .background(isSelected ? AppColor.accent : AppColor.surface2)
             }
-            .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
+            .buttonStyle(AppPressFeedbackStyle(isStatic: true))
             .accessibilityLabel(isSelected ? "Remove \(exercise.name) from selection" : "Add \(exercise.name) to selection")
         }
         .frame(maxWidth: .infinity, minHeight: 112)
@@ -1621,7 +1625,7 @@ private struct ExerciseSearchResultCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(exercise.name), \(exercise.itemType.title), \(exercise.equipmentLabel), \(exercise.muscleLabel), \(isSelected ? "selected" : "not selected")")
@@ -1660,6 +1664,7 @@ private struct ExerciseSearchCard: View {
                             Spacer()
                             Text("\(draft.wrappedValue.currentValue)")
                                 .font(AppFont.display)
+                                .monospacedDigit()
                                 .contentTransition(.numericText())
                             Spacer()
                             metricButton(
@@ -1684,7 +1689,7 @@ private struct ExerciseSearchCard: View {
                     .frame(maxHeight: .infinity)
                     .background(AppColor.accent)
             }
-            .buttonStyle(AppPressFeedbackStyle(pressedScale: 1))
+            .buttonStyle(AppPressFeedbackStyle(isStatic: true))
             .accessibilityLabel(actionAccessibilityLabel)
         }
         .frame(maxWidth: .infinity, minHeight: 112)
@@ -1692,7 +1697,7 @@ private struct ExerciseSearchCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
         .animation(.snappy(duration: 0.2, extraBounce: 0), value: draft?.wrappedValue.stepIndex)
@@ -1722,11 +1727,11 @@ private struct ExerciseSearchCard: View {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
                 .background(AppColor.surface2, in: Circle())
-                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+                .overlay(Circle().stroke(AppColor.surfaceOutline, lineWidth: 1))
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
+        .buttonStyle(AppPressFeedbackStyle())
     }
 }
 
@@ -1835,7 +1840,7 @@ struct ExerciseArtwork: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.imageOutline, lineWidth: 1)
         )
     }
 
@@ -1893,7 +1898,7 @@ private struct PlanExerciseSummaryCard: View {
                 .frame(maxWidth: .infinity, minHeight: 112)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+            .buttonStyle(AppPressFeedbackStyle())
 
             if let draft {
                 VStack(alignment: .leading, spacing: 12) {
@@ -1916,6 +1921,7 @@ private struct PlanExerciseSummaryCard: View {
 
                         Text("\(draft.wrappedValue.currentValue)")
                             .font(AppFont.display)
+                            .monospacedDigit()
                             .contentTransition(.numericText())
                             .frame(maxWidth: .infinity)
 
@@ -1926,13 +1932,17 @@ private struct PlanExerciseSummaryCard: View {
                         )
 
                         Button(action: onAdvance) {
-                            Image(systemName: draft.wrappedValue.isLastStep ? "checkmark" : "chevron.right")
+                            ContextualSymbol(
+                                activeSymbol: "checkmark",
+                                inactiveSymbol: "chevron.right",
+                                isActive: draft.wrappedValue.isLastStep
+                            )
                                 .font(.system(size: 19, weight: .bold))
                                 .foregroundStyle(AppColor.base)
                                 .frame(width: 44, height: 44)
                                 .background(AppColor.accent, in: Circle())
                         }
-                        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
+                        .buttonStyle(AppPressFeedbackStyle())
                         .accessibilityLabel(draft.wrappedValue.isLastStep ? "Save exercise settings" : "Next exercise setting")
                     }
                 }
@@ -1944,7 +1954,7 @@ private struct PlanExerciseSummaryCard: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.snappy(duration: 0.24, extraBounce: 0), value: draft != nil)
@@ -1972,11 +1982,11 @@ private struct PlanExerciseSummaryCard: View {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
                 .background(AppColor.surface2, in: Circle())
-                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+                .overlay(Circle().stroke(AppColor.surfaceOutline, lineWidth: 1))
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.92))
+        .buttonStyle(AppPressFeedbackStyle())
     }
 }
 
@@ -2007,10 +2017,10 @@ private struct CustomExercisePropertyRow: View {
             .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
+                    .stroke(AppColor.surfaceOutline, lineWidth: 1)
             )
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.98))
+        .buttonStyle(AppPressFeedbackStyle())
     }
 }
 
@@ -2034,6 +2044,10 @@ private struct VisualPickerTile: View {
                     .scaledToFill()
                     .frame(width: compact ? 59 : 100, height: compact ? 47 : 58)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(AppColor.imageOutline, lineWidth: 1)
+                    }
 
                 Text(option.title)
                     .font(compact ? AppFont.caption : AppFont.label)
@@ -2041,15 +2055,23 @@ private struct VisualPickerTile: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
             }
-            .padding(compact ? 8 : 12)
+            .padding(tilePadding)
             .frame(maxWidth: .infinity, minHeight: compact ? 83 : 103)
-            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: tileCornerRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(isSelected ? AppColor.accent : AppColor.border, lineWidth: 1)
+                RoundedRectangle(cornerRadius: tileCornerRadius, style: .continuous)
+                    .stroke(isSelected ? AppColor.accent : AppColor.surfaceOutline, lineWidth: 1)
             )
         }
         .buttonStyle(AppPressFeedbackStyle())
+    }
+
+    private var tilePadding: CGFloat {
+        compact ? 8 : 12
+    }
+
+    private var tileCornerRadius: CGFloat {
+        8 + tilePadding
     }
 }
 

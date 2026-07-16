@@ -5,6 +5,8 @@ enum AppColor {
     static let surface1 = Color(hex: 0x1A1A1A)
     static let surface2 = Color(hex: 0x242424)
     static let border = Color(hex: 0x2E2E2E)
+    static let surfaceOutline = Color.white.opacity(0.08)
+    static let imageOutline = Color.white.opacity(0.10)
     static let primaryText = Color.white
     static let secondaryText = Color(hex: 0x8A8A8A)
     static let tertiaryText = Color(hex: 0x4A4A4A)
