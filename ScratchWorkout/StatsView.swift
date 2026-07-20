@@ -14,21 +14,24 @@ private enum ExerciseStatsFormatting {
 }
 
 struct StatsView: View {
-    var topExercises: [ExerciseSetSummary]
+    var overview: StatsOverview
     var onOpenExercise: (String) -> Void
     private let exerciseCatalog: any ExerciseCatalogService
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var searchFocused: Bool
+    @State private var isSearchPresented = false
     @State private var searchQuery = ""
     @State private var searchResults: [ExercisePrescription] = []
     @State private var searchState: PlanEntrySearchState = .idle
 
     init(
-        topExercises: [ExerciseSetSummary],
+        overview: StatsOverview,
         exerciseCatalog: any ExerciseCatalogService = ExerciseCatalogServiceFactory.live(),
         onOpenExercise: @escaping (String) -> Void
     ) {
-        self.topExercises = topExercises
+        self.overview = overview
         self.exerciseCatalog = exerciseCatalog
         self.onOpenExercise = onOpenExercise
     }
@@ -39,7 +42,7 @@ struct StatsView: View {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        searchFocused = false
+                        dismissSearchIfEmpty()
                     }
 
                 content
@@ -47,14 +50,33 @@ struct StatsView: View {
             }
             .padding(.horizontal, 24)
             .floatingBottomChrome {
-                StatsSearchSurface(
-                    query: $searchQuery,
-                    focused: $searchFocused,
-                    results: searchResults,
-                    searchState: searchState,
-                    onSelect: openExercise
-                )
-                .frame(maxWidth: 312)
+                Group {
+                    if isSearchPresented {
+                        StatsSearchSurface(
+                            query: $searchQuery,
+                            focused: $searchFocused,
+                            results: searchResults,
+                            searchState: searchState,
+                            onDismiss: dismissSearch,
+                            onSelect: openExercise
+                        )
+                        .frame(maxWidth: 312)
+                        .transition(
+                            reduceMotion
+                                ? .opacity
+                                : .opacity.combined(with: .scale(scale: 0.96, anchor: .bottomTrailing))
+                        )
+                    } else {
+                        StatsSearchButton(action: presentSearch)
+                            .frame(maxWidth: 312, alignment: .trailing)
+                            .transition(
+                                reduceMotion
+                                    ? .opacity
+                                    : .opacity.combined(with: .scale(scale: 0.96, anchor: .bottomTrailing))
+                            )
+                    }
+                }
+                .animation(AppMotion.searchExpansion(reduceMotion: reduceMotion), value: isSearchPresented)
             }
         }
         .task(id: searchQuery) {
@@ -68,40 +90,112 @@ struct StatsView: View {
                 ScreenTitle(title: "Stats")
                     .padding(.top, AppLayout.screenTitleTopPadding)
 
-                SectionTitle(text: "Most logged")
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionTitle(text: "Biggest Gains")
+
+                    Text("Estimated 10RM · First to latest session · 60 days")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 24)
+
+                progressLeaders
+                    .padding(.top, 12)
+
+                SectionTitle(text: "Most Logged")
                     .padding(.top, 24)
 
                 VStack(spacing: 12) {
-                    if topExercises.isEmpty {
+                    if overview.mostLoggedExercises.isEmpty {
                         EmptyStatsCard()
                     } else {
-                        ForEach(topExercises) { exercise in
+                        ForEach(overview.mostLoggedExercises) { exercise in
                             Button {
                                 openExercise(exercise.exerciseName)
                             } label: {
-                                FrequentExerciseCard(summary: exercise)
+                                MostLoggedExerciseCard(summary: exercise)
                             }
                             .buttonStyle(AppPressFeedbackStyle())
-                            .accessibilityLabel("\(exercise.exerciseName), \(exercise.setCount) logged sets")
+                            .accessibilityLabel(
+                                "Rank \(exercise.rank), \(exercise.exerciseName), \(exercise.totalSetCount) total logged sets"
+                            )
                         }
                     }
                 }
                 .padding(.top, 12)
-                .padding(.bottom, 220)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
+            .floatingBottomChromeScrollPadding()
         }
         .scrollDismissesKeyboard(.interactively)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    @ViewBuilder
+    private var progressLeaders: some View {
+        if overview.progressLeaders.isEmpty {
+            EmptyProgressCard()
+        } else if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 12) {
+                progressLeaderButtons
+            }
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                progressLeaderButtons
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var progressLeaderButtons: some View {
+        ForEach(overview.progressLeaders) { exercise in
+            Button {
+                openExercise(exercise.exerciseName)
+            } label: {
+                ProgressLeaderCard(summary: exercise)
+            }
+            .buttonStyle(AppPressFeedbackStyle())
+            .accessibilityLabel(
+                "\(exercise.exerciseName), \(exercise.percentageChange.rounded().formatted()) percent estimated 10 rep max progress in 60 days"
+            )
+        }
+    }
+
     private func openExercise(_ exerciseName: String) {
         Haptics.tap(.medium)
+        isSearchPresented = false
         searchFocused = false
         searchQuery = ""
         searchResults = []
         searchState = .idle
         onOpenExercise(exerciseName.planDisplayName)
+    }
+
+    private func presentSearch() {
+        Haptics.tap()
+        isSearchPresented = true
+
+        Task { @MainActor in
+            await Task.yield()
+            searchFocused = true
+        }
+    }
+
+    private func dismissSearchIfEmpty() {
+        searchFocused = false
+
+        if searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            isSearchPresented = false
+        }
+    }
+
+    private func dismissSearch() {
+        searchFocused = false
+        searchQuery = ""
+        searchResults = []
+        searchState = .idle
+        isSearchPresented = false
     }
 
     private func updateExerciseSearch() async {
@@ -198,29 +292,188 @@ struct ExerciseStatsView: View {
     }
 }
 
-private struct FrequentExerciseCard: View {
-    var summary: ExerciseSetSummary
+private struct ProgressLeaderCard: View {
+    var summary: ExerciseProgressSummary
 
     var body: some View {
-        CardShell(height: 80) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(summary.exerciseName)
-                        .font(AppFont.h2)
+        CardShell(height: 108) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    Text("+\(summary.percentageChange.rounded().formatted())%")
+                        .font(AppFont.metric)
+                        .foregroundStyle(AppColor.accent)
+                        .monospacedDigit()
                         .lineLimit(1)
 
-                    Text("\(summary.setCount) Sets")
-                        .font(AppFont.label)
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AppColor.secondaryText)
-                        .lineLimit(1)
+                        .frame(width: 20, height: 44)
                 }
 
-                Spacer(minLength: 12)
+                Spacer(minLength: 0)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .regular))
+                Text(summary.exerciseName)
+                    .font(AppFont.subheading)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct MostLoggedExerciseCard: View {
+    var summary: ExerciseVolumeSummary
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var maxSetCount: Int {
+        max(summary.weeklyVolumes.map(\.setCount).max() ?? 0, 1)
+    }
+
+    private var chartAccessibilityText: String {
+        summary.weeklyVolumes
+            .map { volume in
+                "Week of \(volume.weekStart.formatted(.dateTime.month(.wide).day())), \(volume.setCount) sets"
+            }
+            .joined(separator: ", ")
+    }
+
+    var body: some View {
+        CardShell(height: 176) {
+            VStack(alignment: .leading, spacing: 10) {
+                cardHeader
+
+                Text("Set volume · Last 6 weeks")
+                    .font(AppFont.caption)
                     .foregroundStyle(AppColor.secondaryText)
-                    .frame(width: 36, height: 36)
+
+                Chart(summary.weeklyVolumes) { volume in
+                    let isCurrentWeek = volume.id == summary.weeklyVolumes.last?.id
+
+                    BarMark(
+                        x: .value("Week", volume.weekStart, unit: .weekOfYear),
+                        y: .value("Sets", volume.setCount)
+                    )
+                    .foregroundStyle(
+                        isCurrentWeek
+                            ? AppColor.accent
+                            : AppColor.secondaryText.opacity(0.68)
+                    )
+                    .cornerRadius(4)
+                    .annotation(position: .overlay, alignment: .center) {
+                        if volume.setCount > 0 {
+                            Text("\(volume.setCount)")
+                                .font(AppFont.caption)
+                                .foregroundStyle(isCurrentWeek ? AppColor.base : AppColor.primaryText)
+                                .monospacedDigit()
+                        }
+                    }
+                }
+                .chartYScale(domain: 0...Double(maxSetCount + 1))
+                .chartYAxis(.hidden)
+                .chartXAxis {
+                    AxisMarks(values: summary.weeklyVolumes.map(\.weekStart)) { value in
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                let isCurrentWeek = date == summary.weeklyVolumes.last?.weekStart
+
+                                Text(date, format: .dateTime.month(.abbreviated).day())
+                                    .font(AppFont.caption)
+                                    .foregroundStyle(isCurrentWeek ? AppColor.accent : AppColor.secondaryText)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 70)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Weekly logged sets")
+                .accessibilityValue(chartAccessibilityText)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private var cardHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
+                    rankLabel
+
+                    Text(summary.exerciseName)
+                        .font(AppFont.h2)
+                        .foregroundStyle(AppColor.primaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Spacer(minLength: 0)
+
+                    chevron
+                }
+
+                Text("\(summary.totalSetCount) total sets")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .monospacedDigit()
+            }
+        } else {
+            HStack(alignment: .center, spacing: 10) {
+                rankLabel
+
+                Text(summary.exerciseName)
+                    .font(AppFont.h2)
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                Spacer(minLength: 6)
+
+                Text("\(summary.totalSetCount) total")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .monospacedDigit()
+                    .lineLimit(1)
+
+                chevron
+            }
+        }
+    }
+
+    private var rankLabel: some View {
+        Text("#\(summary.rank)")
+            .font(AppFont.label)
+            .foregroundStyle(AppColor.secondaryText)
+            .monospacedDigit()
+            .lineLimit(1)
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(AppColor.secondaryText)
+            .frame(width: 20, height: 44)
+    }
+}
+
+private struct EmptyProgressCard: View {
+    var body: some View {
+        CardShell(height: 102) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keep building your baseline")
+                        .font(AppFont.h2)
+                        .foregroundStyle(AppColor.primaryText)
+
+                    Text("Log the same weighted exercise twice to see your 10RM progress.")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .accessibilityElement(children: .combine)
@@ -249,6 +502,7 @@ private struct StatsSearchSurface: View {
     var focused: FocusState<Bool>.Binding
     var results: [ExercisePrescription]
     var searchState: PlanEntrySearchState
+    var onDismiss: () -> Void
     var onSelect: (String) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -298,9 +552,10 @@ private struct StatsSearchSurface: View {
 
             searchField
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 56, alignment: .bottomLeading)
+        .padding(.leading, 16)
+        .padding(.trailing, 8)
+        .padding(.vertical, 12)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 52, alignment: .bottomLeading)
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -358,26 +613,68 @@ private struct StatsSearchSurface: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 24, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
                 .frame(width: 22, height: 22)
 
-            TextField("", text: $query)
+            TextField(
+                "",
+                text: $query,
+                prompt: Text("Search exercises")
+                    .foregroundStyle(AppColor.secondaryText)
+            )
                 .focused(focused)
-                .font(AppFont.h2)
+                .font(AppFont.subheading)
                 .tint(AppColor.accent)
                 .foregroundStyle(AppColor.primaryText)
                 .submitLabel(.search)
                 .frame(maxWidth: .infinity)
                 .accessibilityLabel("Exercise search")
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColor.secondaryText)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(AppPressFeedbackStyle())
+            .accessibilityLabel("Close exercise search")
         }
-        .frame(maxWidth: .infinity, minHeight: 26, maxHeight: 26, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             focused.wrappedValue = true
         }
+    }
+}
+
+private struct StatsSearchButton: View {
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .semibold))
+
+                Text("Search")
+                    .font(AppFont.subheading)
+                    .lineLimit(1)
+            }
+            .foregroundStyle(AppColor.primaryText)
+            .padding(.leading, 14)
+            .padding(.trailing, 16)
+            .frame(minHeight: 48)
+            .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(AppColor.surfaceOutline, lineWidth: 1)
+            }
+        }
+        .buttonStyle(AppPressFeedbackStyle())
+        .accessibilityLabel("Search exercises")
     }
 }
 

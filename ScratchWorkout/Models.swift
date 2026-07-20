@@ -681,6 +681,31 @@ struct ExerciseSetSummary: Identifiable, Equatable {
     var setCount: Int
 }
 
+struct ExerciseProgressSummary: Identifiable, Equatable {
+    var id: String { exerciseName.normalizedStatsKey }
+    var exerciseName: String
+    var percentageChange: Double
+}
+
+struct WeeklyExerciseVolume: Identifiable, Equatable {
+    var id: Date { weekStart }
+    var weekStart: Date
+    var setCount: Int
+}
+
+struct ExerciseVolumeSummary: Identifiable, Equatable {
+    var id: String { exerciseName.normalizedStatsKey }
+    var rank: Int
+    var exerciseName: String
+    var totalSetCount: Int
+    var weeklyVolumes: [WeeklyExerciseVolume]
+}
+
+struct StatsOverview: Equatable {
+    var progressLeaders: [ExerciseProgressSummary]
+    var mostLoggedExercises: [ExerciseVolumeSummary]
+}
+
 struct ExerciseStatsPoint: Identifiable, Equatable {
     var id: Date { date }
     var date: Date

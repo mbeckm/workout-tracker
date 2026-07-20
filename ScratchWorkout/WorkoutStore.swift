@@ -3,6 +3,9 @@ import OSLog
 
 enum WorkoutStats {
     static let topLoggedExerciseLimit = 5
+    static let overviewExerciseLimit = 2
+    static let progressWindowDays = 60
+    static let volumeWindowWeeks = 6
 }
 
 struct WorkoutStore {
@@ -72,6 +75,15 @@ struct WorkoutStore {
     var topLoggedExercises: [ExerciseSetSummary] {
         let summaries = Self.aggregateExerciseSetSummaries(from: statsWorkouts)
         return Array(summaries.prefix(WorkoutStats.topLoggedExerciseLimit))
+    }
+
+    var statsOverview: StatsOverview {
+        let workouts = statsWorkouts
+
+        return StatsOverview(
+            progressLeaders: Self.progressLeaders(from: workouts),
+            mostLoggedExercises: Self.exerciseVolumeSummaries(from: workouts)
+        )
     }
 
     func personalBestWeight(for exerciseName: String) -> Int? {
@@ -440,6 +452,120 @@ struct WorkoutStore {
 
                 return lhs.setCount > rhs.setCount
             }
+    }
+
+    private static func progressLeaders(
+        from workouts: [LoggedWorkout],
+        relativeTo now: Date = Date()
+    ) -> [ExerciseProgressSummary] {
+        let calendar = Calendar.current
+        let cutoff = calendar.date(
+            byAdding: .day,
+            value: -WorkoutStats.progressWindowDays,
+            to: calendar.startOfDay(for: now)
+        ) ?? .distantPast
+
+        let performances = workouts
+            .filter { $0.completedAt >= cutoff && $0.completedAt <= now }
+            .flatMap { workout in
+                workout.exercises.compactMap { exercise -> (String, String, Date, Double)? in
+                    let estimates = exercise.sets.compactMap(\.estimatedTenRM)
+                    guard !estimates.isEmpty else {
+                        return nil
+                    }
+
+                    return (
+                        exercise.exerciseName.normalizedStatsKey,
+                        exercise.exerciseName,
+                        workout.completedAt,
+                        estimates.reduce(0, +) / Double(estimates.count)
+                    )
+                }
+            }
+
+        let grouped = Dictionary(grouping: performances, by: { $0.0 })
+
+        return grouped.values
+            .compactMap { entries -> ExerciseProgressSummary? in
+                let sorted = entries.sorted { $0.2 < $1.2 }
+                guard let baseline = sorted.first,
+                      let latest = sorted.last,
+                      baseline.2 < latest.2,
+                      baseline.3 > 0 else {
+                    return nil
+                }
+
+                let percentageChange = ((latest.3 - baseline.3) / baseline.3) * 100
+                guard percentageChange >= 0.5 else {
+                    return nil
+                }
+
+                return ExerciseProgressSummary(
+                    exerciseName: latest.1,
+                    percentageChange: percentageChange
+                )
+            }
+            .sorted { lhs, rhs in
+                if abs(lhs.percentageChange - rhs.percentageChange) < 0.05 {
+                    return lhs.exerciseName < rhs.exerciseName
+                }
+
+                return lhs.percentageChange > rhs.percentageChange
+            }
+            .prefix(WorkoutStats.overviewExerciseLimit)
+            .map { $0 }
+    }
+
+    private static func exerciseVolumeSummaries(
+        from workouts: [LoggedWorkout],
+        relativeTo now: Date = Date()
+    ) -> [ExerciseVolumeSummary] {
+        let calendar = Calendar.current
+        let currentWeek = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? calendar.startOfDay(for: now)
+        let weekStarts = (0..<WorkoutStats.volumeWindowWeeks)
+            .compactMap { offset in
+                calendar.date(byAdding: .weekOfYear, value: offset - (WorkoutStats.volumeWindowWeeks - 1), to: currentWeek)
+            }
+
+        let topExercises = Array(
+            aggregateExerciseSetSummaries(from: workouts)
+                .prefix(WorkoutStats.overviewExerciseLimit)
+        )
+
+        return topExercises.enumerated().map { offset, exercise in
+            let key = exercise.exerciseName.normalizedStatsKey
+            let countsByWeek = workouts.reduce(into: [Date: Int]()) { partialResult, workout in
+                guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: workout.completedAt)?.start else {
+                    return
+                }
+
+                let setCount = workout.exercises
+                    .filter { $0.exerciseName.normalizedStatsKey == key }
+                    .flatMap(\.sets)
+                    .filter(\.hasLoggedValues)
+                    .count
+
+                guard setCount > 0 else {
+                    return
+                }
+
+                partialResult[weekStart, default: 0] += setCount
+            }
+
+            let rank = topExercises.prefix(offset).filter { $0.setCount > exercise.setCount }.count + 1
+
+            return ExerciseVolumeSummary(
+                rank: rank,
+                exerciseName: exercise.exerciseName,
+                totalSetCount: exercise.setCount,
+                weeklyVolumes: weekStarts.map { weekStart in
+                    WeeklyExerciseVolume(
+                        weekStart: weekStart,
+                        setCount: countsByWeek[weekStart, default: 0]
+                    )
+                }
+            )
+        }
     }
 
     private mutating func advancePastCompletedDay(_ day: WorkoutDay) {
