@@ -8,8 +8,8 @@ struct HomeView: View {
     var workoutDaysThisMonth: Set<Date>
     var accountSession: AuthSession
     var accountSyncState: AccountSyncState
-    var onOpenActivePlan: () -> Void
-    var onOpenNextWorkout: () -> Void
+    var onViewPlan: () -> Void
+    var onStartNextWorkout: () -> Void
     var onOpenAccount: () -> Void
 
     var body: some View {
@@ -29,30 +29,17 @@ struct HomeView: View {
                         workoutCount: workoutsThisMonth,
                         workoutDays: workoutDaysThisMonth
                     )
-                    .padding(.top, 24)
-
-                    SectionTitle(text: "Active Plan")
-                        .padding(.top, 36)
-
-                    Button {
-                        Haptics.tap(.medium)
-                        onOpenActivePlan()
-                    } label: {
-                        PlanCard(title: activePlanTitle, lines: ["\(activePlan.daysPerWeek) days / week"], date: nil, height: 80)
-                    }
-                    .buttonStyle(AppPressFeedbackStyle())
-                    .padding(.top, 12)
+                    .padding(.top, 18)
 
                     SectionTitle(text: "Next in plan")
                         .padding(.top, 24)
 
-                    Button {
-                        Haptics.tap(.medium)
-                        onOpenNextWorkout()
-                    } label: {
-                        PlanCard(title: nextWorkoutTitle, lines: ["\(nextWorkoutExerciseCount) Exercises"], date: nil, height: 80)
-                    }
-                    .buttonStyle(AppPressFeedbackStyle())
+                    NextWorkoutCard(
+                        workout: nextWorkout,
+                        planName: activePlanTitle,
+                        onStart: onStartNextWorkout,
+                        onViewPlan: onViewPlan
+                    )
                     .padding(.top, 12)
                 }
                 .padding(.bottom, AppLayout.legacyTabBarClearance)
@@ -62,16 +49,125 @@ struct HomeView: View {
         }
     }
 
-    private var nextWorkoutTitle: String {
-        nextWorkout.title
-    }
-
-    private var nextWorkoutExerciseCount: Int {
-        nextWorkout.exercises.count
-    }
-
     private var activePlanTitle: String {
         activePlan.name == "PPL" ? "Push Pull Legs" : activePlan.name
+    }
+}
+
+private struct NextWorkoutCard: View {
+    var workout: WorkoutDay
+    var planName: String
+    var onStart: () -> Void
+    var onViewPlan: () -> Void
+
+    var body: some View {
+        CardShell {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(workout.title)
+                        .font(AppFont.h2)
+                        .foregroundStyle(AppColor.primaryText)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    Text(exerciseCountLabel)
+                        .font(AppFont.caption)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .lineLimit(1)
+                }
+
+                exercisePreviewStrip
+                    .padding(.top, 12)
+
+                Button {
+                    Haptics.tap(.medium)
+                    onStart()
+                } label: {
+                    Text("Start this Workout")
+                        .font(AppFont.h1)
+                        .foregroundStyle(AppColor.base)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(AppPressFeedbackStyle())
+                .disabled(workout.exercises.isEmpty)
+                .opacity(workout.exercises.isEmpty ? 0.45 : 1)
+                .padding(.top, 16)
+
+                Button {
+                    Haptics.tap()
+                    onViewPlan()
+                } label: {
+                    Text("View Plan")
+                        .font(AppFont.body)
+                        .foregroundStyle(AppColor.secondaryText)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(AppPressFeedbackStyle())
+                .accessibilityLabel("View \(planName)")
+                .padding(.top, 4)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Next workout, \(workout.title)")
+    }
+
+    @ViewBuilder
+    private var exercisePreviewStrip: some View {
+        if workout.exercises.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.stack.badge.plus")
+                    .foregroundStyle(AppColor.secondaryText)
+
+                Text("No exercises yet")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            .frame(maxWidth: .infinity, minHeight: 64)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(AppColor.border, lineWidth: 1)
+            }
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 8) {
+                    ForEach(Array(workout.exercises.enumerated()), id: \.element.id) { index, exercise in
+                        ExercisePreviewThumbnail(
+                            exercise: exercise,
+                            position: index + 1,
+                            exerciseCount: workout.exercises.count
+                        )
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .frame(height: 64)
+            .scrollTargetBehavior(.viewAligned)
+            .accessibilityLabel("Exercises in next workout")
+        }
+    }
+
+    private var exerciseCountLabel: String {
+        let count = workout.exercises.count
+        return "\(count) \(count == 1 ? "exercise" : "exercises")"
+    }
+}
+
+private struct ExercisePreviewThumbnail: View {
+    var exercise: ExercisePrescription
+    var position: Int
+    var exerciseCount: Int
+
+    var body: some View {
+        ExerciseArtwork(exercise: exercise, cornerRadius: 8)
+            .frame(width: 64, height: 64)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Exercise \(position) of \(exerciseCount), \(exercise.name)")
+            .accessibilityValue("\(exercise.planVolumeSummary), \(exercise.prescriptionSummary)")
     }
 }
 
@@ -130,7 +226,7 @@ private struct MonthlyWorkoutSummaryCard: View {
                     .contentTransition(.numericText())
 
                 Text(workoutCount == 1 ? "Workout this month" : "Workouts this month")
-                    .font(AppFont.label)
+                    .font(AppFont.body)
                     .foregroundStyle(AppColor.secondaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)

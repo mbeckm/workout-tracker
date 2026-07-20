@@ -310,14 +310,14 @@ struct RootView: View {
                 workoutDaysThisMonth: store.workoutDaysThisMonth,
                 accountSession: accountController.session,
                 accountSyncState: accountController.syncState,
-                onOpenActivePlan: {
+                onViewPlan: {
                     push {
                         route = .activePlanDetail
                     }
                 },
-                onOpenNextWorkout: {
+                onStartNextWorkout: {
                     push {
-                        route = .nextWorkoutPreview
+                        beginWorkout(day: store.nextWorkoutDay)
                     }
                 },
                 onOpenAccount: {
@@ -670,8 +670,8 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedOut,
                     accountSyncState: .signedOut,
-                    onOpenActivePlan: {},
-                    onOpenNextWorkout: {},
+                    onViewPlan: {},
+                    onStartNextWorkout: {},
                     onOpenAccount: {}
                 )
             }
@@ -686,8 +686,8 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     workoutDaysThisMonth: previewWorkoutDays,
                     accountSession: .signedIn(AccountUser(id: "preview-apple", displayName: "Apple Account", email: nil, provider: .apple, createdAt: Date())),
                     accountSyncState: .synced(Date()),
-                    onOpenActivePlan: {},
-                    onOpenNextWorkout: {},
+                    onViewPlan: {},
+                    onStartNextWorkout: {},
                     onOpenAccount: {}
                 )
             }
