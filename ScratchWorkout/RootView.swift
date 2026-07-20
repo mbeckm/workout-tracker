@@ -352,7 +352,7 @@ struct RootView: View {
             })
         case .stats:
             StatsView(
-                topExercises: store.topLoggedExercises,
+                overview: store.statsOverview,
                 onOpenExercise: { exerciseName in
                     push {
                         route = .exerciseStats(exerciseName)
