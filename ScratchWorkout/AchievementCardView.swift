@@ -490,7 +490,7 @@ struct AchievementCardContent: View {
 
     private var weightNumberText: some View {
         Text("\(displayedWeight)KG")
-            .font(.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+            .font(AppFont.heroMetric)
             .monospacedDigit()
             .tracking(-2.88)
     }

@@ -57,8 +57,6 @@ struct StatsView: View {
                 .frame(maxWidth: 312)
             }
         }
-        .animation(.spring(response: 0.24, dampingFraction: 0.88), value: searchQuery.isEmpty)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: searchResults.count)
         .task(id: searchQuery) {
             await updateExerciseSearch()
         }
@@ -253,6 +251,8 @@ private struct StatsSearchSurface: View {
     var searchState: PlanEntrySearchState
     var onSelect: (String) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isExpanded: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -281,7 +281,11 @@ private struct StatsSearchSurface: View {
         VStack(alignment: .leading, spacing: 16) {
             if isExpanded {
                 resultList
-                    .transition(.opacity.combined(with: .offset(y: 12)))
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .opacity.combined(with: .offset(y: 12))
+                    )
 
                 providerAttribution
                     .transition(.opacity)
@@ -302,8 +306,7 @@ private struct StatsSearchSurface: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
+        .animation(AppMotion.searchExpansion(reduceMotion: reduceMotion), value: isExpanded)
     }
 
     private var resultList: some View {
@@ -422,7 +425,7 @@ private struct TenRMChartCard: View {
                                 if let yValue = value.as(Double.self) {
                                     Text(yAxisText(for: yValue))
                                         .font(AppFont.caption)
-                                        .foregroundStyle(AppColor.secondaryText.opacity(0.72))
+                                        .foregroundStyle(AppColor.secondaryText)
                                         .frame(width: 24, alignment: .leading)
                                 }
                             }
@@ -439,7 +442,7 @@ private struct TenRMChartCard: View {
                         ForEach(Array(xAxisDates.enumerated()), id: \.offset) { index, date in
                             Text(axisDateText(for: date))
                                 .font(AppFont.caption)
-                                .foregroundStyle(AppColor.secondaryText.opacity(0.78))
+                                .foregroundStyle(AppColor.secondaryText)
                                 .lineLimit(1)
                                 .frame(maxWidth: .infinity, alignment: xAxisAlignment(for: index))
                         }

@@ -63,7 +63,7 @@ private struct EmptyDayState: View {
                         .lineLimit(1)
                 }
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 294, height: 56)
+                .frame(minWidth: 294, maxWidth: 294, minHeight: 56)
                 .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -75,9 +75,9 @@ private struct EmptyDayState: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .accessibilityLabel("No exercises yet")
@@ -88,6 +88,8 @@ struct ExerciseDraftSurface: View {
     @Binding var draft: ExerciseDraft
     @Binding var step: ExerciseDraftStep
     var onAdvance: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -142,8 +144,7 @@ struct ExerciseDraftSurface: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: step)
-        .animation(.spring(response: 0.2, dampingFraction: 0.88), value: currentValue)
+        .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: step)
         .accessibilityElement(children: .contain)
     }
 
@@ -277,6 +278,8 @@ struct PlanEntrySurface: View {
     var autoFocus = true
     var onConfigure: (ExercisePrescription) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isExpanded: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
@@ -345,7 +348,11 @@ struct PlanEntrySurface: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: resultViewportHeight, maxHeight: resultViewportHeight, alignment: .topLeading)
                 .scrollDismissesKeyboard(.interactively)
-                .transition(.opacity.combined(with: .offset(y: -12)))
+                .transition(
+                    reduceMotion
+                        ? .opacity
+                        : .opacity.combined(with: .offset(y: -12))
+                )
 
                 providerAttribution
             }
@@ -358,8 +365,7 @@ struct PlanEntrySurface: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
+        .animation(AppMotion.searchExpansion(reduceMotion: reduceMotion), value: isExpanded)
     }
 
     private var providerAttribution: some View {

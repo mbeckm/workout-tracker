@@ -54,6 +54,7 @@ struct LogWorkoutSessionView: View {
     @State private var exerciseStates: [ExerciseLogState]
     @State private var feedbackResetTask: Task<Void, Never>?
     @Environment(\.usesNativeTabBar) private var usesNativeTabBar
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         day: WorkoutDay,
@@ -136,9 +137,9 @@ struct LogWorkoutSessionView: View {
                     CTAButton(title: logButtonTitle, width: 312) {
                         logSet()
                     }
-                    .scaleEffect(recentlyLoggedSetID == nil ? 1 : 1.025)
-                    .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.22), radius: 14, x: 0, y: 0)
-                    .animation(.spring(response: 0.2, dampingFraction: 0.72), value: recentlyLoggedSetID)
+                    .scaleEffect(reduceMotion || recentlyLoggedSetID == nil ? 1 : 1.012)
+                    .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.18), radius: 12, x: 0, y: 0)
+                    .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: recentlyLoggedSetID)
                 }
             }
         }
@@ -275,9 +276,7 @@ struct LogWorkoutSessionView: View {
         }
         state.recentlyLoggedSetID = state.sets[nextIndex].id
 
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            exerciseStates[activeExerciseIndex] = state
-        }
+        exerciseStates[activeExerciseIndex] = state
 
         onSetsChange(activeExerciseIndex, state.sets)
         showLogFeedback(for: state.sets[nextIndex].id, at: activeExerciseIndex)
@@ -324,9 +323,7 @@ struct LogWorkoutSessionView: View {
                     return
                 }
 
-                withAnimation(.spring(response: 0.18, dampingFraction: 0.9)) {
-                    exerciseStates[index].recentlyLoggedSetID = nil
-                }
+                exerciseStates[index].recentlyLoggedSetID = nil
                 feedbackResetTask = nil
             }
         }
@@ -396,6 +393,7 @@ struct LogWorkoutView: View {
     @State private var sets: [LoggedSet]
     @State private var recentlyLoggedSetID: LoggedSet.ID?
     @State private var feedbackResetTask: Task<Void, Never>?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         exercise: ExercisePrescription,
@@ -453,9 +451,9 @@ struct LogWorkoutView: View {
                 CTAButton(title: logButtonTitle, width: 312) {
                     logSet()
                 }
-                .scaleEffect(recentlyLoggedSetID == nil ? 1 : 1.025)
-                .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.22), radius: 14, x: 0, y: 0)
-                .animation(.spring(response: 0.2, dampingFraction: 0.72), value: recentlyLoggedSetID)
+                .scaleEffect(reduceMotion || recentlyLoggedSetID == nil ? 1 : 1.012)
+                .shadow(color: recentlyLoggedSetID == nil ? .clear : AppColor.accent.opacity(0.18), radius: 12, x: 0, y: 0)
+                .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: recentlyLoggedSetID)
             }
         }
         .onDisappear {
@@ -478,10 +476,8 @@ struct LogWorkoutView: View {
         updatedSets[nextIndex].weight = weight
         updatedSets[nextIndex].reps = reps
 
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
-            sets = updatedSets
-            recentlyLoggedSetID = updatedSets[nextIndex].id
-        }
+        sets = updatedSets
+        recentlyLoggedSetID = updatedSets[nextIndex].id
         onSetsChange(updatedSets)
         showLogFeedback(for: updatedSets[nextIndex].id)
 
@@ -524,9 +520,7 @@ struct LogWorkoutView: View {
                     return
                 }
 
-                withAnimation(.spring(response: 0.18, dampingFraction: 0.9)) {
-                    recentlyLoggedSetID = nil
-                }
+                recentlyLoggedSetID = nil
                 feedbackResetTask = nil
             }
         }
@@ -566,6 +560,8 @@ private struct SetTable: View {
     var recentlyLoggedSetID: LoggedSet.ID?
     var trackingMode: ExerciseTrackingMode
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             headerRow
@@ -590,8 +586,12 @@ private struct SetTable: View {
                         return
                     }
 
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.86)) {
+                    if reduceMotion {
                         proxy.scrollTo(newValue, anchor: .center)
+                    } else {
+                        withAnimation(AppMotion.stateChange) {
+                            proxy.scrollTo(newValue, anchor: .center)
+                        }
                     }
                 }
             }
@@ -684,6 +684,8 @@ private struct SetTableRow: View {
     var isRecentlyLogged: Bool
     var trackingMode: ExerciseTrackingMode
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: 12) {
             setCell
@@ -707,8 +709,8 @@ private struct SetTableRow: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(isRecentlyLogged ? AppColor.accent : phase.stroke, lineWidth: isRecentlyLogged || phase == .active ? 1.5 : 1)
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: phase)
-        .animation(.spring(response: 0.18, dampingFraction: 0.86), value: isRecentlyLogged)
+        .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: phase)
+        .animation(.easeOut(duration: 0.16), value: isRecentlyLogged)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -719,6 +721,7 @@ private struct SetTableRow: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(phase.symbolColor)
                 .frame(width: 18, height: 18)
+                .contentTransition(reduceMotion ? .opacity : .symbolEffect)
 
             Text("\(set.index)")
                 .font(AppFont.h2)
@@ -729,7 +732,7 @@ private struct SetTableRow: View {
 
     private func valueCell(_ text: String, isEmpty: Bool) -> some View {
         Text(text)
-            .font(Font.inter(size: 24, weight: .semibold, relativeTo: .title3))
+            .font(AppFont.metric)
             .monospacedDigit()
             .foregroundStyle(isEmpty ? phase.emptyValueColor : phase.valueColor)
             .contentTransition(.numericText())
@@ -1056,7 +1059,7 @@ private struct WorkoutResultHero: View {
     var body: some View {
         HStack(spacing: 12) {
             Text("\(value)")
-                .font(Font.inter(size: 96, weight: .bold, relativeTo: .largeTitle))
+                .font(AppFont.heroMetric)
                 .monospacedDigit()
                 .contentTransition(.numericText(value: Double(value)))
                 .lineLimit(1)

@@ -76,12 +76,19 @@ struct HomeView: View {
 }
 
 private struct MonthlyWorkoutSummaryCard: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var workoutCount: Int
     var workoutDays: Set<Date>
     var referenceDate: Date = Date()
 
     private let weekdaySymbols = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    private let compactWeekdaySymbols = ["M", "T", "W", "T", "F", "S", "S"]
     private let rowSpacing: CGFloat = 16
+
+    private var displayedWeekdaySymbols: [String] {
+        dynamicTypeSize.isAccessibilitySize ? compactWeekdaySymbols : weekdaySymbols
+    }
 
     private var calendar: Calendar {
         var calendar = Calendar.current
@@ -135,8 +142,8 @@ private struct MonthlyWorkoutSummaryCard: View {
 
             VStack(alignment: .leading, spacing: rowSpacing) {
                 HStack(spacing: 0) {
-                    ForEach(weekdaySymbols.indices, id: \.self) { column in
-                        let symbol = weekdaySymbols[column]
+                    ForEach(displayedWeekdaySymbols.indices, id: \.self) { column in
+                        let symbol = displayedWeekdaySymbols[column]
 
                         Text(symbol)
                             .font(AppFont.caption)
@@ -145,7 +152,7 @@ private struct MonthlyWorkoutSummaryCard: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
-                        if column < weekdaySymbols.count - 1 {
+                        if column < displayedWeekdaySymbols.count - 1 {
                             Spacer(minLength: 8)
                         }
                     }
