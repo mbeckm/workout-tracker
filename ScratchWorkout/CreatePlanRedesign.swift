@@ -1810,6 +1810,7 @@ private struct PlanTrackingModeMenu: View {
 
 struct ExerciseArtwork: View {
     var exercise: ExercisePrescription
+    var cornerRadius: CGFloat = 10
 
     var body: some View {
         Group {
@@ -1838,9 +1839,9 @@ struct ExerciseArtwork: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppColor.surface2)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .stroke(AppColor.imageOutline, lineWidth: 1)
         )
     }
@@ -1848,10 +1849,41 @@ struct ExerciseArtwork: View {
     private var exerciseImageFallback: some View {
         ZStack {
             AppColor.surface2
-            Image(systemName: "figure.strengthtraining.traditional")
-                .font(.system(size: 28, weight: .medium))
-                .foregroundStyle(AppColor.secondaryText)
+
+            if let fallbackAssetName {
+                Image(fallbackAssetName)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(AppColor.secondaryText)
+            }
         }
+    }
+
+    private var fallbackAssetName: String? {
+        if let localImageAssetName = exercise.localImageAssetName {
+            return localImageAssetName
+        }
+
+        let searchableText = ([exercise.name] + exercise.equipments)
+            .joined(separator: " ")
+            .lowercased()
+
+        if searchableText.contains("smith") { return "EquipmentSmithMachine" }
+        if searchableText.contains("trap bar") { return "EquipmentTrapBar" }
+        if searchableText.contains("ez bar") || searchableText.contains("skull crusher") { return "EquipmentEZBar" }
+        if searchableText.contains("dumbbell") || searchableText.contains("lateral raise") || searchableText.contains("hammer curl") { return "EquipmentDumbbells" }
+        if searchableText.contains("kettlebell") { return "EquipmentKettlebells" }
+        if searchableText.contains("cable") || searchableText.contains("pushdown") || searchableText.contains("face pull") { return "EquipmentCable" }
+        if searchableText.contains("resistance band") { return "EquipmentResistanceBands" }
+        if searchableText.contains("trx") { return "EquipmentTRX" }
+        if searchableText.contains("machine") || searchableText.contains("leg press") || searchableText.contains("leg curl") || searchableText.contains("leg extension") { return "EquipmentMachine" }
+        if searchableText.contains("pull-up") || searchableText.contains("pull up") || searchableText.contains("push-up") || searchableText.contains("push up") || searchableText.contains("dip") || searchableText.contains("plank") || searchableText.contains("lunge") { return "EquipmentBodyweight" }
+        if searchableText.contains("barbell") || searchableText.contains("squat") || searchableText.contains("deadlift") || searchableText.contains("overhead press") || searchableText.contains("row") { return "EquipmentBarbell" }
+
+        return nil
     }
 }
 
