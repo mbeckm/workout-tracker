@@ -1,4 +1,9 @@
 .DS_Store
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
+mobile/app.json.bak-*
+.audit/
 DerivedData/
 .performance/
 build/

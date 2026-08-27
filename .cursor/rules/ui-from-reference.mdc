@@ -1,0 +1,26 @@
+---
+description: Implement mobile UI from Mobbin references, not invented layouts.
+globs: mobile/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# UI from reference
+
+Before writing or changing a screen in `mobile/`:
+
+1. Open the matching row in `references/1.0/INDEX.md`.
+2. Read the local PNG under `references/1.0/screens/`.
+3. Copy structure, density, and chrome. Do not invent a new layout.
+
+## Visual system
+
+- System font (SF Pro). iOS semantic colors: `systemBackground`, `secondarySystemBackground`, `label`, `secondaryLabel`, `systemBlue`, `systemGreen`.
+- One accent: iOS blue (`#007AFF`) for primary actions. Completed sets use system green.
+- Light mode first. Grouped lists, large titles, native back swipe.
+- Motion = iOS push/pop and tab switch only. Haptic on set logged. No springs on lists.
+
+## Reject
+
+Inter, lime `#A8FF3E`, charcoal cards, custom tab bars, overlay navigation, decorative hero metrics.
+
+If it does not look like Strong or Hevy, it is wrong.

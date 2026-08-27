@@ -1,0 +1,32 @@
+---
+description: Scratch 1.0 is the Expo app in mobile/. Swift is a logic oracle only.
+globs: mobile/**,references/1.0/**,AGENTS.md
+alwaysApply: false
+---
+
+# Scratch Expo 1.0
+
+Active product is `mobile/` (Expo + Expo Router). `ScratchWorkout/` Swift is a **logic oracle** — port types and store behavior, do not copy UI, motion, or Inter/lime chrome.
+
+## In 1.0
+
+- Tabs: Workout, Plans, History, Settings
+- Plan-first: no empty / ad-hoc workouts
+- Compact plan editor (exercise name, sets, reps per set — weights only while logging)
+- Live logging: previous values, check-off, rest timer, auto-advance
+- Bundled exercise catalog + custom exercises
+- Short onboarding (welcome, kg/lbs)
+- Paywall after the first completed workout
+- Local persistence only
+
+## Out of 1.0
+
+- Custom page transitions, swipe flourishes, achievement overlays
+- Heatmap, hero metrics, seven tracking modes
+- ExerciseDB / AscendAPI in production
+- Supabase, Sign in with Apple, cloud sync
+- Designing screens in Paper first (Paper only for onboarding/paywall if no analog)
+
+## Stack
+
+Expo Router native stack + native tabs, TypeScript, MMKV or SQLite, FlashList, RevenueCat, expo-haptics, `expo-mcp`. No NativeWind, no Inter, no custom tab bar.

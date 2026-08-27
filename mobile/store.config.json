@@ -1,0 +1,42 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2026 Marvin Beckmann",
+    "categories": ["HEALTH_AND_FITNESS", "SPORTS"],
+    "info": {
+      "en-US": {
+        "title": "Trim Workout",
+        "subtitle": "Log sets. Follow a plan",
+        "description": "Trim is a plan-first iPhone workout logger. Build a plan of training days, log sets in a table, and reuse last time’s weights.\n\nKEY FEATURES:\n• Create a plan with multiple training days\n• Set table with previous values, kg/lbs, and a rest timer\n• Custom exercises when the catalog doesn’t have yours\n• History of completed sessions on this iPhone\n\nTrim stays on your iPhone. No account.\n\nTrim Pro is optional: extra plans, full history, and stats. Download Trim and log your next session in seconds.",
+        "keywords": [
+          "gym,sets,reps,plan,training,fitness,weights,strength,exercise,log,tracker,hevy,strong,barbell,lifting"
+        ],
+        "releaseNotes": "First release: plans, set-table logging, rest timer, history, and Trim Pro.",
+        "privacyPolicyUrl": "https://scratch-legal.vercel.app/privacy",
+        "supportUrl": "https://scratch-legal.vercel.app",
+        "marketingUrl": "https://scratch-legal.vercel.app"
+      }
+    },
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "gamblingSimulated": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "unrestrictedWebAccess": false,
+      "seventeenPlus": false
+    },
+    "release": {
+      "automaticRelease": false,
+      "phasedRelease": true
+    }
+  }
+}

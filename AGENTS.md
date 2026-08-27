@@ -1,27 +1,63 @@
 # AGENTS.md
 
-## Cursor Cloud specific instructions
+## What this repo is
 
-### What this repo is
+**Scratch** is a plan-first iPhone workout logger.
 
-- Single product: **ScratchWorkout**, a native **iOS / SwiftUI** workout tracker.
-- Active Xcode project: `ScratchWorkout.xcodeproj` (scheme `ScratchWorkout`, iPhone-only, `IPHONEOS_DEPLOYMENT_TARGET = 17.0`, Swift 5.0).
-- App source lives in `ScratchWorkout/`. Root `*.md` files (`PRODUCT.md`, `DESIGN.md`, `MOBBIN_RESEARCH.md`, `APP_STORE_RELEASE_GUIDE.md`) are product/design context only.
+- **Active app:** `mobile/` — Expo + Expo Router, iPhone-only, light iOS-native UI.
+- **Logic oracle:** `ScratchWorkout/` — SwiftUI prototype. Port domain types and store behavior from here. Do not copy its visual system (Inter, lime, charcoal, custom motion).
+- Root `*.md` files: **`PRODUCT.md` is the 1.0 product model** (plans → days → exercises, no ad-hoc workouts). `DESIGN.md` and other root docs are historical. **UI source of truth is `.cursor/skills/scratch-ui/SKILL.md` + Paper Family loop.** `references/1.0/` is historical.
 
-### Build/run/test cannot happen on the Cloud Agent (Linux) VM
+EAS project ID: `88024391-8ffd-4a6d-923d-18c766972365`.
 
-- The Cloud Agent VM is **Linux x86_64**. This app requires **macOS + Xcode + an iOS 17 Simulator (or a physical iPhone)** and cannot be built or run here.
-- The sources depend on Apple-only frameworks (`SwiftUI`, `Charts`, `Combine`) that are not available in the open-source Swift-for-Linux toolchain, so even a partial Linux compile/typecheck is not meaningful. Do not attempt to install a Swift toolchain to "build" the app on Linux.
-- There are **no third-party dependencies** (no Swift Package Manager, CocoaPods, or Carthage — no `Package.swift`, `Package.resolved`, `Podfile`, or `Cartfile`) and **no dependency-install step**. The update script is intentionally a no-op.
+## 1.0 product
 
-### How to build/run/test (on macOS with Xcode)
+Tabs: Workout, Plans, History, Settings.
 
-- Open in Xcode: `open ScratchWorkout.xcodeproj`, then Run (Cmd+R) against an iPhone simulator.
-- Command-line build:
-  `xcodebuild -project ScratchWorkout.xcodeproj -scheme ScratchWorkout -destination 'platform=iOS Simulator,name=iPhone 15' build`
-- Tests: the project currently has no test target; there is no `xcodebuild test` scheme configured.
+Ship: plan-first home (active plan + days), plan creation (pick exercises, then sets and reps per set — no per-set rows, no weights), Alpha Progression logging (exercise strip, active set, previous session, auto-advance), bundled + custom exercises, 2–3 screen onboarding, paywall after first completed workout, restore purchases, local persistence.
 
-### Runtime/behavior notes
+Do not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB in production, cloud auth.
 
-- Persistence is local `UserDefaults` (JSON snapshots); there is no backend, database, or server to run. Auth/cloud sync are stubbed locally (`LocalPreviewAuthService`, `LocalPreviewWorkoutRepository` in `AccountServices.swift`).
-- Exercise search uses the public OSS ExerciseDB API (`https://oss.exercisedb.dev`), overridable via the `EXERCISE_CATALOG_BASE_URL` env var or the `ExerciseCatalogBaseURL` Info.plist key. It is optional: failures fall back to on-disk cache and then a built-in seed catalog, so all core flows work offline.
+## How to implement UI
+
+1. Read `.cursor/skills/scratch-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
+2. Match Paper Family loop. Logging oracle is artboards 09, 11, 16, 17, 18.
+3. System font and iOS semantic colors. Green is for completed work and the one gym CTA — not titles.
+
+## Build / run / test (macOS + Xcode)
+
+```sh
+cd mobile
+npx expo start
+```
+
+iOS Simulator required. Official Expo Skills live in `.agents/skills/` (`npx skills add expo/skills`). For Expo MCP screenshots:
+
+```sh
+cd mobile
+npx expo install expo-mcp --dev
+EXPO_UNSTABLE_MCP_SERVER=1 npx expo start
+```
+
+Then reconnect Expo MCP in Cursor.
+
+Command-line iOS build (after `npx expo prebuild` or EAS):
+
+```sh
+cd mobile
+npx eas-cli build --platform ios --profile development
+```
+
+There is no test target yet. Persistence is local (MMKV/SQLite). No backend.
+
+## Cloud Agent (Linux) limits
+
+The Cloud Agent VM cannot run the iOS Simulator or Expo MCP local screenshot tools. It can still edit `mobile/` TypeScript. Visual QA happens on macOS.
+
+Swift sources depend on Apple frameworks; do not attempt a Linux Swift build.
+
+## Exercise catalog
+
+Hybrid catalog: bundled seed in `mobile/src/catalog/` + user-created custom exercises + ExerciseDB search when the query is non-empty. Empty search is local-only (seed + custom) and remains the offline catalog — never treat ExerciseDB as the only source.
+
+Expo Go / development may call `https://oss.exercisedb.dev` (non-commercial). Store builds must set `EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_KEY` before submit (optional `EXPO_PUBLIC_EXERCISE_CATALOG_BASE_URL` and `EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_HOST`). Do not ship OSS ExerciseDB as the production catalog.
