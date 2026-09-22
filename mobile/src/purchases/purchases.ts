@@ -172,7 +172,7 @@ export async function isProEntitlementActive(): Promise<boolean> {
   try {
     await configurePurchases();
     const info = await Purchases.getCustomerInfo();
-    return info.entitlements.active[PRO_ENTITLEMENT] != null;
+    return info.entitlements.active[PRO_ENTITLEMENT] !== undefined;
   } catch {
     return false;
   }
@@ -402,6 +402,16 @@ export async function presentScratchPaywall(): Promise<{
       message: details,
     };
   }
+}
+
+/** RevenueCat paywall when the SDK is configured; otherwise the in-app paywall screen. */
+export async function unlockPro(openInAppPaywall: () => void): Promise<boolean> {
+  if (!purchasesConfigured) {
+    openInAppPaywall();
+    return false;
+  }
+  const result = await presentScratchPaywall();
+  return result.isPro;
 }
 
 export async function restorePurchases(): Promise<{

@@ -1,9 +1,10 @@
 import { NumberFlow } from 'number-flow-react-native';
-import { Easing } from 'react-native-reanimated';
+
+import { EASE_OUT_FN } from '@/motion';
 
 const SPIN = {
   duration: 280,
-  easing: Easing.out(Easing.cubic),
+  easing: EASE_OUT_FN,
 } as const;
 
 /**
@@ -32,7 +33,7 @@ export function ProgressDelta({
       mask={false}
       spinTiming={SPIN}
       transformTiming={SPIN}
-      opacityTiming={{ duration: 180, easing: Easing.out(Easing.cubic) }}
+      opacityTiming={{ duration: 180, easing: EASE_OUT_FN }}
       // Match hero cap line (NumberFlow slot boxes sit low vs display text).
       containerStyle={{ transform: [{ translateY: -2 }] }}
     />

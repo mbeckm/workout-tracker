@@ -12,7 +12,6 @@ import { AccessibilityInfo, Appearance, StyleSheet, View } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import Animated, {
   cancelAnimation,
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -26,6 +25,7 @@ import {
   type ThemeColors,
   type ThemeType,
 } from '@/constants/theme';
+import { EASE_OUT } from '@/motion';
 
 type ThemeContextValue = {
   appearance: AppearancePreference;
@@ -37,7 +37,6 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const THEME_FADE_MS = 280;
-const THEME_EASE = Easing.bezier(0.23, 1, 0.32, 1);
 
 function resolveScheme(
   appearance: AppearancePreference,
@@ -160,7 +159,7 @@ function ThemeCrossfade({
     coverOpacity.value = 1;
     coverOpacity.value = withTiming(0, {
       duration: THEME_FADE_MS,
-      easing: THEME_EASE,
+      easing: EASE_OUT,
     });
   }, [scheme, coverOpacity, reduceMotionRef]);
 

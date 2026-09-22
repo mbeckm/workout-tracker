@@ -2,7 +2,6 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
   FadeOut,
@@ -15,12 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
 import { PaperBack } from '@/components/paper';
 import { radius } from '@/constants/theme';
+import { EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import { formatPlanMetric, setCount, withDay } from '@/domain/helpers';
 import type { ExercisePrescription } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
 
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
 
 export function DayEditorScreen() {

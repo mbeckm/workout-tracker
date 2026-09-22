@@ -155,13 +155,20 @@ if (typeof layout !== 'string') {
   );
 }
 
-export default typeof layout === 'string'
+type WorkoutActivityFactory = Pick<
+  ReturnType<typeof createLiveActivity<WorkoutActivityProps>>,
+  'start' | 'getInstances'
+>;
+
+const workoutActivityFactory: WorkoutActivityFactory = typeof layout === 'string'
   ? createLiveActivity<WorkoutActivityProps>('WorkoutActivity', layout as never)
-  : ({
+  : {
       start() {
         throw new Error('Live Activity layout unavailable');
       },
       getInstances() {
         return [];
       },
-    } as ReturnType<typeof createLiveActivity<WorkoutActivityProps>>);
+    };
+
+export default workoutActivityFactory;

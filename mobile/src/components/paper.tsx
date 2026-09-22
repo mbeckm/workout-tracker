@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { radius } from '@/constants/theme';
+import { Button } from '@/components/button';
+import { radius, spacing } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 export function PaperScreen({
@@ -36,6 +37,37 @@ export function PaperScreen({
       ]}>
       {children}
     </ScrollView>
+  );
+}
+
+/** Stage empty: display subject + fact caption + optional black CTA. No tab title. */
+export function PaperEmpty({
+  subject,
+  caption,
+  action,
+  testID,
+}: {
+  subject: string;
+  caption: string;
+  action?: { title: string; onPress: () => void; testID?: string };
+  testID?: string;
+}) {
+  const { type } = useTheme();
+  return (
+    <View testID={testID} style={{ gap: spacing.s, flex: 1 }}>
+      <View style={{ gap: spacing.sm }}>
+        <Text style={type.display}>{subject}</Text>
+        <Text style={type.kicker}>{caption}</Text>
+      </View>
+      {action ? (
+        <Button
+          title={action.title}
+          variant="black"
+          onPress={action.onPress}
+          testID={action.testID}
+        />
+      ) : null}
+    </View>
   );
 }
 

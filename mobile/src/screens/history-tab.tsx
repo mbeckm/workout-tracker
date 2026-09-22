@@ -2,7 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { PaperScreen } from '@/components/paper';
+import { PaperEmpty, PaperScreen } from '@/components/paper';
 import { PrCrownCount } from '@/components/pr-crown';
 import { useTheme } from '@/theme/theme-context';
 import {
@@ -91,38 +91,40 @@ export function HistoryTab() {
   return (
     <>
       <PaperScreen>
-        <Text style={type.planTitle}>History</Text>
         {workoutHistory.length === 0 ? (
-          <Text style={[type.kicker, { paddingTop: 28 }]}>No completed workouts yet.</Text>
+          <PaperEmpty testID="history-empty" subject="Workouts" caption="None yet" />
         ) : (
-          groups.map((group) => (
-            <View key={group.key} style={{ paddingTop: 28 }}>
-              <Text style={[type.kicker, { lineHeight: 20, marginBottom: 4 }]}>
-                {formatHistoryMonthCount(group.label, group.workouts.length)}
-              </Text>
-              {group.workouts.map((workout, index) => (
-                <SessionRow
-                  key={workout.id}
-                  workout={workout}
-                  prCount={personalBestCount(workout, workoutHistory)}
-                  showDivider={index < group.workouts.length - 1}
-                  onPress={() =>
-                    router.push(`/history-session?id=${encodeURIComponent(workout.id)}`)
-                  }
-                  onLongPress={() =>
-                    Alert.alert('Delete workout?', workout.title, [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Delete',
-                        style: 'destructive',
-                        onPress: () => deleteWorkout(workout.id),
-                      },
-                    ])
-                  }
-                />
-              ))}
-            </View>
-          ))
+          <>
+            <Text style={type.planTitle}>History</Text>
+            {groups.map((group) => (
+              <View key={group.key} style={{ paddingTop: 28 }}>
+                <Text style={[type.kicker, { lineHeight: 20, marginBottom: 4 }]}>
+                  {formatHistoryMonthCount(group.label, group.workouts.length)}
+                </Text>
+                {group.workouts.map((workout, index) => (
+                  <SessionRow
+                    key={workout.id}
+                    workout={workout}
+                    prCount={personalBestCount(workout, workoutHistory)}
+                    showDivider={index < group.workouts.length - 1}
+                    onPress={() =>
+                      router.push(`/history-session?id=${encodeURIComponent(workout.id)}`)
+                    }
+                    onLongPress={() =>
+                      Alert.alert('Delete workout?', workout.title, [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: () => deleteWorkout(workout.id),
+                        },
+                      ])
+                    }
+                  />
+                ))}
+              </View>
+            ))}
+          </>
         )}
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: 'History' }} />

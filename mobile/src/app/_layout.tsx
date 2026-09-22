@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Component, useEffect, useMemo, useRef, type ErrorInfo, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { KeyboardProvider } from '@/keyboard';
 
@@ -94,6 +95,7 @@ function ThemedNavigation() {
 
 function RootNav() {
   const { colors: themeColors } = useTheme();
+  const reduceMotion = useReducedMotion();
   const router = useRouter();
   const segments = useSegments();
   const { isHydrated, hasCompletedOnboarding, setPro } = useWorkoutStore();
@@ -226,7 +228,7 @@ function RootNav() {
   }
 
   return (
-    <Stack>
+    <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'Pro' }} />

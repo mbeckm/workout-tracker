@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  Easing,
   ReduceMotion,
   runOnJS,
   useAnimatedProps,
@@ -15,6 +14,7 @@ import Svg, { Line, Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme/theme-context';
 import type { ProgressPoint } from '@/domain/progress';
+import { EASE_IN_OUT } from '@/motion';
 
 type Plotted = { x: number; y: number; value: number; date: string };
 
@@ -22,7 +22,6 @@ const SAMPLE_COUNT = 48;
 /** Keep the stroke clear of the axis and the top clip. */
 const Y_INSET = 14;
 const MORPH_MS = 280;
-const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 

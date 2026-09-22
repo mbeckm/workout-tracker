@@ -1,10 +1,11 @@
 import { NumberFlow } from 'number-flow-react-native';
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
-import { Easing } from 'react-native-reanimated';
+
+import { EASE_OUT_FN } from '@/motion';
 
 const SPIN = {
   duration: 280,
-  easing: Easing.out(Easing.cubic),
+  easing: EASE_OUT_FN,
 } as const;
 
 /** Digit-roll hero — RN port of [NumberFlow](https://github.com/barvian/number-flow). */
@@ -43,7 +44,7 @@ export function StaggerValue({
       mask={false}
       spinTiming={SPIN}
       transformTiming={SPIN}
-      opacityTiming={{ duration: 180, easing: Easing.out(Easing.cubic) }}
+      opacityTiming={{ duration: 180, easing: EASE_OUT_FN }}
     />
   );
 }

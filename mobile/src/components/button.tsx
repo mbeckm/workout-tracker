@@ -1,7 +1,10 @@
 import { Stack } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 import { radius, spacing } from '@/constants/theme';
+import { PRESS_MS, PRESS_SCALE } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 export type ButtonVariant = 'filled' | 'black' | 'green' | 'gray' | 'plain' | 'destructive';
@@ -28,6 +31,8 @@ export function Button({
   testID?: string;
 }) {
   const { colors, type } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const [pressed, setPressed] = useState(false);
   const compact = size === 'compact';
   const pill = variant === 'filled' || variant === 'black' || variant === 'green' || variant === 'gray';
   const color =
@@ -40,15 +45,22 @@ export function Button({
           : variant === 'gray'
             ? colors.label
             : colors.systemBlue;
+  const scalePress = Boolean(pressed && !disabled && !reduceMotion);
 
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
+      pressRetentionOffset={16}
+      hitSlop={compact ? 8 : undefined}
       testID={testID}
-      style={({ pressed }) => [
-        {
+      style={style}>
+      <Animated.View
+        style={{
+          width: '100%',
           minHeight: compact ? 32 : pill ? 52 : 44,
           alignItems: 'center',
           justifyContent: 'center',
@@ -66,13 +78,16 @@ export function Button({
                   : variant === 'gray'
                     ? colors.secondarySystemBackground
                     : 'transparent',
-          opacity: disabled ? 0.4 : pressed ? 0.55 : 1,
-        },
-        style,
-      ]}>
-      <Text style={{ ...type.headline, fontWeight: '700', fontSize: compact ? 15 : 17, color }}>
-        {title}
-      </Text>
+          opacity: disabled ? 0.4 : reduceMotion && pressed ? 0.7 : 1,
+          transform: [{ scale: scalePress ? PRESS_SCALE : 1 }],
+          transitionProperty: 'transform',
+          transitionDuration: `${PRESS_MS}ms`,
+          transitionTimingFunction: 'ease-out',
+        }}>
+        <Text style={{ ...type.headline, fontWeight: '700', fontSize: compact ? 15 : 17, color }}>
+          {title}
+        </Text>
+      </Animated.View>
     </Pressable>
   );
 }

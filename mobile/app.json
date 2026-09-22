@@ -13,7 +13,8 @@
       "icon": "./assets/expo.icon",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "CADisableMinimumFrameDurationOnPhone": true
       }
     },
     "android": {

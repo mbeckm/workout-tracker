@@ -1,14 +1,18 @@
 ---
 name: figma
-description: Use the Figma MCP server for ScratchWorkout design-to-code work. Trigger when implementing UI from Figma, comparing screens to design, resolving fidelity questions, or when the user shares a Scratch Figma URL or node link.
+description: Legacy SwiftUI Figma mapping only. Do not use for Expo 1.0 UI — 1.0 source of truth is references/1.0/ and Mobbin. Trigger only when the user explicitly asks to work on the old Scratch Figma file or SwiftUI prototype visuals.
 paths:
   - "ScratchWorkout/**/*.swift"
   - "DESIGN.md"
 ---
 
-# Scratch Figma
+# Scratch Figma (legacy)
 
-Use the Figma MCP server to implement and validate ScratchWorkout UI. The visual source of truth is the Scratch Figma file; the code source of truth is `DESIGN.md`, `Theme.swift`, and `Components.swift`.
+**Expo 1.0 UI source of truth is `references/1.0/` (Mobbin), not this Figma file.** Do not implement `mobile/` screens from Figma. The dark Inter/lime Scratch file is a prototype artifact.
+
+Use this skill only for the old SwiftUI app in `ScratchWorkout/` if the user explicitly asks.
+
+Use the Figma MCP server to implement and validate **legacy** ScratchWorkout SwiftUI. Historical tokens live in `DESIGN.md`, `Theme.swift`, and `Components.swift`.
 
 ## Project links
 

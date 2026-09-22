@@ -16,9 +16,10 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { KeyboardStickyView, useKeyboardState } from '@/keyboard';
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
+  FadeOut,
+  ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -49,6 +50,7 @@ import {
   withDay,
 } from '@/domain/helpers';
 import { restSecondsForExercise } from '@/domain/rest';
+import { EASE_OUT } from '@/motion';
 import {
   newId,
   type ExercisePrescription,
@@ -71,10 +73,11 @@ type DraftExercise = {
 
 type WellFocus = 'weight' | 'reps' | 'duration' | null;
 
-const LOG_EASE = Easing.bezier(0.23, 1, 0.32, 1);
 const WEIGHT_STEP = { kg: 2.5, lbs: 5 } as const;
 const SWIPE_DISTANCE = 56;
 const CHIP_PAD_X = 12;
+const REST_IN = FadeIn.duration(160).easing(EASE_OUT);
+const REST_OUT = FadeOut.duration(120).easing(EASE_OUT);
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -717,7 +720,7 @@ export function LogWorkoutScreen() {
                         set.id === loggedPulseId
                           ? reduceMotion
                             ? FadeIn.duration(200)
-                            : FadeInDown.duration(200).easing(LOG_EASE).withInitialValues({
+                            : FadeInDown.duration(200).easing(EASE_OUT).withInitialValues({
                                 opacity: 0,
                                 transform: [{ translateY: -8 }],
                               })
@@ -743,12 +746,14 @@ export function LogWorkoutScreen() {
             zIndex: 1,
           }}>
           {restSeconds != null ? (
-            <Pressable onPress={() => setRest(null)} accessibilityRole="button" accessibilityLabel="Skip rest">
-              <Text style={type.kicker}>Rest</Text>
-              <Text style={[type.residue, { fontVariant: ['tabular-nums'] }]}>
-                {formatRestClock(restSeconds)}
-              </Text>
-            </Pressable>
+            <Animated.View entering={REST_IN} exiting={REST_OUT}>
+              <Pressable onPress={() => setRest(null)} accessibilityRole="button" accessibilityLabel="Skip rest">
+                <Text style={type.kicker}>Rest</Text>
+                <Text style={[type.residue, { fontVariant: ['tabular-nums'] }]}>
+                  {formatRestClock(restSeconds)}
+                </Text>
+              </Pressable>
+            </Animated.View>
           ) : null}
 
           {loggingSet ? (
@@ -1015,7 +1020,7 @@ function ExerciseStage({
       return;
     }
     translateX.set(12);
-    translateX.set(withTiming(0, { duration: 140, easing: LOG_EASE }));
+    translateX.set(withTiming(0, { duration: 140, easing: EASE_OUT }));
   }, [dragX, exerciseKey, reduceMotion, translateX]);
 
   const commitPrev = () => {
@@ -1067,9 +1072,10 @@ function ExerciseStage({
           }
           dragX.set(
             withSpring(0, {
-              duration: 280,
-              dampingRatio: 0.88,
+              duration: 400,
+              dampingRatio: 0.8,
               velocity: event.velocityX,
+              reduceMotion: ReduceMotion.System,
             }),
           );
         }),
@@ -1113,7 +1119,15 @@ function LogWell({
 }) {
   const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, gap: 8, opacity: dimmed ? 0.45 : 1 }}>
+    <Animated.View
+      style={{
+        flex: 1,
+        gap: 8,
+        opacity: dimmed ? 0.45 : 1,
+        transitionProperty: 'opacity',
+        transitionDuration: '150ms',
+        transitionTimingFunction: 'ease',
+      }}>
       <Text
         style={{
           fontSize: 13,
@@ -1124,7 +1138,7 @@ function LogWell({
         }}>
         {label}
       </Text>
-      <View
+      <Animated.View
         style={{
           borderRadius: radius.md,
           borderCurve: 'continuous',
@@ -1132,6 +1146,9 @@ function LogWell({
           backgroundColor: focused ? colors.systemBackground : colors.secondarySystemBackground,
           borderWidth: 2,
           borderColor: focused ? colors.label : 'transparent',
+          transitionProperty: 'backgroundColor, borderColor',
+          transitionDuration: '150ms',
+          transitionTimingFunction: 'ease',
         }}>
         <TextInput
           testID={testID}
@@ -1176,8 +1193,8 @@ function LogWell({
             <Text style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>+</Text>
           </Pressable>
         </View>
-      </View>
-    </View>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
@@ -1196,21 +1213,32 @@ function DaySheetRow({
 }) {
   const { colors, type } = useTheme();
   const translateY = useSharedValue(0);
+  const contextY = useSharedValue(0);
   const gesture = useMemo(
     () =>
       Gesture.Pan()
         .activateAfterLongPress(160)
+        .onStart(() => {
+          contextY.set(translateY.get());
+        })
         .onUpdate((event) => {
-          translateY.set(event.translationY);
+          translateY.set(contextY.get() + event.translationY);
         })
         .onEnd((event) => {
-          const delta = Math.round(event.translationY / 52);
-          translateY.set(withTiming(0, { duration: 160 }));
+          const delta = Math.round(translateY.get() / 52);
+          translateY.set(
+            withSpring(0, {
+              duration: 400,
+              dampingRatio: 0.8,
+              velocity: event.velocityY,
+              reduceMotion: ReduceMotion.System,
+            }),
+          );
           if (delta !== 0) {
             scheduleOnRN(onMove, index, index + delta);
           }
         }),
-    [index, onMove, translateY],
+    [contextY, index, onMove, translateY],
   );
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.get() }],

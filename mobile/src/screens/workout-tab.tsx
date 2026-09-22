@@ -1,23 +1,26 @@
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
   FadeOut,
   FadeOutUp,
   LinearTransition,
+  useAnimatedStyle,
   useReducedMotion,
+  useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { ExerciseThumb } from '@/components/exercise-thumb';
-import { PaperScreen } from '@/components/paper';
+import { PaperEmpty, PaperScreen } from '@/components/paper';
 import { exerciseStillMediaURL } from '@/catalog';
 import { radius, spacing } from '@/constants/theme';
+import { EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import { durationIsMinutes, emptyPlan, formatPlanMetric, setCount } from '@/domain/helpers';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
@@ -25,7 +28,6 @@ import type { ExercisePrescription, WorkoutDay } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
 
 const VISIBLE_EXERCISES = 4;
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
 
 const factBase = {
@@ -228,13 +230,12 @@ export function WorkoutTab() {
             ) : null}
           </View>
         ) : (
-          <View style={{ gap: spacing.s, flex: 1 }}>
-            <View style={{ gap: spacing.sm }}>
-              <Text style={type.display}>Plan</Text>
-              <Text style={type.kicker}>Start from a plan</Text>
-            </View>
-            <Button title="Create plan" variant="black" onPress={createPlan} />
-          </View>
+          <PaperEmpty
+            testID="home-empty"
+            subject="Plan"
+            caption="Start from a plan"
+            action={{ title: 'Create plan', onPress: createPlan, testID: 'home-create-plan' }}
+          />
         )}
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: 'Workout' }} />
@@ -287,6 +288,20 @@ function StillSlot({ children }: { children?: ReactNode }) {
 function WeekAmount({ done, total }: { done: number; total: number }) {
   const { colors, type } = useTheme();
   const fact = { ...factBase, color: colors.tertiaryLabel };
+  const previousDone = useRef<number | null>(null);
+  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (previousDone.current == null) {
+      previousDone.current = done;
+      return;
+    }
+    if (done > previousDone.current) {
+      setPulseIndex(done - 1);
+    }
+    previousDone.current = done;
+  }, [done]);
+
   return (
     <View style={{ gap: spacing.s, alignItems: 'flex-start' }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
@@ -297,19 +312,43 @@ function WeekAmount({ done, total }: { done: number; total: number }) {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {Array.from({ length: total }, (_, index) => (
-          <View
-            key={index}
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: radius.full,
-              flexShrink: 0,
-              backgroundColor: index < done ? colors.systemGreen : colors.systemGray5,
-            }}
-          />
+          <WeekDot key={index} filled={index < done} pulse={pulseIndex === index} />
         ))}
       </View>
     </View>
+  );
+}
+
+function WeekDot({ filled, pulse }: { filled: boolean; pulse: boolean }) {
+  const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (!pulse || reduceMotion) {
+      return;
+    }
+    scale.set(0.95);
+    scale.set(withTiming(1, { duration: 200, easing: EASE_OUT }));
+  }, [pulse, reduceMotion, scale]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.get() }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: 10,
+          height: 10,
+          borderRadius: radius.full,
+          flexShrink: 0,
+          backgroundColor: filled ? colors.systemGreen : colors.systemGray5,
+        },
+        style,
+      ]}
+    />
   );
 }
 

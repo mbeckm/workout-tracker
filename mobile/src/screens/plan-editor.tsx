@@ -9,6 +9,7 @@ import { PlanDetailDayRow } from '@/components/plan-detail-day-row';
 import { PaperBack } from '@/components/paper';
 import { useTheme } from '@/theme/theme-context';
 import { emptyDay } from '@/domain/helpers';
+import { unlockPro } from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 
 export function PlanEditorScreen() {
@@ -17,7 +18,8 @@ export function PlanEditorScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { plans, activePlanId, updatePlan, activatePlan, deletePlan } = useWorkoutStore();
+  const { plans, activePlanId, isPro, setPro, updatePlan, activatePlan, deletePlan } =
+    useWorkoutStore();
   const plan = plans.find((item) => item.id === id);
   const planRef = useRef(plan);
   const openedUnnamed = useRef(false);
@@ -151,7 +153,13 @@ export function PlanEditorScreen() {
               <EditorActionRow
                 title="Use this plan"
                 symbol="checkmark"
-                onPress={() => activatePlan(plan)}
+                onPress={async () => {
+                  if (isPro) {
+                    activatePlan(plan);
+                    return;
+                  }
+                  setPro(await unlockPro(() => router.push('/paywall?from=settings')));
+                }}
               />
             )}
             <EditorActionRow
