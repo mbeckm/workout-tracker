@@ -31,10 +31,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
-import { ExerciseThumb } from '@/components/exercise-thumb';
 import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
-import { exerciseMediaURL, exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
+import { exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
 import { radius } from '@/constants/theme';
 import {
   clonePrescription,
@@ -505,9 +504,10 @@ export function LogWorkoutScreen() {
         id: newId(),
         exerciseName: exercise.prescription.name,
         sets: exercise.sets.filter((set) => set.done).map(({ done: _done, ...set }) => set),
-        thumbnailURL: exercise.prescription.thumbnailURL ?? null,
-        imageURL: exercise.prescription.imageURL ?? null,
-        imageURLs: exercise.prescription.imageURLs,
+        // History never stores media URLs; media resolves from catalog identity.
+        thumbnailURL: null,
+        imageURL: null,
+        imageURLs: {},
       }))
       .filter((exercise) => exercise.sets.length > 0);
 
@@ -1283,7 +1283,7 @@ function LogExerciseSheet({
   alternatives: ExercisePrescription[];
   onSwap: (next: ExercisePrescription) => void;
 }) {
-  const { colors, type } = useTheme();
+  const { type } = useTheme();
   const muscle = exercise.targetMuscles[0];
   const equipment = exercise.equipments[0];
   const detail = [muscle, equipment].filter(Boolean).join(' · ');
@@ -1294,32 +1294,13 @@ function LogExerciseSheet({
         <Text style={type.title}>{exercise.name}</Text>
         {detail ? <Text style={type.kicker}>{detail}</Text> : null}
       </View>
-      <View
-        style={{
-          height: 200,
-          borderRadius: radius.lg,
-          borderCurve: 'continuous',
-          backgroundColor: colors.secondarySystemBackground,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}>
-        <ExerciseThumb
-          uri={exerciseMediaURL(exercise)}
-          name={exercise.name}
-          width={180}
-          height={180}
-          animated
-          backgroundColor={colors.secondarySystemBackground}
-        />
-      </View>
       {alternatives.length > 0 ? (
         <>
           <View
             style={{
               flexDirection: 'row',
               justifyContent: 'space-between',
-              paddingTop: 24,
+              paddingTop: 8,
               paddingBottom: 4,
             }}>
             <Text style={type.kicker}>Alternatives</Text>

@@ -21,6 +21,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_EXERCISE_MEDIA": "off",
+        "EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH": "off"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }
