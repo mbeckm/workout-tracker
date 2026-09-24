@@ -9,16 +9,19 @@ import { StaggerValue } from '@/components/stagger-value';
 import { WindowChips } from '@/components/window-chips';
 import { formatLoggedSetLine } from '@/domain/helpers';
 import {
+  defaultProgressWindow,
   filterPointsByWindow,
   formatProgressOneRM,
   formatProgressShortDate,
   isInProgressWindow,
+  isProgressWindowLocked,
   isSessionPR,
   liftSeriesFromHistory,
   percentFromWindowStart,
   type ProgressPoint,
   type ProgressWindow,
 } from '@/domain/progress';
+import { requirePro } from '@/purchases/pro-gate';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -28,9 +31,20 @@ export function ProgressLiftDetailScreen() {
   const { width } = useWindowDimensions();
   const { name } = useLocalSearchParams<{ name: string }>();
   const exerciseName = decodeURIComponent(name ?? '');
-  const { units, workoutHistory } = useWorkoutStore();
-  const [window, setWindow] = useState<ProgressWindow>('6M');
+  const { units, workoutHistory, isPro } = useWorkoutStore();
+  // The picked window only counts while it is open to this user; otherwise the default for
+  // the current entitlement. Buying Pro, or losing it, with the screen open just re-renders.
+  const [picked, setPicked] = useState<ProgressWindow | null>(null);
+  const window =
+    picked != null && !isProgressWindowLocked(picked, isPro) ? picked : defaultProgressWindow(isPro);
   const [scrubbed, setScrubbed] = useState<ProgressPoint | null>(null);
+
+  const isLocked = (candidate: ProgressWindow) => isProgressWindowLocked(candidate, isPro);
+  const unlockWindow = async (candidate: ProgressWindow) => {
+    if (await requirePro('progress_history')) {
+      setPicked(candidate);
+    }
+  };
 
   const series = useMemo(
     () => liftSeriesFromHistory(exerciseName, workoutHistory),
@@ -92,7 +106,12 @@ export function ProgressLiftDetailScreen() {
           {exerciseName}
         </Text>
 
-        <WindowChips value={window} onChange={setWindow} />
+        <WindowChips
+          value={window}
+          onChange={setPicked}
+          locked={isLocked}
+          onLockedPress={(candidate) => void unlockWindow(candidate)}
+        />
 
         <View style={{ paddingTop: 28, paddingBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>

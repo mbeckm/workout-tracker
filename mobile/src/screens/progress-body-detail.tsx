@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useMemo, useState } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { PaperBack, PaperScreen } from '@/components/paper';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressLineChart } from '@/components/progress-line-chart';
@@ -9,12 +10,16 @@ import { WindowChips } from '@/components/window-chips';
 import { BODY_METRICS, type BodyMetricKey } from '@/domain/check-in';
 import {
   bodyMetricSeries,
+  defaultProgressWindow,
   filterPointsByWindow,
   formatProgressShortDate,
+  isInProgressWindow,
+  isProgressWindowLocked,
   percentFromWindowStart,
   type ProgressPoint,
   type ProgressWindow,
 } from '@/domain/progress';
+import { requirePro } from '@/purchases/pro-gate';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -46,6 +51,35 @@ function bodyHeroFormat(key: BodyMetricKey): Intl.NumberFormatOptions | undefine
   return { maximumFractionDigits: 0 };
 }
 
+/**
+ * Stands in for the trend chart for free users: one quiet row, no fake chart. Latest values
+ * and check-ins stay visible; the line and the delta are Trim Pro.
+ */
+function TrendsProRow({ onPress }: { onPress: () => void }) {
+  const { colors, type } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Trends over time with Trim Pro"
+      accessibilityHint="Opens Trim Pro"
+      testID="progress-body-trends-pro"
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: 44,
+        paddingVertical: 12,
+        opacity: pressed ? 0.7 : 1,
+      })}>
+      <Text style={[type.row, { flex: 1, color: colors.secondaryLabel }]}>
+        Trends over time with Trim Pro
+      </Text>
+      <SymbolView name="chevron.right" tintColor={colors.tertiaryLabel} size={12} />
+    </Pressable>
+  );
+}
+
 export function ProgressBodyDetailScreen() {
   const { colors, type } = useTheme();
   const router = useRouter();
@@ -53,9 +87,20 @@ export function ProgressBodyDetailScreen() {
   const { metric } = useLocalSearchParams<{ metric: BodyMetricKey }>();
   const metricKey = (metric ?? 'waistCm') as BodyMetricKey;
   const metricMeta = BODY_METRICS.find((item) => item.key === metricKey) ?? BODY_METRICS[1];
-  const { bodyCheckIns, units } = useWorkoutStore();
-  const [window, setWindow] = useState<ProgressWindow>('6M');
+  const { bodyCheckIns, units, isPro } = useWorkoutStore();
+  // Same window rules as lift detail: a picked window counts only while it is open.
+  const [picked, setPicked] = useState<ProgressWindow | null>(null);
+  const window =
+    picked != null && !isProgressWindowLocked(picked, isPro) ? picked : defaultProgressWindow(isPro);
   const [scrubbed, setScrubbed] = useState<ProgressPoint | null>(null);
+
+  const isLocked = (candidate: ProgressWindow) => isProgressWindowLocked(candidate, isPro);
+  const unlockWindow = async (candidate: ProgressWindow) => {
+    if (await requirePro('body_trends')) {
+      setPicked(candidate);
+    }
+  };
+  const unlockTrends = () => void requirePro('body_trends');
 
   const series = useMemo(
     () => bodyMetricSeries(bodyCheckIns, metricKey, units),
@@ -66,10 +111,11 @@ export function ProgressBodyDetailScreen() {
   const latest = series.length > 0 ? series[series.length - 1].value : null;
   const scrubbing = scrubbed != null;
 
-  const heroValue = scrubbed?.value ?? latest;
+  // Free: the latest value always shows; the delta is part of the Pro trend.
+  const heroValue = (isPro ? scrubbed?.value : null) ?? latest;
   const heroNumber = heroValue != null ? bodyHeroValue(heroValue, metricKey) : null;
   const delta =
-    heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
+    isPro && heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
   const deltaRounded = delta == null ? null : Math.round(delta);
 
   const heroType = {
@@ -79,7 +125,15 @@ export function ProgressBodyDetailScreen() {
     color: colors.label,
   };
 
-  const recent = useMemo(() => [...series].reverse().slice(0, 6), [series]);
+  // The list follows the window, newest first, like lift detail.
+  const recent = useMemo(
+    () =>
+      [...series]
+        .reverse()
+        .filter((point) => isInProgressWindow(point.date, window))
+        .slice(0, 6),
+    [series, window],
+  );
 
   const chartLabel =
     filtered.length >= 2
@@ -97,7 +151,12 @@ export function ProgressBodyDetailScreen() {
           {metricMeta.label}
         </Text>
 
-        <WindowChips value={window} onChange={setWindow} />
+        <WindowChips
+          value={window}
+          onChange={setPicked}
+          locked={isLocked}
+          onLockedPress={(candidate) => void unlockWindow(candidate)}
+        />
 
         <View style={{ paddingTop: 28, paddingBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
@@ -113,14 +172,18 @@ export function ProgressBodyDetailScreen() {
               <ProgressDelta percent={deltaRounded} color={colors.label} />
             ) : null}
           </View>
-          {scrubbing && scrubbed ? (
+          {isPro && scrubbing && scrubbed ? (
             <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
               {formatProgressShortDate(scrubbed.date)}
             </Text>
           ) : null}
         </View>
 
-        {filtered.length >= 2 ? (
+        {!isPro ? (
+          series.length > 0 ? (
+            <TrendsProRow onPress={unlockTrends} />
+          ) : null
+        ) : filtered.length >= 2 ? (
           <ProgressLineChart
             points={filtered}
             width={width - 48}
@@ -139,7 +202,13 @@ export function ProgressBodyDetailScreen() {
         <View style={{ height: 28 }} />
 
         {recent.length === 0 ? (
-          <Text style={[type.kicker, { paddingTop: 4 }]}>Log a check-in to start tracking.</Text>
+          series.length === 0 ? (
+            <Text style={[type.kicker, { paddingTop: 4 }]}>Log a check-in to start tracking.</Text>
+          ) : !isPro ? (
+            <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 4 }]}>
+              No check-ins in this window.
+            </Text>
+          ) : null
         ) : (
           recent.map((point, index) => (
             <View key={point.date}>
