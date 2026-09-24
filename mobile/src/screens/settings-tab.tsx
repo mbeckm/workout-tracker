@@ -1,17 +1,59 @@
 import { Stack } from 'expo-router';
-import { Alert, Text, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { useRef, useState } from 'react';
+import { Alert, Linking, Text, View } from 'react-native';
 
 import { PaperRow, PaperScreen } from '@/components/paper';
+import { LEGAL_URLS } from '@/constants/legal';
 import { appearanceLabel, type AppearancePreference } from '@/constants/theme';
 import { openPaywall } from '@/purchases/pro-gate';
-import { restorePurchases } from '@/purchases/purchases';
+import {
+  PURCHASE_COPY,
+  manageSubscription,
+  proPeriodLabel,
+  restorePurchases,
+} from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 export function SettingsTab() {
   const { colors, type } = useTheme();
-  const { units, setUnits, appearance, setAppearance, isPro, applyEntitlement, clearWorkoutHistory } =
-    useWorkoutStore();
+  const {
+    units,
+    setUnits,
+    appearance,
+    setAppearance,
+    isPro,
+    proPeriod,
+    applyEntitlement,
+    clearWorkoutHistory,
+  } = useWorkoutStore();
+  const [restoring, setRestoring] = useState(false);
+  const restoringRef = useRef(false);
+
+  const restore = async () => {
+    if (restoringRef.current) {
+      return;
+    }
+    restoringRef.current = true;
+    setRestoring(true);
+    const result = await restorePurchases();
+    restoringRef.current = false;
+    setRestoring(false);
+    if (result.kind === 'restored') {
+      applyEntitlement(result.entitlement);
+      Alert.alert(PURCHASE_COPY.restoredTitle, PURCHASE_COPY.restoredBody);
+    } else if (result.kind === 'none') {
+      applyEntitlement(result.entitlement);
+      Alert.alert(PURCHASE_COPY.noneTitle, PURCHASE_COPY.noneBody);
+    } else {
+      Alert.alert(PURCHASE_COPY.restoreFailedTitle, result.message);
+    }
+  };
+
+  const openLegal = (url: string) => {
+    void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url).catch(() => undefined));
+  };
 
   const pickUnits = () => {
     Alert.alert('Weight', undefined, [
@@ -55,19 +97,25 @@ export function SettingsTab() {
             title="Trim Pro"
             testID="settings-pro"
             trailing={
-              <Text style={[type.row, { color: colors.tertiaryLabel }]}>{isPro ? 'On' : 'Off'}</Text>
+              <Text style={[type.row, { color: colors.tertiaryLabel }]}>
+                {isPro ? (proPeriod ? `On · ${proPeriodLabel(proPeriod)}` : 'On') : 'Off'}
+              </Text>
             }
-            onPress={() => void openPaywall('settings')}
+            onPress={
+              !isPro
+                ? () => void openPaywall('settings')
+                : proPeriod === 'lifetime'
+                  ? undefined
+                  : () => void manageSubscription()
+            }
           />
           <PaperRow
-            title="Restore purchases"
-            onPress={async () => {
-              const result = await restorePurchases();
-              if (result.kind !== 'error') {
-                applyEntitlement(result.entitlement);
-              }
-            }}
+            title={restoring ? 'Restoring…' : 'Restore purchases'}
+            testID="settings-restore"
+            onPress={restoring ? undefined : () => void restore()}
           />
+          <PaperRow title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
+          <PaperRow title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
           <PaperRow
             title="Clear history"
             destructive
