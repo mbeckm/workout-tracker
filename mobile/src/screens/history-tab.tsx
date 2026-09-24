@@ -2,8 +2,9 @@ import { Link, Stack } from 'expo-router';
 import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { PaperEmpty, PaperScreen } from '@/components/paper';
+import { PaperScreen } from '@/components/paper';
 import { PrCrownCount } from '@/components/pr-crown';
+import { spacing } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import {
   formatHistoryMonth,
@@ -114,12 +115,12 @@ export function HistoryTab() {
           History
         </Text>
         {workoutHistory.length === 0 ? (
-          <View style={{ flex: 1, paddingTop: 28 }}>
-            <PaperEmpty
-              testID="history-empty"
-              subject="No workouts yet"
-              caption="Finished workouts land here."
-            />
+          // H-3: room title stays; subject at 40 (PaperEmpty's 56 wraps this copy onto two lines).
+          <View testID="history-empty" style={{ paddingTop: 28, gap: spacing.sm }}>
+            <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
+              No workouts yet
+            </Text>
+            <Text style={type.kicker}>Finished workouts land here.</Text>
           </View>
         ) : (
           groups.map((group) => (
