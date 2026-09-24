@@ -35,6 +35,17 @@ export type PreviousExerciseLog = {
   sets: LoggedSet[];
 };
 
+/**
+ * The workout currently open in the log, if any. Home shows Resume for it.
+ * Contract only for now: the log workstream persists it and keeps it current.
+ */
+export type ActiveSession = {
+  planId: string;
+  dayId: string;
+  startedAt: string;
+  loggedSetCount: number;
+};
+
 type CompleteWorkoutInput = {
   title: string;
   exercises: LoggedExercise[];
@@ -66,6 +77,8 @@ type WorkoutStoreState = {
   isHydrated: boolean;
   shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
+  /** In-progress workout; null until the log workstream persists sessions. */
+  activeSession: ActiveSession | null;
   savePlan: (plan: WorkoutPlan, options?: { activate?: boolean }) => void;
   updatePlan: (plan: WorkoutPlan) => void;
   deletePlan: (plan: WorkoutPlan, options?: { archive?: boolean }) => void;
@@ -435,6 +448,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       isHydrated,
       shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
+      activeSession: null,
       savePlan,
       updatePlan,
       deletePlan,
