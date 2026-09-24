@@ -2,9 +2,8 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
-  Alert,
   AppState,
   Keyboard,
   Pressable,
@@ -12,8 +11,13 @@ import {
   Text,
   TextInput,
   View,
+  type AccessibilityActionEvent,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  ScrollView as GestureScrollView,
+} from 'react-native-gesture-handler';
 import { KeyboardStickyView, useKeyboardState } from '@/keyboard';
 import Animated, {
   FadeIn,
@@ -31,6 +35,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
+import { confirmAction } from '@/components/confirm-action';
+import { LastTimeLine } from '@/components/last-time-line';
+import { LogRest } from '@/components/log-rest';
 import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
 import { exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
@@ -39,15 +46,34 @@ import {
   clonePrescription,
   durationIsMinutes,
   emptyLoggedSet,
+  formatHistoryWhenInMonth,
   formatLoggedSetLine,
+  formatPlanMetric,
+  formatSetsCount,
   parsePositiveNumber,
-  repsForSet,
-  setCount,
   usesDuration,
   usesReps,
   usesWeight,
   withDay,
 } from '@/domain/helpers';
+import {
+  bestSetForExercise,
+  buildDrafts,
+  exerciseIsComplete,
+  findSessionDay,
+  formatSetsCompact,
+  formatShortDate,
+  loggedSetCount,
+  nextIncompleteIndex,
+  openLogSession,
+  sessionDurationMinutes,
+  unloggedSetCount,
+  type BestSet,
+  type DraftExercise,
+  type DraftSet,
+  type LogSession,
+  type RestWindow,
+} from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { EASE_OUT } from '@/motion';
 import {
@@ -57,26 +83,32 @@ import {
   type LoggedSet,
 } from '@/domain/types';
 import { endWorkoutLiveActivity, loadWorkoutFocus, syncWorkoutLiveActivity } from '@/live-activity/controller';
-import type { WorkoutRestWindow } from '@/live-activity/types';
-import { parseWorkoutLogUrl } from '@/live-activity/url';
+import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
 import { upcomingExerciseIndex } from '@/live-activity/upcoming';
-import { useWorkoutStore } from '@/store/workout-store';
+import { useWorkoutStore, type PreviousExerciseLog } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
-type DraftSet = LoggedSet & { done: boolean };
-
-type DraftExercise = {
-  prescription: ExercisePrescription;
-  sets: DraftSet[];
-};
-
 type WellFocus = 'weight' | 'reps' | 'duration' | null;
+
+type SetValues = Pick<LoggedSet, 'weight' | 'reps' | 'counterweight' | 'durationSeconds'>;
+
+/** A logged set loaded into the wells. Applied only on Update set. */
+type SetEdit = {
+  exerciseId: string;
+  setId: string;
+  values: SetValues;
+};
 
 const WEIGHT_STEP = { kg: 2.5, lbs: 5 } as const;
 const SWIPE_DISTANCE = 56;
 const CHIP_PAD_X = 12;
 const REST_IN = FadeIn.duration(160).easing(EASE_OUT);
 const REST_OUT = FadeOut.duration(120).easing(EASE_OUT);
+/** Typing in a well settles before it is written; set logs land within this too. */
+const SESSION_WRITE_DEBOUNCE_MS = 400;
+/** Display text (34pt name) and well numerals stop growing here (Dynamic Type). */
+const DISPLAY_TEXT_MAX_SCALE = 1.2;
+const WELL_TEXT_MAX_SCALE = 1.3;
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -85,41 +117,6 @@ function project(velocity: number, decelerationRate = 0.998) {
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function buildDrafts(
-  exercises: ExercisePrescription[],
-  previousSetsForExercise: (name: string) => LoggedSet[],
-): DraftExercise[] {
-  return exercises.map((exercise) => {
-    const history = previousSetsForExercise(exercise.name);
-    const lastLogged = history[history.length - 1] ?? null;
-    return {
-      prescription: exercise,
-      sets: Array.from({ length: setCount(exercise) }, (_, index) => {
-        const previous = history[index] ?? lastLogged;
-        return {
-          ...emptyLoggedSet(index + 1, previous),
-          reps: previous?.reps ?? repsForSet(exercise, index),
-          durationSeconds: previous?.durationSeconds ?? exercise.durationSeconds ?? null,
-          done: false,
-        };
-      }),
-    };
-  });
-}
-
-function formatSetFact(
-  set: Pick<LoggedSet, 'weight' | 'reps' | 'counterweight' | 'durationSeconds'>,
-  units: 'kg' | 'lbs',
-  minutes: boolean,
-): string {
-  const load = set.weight ?? set.counterweight;
-  if (load != null && set.reps != null) {
-    const loadText = Number.isInteger(load) ? String(load) : String(load);
-    return `${loadText} ${units} × ${set.reps}`;
-  }
-  return formatLoggedSetLine(set, { minutes });
 }
 
 function nudgeString(value: string, delta: number): string {
@@ -132,10 +129,6 @@ function nudgeString(value: string, delta: number): string {
     return String(next);
   }
   return String(Number(next.toFixed(2)));
-}
-
-function formatRestClock(seconds: number) {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
 function moveItem<T>(items: T[], from: number, to: number): T[] {
@@ -180,6 +173,38 @@ function alternativesFor(
   return unique;
 }
 
+function sessionFrom(
+  link: { planId: string; dayId: string },
+  startedAt: string,
+  updatedAt: string,
+  state: { drafts: DraftExercise[]; exerciseIndex: number; rest: RestWindow | null },
+): LogSession {
+  return {
+    planId: link.planId,
+    dayId: link.dayId,
+    startedAt,
+    updatedAt,
+    exerciseIndex: state.exerciseIndex,
+    drafts: state.drafts,
+    rest: state.rest,
+  };
+}
+
+function setValues(set: LoggedSet): SetValues {
+  return {
+    weight: set.weight ?? null,
+    reps: set.reps ?? null,
+    counterweight: set.counterweight ?? null,
+    durationSeconds: set.durationSeconds ?? null,
+  };
+}
+
+function hapticSuccess() {
+  if (process.env.EXPO_OS === 'ios') {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+}
+
 export function LogWorkoutScreen() {
   const { colors, type } = useTheme();
   const params = useLocalSearchParams<{ planId?: string; dayId?: string; exerciseId?: string }>();
@@ -193,77 +218,150 @@ export function LogWorkoutScreen() {
     plans,
     units,
     customExercises,
+    workoutHistory,
     previousSetsForExercise,
     previousLogForExercise,
     completeWorkout,
     updatePlan,
-    isHydrated,
+    logSession,
+    saveLogSession,
+    clearLogSession,
   } = useWorkoutStore();
   const plan = plans.find((item) => item.id === planId);
   const day = plan?.days.find((item) => item.id === dayId);
-  const startedAt = useRef(Date.now());
-  const [elapsed, setElapsed] = useState(0);
-  const [rest, setRest] = useState<WorkoutRestWindow | null>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  const [exerciseIndex, setExerciseIndex] = useState(0);
-  const [drafts, setDrafts] = useState<DraftExercise[]>(() =>
-    day ? buildDrafts(day.exercises, previousSetsForExercise) : [],
+
+  // The root stack mounts only after the store hydrates, so history and any saved
+  // session are already here: restore this plan/day's session, else start fresh.
+  const [opened] = useState(() =>
+    openLogSession({ planId, day, session: logSession, previousSetsForExercise }),
   );
+  // Another day's session with logged work: ask before this log replaces it.
+  const [conflict] = useState<LogSession | null>(() =>
+    !opened.restored && day && logSession && loggedSetCount(logSession.drafts) > 0 ? logSession : null,
+  );
+  const startedAt = opened.startedAt;
+  const [rest, setRest] = useState<RestWindow | null>(opened.rest);
+  const [exerciseIndex, setExerciseIndex] = useState(opened.exerciseIndex);
+  const [drafts, setDrafts] = useState<DraftExercise[]>(opened.drafts);
   const draftsRef = useRef(drafts);
   const [wellFocus, setWellFocus] = useState<WellFocus>(null);
+  const [editing, setEditing] = useState<SetEdit | null>(null);
+  const [weightNudgeSetId, setWeightNudgeSetId] = useState<string | null>(null);
   const [loggedPulseId, setLoggedPulseId] = useState<string | null>(null);
   const [residueResetKeys, setResidueResetKeys] = useState<Record<string, number>>({});
   const [sheet, setSheet] = useState<'day' | 'exercise' | null>(null);
-  const seededFromHistory = useRef(false);
+  const weightInputRef = useRef<TextInput>(null);
   const keyboardOpen = useKeyboardState((state) => state.isVisible);
+  const focusedWell: WellFocus = keyboardOpen ? wellFocus : null;
   const openSheet = (next: 'day' | 'exercise') => {
     Keyboard.dismiss();
     setSheet(next);
   };
+  /** Every exercise change drops a pending edit / weight nudge; they belong to one set. */
+  const goToExercise = (next: number | ((index: number) => number)) => {
+    setEditing(null);
+    setWeightNudgeSetId(null);
+    setExerciseIndex(next);
+  };
+
+  // --- Session persistence -------------------------------------------------
+  // The session is written through the store (debounced) once the first set is
+  // logged, or from the start when this log restored one. Finish / discard close it.
+  const ownsSession = useRef(opened.restored);
+  const persistBlocked = useRef(conflict != null);
+  const closed = useRef(false);
+  const updatedAtRef = useRef(opened.updatedAt);
+  const lastDraftsRef = useRef(drafts);
+  const latest = useRef({ drafts, exerciseIndex, rest });
+  const askedConflict = useRef(false);
 
   useEffect(() => {
     draftsRef.current = drafts;
-  }, [drafts]);
+    latest.current = { drafts, exerciseIndex, rest };
+    if (drafts !== lastDraftsRef.current) {
+      lastDraftsRef.current = drafts;
+      updatedAtRef.current = new Date().toISOString();
+    }
+  }, [drafts, exerciseIndex, rest]);
 
   useEffect(() => {
-    if (!keyboardOpen) {
-      setWellFocus(null);
+    if (!planId || !dayId || closed.current || persistBlocked.current) {
+      return;
     }
-  }, [keyboardOpen]);
+    if (!ownsSession.current && loggedSetCount(drafts) === 0) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (closed.current || persistBlocked.current) {
+        return;
+      }
+      ownsSession.current = true;
+      saveLogSession(sessionFrom({ planId, dayId }, startedAt, updatedAtRef.current, latest.current));
+    }, SESSION_WRITE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [dayId, drafts, exerciseIndex, planId, rest, saveLogSession, startedAt]);
+
+  // Backgrounding is the last reliable moment before iOS may kill the app.
+  useEffect(() => {
+    if (!planId || !dayId) {
+      return;
+    }
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' || closed.current || persistBlocked.current) {
+        return;
+      }
+      if (!ownsSession.current && loggedSetCount(latest.current.drafts) === 0) {
+        return;
+      }
+      ownsSession.current = true;
+      saveLogSession(
+        sessionFrom({ planId, dayId }, startedAt, updatedAtRef.current, latest.current),
+        { flush: true },
+      );
+    });
+    return () => subscription.remove();
+  }, [dayId, planId, saveLogSession, startedAt]);
+
+  useEffect(() => {
+    if (!conflict || !day || askedConflict.current) {
+      return;
+    }
+    askedConflict.current = true;
+    const other = findSessionDay(conflict, plans)?.day.title ?? 'Your other workout';
+    confirmAction(
+      {
+        title: `${other} is still open`,
+        message: `${formatSetsCount(loggedSetCount(conflict.drafts))} logged there. Starting ${day.title} discards them.`,
+        confirmLabel: `Discard and start ${day.title}`,
+        cancelLabel: `Resume ${other}`,
+        destructive: true,
+      },
+      () => {
+        persistBlocked.current = false;
+        clearLogSession();
+      },
+      () => {
+        closed.current = true;
+        router.replace(workoutLogHref({ planId: conflict.planId, dayId: conflict.dayId }));
+      },
+    );
+  }, [clearLogSession, conflict, day, plans, router]);
 
   const startRest = (seconds: number) => {
     const startedAtMs = Date.now();
     setRest({ startedAtMs, endsAtMs: startedAtMs + seconds * 1000 });
   };
 
-  useEffect(() => {
-    if (!day?.exercises.length || !isHydrated || seededFromHistory.current) {
-      return;
-    }
-    seededFromHistory.current = true;
-    setDrafts(buildDrafts(day.exercises, previousSetsForExercise));
-  }, [day, isHydrated, previousSetsForExercise]);
-
-  useEffect(() => {
-    const tick = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 1000);
-    return () => clearInterval(tick);
-  }, []);
-
-  useEffect(() => {
-    if (rest == null) {
-      return;
-    }
-    const tick = setInterval(() => {
-      const now = Date.now();
-      setNowMs(now);
-      if (now >= rest.endsAtMs) {
-        setRest(null);
+  const adjustRest = (seconds: number) => {
+    setRest((window) => {
+      if (!window) {
+        return window;
       }
-    }, 250);
-    return () => clearInterval(tick);
-  }, [rest]);
+      const endsAtMs = window.endsAtMs + seconds * 1000;
+      return endsAtMs <= Date.now() ? null : { ...window, endsAtMs };
+    });
+  };
 
-  const restSeconds = rest == null ? null : Math.max(0, Math.ceil((rest.endsAtMs - nowMs) / 1000));
   const current = drafts[exerciseIndex];
   const previous = current ? previousLogForExercise(current.prescription.name) : null;
   const nextIndex = upcomingExerciseIndex(drafts, exerciseIndex);
@@ -357,20 +455,23 @@ export function LogWorkoutScreen() {
     return () => subscription.remove();
   }, [dayId, planId]);
 
-  const activeSetIndex = useMemo(() => {
-    if (!current) {
-      return 0;
-    }
-    const index = current.sets.findIndex((set) => !set.done);
-    return index === -1 ? current.sets.length : index;
-  }, [current]);
-
-  const loggingSet = current?.sets[Math.min(activeSetIndex, Math.max(0, (current?.sets.length ?? 1) - 1))];
-  const exerciseComplete = Boolean(current && current.sets.length > 0 && current.sets.every((set) => set.done));
+  const exerciseComplete = exerciseIsComplete(current);
+  const activeSetIndex = current ? current.sets.findIndex((set) => !set.done) : -1;
+  const activeSet = current && activeSetIndex >= 0 ? current.sets[activeSetIndex] : undefined;
+  const lastDoneSet = current ? [...current.sets].reverse().find((set) => set.done) : undefined;
+  const editingSet =
+    editing && current && editing.exerciseId === current.prescription.id
+      ? current.sets.find((set) => set.id === editing.setId && set.done)
+      : undefined;
+  const edit = editingSet && editing ? editing : null;
+  const wellValues: SetValues | undefined = edit ? edit.values : (activeSet ?? lastDoneSet);
   const showWeight = current ? usesWeight(current.prescription.trackingMode) : false;
   const showReps = current ? usesReps(current.prescription.trackingMode) : false;
   const showDuration = current ? usesDuration(current.prescription.trackingMode) && !showReps : false;
   const minutes = current ? durationIsMinutes(current.prescription) : false;
+  const stageSetIndex = editingSet && current ? current.sets.indexOf(editingSet) : activeSetIndex;
+  const setHint =
+    current && stageSetIndex >= 0 ? `Set ${stageSetIndex + 1} of ${current.sets.length}` : undefined;
 
   const updateSet = (setIndex: number, patch: Partial<LoggedSet>) => {
     setDrafts((items) =>
@@ -386,53 +487,160 @@ export function LogWorkoutScreen() {
     );
   };
 
+  const beginEdit = (set: DraftSet, patch?: Partial<SetValues>) => {
+    if (!current) {
+      return;
+    }
+    setWeightNudgeSetId(null);
+    setEditing({
+      exerciseId: current.prescription.id,
+      setId: set.id,
+      values: { ...setValues(set), ...patch },
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setWellFocus(null);
+    Keyboard.dismiss();
+  };
+
+  const commitEdit = () => {
+    if (!edit) {
+      return;
+    }
+    setDrafts((items) =>
+      items.map((exercise) =>
+        exercise.prescription.id !== edit.exerciseId
+          ? exercise
+          : {
+              ...exercise,
+              sets: exercise.sets.map((set) => (set.id === edit.setId ? { ...set, ...edit.values } : set)),
+            },
+      ),
+    );
+    cancelEdit();
+  };
+
+  /** Wells write to: the set being edited, else the active set, else (done) open the last set for edit. */
+  const applyWellPatch = (patch: Partial<SetValues>) => {
+    if (!current) {
+      return;
+    }
+    if (edit) {
+      setEditing({ ...edit, values: { ...edit.values, ...patch } });
+      return;
+    }
+    if (activeSetIndex >= 0) {
+      updateSet(activeSetIndex, patch);
+      return;
+    }
+    if (lastDoneSet) {
+      beginEdit(lastDoneSet, patch);
+    }
+  };
+
+  const focusWell = (well: Exclude<WellFocus, null>) => {
+    setWellFocus(well);
+    if (!edit && activeSetIndex < 0 && lastDoneSet) {
+      beginEdit(lastDoneSet);
+    }
+  };
+
   const completeSet = () => {
-    if (!current || exerciseComplete) {
+    if (!current || !activeSet) {
       return;
     }
     const setIndex = activeSetIndex;
-    const target = current.sets[setIndex];
-    if (!target || target.done) {
+    const target = activeSet;
+    const noLoad = target.weight == null && target.counterweight == null;
+    const loggedWeightlessBefore = current.sets.some(
+      (set) => set.done && set.weight == null && set.counterweight == null,
+    );
+    // First tap on a weighted exercise with an empty weight: point at the well once.
+    if (showWeight && noLoad && !loggedWeightlessBefore && weightNudgeSetId !== target.id) {
+      setWeightNudgeSetId(target.id);
+      setWellFocus('weight');
+      weightInputRef.current?.focus();
       return;
     }
 
-    setDrafts((items) =>
-      items.map((exercise, index) => {
-        if (index !== exerciseIndex) {
-          return exercise;
-        }
-        return {
-          ...exercise,
-          sets: exercise.sets.map((set, inner) => {
-            if (inner === setIndex) {
-              return { ...set, done: true };
-            }
-            if (inner > setIndex && !set.done) {
-              return {
-                ...set,
-                weight: target.weight ?? set.weight,
-                reps: target.reps ?? set.reps,
-                counterweight: target.counterweight ?? set.counterweight,
-                durationSeconds: target.durationSeconds ?? set.durationSeconds,
-              };
-            }
-            return set;
-          }),
-        };
-      }),
-    );
+    const nextDrafts = drafts.map((exercise, index) => {
+      if (index !== exerciseIndex) {
+        return exercise;
+      }
+      return {
+        ...exercise,
+        sets: exercise.sets.map((set, inner) => {
+          if (inner === setIndex) {
+            return { ...set, done: true };
+          }
+          if (inner > setIndex && !set.done) {
+            return {
+              ...set,
+              weight: target.weight ?? set.weight,
+              reps: target.reps ?? set.reps,
+              counterweight: target.counterweight ?? set.counterweight,
+              durationSeconds: target.durationSeconds ?? set.durationSeconds,
+            };
+          }
+          return set;
+        }),
+      };
+    });
+    setDrafts(nextDrafts);
 
     setLoggedPulseId(target.id);
     setWellFocus(null);
+    setWeightNudgeSetId(null);
     Keyboard.dismiss();
     if (process.env.EXPO_OS === 'ios') {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    startRest(restSecondsForExercise(current.prescription));
-    const isLastSet = setIndex === current.sets.length - 1;
-    if (isLastSet && exerciseIndex < drafts.length - 1) {
-      setTimeout(() => setExerciseIndex((value) => value + 1), 220);
+    // No rest after the last set of the whole workout.
+    if (unloggedSetCount(nextDrafts) > 0) {
+      startRest(restSecondsForExercise(current.prescription));
+    } else {
+      setRest(null);
     }
+    if (exerciseIsComplete(nextDrafts[exerciseIndex])) {
+      const advanceTo = nextIncompleteIndex(nextDrafts, exerciseIndex, { wrap: false });
+      if (advanceTo >= 0) {
+        setTimeout(() => goToExercise(advanceTo), 220);
+      }
+    }
+  };
+
+  const addSet = () => {
+    if (!current || !lastDoneSet) {
+      return;
+    }
+    setEditing(null);
+    setDrafts((items) =>
+      items.map((exercise, index) =>
+        index !== exerciseIndex
+          ? exercise
+          : {
+              ...exercise,
+              sets: [
+                ...exercise.sets,
+                { ...emptyLoggedSet(exercise.sets.length + 1, lastDoneSet), done: false, extra: true },
+              ],
+            },
+      ),
+    );
+  };
+
+  const removeExtraSet = (setId: string) => {
+    setDrafts((items) =>
+      items.map((exercise, index) =>
+        index !== exerciseIndex
+          ? exercise
+          : { ...exercise, sets: exercise.sets.filter((set) => !(set.id === setId && set.extra && !set.done)) },
+      ),
+    );
+    setWeightNudgeSetId(null);
+    Keyboard.dismiss();
   };
 
   // A Live Activity tap can launch straight into /log with nothing beneath it,
@@ -446,15 +654,26 @@ export function LogWorkoutScreen() {
   };
 
   const discardWithoutSaving = () => {
+    closed.current = true;
+    if (planId && dayId) {
+      clearLogSession({ planId, dayId });
+    }
     void endWorkoutLiveActivity();
     leaveWorkout();
   };
 
   const confirmDiscard = () => {
-    Alert.alert('Discard workout?', 'Your logged sets will not be saved.', [
-      { text: 'Keep logging', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: discardWithoutSaving },
-    ]);
+    const logged = loggedSetCount(drafts);
+    confirmAction(
+      {
+        title: 'Discard workout?',
+        message: logged > 0 ? `${formatSetsCount(logged)} logged will not be saved.` : undefined,
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep logging',
+        destructive: true,
+      },
+      discardWithoutSaving,
+    );
   };
 
   const removeLoggedSet = (setId: string) => {
@@ -469,32 +688,34 @@ export function LogWorkoutScreen() {
         };
       }),
     );
+    if (editing?.setId === setId) {
+      setEditing(null);
+    }
     setRest(null);
     setLoggedPulseId(null);
   };
 
-  const confirmDeleteSet = (set: DraftSet) => {
-    const line = formatSetFact(set, units, minutes);
-    Alert.alert('Delete set?', `${line} will be removed from this exercise.`, [
+  const confirmUndoSet = (set: DraftSet) => {
+    const line = formatLoggedSetLine(set, { minutes });
+    confirmAction(
       {
-        text: 'Cancel',
-        style: 'cancel',
-        onPress: () => {
-          setResidueResetKeys((keys) => ({
-            ...keys,
-            [set.id]: (keys[set.id] ?? 0) + 1,
-          }));
-        },
+        title: 'Undo this set?',
+        message: `${line} goes back to not logged.`,
+        confirmLabel: 'Undo set',
+        cancelLabel: 'Keep',
+        destructive: true,
       },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => removeLoggedSet(set.id),
+      () => removeLoggedSet(set.id),
+      () => {
+        setResidueResetKeys((keys) => ({
+          ...keys,
+          [set.id]: (keys[set.id] ?? 0) + 1,
+        }));
       },
-    ]);
+    );
   };
 
-  const finish = () => {
+  const finish = (confirmed = false) => {
     if (!day || !plan) {
       leaveWorkout();
       return;
@@ -503,7 +724,9 @@ export function LogWorkoutScreen() {
       .map((exercise) => ({
         id: newId(),
         exerciseName: exercise.prescription.name,
-        sets: exercise.sets.filter((set) => set.done).map(({ done: _done, ...set }) => set),
+        sets: exercise.sets
+          .filter((set) => set.done)
+          .map(({ done: _done, extra: _extra, ...set }) => set),
         // History never stores media URLs; media resolves from catalog identity.
         thumbnailURL: null,
         imageURL: null,
@@ -512,21 +735,44 @@ export function LogWorkoutScreen() {
       .filter((exercise) => exercise.sets.length > 0);
 
     if (exercises.length === 0) {
-      Alert.alert('No sets logged', 'Log at least one set to save this workout.', [
-        { text: 'Keep logging', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: discardWithoutSaving },
-      ]);
+      confirmAction(
+        {
+          title: 'No sets logged',
+          message: 'Log at least one set to save this workout.',
+          confirmLabel: 'Discard',
+          cancelLabel: 'Keep logging',
+          destructive: true,
+        },
+        discardWithoutSaving,
+      );
       return;
     }
 
+    const remaining = unloggedSetCount(drafts);
+    if (remaining > 0 && !confirmed) {
+      confirmAction(
+        {
+          title: `Finish with ${formatSetsCount(remaining)} not logged?`,
+          confirmLabel: 'Finish workout',
+          cancelLabel: 'Keep logging',
+          presentation: 'sheet',
+        },
+        () => finish(true),
+      );
+      return;
+    }
+
+    closed.current = true;
     const workout = completeWorkout({
       title: day.title,
       exercises,
-      durationMinutes: Math.max(1, Math.round(elapsed / 60)),
-      startedAt: new Date(startedAt.current).toISOString(),
+      durationMinutes: sessionDurationMinutes(startedAt, updatedAtRef.current),
+      startedAt,
       planId: plan.id,
       dayId: day.id,
     });
+    clearLogSession({ planId: plan.id, dayId: day.id });
+    hapticSuccess();
     void endWorkoutLiveActivity();
     router.replace(
       `/workout-complete?id=${encodeURIComponent(workout.id)}&planId=${encodeURIComponent(plan.id)}&dayId=${encodeURIComponent(day.id)}`,
@@ -548,7 +794,8 @@ export function LogWorkoutScreen() {
     updatePlan(
       withDay(plan, day.id, (currentDay) => ({
         ...currentDay,
-        exercises: nextDrafts.map((item) => item.prescription),
+        // Orphans (left the plan, kept for their logged sets) never go back into it.
+        exercises: nextDrafts.filter((item) => !item.orphan).map((item) => item.prescription),
       })),
     );
   };
@@ -565,6 +812,7 @@ export function LogWorkoutScreen() {
       repScheme: current.prescription.repScheme ?? null,
     };
     const hadLogs = current.sets.some((set) => set.done);
+    setEditing(null);
     setDrafts((items) =>
       items.map((exercise, index) => {
         if (index !== exerciseIndex) {
@@ -605,14 +853,34 @@ export function LogWorkoutScreen() {
   }
 
   const residueSets = current ? current.sets.filter((set) => set.done) : [];
-  const lastPrevious = previous?.sets[previous.sets.length - 1];
-  const lastTimeLine = lastPrevious
-    ? `Last time ${formatSetFact(lastPrevious, units, minutes)}`
-    : null;
-  const setStatus =
-    current == null
-      ? 'Set'
-      : `Set ${Math.min(activeSetIndex + 1, current.sets.length)} of ${current.sets.length}`;
+  const nextTarget = exerciseComplete ? nextIncompleteIndex(drafts, exerciseIndex) : -1;
+  const weightEmpty = wellValues?.weight == null && wellValues?.counterweight == null;
+
+  let cta: { title: string; onPress: () => void; label?: string };
+  let secondary: { title: string; onPress: () => void; label: string } | null = null;
+  if (edit) {
+    cta = { title: 'Update set', onPress: commitEdit };
+    secondary = { title: 'Cancel', onPress: cancelEdit, label: 'Cancel editing this set' };
+  } else if (activeSet) {
+    const nudged = weightNudgeSetId === activeSet.id && showWeight && weightEmpty;
+    cta = { title: nudged ? 'Log without weight' : 'Log set', onPress: completeSet };
+    if (activeSet.extra) {
+      secondary = {
+        title: 'Cancel',
+        onPress: () => removeExtraSet(activeSet.id),
+        label: 'Remove the added set',
+      };
+    }
+  } else if (nextTarget >= 0) {
+    cta = { title: 'Next exercise', onPress: () => goToExercise(nextTarget) };
+  } else {
+    cta = { title: 'Finish workout', onPress: () => finish() };
+  }
+
+  const wellPatchFromDuration = (value: string): Partial<SetValues> => {
+    const parsed = parsePositiveNumber(value);
+    return { durationSeconds: parsed == null ? null : minutes ? Math.round(parsed * 60) : parsed };
+  };
 
   return (
     <>
@@ -629,12 +897,15 @@ export function LogWorkoutScreen() {
             onPress={confirmDiscard}
             hitSlop={12}
             accessibilityRole="button"
+            accessibilityLabel="Cancel workout"
+            testID="log-cancel"
             style={{ minHeight: 44, justifyContent: 'center' }}>
             <Text style={[type.body, { color: colors.tertiaryLabel }]}>Cancel</Text>
           </Pressable>
           <Pressable
-            onPress={finish}
+            onPress={() => finish()}
             accessibilityRole="button"
+            accessibilityLabel="Finish workout"
             testID="log-finish"
             style={{
               minHeight: 44,
@@ -656,9 +927,29 @@ export function LogWorkoutScreen() {
                   onLongPress={() => openSheet('day')}
                   delayLongPress={350}
                   accessibilityRole="button"
-                  accessibilityHint="Opens exercise details. Long press to reorder the day.">
-                  <Text style={type.largeTitle} numberOfLines={2}>
+                  accessibilityLabel={current.prescription.name}
+                  accessibilityHint="Shows exercise details and alternatives."
+                  accessibilityActions={[{ name: 'activate' }, { name: 'openDay', label: 'Show the day' }]}
+                  onAccessibilityAction={(event: AccessibilityActionEvent) =>
+                    openSheet(event.nativeEvent.actionName === 'openDay' ? 'day' : 'exercise')
+                  }
+                  style={{ alignSelf: 'flex-start' }}>
+                  {/* Chevron rides inline after the last word (iOS title-menu convention). */}
+                  <Text
+                    style={type.largeTitle}
+                    numberOfLines={2}
+                    maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
                     {current.prescription.name}
+                    {' '}
+                    <View style={{ width: 17, height: 17, transform: [{ translateY: -3 }] }}>
+                      <SymbolView
+                        name="chevron.down"
+                        size={17}
+                        weight="semibold"
+                        tintColor={colors.tertiaryLabel}
+                        fallback={<ChevronFallback color={colors.tertiaryLabel} />}
+                      />
+                    </View>
                   </Text>
                 </Pressable>
               </View>
@@ -666,7 +957,7 @@ export function LogWorkoutScreen() {
                 <DayStrip
                   drafts={drafts}
                   selectedIndex={exerciseIndex}
-                  onSelect={setExerciseIndex}
+                  onSelect={goToExercise}
                   onOpenDay={() => openSheet('day')}
                 />
               </View>
@@ -675,61 +966,100 @@ export function LogWorkoutScreen() {
                 exerciseKey={current.prescription.id}
                 canGoPrev={exerciseIndex > 0}
                 canGoNext={exerciseIndex < drafts.length - 1}
-                onPrev={() => setExerciseIndex((value) => Math.max(0, value - 1))}
+                onPrev={() => goToExercise((value) => Math.max(0, value - 1))}
                 onNext={() =>
-                  setExerciseIndex((value) => Math.min(drafts.length - 1, value + 1))
+                  goToExercise((value) => Math.min(drafts.length - 1, value + 1))
                 }
                 reduceMotion={Boolean(reduceMotion)}>
-                <View style={{ paddingHorizontal: 24, paddingTop: 32, gap: 4, flexShrink: 0 }}>
-                  <Text
-                    style={[type.title, { fontVariant: ['tabular-nums'] }]}
-                    accessibilityRole="header">
-                    {setStatus}
-                  </Text>
-                  {lastTimeLine ? (
-                    <Text
-                      style={[
-                        type.kicker,
-                        {
-                          fontWeight: '400',
-                          color: colors.tertiaryLabel,
-                          fontVariant: ['tabular-nums'],
-                        },
-                      ]}>
-                      {lastTimeLine}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View
-                  style={{
-                    flex: 1,
-                    minHeight: 0,
-                    paddingHorizontal: 24,
-                    paddingTop: 24,
-                    gap: 10,
-                    overflow: 'visible',
-                  }}>
-                  {residueSets.map((set) => (
-                    <ResidueSetRow
-                      key={set.id}
-                      label={formatSetFact(set, units, minutes)}
-                      reduceMotion={Boolean(reduceMotion)}
-                      resetKey={residueResetKeys[set.id] ?? 0}
-                      entering={
-                        set.id === loggedPulseId
-                          ? reduceMotion
-                            ? FadeIn.duration(200)
-                            : FadeInDown.duration(200).easing(EASE_OUT).withInitialValues({
-                                opacity: 0,
-                                transform: [{ translateY: -8 }],
-                              })
-                          : undefined
-                      }
-                      onRequestDelete={() => confirmDeleteSet(set)}
+                <StageScroll>
+                  <View style={{ paddingHorizontal: 24, paddingTop: 32, gap: 4, flexShrink: 0 }}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 }}
+                      accessible
+                      accessibilityRole="header"
+                      accessibilityLabel={
+                        exerciseComplete && !edit ? `${current.prescription.name} done` : setHint
+                      }>
+                      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} testID="log-set-status">
+                        {exerciseComplete && !edit ? 'Done' : (setHint ?? 'Set')}
+                      </Text>
+                      {exerciseComplete && !edit ? (
+                        <SymbolView
+                          name="checkmark"
+                          size={17}
+                          weight="bold"
+                          tintColor={colors.systemGreen}
+                          fallback={
+                            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.systemGreen }}>
+                              ✓
+                            </Text>
+                          }
+                        />
+                      ) : null}
+                    </View>
+                    <LastTimeLine
+                      previousSets={previous?.sets}
+                      setIndex={exerciseComplete && !edit ? 'all' : Math.max(0, stageSetIndex)}
+                      minutes={minutes}
                     />
-                  ))}
-                </View>
+                  </View>
+
+                  <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24, gap: 10 }}>
+                    {residueSets.map((set) => (
+                      <ResidueSetRow
+                        key={set.id}
+                        label={formatLoggedSetLine(set, { minutes })}
+                        reduceMotion={Boolean(reduceMotion)}
+                        resetKey={residueResetKeys[set.id] ?? 0}
+                        editing={edit?.setId === set.id}
+                        entering={
+                          set.id === loggedPulseId
+                            ? reduceMotion
+                              ? FadeIn.duration(200)
+                              : FadeInDown.duration(200).easing(EASE_OUT).withInitialValues({
+                                  opacity: 0,
+                                  transform: [{ translateY: -8 }],
+                                })
+                            : undefined
+                        }
+                        onPress={() => (edit?.setId === set.id ? cancelEdit() : beginEdit(set))}
+                        onRequestDelete={() => confirmUndoSet(set)}
+                      />
+                    ))}
+                    {exerciseComplete && !edit ? (
+                      <Pressable
+                        onPress={addSet}
+                        testID="log-add-set"
+                        accessibilityRole="button"
+                        accessibilityLabel="Add set"
+                        accessibilityHint="Adds one more set to this exercise for today only."
+                        hitSlop={8}
+                        style={({ pressed }) => ({
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 10,
+                          minHeight: 28,
+                          alignSelf: 'flex-start',
+                          paddingRight: 24,
+                          opacity: pressed ? 0.5 : 1,
+                        })}>
+                        <SymbolView
+                          name="plus"
+                          size={17}
+                          weight="semibold"
+                          tintColor={colors.tertiaryLabel}
+                          fallback={
+                            <Text
+                              style={{ width: 17, textAlign: 'center', fontSize: 17, color: colors.tertiaryLabel }}>
+                              +
+                            </Text>
+                          }
+                        />
+                        <Text style={[type.body, { color: colors.tertiaryLabel }]}>Add set</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </StageScroll>
               </ExerciseStage>
             </>
           ) : null}
@@ -745,84 +1075,99 @@ export function LogWorkoutScreen() {
             backgroundColor: colors.systemBackground,
             zIndex: 1,
           }}>
-          {restSeconds != null ? (
+          {rest != null ? (
             <Animated.View entering={REST_IN} exiting={REST_OUT}>
-              <Pressable onPress={() => setRest(null)} accessibilityRole="button" accessibilityLabel="Skip rest">
-                <Text style={type.kicker}>Rest</Text>
-                <Text style={[type.residue, { fontVariant: ['tabular-nums'] }]}>
-                  {formatRestClock(restSeconds)}
-                </Text>
-              </Pressable>
+              <LogRest
+                rest={rest}
+                onSkip={() => setRest(null)}
+                onAdjust={adjustRest}
+                onExpire={() => setRest(null)}
+              />
             </Animated.View>
           ) : null}
 
-          {loggingSet ? (
+          {wellValues ? (
             <View style={{ flexDirection: 'row', gap: 12 }}>
               {showWeight ? (
                 <LogWell
                   label={units.toUpperCase()}
+                  a11yName={units === 'kg' ? 'Weight, kilograms' : 'Weight, pounds'}
+                  a11yHint={setHint}
+                  stepName="weight"
                   testID="log-well-weight"
-                  value={loggingSet.weight == null ? '' : String(loggingSet.weight)}
-                  onChange={(value) =>
-                    updateSet(Math.min(activeSetIndex, current!.sets.length - 1), {
-                      weight: parsePositiveNumber(value),
-                    })
-                  }
+                  inputRef={weightInputRef}
+                  value={wellValues.weight == null ? '' : String(wellValues.weight)}
+                  onChange={(value) => applyWellPatch({ weight: parsePositiveNumber(value) })}
                   step={WEIGHT_STEP[units]}
                   keyboard="decimal-pad"
-                  focused={wellFocus === 'weight'}
-                  dimmed={wellFocus != null && wellFocus !== 'weight'}
-                  onFocus={() => setWellFocus('weight')}
+                  focused={focusedWell === 'weight'}
+                  dimmed={focusedWell != null && focusedWell !== 'weight'}
+                  onFocus={() => focusWell('weight')}
                 />
               ) : null}
               {showReps ? (
                 <LogWell
                   label="REPS"
+                  a11yName="Reps"
+                  a11yHint={setHint}
+                  stepName="reps"
                   testID="log-well-reps"
-                  value={loggingSet.reps == null ? '' : String(loggingSet.reps)}
-                  onChange={(value) =>
-                    updateSet(Math.min(activeSetIndex, current!.sets.length - 1), {
-                      reps: parsePositiveNumber(value),
-                    })
-                  }
+                  value={wellValues.reps == null ? '' : String(wellValues.reps)}
+                  onChange={(value) => applyWellPatch({ reps: parsePositiveNumber(value) })}
                   step={1}
                   keyboard="number-pad"
-                  focused={wellFocus === 'reps'}
-                  dimmed={wellFocus != null && wellFocus !== 'reps'}
-                  onFocus={() => setWellFocus('reps')}
+                  focused={focusedWell === 'reps'}
+                  dimmed={focusedWell != null && focusedWell !== 'reps'}
+                  onFocus={() => focusWell('reps')}
                 />
               ) : null}
               {showDuration ? (
                 <LogWell
                   label={minutes ? 'MIN' : 'SEC'}
+                  a11yName={minutes ? 'Minutes' : 'Seconds'}
+                  a11yHint={setHint}
+                  stepName={minutes ? 'minutes' : 'seconds'}
+                  testID="log-well-duration"
                   value={
-                    loggingSet.durationSeconds == null
+                    wellValues.durationSeconds == null
                       ? ''
-                      : String(minutes ? Math.round(loggingSet.durationSeconds / 60) : loggingSet.durationSeconds)
+                      : String(minutes ? Math.round(wellValues.durationSeconds / 60) : wellValues.durationSeconds)
                   }
-                  onChange={(value) => {
-                    const parsed = parsePositiveNumber(value);
-                    updateSet(Math.min(activeSetIndex, current!.sets.length - 1), {
-                      durationSeconds: parsed == null ? null : minutes ? Math.round(parsed * 60) : parsed,
-                    });
-                  }}
+                  onChange={(value) => applyWellPatch(wellPatchFromDuration(value))}
                   step={1}
                   keyboard="number-pad"
-                  focused={wellFocus === 'duration'}
-                  dimmed={wellFocus != null && wellFocus !== 'duration'}
-                  onFocus={() => setWellFocus('duration')}
+                  focused={focusedWell === 'duration'}
+                  dimmed={focusedWell != null && focusedWell !== 'duration'}
+                  onFocus={() => focusWell('duration')}
                 />
               ) : null}
             </View>
           ) : null}
 
-          <Button
-            title="Log set"
-            variant="green"
-            testID="log-set"
-            disabled={exerciseComplete}
-            onPress={completeSet}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+            {secondary ? (
+              <Pressable
+                onPress={secondary.onPress}
+                accessibilityRole="button"
+                accessibilityLabel={secondary.label}
+                testID="log-cta-cancel"
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  minHeight: 52,
+                  justifyContent: 'center',
+                  opacity: pressed ? 0.5 : 1,
+                })}>
+                <Text style={[type.body, { color: colors.tertiaryLabel }]}>{secondary.title}</Text>
+              </Pressable>
+            ) : null}
+            <Button
+              title={cta.title}
+              variant="green"
+              testID="log-set"
+              onPress={cta.onPress}
+              style={{ flex: 1 }}
+            />
+          </View>
         </KeyboardStickyView>
       </View>
 
@@ -841,19 +1186,25 @@ export function LogWorkoutScreen() {
           <Text style={type.kicker}>Drag to reorder</Text>
         </View>
         <ScrollView bounces={false} style={{ maxHeight: 480 }}>
-          {drafts.map((exercise, index) => (
-            <DaySheetRow
-              key={exercise.prescription.id}
-              name={exercise.prescription.name}
-              meta={index === exerciseIndex ? 'Now' : `${exercise.sets.length} sets`}
-              index={index}
-              onJump={() => {
-                setExerciseIndex(index);
-                setSheet(null);
-              }}
-              onMove={(from, to) => persistOrder(moveItem(drafts, from, to))}
-            />
-          ))}
+          {drafts.map((exercise, index) => {
+            const done = exercise.sets.filter((set) => set.done).length;
+            const progress = `${done} of ${exercise.sets.length}`;
+            return (
+              <DaySheetRow
+                key={exercise.prescription.id}
+                name={exercise.prescription.name}
+                meta={index === exerciseIndex ? `Now · ${progress}` : progress}
+                complete={exerciseIsComplete(exercise)}
+                index={index}
+                count={drafts.length}
+                onJump={() => {
+                  goToExercise(index);
+                  setSheet(null);
+                }}
+                onMove={(from, to) => persistOrder(moveItem(drafts, from, to))}
+              />
+            );
+          })}
         </ScrollView>
         <View style={{ height: Math.max(insets.bottom, 10) }} />
       </AnimatedSheet>
@@ -865,6 +1216,9 @@ export function LogWorkoutScreen() {
         {current ? (
           <LogExerciseSheet
             exercise={current.prescription}
+            previous={previous}
+            best={bestSetForExercise(workoutHistory, current.prescription.name)}
+            minutes={minutes}
             alternatives={alternativesFor(current.prescription, catalog)}
             onSwap={swapCurrent}
           />
@@ -874,6 +1228,53 @@ export function LogWorkoutScreen() {
 
       <Stack.Screen options={{ headerShown: false, title: day.title, gestureEnabled: false }} />
     </>
+  );
+}
+
+/** Web and older iOS without SF Symbols: a drawn chevron in the same 17pt box. */
+function ChevronFallback({ color }: { color: string }) {
+  return (
+    <View style={{ width: 17, height: 17, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: 9,
+          height: 9,
+          marginTop: -5,
+          borderRightWidth: 2,
+          borderBottomWidth: 2,
+          borderColor: color,
+          transform: [{ rotate: '45deg' }],
+        }}
+      />
+    </View>
+  );
+}
+
+/**
+ * Upper stage body (set status, last time, logged sets). Scrolls only when it no
+ * longer fits (large Dynamic Type, many sets); otherwise it is a plain, pinned column.
+ */
+function StageScroll({ children }: { children: ReactNode }) {
+  const size = useRef({ viewport: 0, content: 0 });
+  const [scrollable, setScrollable] = useState(false);
+  const measure = (patch: Partial<{ viewport: number; content: number }>) => {
+    size.current = { ...size.current, ...patch };
+    const next = size.current.content > size.current.viewport + 1;
+    setScrollable((value) => (value === next ? value : next));
+  };
+  return (
+    <GestureScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      bounces={false}
+      overScrollMode="never"
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      scrollEnabled={scrollable}
+      onLayout={(event) => measure({ viewport: event.nativeEvent.layout.height })}
+      onContentSizeChange={(_width, height) => measure({ content: height })}>
+      {children}
+    </GestureScrollView>
   );
 }
 
@@ -913,7 +1314,7 @@ function DayStrip({
         alignItems: 'center',
       }}>
       {drafts.map((exercise, index) => {
-        const complete = exercise.sets.length > 0 && exercise.sets.every((set) => set.done);
+        const complete = exerciseIsComplete(exercise);
         const selected = index === selectedIndex;
         const selectedComplete = selected && complete;
         const label = exercise.prescription.name;
@@ -934,8 +1335,17 @@ function DayStrip({
             onLongPress={onOpenDay}
             delayLongPress={320}
             accessibilityRole="button"
-            accessibilityLabel={exercise.prescription.name}
+            accessibilityLabel={complete ? `${exercise.prescription.name}, done` : exercise.prescription.name}
+            accessibilityState={{ selected }}
             accessibilityHint={selected ? 'Opens the day so you can reorder' : 'Jump to this exercise'}
+            accessibilityActions={[{ name: 'activate' }, { name: 'openDay', label: 'Show the day' }]}
+            onAccessibilityAction={(event: AccessibilityActionEvent) => {
+              if (event.nativeEvent.actionName === 'openDay' || selected) {
+                onOpenDay();
+                return;
+              }
+              onSelect(index);
+            }}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -1098,6 +1508,9 @@ function ExerciseStage({
 
 function LogWell({
   label,
+  a11yName,
+  a11yHint,
+  stepName,
   value,
   onChange,
   step,
@@ -1105,9 +1518,16 @@ function LogWell({
   focused,
   dimmed,
   onFocus,
+  inputRef,
   testID,
 }: {
   label: string;
+  /** VoiceOver name: `Weight, kilograms`, `Reps`, `Seconds`. */
+  a11yName: string;
+  /** `Set 2 of 4`. */
+  a11yHint?: string;
+  /** Stepper wording: `Decrease weight by 2.5`. */
+  stepName: string;
   value: string;
   onChange: (value: string) => void;
   step: number;
@@ -1115,9 +1535,23 @@ function LogWell({
   focused: boolean;
   dimmed: boolean;
   onFocus: () => void;
+  inputRef?: RefObject<TextInput | null>;
   testID?: string;
 }) {
   const { colors } = useTheme();
+  const nudge = (delta: number) => {
+    if (process.env.EXPO_OS === 'ios') {
+      void Haptics.selectionAsync();
+    }
+    onChange(nudgeString(value, delta));
+  };
+  const stepperStyle = ({ pressed }: { pressed: boolean }) => ({
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: pressed ? colors.systemGray5 : 'transparent',
+  });
   return (
     <Animated.View
       style={{
@@ -1129,6 +1563,8 @@ function LogWell({
         transitionTimingFunction: 'ease',
       }}>
       <Text
+        importantForAccessibility="no"
+        accessibilityElementsHidden
         style={{
           fontSize: 13,
           fontWeight: '500',
@@ -1146,11 +1582,12 @@ function LogWell({
           backgroundColor: focused ? colors.systemBackground : colors.secondarySystemBackground,
           borderWidth: 2,
           borderColor: focused ? colors.label : 'transparent',
-          transitionProperty: 'backgroundColor, borderColor',
+          transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: '150ms',
           transitionTimingFunction: 'ease',
         }}>
         <TextInput
+          ref={inputRef}
           testID={testID}
           value={value}
           onChangeText={onChange}
@@ -1159,8 +1596,11 @@ function LogWell({
           placeholder="—"
           placeholderTextColor={colors.tertiaryLabel}
           underlineColorAndroid="transparent"
+          accessibilityLabel={a11yName}
+          accessibilityHint={a11yHint}
+          maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
           style={{
-            height: 68,
+            minHeight: 68,
             textAlign: 'center',
             fontSize: 34,
             fontWeight: '700',
@@ -1173,24 +1613,32 @@ function LogWell({
         <View
           style={{
             flexDirection: 'row',
-            height: 44,
+            minHeight: 44,
             borderTopWidth: 0.5,
             borderTopColor: colors.systemGray4,
           }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Decrease ${label}`}
-            onPressIn={() => onChange(nudgeString(value, -step))}
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>−</Text>
+            accessibilityLabel={`Decrease ${stepName} by ${step}`}
+            onPress={() => nudge(-step)}
+            style={stepperStyle}>
+            <Text
+              maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
+              style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>
+              −
+            </Text>
           </Pressable>
           <View style={{ width: 0.5, backgroundColor: colors.systemGray4 }} />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Increase ${label}`}
-            onPressIn={() => onChange(nudgeString(value, step))}
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>+</Text>
+            accessibilityLabel={`Increase ${stepName} by ${step}`}
+            onPress={() => nudge(step)}
+            style={stepperStyle}>
+            <Text
+              maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
+              style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>
+              +
+            </Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -1201,13 +1649,17 @@ function LogWell({
 function DaySheetRow({
   name,
   meta,
+  complete,
   index,
+  count,
   onJump,
   onMove,
 }: {
   name: string;
   meta: string;
+  complete: boolean;
   index: number;
+  count: number;
   onJump: () => void;
   onMove: (from: number, to: number) => void;
 }) {
@@ -1244,6 +1696,24 @@ function DaySheetRow({
     transform: [{ translateY: translateY.get() }],
   }));
 
+  const actions = [
+    { name: 'activate', label: 'Go to exercise' },
+    ...(index > 0 ? [{ name: 'moveUp', label: 'Move up' }] : []),
+    ...(index < count - 1 ? [{ name: 'moveDown', label: 'Move down' }] : []),
+  ];
+  const onAccessibilityAction = (event: AccessibilityActionEvent) => {
+    switch (event.nativeEvent.actionName) {
+      case 'moveUp':
+        onMove(index, index - 1);
+        return;
+      case 'moveDown':
+        onMove(index, index + 1);
+        return;
+      default:
+        onJump();
+    }
+  };
+
   return (
     <Animated.View
       style={[
@@ -1256,30 +1726,62 @@ function DaySheetRow({
       ]}>
       <GestureDetector gesture={gesture}>
         <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
           style={{
-            width: 24,
+            width: 44,
             minHeight: 44,
+            marginLeft: -10,
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-          <SymbolView name="line.3.horizontal" size={16} tintColor={colors.separator} />
+          <SymbolView
+            name="line.3.horizontal"
+            size={16}
+            tintColor={colors.tertiaryLabel}
+            fallback={<Text style={{ fontSize: 16, color: colors.tertiaryLabel }}>≡</Text>}
+          />
         </View>
       </GestureDetector>
-      <Pressable onPress={onJump} style={{ flex: 1, paddingLeft: 12, gap: 2 }}>
-        <Text style={type.row}>{name}</Text>
-        <Text style={type.kicker}>{meta}</Text>
+      <Pressable
+        onPress={onJump}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}, ${complete ? 'done' : meta}`}
+        accessibilityActions={actions}
+        onAccessibilityAction={onAccessibilityAction}
+        style={{ flex: 1, paddingLeft: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={type.row}>{name}</Text>
+          <Text style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>{meta}</Text>
+        </View>
+        {complete ? (
+          <SymbolView
+            name="checkmark"
+            size={17}
+            weight="bold"
+            tintColor={colors.systemGreen}
+            fallback={<Text style={{ fontSize: 17, fontWeight: '700', color: colors.systemGreen }}>✓</Text>}
+          />
+        ) : null}
       </Pressable>
     </Animated.View>
   );
 }
 
+/** Exercise fact sheet (no media): plan, last time, best — then Alternatives to swap. */
 function LogExerciseSheet({
   exercise,
+  previous,
+  best,
+  minutes,
   alternatives,
   onSwap,
 }: {
   exercise: ExercisePrescription;
+  previous: PreviousExerciseLog | null;
+  best: BestSet | null;
+  minutes: boolean;
   alternatives: ExercisePrescription[];
   onSwap: (next: ExercisePrescription) => void;
 }) {
@@ -1287,12 +1789,34 @@ function LogExerciseSheet({
   const muscle = exercise.targetMuscles[0];
   const equipment = exercise.equipments[0];
   const detail = [muscle, equipment].filter(Boolean).join(' · ');
+  const facts: { label: string; value: string }[] = [
+    { label: 'Plan', value: formatPlanMetric(exercise) },
+    {
+      label: 'Last time',
+      value: previous
+        ? `${formatSetsCompact(previous.sets, { minutes })} · ${formatHistoryWhenInMonth(previous.completedAt)}`
+        : 'First time',
+    },
+    ...(best
+      ? [
+          {
+            label: 'Best',
+            value: `${formatLoggedSetLine(best.set, { minutes })} · ${formatShortDate(best.completedAt)}`,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <View>
-      <View style={{ gap: 6, paddingBottom: 16 }}>
+      <View style={{ gap: 6, paddingBottom: 12 }}>
         <Text style={type.title}>{exercise.name}</Text>
         {detail ? <Text style={type.kicker}>{detail}</Text> : null}
+      </View>
+      <View style={{ paddingBottom: 16 }}>
+        {facts.map((fact) => (
+          <FactRow key={fact.label} label={fact.label} value={fact.value} />
+        ))}
       </View>
       {alternatives.length > 0 ? (
         <>
@@ -1316,6 +1840,33 @@ function LogExerciseSheet({
           ))}
         </>
       ) : null}
+    </View>
+  );
+}
+
+function FactRow({ label, value }: { label: string; value: string }) {
+  const { colors, type } = useTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${label}, ${value}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 16,
+        minHeight: 44,
+        paddingVertical: 11,
+      }}>
+      <Text style={[type.body, { flexShrink: 0 }]}>{label}</Text>
+      <Text
+        numberOfLines={1}
+        style={[
+          type.kicker,
+          { fontWeight: '400', flexShrink: 1, textAlign: 'right', color: colors.secondaryLabel, fontVariant: ['tabular-nums'] },
+        ]}>
+        {value}
+      </Text>
     </View>
   );
 }

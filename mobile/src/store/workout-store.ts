@@ -9,9 +9,17 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 
 import { withLoggedTenRM } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
+import {
+  clearedSession,
+  loggedSetCount,
+  sessionAfterWorkout,
+  sessionStillValid,
+  type LogSession,
+} from '../domain/log-session';
 import { planLoopProgress } from '../domain/plan-loop';
 import type {
   CustomExerciseDefinition,
@@ -37,14 +45,18 @@ export type PreviousExerciseLog = {
 
 /**
  * The workout currently open in the log, if any. Home shows Resume for it.
- * Contract only for now: the log workstream persists it and keeps it current.
+ * Derived from the persisted `logSession`; null when its plan or day is gone.
  */
 export type ActiveSession = {
   planId: string;
   dayId: string;
   startedAt: string;
   loggedSetCount: number;
+  /** ISO time of the last set change. */
+  updatedAt?: string;
 };
+
+export type { LogSession } from '../domain/log-session';
 
 type CompleteWorkoutInput = {
   title: string;
@@ -77,8 +89,14 @@ type WorkoutStoreState = {
   isHydrated: boolean;
   shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
-  /** In-progress workout; null until the log workstream persists sessions. */
+  /** In-progress workout summary for Home (Resume). */
   activeSession: ActiveSession | null;
+  /** Full persisted log state (drafts, exercise, rest). Only the log reads this. */
+  logSession: LogSession | null;
+  /** Written by the log on every set change. `flush` also writes storage now (app backgrounding). */
+  saveLogSession: (session: LogSession, options?: { flush?: boolean }) => void;
+  /** Finish or discard. With `match`, clears only that plan/day's session. */
+  clearLogSession: (match?: { planId: string; dayId: string }) => void;
   savePlan: (plan: WorkoutPlan, options?: { activate?: boolean }) => void;
   updatePlan: (plan: WorkoutPlan) => void;
   deletePlan: (plan: WorkoutPlan, options?: { archive?: boolean }) => void;
@@ -108,6 +126,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<LoggedWorkout | null>(null);
   const [proPeriod, setProPeriod] = useState<ProPeriod | null>(null);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapshotRef = useRef(snapshot);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +150,26 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    snapshotRef.current = snapshot;
+    hydratedRef.current = isHydrated;
+  }, [isHydrated, snapshot]);
+
+  // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' || !hydratedRef.current) {
+        return;
+      }
+      if (persistTimeoutRef.current) {
+        clearTimeout(persistTimeoutRef.current);
+        persistTimeoutRef.current = null;
+      }
+      void saveSnapshot(snapshotRef.current);
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -173,7 +213,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       if (planIndex >= 0) {
         const plans = [...current.plans];
         plans[planIndex] = plan;
-        return { ...current, plans };
+        return { ...current, plans, activeSession: sessionStillValid(current.activeSession, plans) };
       }
 
       const archivedIndex = current.archivedPlans.findIndex((item) => item.id === plan.id);
@@ -206,6 +246,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         plans,
         archivedPlans,
         activePlanId,
+        activeSession: sessionStillValid(current.activeSession, plans),
       };
     });
   }, []);
@@ -314,6 +355,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => ({
       ...current,
       workoutHistory: [workout, ...current.workoutHistory],
+      activeSession: sessionAfterWorkout(current.activeSession, workout),
     }));
 
     return workout;
@@ -366,6 +408,24 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  const saveLogSession = useCallback((session: LogSession, options?: { flush?: boolean }) => {
+    setSnapshot((current) => {
+      const next = { ...current, activeSession: session };
+      if (options?.flush) {
+        // Backgrounding: write now instead of waiting for the debounce. Idempotent.
+        void saveSnapshot(next);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearLogSession = useCallback((match?: { planId: string; dayId: string }) => {
+    setSnapshot((current) => {
+      const activeSession = clearedSession(current.activeSession, match);
+      return activeSession === current.activeSession ? current : { ...current, activeSession };
+    });
+  }, []);
 
   const setUnits = useCallback((units: 'kg' | 'lbs') => {
     setSnapshot((current) => ({
@@ -428,6 +488,16 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<WorkoutStoreState>(() => {
     const loop = planLoopProgress(activePlan, snapshot.workoutHistory, snapshot.nextDayIndex);
+    const logSession = sessionStillValid(snapshot.activeSession, snapshot.plans);
+    const activeSession: ActiveSession | null = logSession
+      ? {
+          planId: logSession.planId,
+          dayId: logSession.dayId,
+          startedAt: logSession.startedAt,
+          loggedSetCount: loggedSetCount(logSession.drafts),
+          updatedAt: logSession.updatedAt,
+        }
+      : null;
     return {
       plans: snapshot.plans,
       archivedPlans: snapshot.archivedPlans,
@@ -448,7 +518,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       isHydrated,
       shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
-      activeSession: null,
+      activeSession,
+      logSession,
+      saveLogSession,
+      clearLogSession,
       savePlan,
       updatePlan,
       deletePlan,
@@ -491,6 +564,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     completeOnboarding,
     markPaywallShown,
     applyEntitlement,
+    saveLogSession,
+    clearLogSession,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

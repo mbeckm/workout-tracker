@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo, useRef, type ReactElement } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, type ReactElement } from 'react';
+import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -34,23 +34,32 @@ type ResidueSetRowProps = {
   reduceMotion: boolean;
   resetKey: number;
   entering?: EntryOrExitLayoutType;
+  /** This set is loaded in the wells for editing. */
+  editing?: boolean;
+  /** Tap: load the set into the wells. */
+  onPress: () => void;
+  /** Swipe left or long-press: ask to undo (un-log) the set. */
   onRequestDelete: () => void;
 };
+
+const ACCESSIBILITY_ACTIONS = [
+  { name: 'activate', label: 'Edit set' },
+  { name: 'delete', label: 'Undo set' },
+];
 
 export function ResidueSetRow({
   label,
   reduceMotion,
   resetKey,
   entering,
+  editing = false,
+  onPress,
   onRequestDelete,
 }: ResidueSetRowProps): ReactElement {
   const { colors, type } = useTheme();
   const translateX = useSharedValue(0);
   const contextX = useSharedValue(0);
   const armed = useSharedValue(0);
-  const onRequestDeleteRef = useRef(onRequestDelete);
-  onRequestDeleteRef.current = onRequestDelete;
-
   useEffect(() => {
     if (reduceMotion) {
       translateX.set(0);
@@ -60,10 +69,6 @@ export function ResidueSetRow({
     armed.set(0);
     translateX.set(withSpring(0, { duration: 300, dampingRatio: 0.85 }));
   }, [armed, reduceMotion, resetKey, translateX]);
-
-  const requestDelete = () => {
-    onRequestDeleteRef.current();
-  };
 
   const pan = useMemo(
     () =>
@@ -98,7 +103,7 @@ export function ResidueSetRow({
                 velocity: event.velocityX,
               }),
             );
-            scheduleOnRN(requestDelete);
+            scheduleOnRN(onRequestDelete);
             return;
           }
           armed.set(0);
@@ -110,32 +115,27 @@ export function ResidueSetRow({
             }),
           );
         }),
-    [contextX, reduceMotion, translateX],
+    [armed, contextX, onRequestDelete, reduceMotion, translateX],
   );
 
-  const longPressDelete = useMemo(
-    () =>
-      Gesture.LongPress()
-        .enabled(reduceMotion)
-        .minDuration(450)
-        .onEnd((_event, success) => {
-          if (success) {
-            armed.set(1);
-            scheduleOnRN(requestDelete);
-          }
-        }),
-    [armed, reduceMotion],
-  );
+  const longPressDelete = () => {
+    armed.set(1);
+    onRequestDelete();
+  };
 
-  const gesture = useMemo(
-    () => Gesture.Exclusive(pan, longPressDelete),
-    [longPressDelete, pan],
-  );
+  const onAccessibilityAction = (event: AccessibilityActionEvent) => {
+    if (event.nativeEvent.actionName === 'delete') {
+      onRequestDelete();
+      return;
+    }
+    onPress();
+  };
 
   const rowStyle = useAnimatedStyle(() => ({
     transform: reduceMotion ? [] : [{ translateX: translateX.get() }],
   }));
 
+  const restColor = editing ? colors.tertiaryLabel : colors.label;
   const labelStyle = useAnimatedStyle(() => {
     const progress = Math.max(
       armed.get(),
@@ -144,7 +144,7 @@ export function ResidueSetRow({
         : interpolate(translateX.get(), [0, -DELETE_TRAVEL], [0, 1], Extrapolation.CLAMP),
     );
     return {
-      color: interpolateColor(progress, [0, 1], [colors.label, colors.systemRed]),
+      color: interpolateColor(progress, [0, 1], [restColor, colors.systemRed]),
     };
   });
 
@@ -174,33 +174,56 @@ export function ResidueSetRow({
   });
 
   return (
-    <GestureDetector gesture={gesture}>
+    <GestureDetector gesture={pan}>
       <Animated.View
         entering={entering}
         layout={LinearTransition.duration(200)}
-        accessible
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityHint={
-          reduceMotion ? 'Double tap and hold to delete this set' : 'Swipe left to delete this set'
-        }
-        style={[styles.row, rowStyle]}>
-        <Animated.View style={checkStyle}>
-          <SymbolView name="checkmark" size={17} weight="bold" tintColor={colors.systemGreen} />
-        </Animated.View>
-        <View style={styles.labelWrap}>
-          <Animated.Text
-            style={[type.body, { fontVariant: ['tabular-nums'] }, labelStyle]}
-            numberOfLines={1}>
-            {label}
-          </Animated.Text>
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.strike, { backgroundColor: colors.systemRed }, strikeStyle]}
-          />
-        </View>
+        style={rowStyle}>
+        <Pressable
+          onPress={onPress}
+          onLongPress={longPressDelete}
+          delayLongPress={450}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          accessibilityState={{ selected: editing }}
+          accessibilityHint="Edits this set. Swipe left or hold to undo it."
+          accessibilityActions={ACCESSIBILITY_ACTIONS}
+          onAccessibilityAction={onAccessibilityAction}
+          hitSlop={{ top: 4, bottom: 4 }}
+          style={styles.row}>
+          <Animated.View style={checkStyle}>
+            <SymbolView
+              name="checkmark"
+              size={17}
+              weight="bold"
+              tintColor={colors.systemGreen}
+              fallback={<CheckFallback color={colors.systemGreen} />}
+            />
+          </Animated.View>
+          <View style={styles.labelWrap}>
+            <Animated.Text
+              style={[type.body, { fontVariant: ['tabular-nums'] }, labelStyle]}
+              numberOfLines={1}>
+              {label}
+            </Animated.Text>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.strike, { backgroundColor: colors.systemRed }, strikeStyle]}
+            />
+          </View>
+        </Pressable>
       </Animated.View>
     </GestureDetector>
+  );
+}
+
+/** Web / no SF Symbols: same 17pt lane, so rows keep their rhythm. */
+function CheckFallback({ color }: { color: string }) {
+  return (
+    <Animated.Text
+      style={{ width: 17, fontSize: 15, fontWeight: '700', color, textAlign: 'center' }}>
+      ✓
+    </Animated.Text>
   );
 }
 
@@ -210,6 +233,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     minHeight: 28,
+    alignSelf: 'flex-start',
+    paddingRight: 24,
   },
   labelWrap: {
     position: 'relative',
