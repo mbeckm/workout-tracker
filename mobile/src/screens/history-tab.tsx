@@ -1,9 +1,10 @@
-import { Stack, useRouter } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { useMemo } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { PaperEmpty, PaperScreen } from '@/components/paper';
+import { PaperScreen } from '@/components/paper';
 import { PrCrownCount } from '@/components/pr-crown';
+import { spacing } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import {
   formatHistoryMonth,
@@ -11,7 +12,9 @@ import {
   formatHistorySessionMeta,
   personalBestCount,
 } from '@/domain/helpers';
+import { formatPrCount } from '@/domain/set-lines';
 import type { LoggedWorkout } from '@/domain/types';
+import { confirmDeleteWorkout } from '@/screens/history-session';
 import { useWorkoutStore } from '@/store/workout-store';
 
 function groupByMonth(workouts: LoggedWorkout[]) {
@@ -31,100 +34,113 @@ function groupByMonth(workouts: LoggedWorkout[]) {
   return groups;
 }
 
+/**
+ * Tap opens the session. Long-press opens the native context menu (Delete) on iOS,
+ * matching Plans; VoiceOver gets the same Delete as a rotor action (HI-1, G-6).
+ */
 function SessionRow({
   workout,
   prCount,
   showDivider,
-  onPress,
-  onLongPress,
+  onDelete,
 }: {
   workout: LoggedWorkout;
   prCount: number;
   showDivider: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
+  onDelete: () => void;
 }) {
   const { colors, type } = useTheme();
   const meta = formatHistorySessionMeta(workout, undefined, { inMonth: true });
   const accessibility =
     prCount > 0
-      ? `${workout.title}, ${meta}, ${prCount} ${prCount === 1 ? 'PR' : 'PRs'}`
+      ? `${workout.title}, ${meta}, ${formatPrCount(prCount)}`
       : `${workout.title}, ${meta}`;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibility}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      testID={`history-session-${workout.id}`}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        paddingTop: 14,
-        paddingBottom: 14,
-        gap: 12,
-        borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0,
-        borderBottomColor: colors.separator,
-        opacity: pressed ? 0.7 : 1,
-      })}>
-      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={type.row} numberOfLines={1}>
-          {workout.title}
-        </Text>
-        <Text style={[type.kicker, { lineHeight: 18 }]} numberOfLines={1}>
-          {meta}
-        </Text>
-      </View>
-      {prCount > 0 ? <PrCrownCount count={prCount} /> : null}
-    </Pressable>
+    <Link href={`/history-session?id=${encodeURIComponent(workout.id)}`} asChild>
+      <Link.Trigger>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={accessibility}
+          accessibilityActions={[{ name: 'delete', label: 'Delete workout' }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'delete') {
+              onDelete();
+            }
+          }}
+          // iOS long-press belongs to the native context menu; elsewhere it is the shortcut.
+          onLongPress={Platform.OS === 'ios' ? undefined : onDelete}
+          testID={`history-session-${workout.id}`}
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          {/* Layout lives on an inner View: Link's Slot does not carry a style function on web. */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingTop: 14,
+              paddingBottom: 14,
+              gap: 12,
+              backgroundColor: colors.systemBackground,
+              borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0,
+              borderBottomColor: colors.separator,
+            }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+              <Text style={type.row} numberOfLines={1}>
+                {workout.title}
+              </Text>
+              <Text style={[type.kicker, { lineHeight: 18 }]} numberOfLines={2}>
+                {meta}
+              </Text>
+            </View>
+            {prCount > 0 ? <PrCrownCount count={prCount} /> : null}
+          </View>
+        </Pressable>
+      </Link.Trigger>
+      <Link.Menu>
+        <Link.MenuAction title="Delete" icon="trash" destructive onPress={onDelete} />
+      </Link.Menu>
+    </Link>
   );
 }
 
 export function HistoryTab() {
   const { type } = useTheme();
-  const router = useRouter();
   const { workoutHistory, deleteWorkout } = useWorkoutStore();
   const groups = useMemo(() => groupByMonth(workoutHistory), [workoutHistory]);
 
   return (
     <>
       <PaperScreen>
+        <Text style={type.planTitle} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
+          History
+        </Text>
         {workoutHistory.length === 0 ? (
-          <PaperEmpty testID="history-empty" subject="Workouts" caption="None yet" />
+          // H-3: room title stays; subject at 40 (PaperEmpty's 56 wraps this copy onto two lines).
+          <View testID="history-empty" style={{ paddingTop: 28, gap: spacing.sm }}>
+            <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
+              No workouts yet
+            </Text>
+            <Text style={type.kicker}>Finished workouts land here.</Text>
+          </View>
         ) : (
-          <>
-            <Text style={type.planTitle}>History</Text>
-            {groups.map((group) => (
-              <View key={group.key} style={{ paddingTop: 28 }}>
-                <Text style={[type.kicker, { lineHeight: 20, marginBottom: 4 }]}>
-                  {formatHistoryMonthCount(group.label, group.workouts.length)}
-                </Text>
-                {group.workouts.map((workout, index) => (
-                  <SessionRow
-                    key={workout.id}
-                    workout={workout}
-                    prCount={personalBestCount(workout, workoutHistory)}
-                    showDivider={index < group.workouts.length - 1}
-                    onPress={() =>
-                      router.push(`/history-session?id=${encodeURIComponent(workout.id)}`)
-                    }
-                    onLongPress={() =>
-                      Alert.alert('Delete workout?', workout.title, [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Delete',
-                          style: 'destructive',
-                          onPress: () => deleteWorkout(workout.id),
-                        },
-                      ])
-                    }
-                  />
-                ))}
-              </View>
-            ))}
-          </>
+          groups.map((group) => (
+            <View key={group.key} style={{ paddingTop: 28 }}>
+              <Text
+                style={[type.kicker, { lineHeight: 20, marginBottom: 4 }]}
+                accessibilityRole="header">
+                {formatHistoryMonthCount(group.label, group.workouts.length)}
+              </Text>
+              {group.workouts.map((workout, index) => (
+                <SessionRow
+                  key={workout.id}
+                  workout={workout}
+                  prCount={personalBestCount(workout, workoutHistory)}
+                  showDivider={index < group.workouts.length - 1}
+                  onDelete={() => confirmDeleteWorkout(workout, () => deleteWorkout(workout.id))}
+                />
+              ))}
+            </View>
+          ))
         )}
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: 'History' }} />
