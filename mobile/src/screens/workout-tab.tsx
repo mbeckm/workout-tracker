@@ -16,13 +16,23 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { HomeDayRow } from '@/components/home-day-row';
 import { PaperEmpty, PaperScreen } from '@/components/paper';
 import { radius, spacing } from '@/constants/theme';
 import { EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
-import { durationIsMinutes, emptyPlan, formatPlanMetric, setCount } from '@/domain/helpers';
+import {
+  estimateDayMinutes,
+  formatClockTime,
+  formatDoneLabel,
+  formatExerciseCount,
+  formatLoggedSets,
+  lastDoneAt,
+} from '@/domain/day-facts';
+import { emptyPlan, formatPlanMetric } from '@/domain/helpers';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
-import type { ExercisePrescription, WorkoutDay } from '@/domain/types';
+import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/types';
+import { useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
 const VISIBLE_EXERCISES = 4;
@@ -39,58 +49,75 @@ export function WorkoutTab() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
-  const { activePlan, nextDayIndex, savePlan, workoutHistory } = useWorkoutStore();
+  const { activePlan, nextDayIndex, savePlan, workoutHistory, activeSession } = useWorkoutStore();
+  const startDay = useStartDay();
   const [expandedForDayId, setExpandedForDayId] = useState<string | null>(null);
   const fact = { ...factBase, color: colors.tertiaryLabel };
 
   const createPlan = () => {
     const plan = emptyPlan();
     savePlan(plan, { activate: true });
-    router.push(`/plan/${plan.id}`);
+    router.push(`/plan/${plan.id}?new=1`);
   };
 
-  const openLog = (day: WorkoutDay) => {
-    if (!activePlan || day.exercises.length === 0) {
-      return;
-    }
-    const firstExerciseId = day.exercises[0]?.id;
+  const openPicker = (plan: WorkoutPlan, day: WorkoutDay) => {
     router.push(
-      `/log?planId=${activePlan.id}&dayId=${day.id}${
-        firstExerciseId ? `&exerciseId=${encodeURIComponent(firstExerciseId)}` : ''
-      }`,
+      `/exercises?planId=${plan.id}&dayId=${day.id}&dayTitle=${encodeURIComponent(day.title)}`,
     );
   };
 
-  const openPreview = (day: WorkoutDay) => {
-    if (!activePlan) {
-      return;
-    }
+  const openPreview = (plan: WorkoutPlan, day: WorkoutDay) => {
     if (day.exercises.length === 0) {
-      router.push(
-        `/exercises?planId=${activePlan.id}&dayId=${day.id}&dayTitle=${encodeURIComponent(day.title)}`,
-      );
+      openPicker(plan, day);
       return;
     }
-    router.push({ pathname: '/day-preview', params: { planId: activePlan.id, dayId: day.id } });
+    router.push({ pathname: '/day-preview', params: { planId: plan.id, dayId: day.id } });
   };
 
-  const nextDay = activePlan?.days[nextDayIndex];
-  const canStart = nextDay != null && nextDay.exercises.length > 0;
-  const overflow = nextDay ? Math.max(0, nextDay.exercises.length - VISIBLE_EXERCISES) : 0;
-  const expanded = nextDay != null && expandedForDayId === nextDay.id;
-  const head = nextDay ? nextDay.exercises.slice(0, VISIBLE_EXERCISES) : [];
-  const tail = nextDay ? nextDay.exercises.slice(VISIBLE_EXERCISES) : [];
+  // H-8: a workout in progress on this plan takes the stage until it's finished.
+  const session = activePlan && activeSession?.planId === activePlan.id ? activeSession : null;
+  const sessionDay = session ? activePlan?.days.find((item) => item.id === session.dayId) : undefined;
+  const day = sessionDay ?? activePlan?.days[nextDayIndex];
+  const resuming = session != null && sessionDay != null;
+  const hasExercises = day != null && day.exercises.length > 0;
+  const overflow = day ? Math.max(0, day.exercises.length - VISIBLE_EXERCISES) : 0;
+  const expanded = day != null && expandedForDayId === day.id;
+  const head = day ? day.exercises.slice(0, VISIBLE_EXERCISES) : [];
+  const tail = day ? day.exercises.slice(VISIBLE_EXERCISES) : [];
 
   const weekStart = startOfLocalWeek();
   const doneIds = completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
   const total = activePlan ? trainableDays(activePlan).length : 0;
   const done = Math.min(doneIds.length, total);
-  const exerciseCount = nextDay?.exercises.length ?? 0;
-  const minutes = nextDay ? estimateDayMinutes(nextDay) : null;
-  const meta =
-    minutes != null
-      ? `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'} · ~${minutes} min`
-      : `${exerciseCount} ${exerciseCount === 1 ? 'exercise' : 'exercises'}`;
+
+  let meta = '';
+  if (activePlan && day) {
+    if (resuming && session) {
+      meta =
+        session.loggedSetCount > 0
+          ? `Started ${formatClockTime(session.startedAt)} · ${formatLoggedSets(session.loggedSetCount)}`
+          : `Started ${formatClockTime(session.startedAt)}`;
+    } else if (!hasExercises) {
+      meta = 'No exercises yet';
+    } else {
+      const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
+      meta = [
+        activePlan.name.trim(),
+        formatExerciseCount(day.exercises.length),
+        minutes != null ? `~${minutes} min` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    }
+  }
+
+  // H-1: every other day you can train, so any day of the plan can be started from Home.
+  const otherDays =
+    activePlan && day
+      ? activePlan.days.filter((item) => item.id !== day.id && item.exercises.length > 0)
+      : [];
+  const onlyDayDoneAt =
+    activePlan && total <= 1 && day ? lastDoneAt(activePlan, day.id, workoutHistory) : null;
 
   return (
     <>
@@ -98,26 +125,31 @@ export function WorkoutTab() {
         {activePlan ? (
           <View>
             <View style={{ gap: 12 }}>
-              <Text style={type.planTitle}>Next Workout</Text>
-              {nextDay ? (
+              <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
+                Next Workout
+              </Text>
+              {day ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`${nextDay.title} preview`}
+                  accessibilityLabel={`${day.title}, ${meta}`}
+                  accessibilityHint={hasExercises ? 'Shows this day' : 'Adds exercises to this day'}
                   testID="home-next-day"
-                  onPress={() => openPreview(nextDay)}
+                  onPress={() => openPreview(activePlan, day)}
                   style={({ pressed }) => ({ gap: 8, opacity: pressed ? 0.7 : 1 })}>
-                  <Text style={type.displayDay} numberOfLines={1}>
-                    {nextDay.title}
+                  <Text style={type.displayDay} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                    {day.title}
                   </Text>
-                  <Text style={fact}>{meta}</Text>
+                  <Text style={fact} numberOfLines={2} testID="home-day-meta">
+                    {meta}
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
 
-            {nextDay && nextDay.exercises.length > 0 ? (
-              <Animated.View layout={LIST_LAYOUT} style={{ paddingTop: 28, gap: 20 }}>
+            {day && hasExercises ? (
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 28, gap: 20 }}>
                 <Animated.View
-                  layout={LIST_LAYOUT}
+                  layout={reduceMotion ? undefined : LIST_LAYOUT}
                   style={{
                     backgroundColor: colors.secondarySystemBackground,
                     borderRadius: radius.md,
@@ -128,8 +160,9 @@ export function WorkoutTab() {
                   }}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${nextDay.title} preview`}
-                    onPress={() => openPreview(nextDay)}
+                    accessibilityLabel={`${day.title} exercises`}
+                    accessibilityHint="Shows this day"
+                    onPress={() => openPreview(activePlan, day)}
                     style={({ pressed }) => ({ gap: spacing.s, opacity: pressed ? 0.7 : 1 })}>
                     {head.map((exercise, index) => (
                       <ExerciseRow key={`${exercise.id}-${index}`} exercise={exercise} />
@@ -154,28 +187,31 @@ export function WorkoutTab() {
                                 ? FadeOut.duration(140)
                                 : FadeOutUp.duration(180).easing(EASE_OUT)
                             }
-                            layout={LIST_LAYOUT}>
+                            layout={reduceMotion ? undefined : LIST_LAYOUT}>
                             <ExerciseRow exercise={exercise} />
                           </Animated.View>
                         ))
                       : null}
                   </Pressable>
                   {overflow > 0 ? (
-                    <Animated.View layout={LIST_LAYOUT}>
+                    <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
                       <Pressable
                         accessibilityRole="button"
+                        accessibilityState={{ expanded }}
                         accessibilityLabel={
                           expanded
                             ? 'Show less'
                             : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`
                         }
-                        onPress={() => setExpandedForDayId(expanded ? null : nextDay.id)}
+                        testID="home-more"
+                        onPress={() => setExpandedForDayId(expanded ? null : day.id)}
                         hitSlop={{ top: 6, bottom: 16 }}
                         style={({ pressed }) => ({
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: spacing.s,
                           width: '100%',
+                          minHeight: 44,
                           opacity: pressed ? 0.7 : 1,
                         })}>
                         <Text
@@ -204,25 +240,66 @@ export function WorkoutTab() {
                     </Animated.View>
                   ) : null}
                 </Animated.View>
-                {canStart ? (
-                  <Animated.View layout={LIST_LAYOUT}>
-                    <Button title="Start" variant="black" testID="home-start" onPress={() => openLog(nextDay)} />
-                  </Animated.View>
-                ) : null}
+                <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
+                  <Button
+                    title={resuming ? 'Resume' : 'Start'}
+                    variant="black"
+                    testID={resuming ? 'home-resume' : 'home-start'}
+                    onPress={() => startDay(activePlan, day)}
+                  />
+                </Animated.View>
               </Animated.View>
             ) : null}
 
-            {total > 0 ? (
-              <Animated.View layout={LIST_LAYOUT} style={{ paddingTop: 40 }}>
+            {day && !hasExercises ? (
+              // H-2: an empty next day gets a way forward instead of a dead end.
+              <View style={{ paddingTop: 28 }}>
+                <Button
+                  title="Add exercises"
+                  variant="black"
+                  testID="home-add-exercises"
+                  onPress={() => openPicker(activePlan, day)}
+                />
+              </View>
+            ) : null}
+
+            {total > 1 ? (
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 40 }}>
                 <WeekAmount done={done} total={total} />
+              </Animated.View>
+            ) : onlyDayDoneAt ? (
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 40 }}>
+                <Text style={fact}>{formatDoneLabel(onlyDayDoneAt)}</Text>
+              </Animated.View>
+            ) : null}
+
+            {otherDays.length > 0 ? (
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 28 }} testID="home-other-days">
+                {otherDays.map((item, index) => {
+                  const doneAt = lastDoneAt(activePlan, item.id, workoutHistory);
+                  const rowMeta = doneAt
+                    ? `${formatExerciseCount(item.exercises.length)} · ${formatDoneLabel(doneAt)}`
+                    : formatExerciseCount(item.exercises.length);
+                  return (
+                    <HomeDayRow
+                      key={item.id}
+                      day={item}
+                      meta={rowMeta}
+                      showSeparator={index < otherDays.length - 1}
+                      onPress={() => openPreview(activePlan, item)}
+                      testID={`home-day-row-${index}`}
+                    />
+                  );
+                })}
               </Animated.View>
             ) : null}
           </View>
         ) : (
           <PaperEmpty
             testID="home-empty"
-            subject="Plan"
-            caption="Start from a plan"
+            title="Next Workout"
+            subject="No plan yet"
+            caption="Build your week once. Then just press Start."
             action={{ title: 'Create plan', onPress: createPlan, testID: 'home-create-plan' }}
           />
         )}
@@ -310,17 +387,4 @@ function WeekDot({ filled, pulse }: { filled: boolean; pulse: boolean }) {
       ]}
     />
   );
-}
-
-function estimateDayMinutes(day: WorkoutDay): number | null {
-  if (day.exercises.length === 0) {
-    return null;
-  }
-  const minutes = day.exercises.reduce((sum, exercise) => {
-    if (durationIsMinutes(exercise)) {
-      return sum + (Math.round((exercise.durationSeconds ?? 0) / 60) || 20);
-    }
-    return sum + setCount(exercise) * 2.5;
-  }, 0);
-  return Math.max(1, Math.round(minutes));
 }

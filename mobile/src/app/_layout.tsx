@@ -293,7 +293,7 @@ function RootNav() {
       <Stack.Screen
         name="exercises"
         options={{
-          presentation: 'fullScreenModal',
+          // A step in the editor stack: a push, so the back chevron and edge swipe agree.
           headerShown: false,
           title: 'Exercises',
         }}

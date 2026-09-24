@@ -5,40 +5,46 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { useTheme } from '@/theme/theme-context';
+import { estimateDayMinutes, formatDoneLabel, formatExerciseCount, lastDoneAt } from '@/domain/day-facts';
 import { formatPlanMetric } from '@/domain/helpers';
-import type { WorkoutDay } from '@/domain/types';
+import type { LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
+import { sessionIsFor, useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * "What is this day": name + prescription per row, then Start (or Resume).
+ * Rows stay read-only (DP-1): the prescription is already on the row, and last time / best
+ * belong in the log where they're actionable. A tap target per row would be a hidden
+ * affordance on a sheet whose one job is Start.
+ */
 export function DayPreviewBody({
   day,
+  meta,
+  actionTitle = 'Start',
   onStart,
 }: {
   day: WorkoutDay;
+  meta: string;
+  actionTitle?: string;
   onStart: () => void;
 }) {
-  const { type } = useTheme();
+  const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
   const count = day.exercises.length;
-  const meta = `${count} ${count === 1 ? 'exercise' : 'exercises'}`;
 
   return (
     <>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          gap: 12,
-          paddingBottom: 12,
-        }}>
-        <Text style={[type.title, { flexShrink: 1 }]} numberOfLines={1}>
+      <View style={{ gap: 4, paddingBottom: 12 }}>
+        <Text style={type.title} numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {day.title}
         </Text>
-        <Text style={type.kicker}>{meta}</Text>
+        <Text style={[type.kicker, { color: colors.tertiaryLabel }]} testID="preview-meta">
+          {meta}
+        </Text>
       </View>
       <ScrollView
         bounces={false}
@@ -51,16 +57,36 @@ export function DayPreviewBody({
             <Text style={type.row} numberOfLines={1}>
               {exercise.name}
             </Text>
-            <Text style={type.kicker}>{formatPlanMetric(exercise)}</Text>
+            <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>
+              {formatPlanMetric(exercise)}
+            </Text>
           </View>
         ))}
       </ScrollView>
       {count > 0 ? (
-        <Button title="Start" variant="black" testID="preview-start" onPress={onStart} />
+        <Button
+          title={actionTitle}
+          variant="black"
+          testID={actionTitle === 'Resume' ? 'preview-resume' : 'preview-start'}
+          onPress={onStart}
+        />
       ) : null}
       <View style={{ height: Math.max(insets.bottom, 10) }} />
     </>
   );
+}
+
+/** DP-2: `6 exercises · ~48 min · Done Thu 17`. */
+function previewMeta(plan: WorkoutPlan, day: WorkoutDay, history: LoggedWorkout[]): string {
+  const minutes = estimateDayMinutes(plan, day, history);
+  const doneAt = lastDoneAt(plan, day.id, history);
+  return [
+    formatExerciseCount(day.exercises.length),
+    minutes != null ? `~${minutes} min` : '',
+    doneAt ? formatDoneLabel(doneAt) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 export function DayPreviewScreen() {
@@ -69,7 +95,8 @@ export function DayPreviewScreen() {
   const params = useLocalSearchParams<{ planId?: string | string[]; dayId?: string | string[] }>();
   const planId = firstParam(params.planId);
   const dayId = firstParam(params.dayId);
-  const { plans, activePlan } = useWorkoutStore();
+  const { plans, activePlan, workoutHistory, activeSession } = useWorkoutStore();
+  const startDay = useStartDay();
   const plan = plans.find((item) => item.id === planId) ?? activePlan;
   const day = plan?.days.find((item) => item.id === dayId);
 
@@ -86,14 +113,9 @@ export function DayPreviewScreen() {
       <AnimatedSheet hosted visible onClose={() => router.back()} dragFrom="sheet">
         <DayPreviewBody
           day={day}
-          onStart={() => {
-            const firstExerciseId = day.exercises[0]?.id;
-            router.replace(
-              `/log?planId=${plan.id}&dayId=${day.id}${
-                firstExerciseId ? `&exerciseId=${encodeURIComponent(firstExerciseId)}` : ''
-              }`,
-            );
-          }}
+          meta={previewMeta(plan, day, workoutHistory)}
+          actionTitle={sessionIsFor(activeSession, plan.id, day.id) ? 'Resume' : 'Start'}
+          onStart={() => startDay(plan, day, { replace: true })}
         />
       </AnimatedSheet>
       <Stack.Screen options={{ headerShown: false, title: day.title }} />

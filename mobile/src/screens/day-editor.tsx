@@ -16,7 +16,8 @@ import { PaperBack } from '@/components/paper';
 import { radius } from '@/constants/theme';
 import { EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
-import { formatPlanMetric, setCount, withDay } from '@/domain/helpers';
+import { formatPlanMetric, withDay } from '@/domain/helpers';
+import { prescriptionFields, type PrescriptionField } from '@/domain/prescription-fields';
 import type { ExercisePrescription } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -24,7 +25,11 @@ const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
 
 export function DayEditorScreen() {
   const { colors, type } = useTheme();
-  const { planId, dayId } = useLocalSearchParams<{ planId: string; dayId: string }>();
+  const { planId, dayId, focus } = useLocalSearchParams<{
+    planId: string;
+    dayId: string;
+    focus?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -39,6 +44,7 @@ export function DayEditorScreen() {
 
   const exerciseCount = day.exercises.length;
   const exerciseMeta = exerciseCount === 1 ? '1 exercise' : `${exerciseCount} exercises`;
+  const lastIndex = exerciseCount - 1;
 
   const collapseConfigurator = () => {
     setEditingId(null);
@@ -69,6 +75,21 @@ export function DayEditorScreen() {
           exercise.id === exerciseId ? { ...exercise, ...patch } : exercise,
         ),
       })),
+    );
+  };
+
+  const moveExercise = (exerciseId: string, delta: -1 | 1) => {
+    updatePlan(
+      withDay(plan, day.id, (current) => {
+        const index = current.exercises.findIndex((item) => item.id === exerciseId);
+        const target = index + delta;
+        if (index < 0 || target < 0 || target >= current.exercises.length) {
+          return current;
+        }
+        const exercises = [...current.exercises];
+        [exercises[index], exercises[target]] = [exercises[target], exercises[index]];
+        return { ...current, exercises };
+      }),
     );
   };
 
@@ -131,14 +152,21 @@ export function DayEditorScreen() {
           placeholder="Day"
           placeholderTextColor={colors.tertiaryLabel}
           accessibilityLabel="Day name"
+          autoFocus={focus === 'title'}
+          selectTextOnFocus={focus === 'title'}
+          returnKeyType="done"
+          submitBehavior="blurAndSubmit"
           scrollEnabled={false}
+          maxFontSizeMultiplier={1.2}
           style={[type.displayDay, { padding: 0, margin: 0 }]}
         />
-        <Pressable accessible={false} onPress={editingId ? collapseConfigurator : undefined}>
-          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 4 }]}>
-            {exerciseMeta}
-          </Text>
-        </Pressable>
+        {exerciseCount > 0 ? (
+          <Pressable accessible={false} onPress={editingId ? collapseConfigurator : undefined}>
+            <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 4 }]}>
+              {exerciseMeta}
+            </Text>
+          </Pressable>
+        ) : null}
         <ScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
@@ -161,12 +189,13 @@ export function DayEditorScreen() {
                 expanded={exercise.id === editingId}
                 reduceMotion={Boolean(reduceMotion)}
                 onToggle={() => toggleExercise(exercise.id)}
-                onChangeSets={(sets) => updateExercise(exercise.id, { sets, repScheme: null })}
-                onChangeReps={(reps) => updateExercise(exercise.id, { reps, repScheme: null })}
+                onChange={(patch) => updateExercise(exercise.id, patch)}
+                onMoveUp={index > 0 ? () => moveExercise(exercise.id, -1) : undefined}
+                onMoveDown={index < lastIndex ? () => moveExercise(exercise.id, 1) : undefined}
                 onRemove={() => removeExercise(exercise.id)}
               />
             ))}
-            <Animated.View layout={LIST_LAYOUT}>
+            <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
               <EditorActionRow
                 title="Add exercise"
                 symbol="plus"
@@ -176,7 +205,7 @@ export function DayEditorScreen() {
               />
             </Animated.View>
             {plan.days.length > 1 ? (
-              <Animated.View layout={LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
                 <EditorActionRow
                   title="Remove day"
                   symbol="trash"
@@ -199,8 +228,9 @@ function ExercisePrescribeRow({
   expanded,
   reduceMotion,
   onToggle,
-  onChangeSets,
-  onChangeReps,
+  onChange,
+  onMoveUp,
+  onMoveDown,
   onRemove,
 }: {
   exercise: ExercisePrescription;
@@ -208,13 +238,15 @@ function ExercisePrescribeRow({
   expanded: boolean;
   reduceMotion: boolean;
   onToggle: () => void;
-  onChangeSets: (sets: number) => void;
-  onChangeReps: (reps: number) => void;
+  onChange: (patch: Partial<ExercisePrescription>) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onRemove: () => void;
 }) {
   const { colors, type } = useTheme();
+  const fields = prescriptionFields(exercise);
   return (
-    <Animated.View layout={LIST_LAYOUT}>
+    <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${exercise.name}, ${formatPlanMetric(exercise)}`}
@@ -232,7 +264,7 @@ function ExercisePrescribeRow({
           {expanded ? null : (
             <Animated.View
               entering={reduceMotion ? FadeIn.duration(160) : FadeIn.duration(180).easing(EASE_OUT)}
-              layout={LIST_LAYOUT}>
+              layout={reduceMotion ? undefined : LIST_LAYOUT}>
               <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
                 {formatPlanMetric(exercise)}
               </Text>
@@ -257,39 +289,87 @@ function ExercisePrescribeRow({
               ? FadeOut.duration(140)
               : FadeOutUp.duration(180).easing(EASE_OUT)
           }
-          layout={LIST_LAYOUT}
+          layout={reduceMotion ? undefined : LIST_LAYOUT}
           style={{ gap: 12, paddingBottom: 14 }}>
           <View style={{ flexDirection: 'row', gap: 12 }}>
-            <PrescribeField label="Sets" value={setCount(exercise)} onCommit={onChangeSets} />
-            <PrescribeField
-              label="Reps"
-              value={Math.max(1, exercise.reps || 8)}
-              onCommit={onChangeReps}
-            />
+            {fields.map((field) => (
+              <PrescribeField
+                key={field.key}
+                field={field}
+                exerciseName={exercise.name}
+                onCommit={(value) => onChange(field.patch(value))}
+              />
+            ))}
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${exercise.name}`}
-            onPress={onRemove}
-            style={({ pressed }) => ({ paddingVertical: 4, opacity: pressed ? 0.55 : 1 })}>
-            <Text style={[type.kicker, { color: colors.systemRed }]}>Remove</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+            <RowAction
+              title="Remove"
+              accessibilityLabel={`Remove ${exercise.name}`}
+              color={colors.systemRed}
+              onPress={onRemove}
+            />
+            {onMoveUp ? (
+              <RowAction
+                title="Move up"
+                accessibilityLabel={`Move ${exercise.name} up`}
+                color={colors.label}
+                onPress={onMoveUp}
+              />
+            ) : null}
+            {onMoveDown ? (
+              <RowAction
+                title="Move down"
+                accessibilityLabel={`Move ${exercise.name} down`}
+                color={colors.label}
+                onPress={onMoveDown}
+              />
+            ) : null}
+          </View>
         </Animated.View>
       ) : null}
     </Animated.View>
   );
 }
 
+function RowAction({
+  title,
+  accessibilityLabel,
+  color,
+  onPress,
+}: {
+  title: string;
+  accessibilityLabel: string;
+  color: string;
+  onPress: () => void;
+}) {
+  const { type } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 44,
+        justifyContent: 'center',
+        opacity: pressed ? 0.55 : 1,
+      })}>
+      <Text style={[type.kicker, { color }]}>{title}</Text>
+    </Pressable>
+  );
+}
+
 function PrescribeField({
-  label,
-  value,
+  field,
+  exerciseName,
   onCommit,
 }: {
-  label: string;
-  value: number;
+  field: PrescriptionField;
+  exerciseName: string;
   onCommit: (value: number) => void;
 }) {
   const { colors, type } = useTheme();
+  const { label, value, min, max } = field;
+  const maxDigits = String(max).length;
   const [text, setText] = useState(String(value));
   const focused = useRef(false);
 
@@ -300,7 +380,7 @@ function PrescribeField({
   }, [value]);
 
   const commit = (raw: string) => {
-    const next = Math.min(99, Math.max(1, parseInt(raw, 10) || 1));
+    const next = Math.min(max, Math.max(min, parseInt(raw, 10) || min));
     setText(String(next));
     onCommit(next);
   };
@@ -312,7 +392,10 @@ function PrescribeField({
         value={text}
         keyboardType="number-pad"
         selectTextOnFocus
-        accessibilityLabel={label}
+        accessibilityLabel={`${exerciseName}, ${field.a11yLabel}`}
+        accessibilityHint={`${min} to ${max}`}
+        maxFontSizeMultiplier={1.3}
+        testID={`prescribe-field-${field.key}`}
         onFocus={() => {
           focused.current = true;
         }}
@@ -321,15 +404,16 @@ function PrescribeField({
           commit(text);
         }}
         onChangeText={(next) => {
-          const digits = next.replace(/[^0-9]/g, '').slice(0, 2);
+          const digits = next.replace(/[^0-9]/g, '').slice(0, maxDigits);
           setText(digits);
           const parsed = parseInt(digits, 10);
-          if (parsed >= 1 && parsed <= 99) {
+          if (parsed >= min && parsed <= max) {
             onCommit(parsed);
           }
         }}
         style={{
-          height: 44,
+          minHeight: 44,
+          paddingVertical: 6,
           borderRadius: radius.md,
           borderCurve: 'continuous',
           backgroundColor: colors.secondarySystemBackground,

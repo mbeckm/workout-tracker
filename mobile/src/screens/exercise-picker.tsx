@@ -36,7 +36,7 @@ import { Button } from '@/components/button';
 import { PaperBack } from '@/components/paper';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, withDay } from '@/domain/helpers';
-import type { ExercisePrescription } from '@/domain/types';
+import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/types';
 import { newId } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -45,6 +45,22 @@ function addTitle(count: number): string {
 }
 
 type PickerRow = ExercisePrescription & { listKey: string };
+
+/** EP-2: how a custom exercise is tracked. Meta shows what the plan row will read. */
+const CUSTOM_KINDS = [
+  { key: 'weight', title: 'Weight × reps', meta: '3 × 12, load in the gym', exerciseType: 'strength', trackingMode: 'weightAndReps' },
+  { key: 'reps', title: 'Reps only', meta: '3 × 12, body weight', exerciseType: 'strength', trackingMode: 'reps' },
+  { key: 'time', title: 'Time', meta: '3 × 30s holds', exerciseType: 'stability', trackingMode: 'duration' },
+  { key: 'cardio', title: 'Cardio (minutes)', meta: '20 min', exerciseType: 'cardio', trackingMode: 'duration' },
+] as const satisfies readonly {
+  key: string;
+  title: string;
+  meta: string;
+  exerciseType: CustomExerciseDefinition['exerciseType'];
+  trackingMode: CustomExerciseDefinition['trackingMode'];
+}[];
+
+type CustomKind = (typeof CUSTOM_KINDS)[number];
 
 type PickerSection = {
   title: string;
@@ -80,6 +96,8 @@ export function ExercisePickerScreen() {
   const [selected, setSelected] = useState<ExercisePrescription[]>([]);
   const [recent, setRecent] = useState<ExercisePrescription[]>([]);
   const [activeChip, setActiveChip] = useState<ExerciseJumpChipTitle | null>(null);
+  /** The query whose Create row is open on the tracking choice; closes when the query changes. */
+  const [choosingFor, setChoosingFor] = useState<string | null>(null);
   const [remote, setRemote] = useState<{
     query: string;
     exercises: ExercisePrescription[];
@@ -167,23 +185,17 @@ export function ExercisePickerScreen() {
     return withListKeys([{ title: '', data: results }]);
   }, [browseSections, isSearching, results]);
 
-  useEffect(() => {
-    if (isSearching) {
-      setActiveChip(null);
-      return;
-    }
-    setActiveChip((current) => {
-      if (current && jumpChips.includes(current)) {
-        return current;
-      }
-      return jumpChips[0] ?? null;
-    });
-  }, [isSearching, jumpChips]);
+  const shownChip: ExerciseJumpChipTitle | null = isSearching
+    ? null
+    : activeChip && jumpChips.includes(activeChip)
+      ? activeChip
+      : (jumpChips[0] ?? null);
 
   const canCreateCustom =
     trimmedQuery.length >= 2 &&
     !results.some((item) => item.name.toLowerCase() === trimmedQuery.toLowerCase());
   const showNoResults = isSearching && results.length === 0;
+  const choosingKind = canCreateCustom && choosingFor === trimmedQuery;
   const canAdd = selected.length > 0 && Boolean(planId && dayId);
 
   const jumpToSection = (title: ExerciseJumpChipTitle) => {
@@ -274,39 +286,30 @@ export function ExercisePickerScreen() {
     router.replace(`/prescribe?planId=${plan.id}&dayId=${day.id}`);
   };
 
-  const createCustom = () => {
+  const createCustom = (kind: CustomKind) => {
     const name = exerciseCatalogDisplayText(trimmedQuery);
     if (name.length < 2) {
       return;
     }
-    const id = newId();
-    saveCustomExercise({
-      id,
+    const definition: CustomExerciseDefinition = {
+      id: newId(),
       name,
       equipment: 'Other',
       muscle: 'Other',
-      exerciseType: 'strength',
-      trackingMode: 'weightAndReps',
+      exerciseType: kind.exerciseType,
+      trackingMode: kind.trackingMode,
       createdAt: new Date().toISOString(),
       isArchived: false,
-    });
-    const created = offlineCatalogExercises([
-      ...customExercises,
-      {
-        id,
-        name,
-        equipment: 'Other',
-        muscle: 'Other',
-        exerciseType: 'strength',
-        trackingMode: 'weightAndReps',
-        createdAt: new Date().toISOString(),
-        isArchived: false,
-      },
-    ]).find((item) => item.customExerciseID === id);
+    };
+    saveCustomExercise(definition);
+    const created = offlineCatalogExercises([...customExercises, definition]).find(
+      (item) => item.customExerciseID === definition.id,
+    );
     if (created) {
       setSelected((current) => [...current, clonePrescription(created)]);
       void recordExerciseSelection(created);
     }
+    setChoosingFor(null);
     setQuery('');
   };
 
@@ -350,9 +353,14 @@ export function ExercisePickerScreen() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          {isOn && !inDay ? (
-            <SymbolView name="checkmark" tintColor={colors.label} size={15} weight="bold" />
-          ) : null}
+          {inDay ? null : (
+            <SymbolView
+              name={isOn ? 'checkmark.circle.fill' : 'circle'}
+              tintColor={isOn ? colors.label : colors.systemGray4}
+              size={22}
+              weight="regular"
+            />
+          )}
         </View>
       </Pressable>
     );
@@ -375,7 +383,8 @@ export function ExercisePickerScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            height: 36,
+            minHeight: 36,
+            paddingVertical: 7,
             paddingHorizontal: 12,
             borderRadius: 10,
             backgroundColor: colors.secondarySystemBackground,
@@ -391,6 +400,9 @@ export function ExercisePickerScreen() {
             onChangeText={setQuery}
             placeholder="Search exercises"
             placeholderTextColor={colors.tertiaryLabel}
+            accessibilityLabel="Search exercises"
+            returnKeyType="search"
+            testID="exercises-search"
             autoCorrect={false}
             autoCapitalize="none"
             clearButtonMode="never"
@@ -435,15 +447,16 @@ export function ExercisePickerScreen() {
             style={{ flexGrow: 0, marginTop: 12 }}
             contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
             {jumpChips.map((title) => {
-              const isActive = activeChip === title;
+              const isActive = shownChip === title;
               return (
                 <Pressable
                   key={title}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isActive }}
+                  hitSlop={{ top: 6, bottom: 6 }}
                   onPress={() => jumpToSection(title)}
                   style={({ pressed }) => ({
-                    height: 32,
+                    minHeight: 32,
                     paddingHorizontal: 14,
                     borderRadius: 16,
                     alignItems: 'center',
@@ -478,28 +491,9 @@ export function ExercisePickerScreen() {
           onScroll={onListScroll}
           scrollEventThrottle={16}>
           {showNoResults ? (
-            <View style={{ gap: 16, paddingBottom: canCreateCustom ? 8 : 0 }}>
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>
-                No exercises match “{exerciseCatalogDisplayText(trimmedQuery)}.”
-              </Text>
-              {canCreateCustom ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={createCustom}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    minHeight: 44,
-                    opacity: pressed ? 0.7 : 1,
-                  })}>
-                  <SymbolView name="plus" tintColor={colors.label} size={17} weight="semibold" />
-                  <Text style={[type.row, { flexShrink: 1 }]} numberOfLines={1}>
-                    Create “{exerciseCatalogDisplayText(trimmedQuery)}”
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
+            <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>
+              No exercises match “{exerciseCatalogDisplayText(trimmedQuery)}.”
+            </Text>
           ) : null}
 
           {sections.map((section, sectionIndex) => (
@@ -528,6 +522,69 @@ export function ExercisePickerScreen() {
               {section.data.map((item) => renderRow(item))}
             </View>
           ))}
+
+          {isSearching && canCreateCustom ? (
+            // EP-1: always the last peer row of the results, not only on zero matches.
+            <View style={{ gap: 8 }} testID="exercises-create-block">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: choosingKind }}
+                accessibilityLabel={`Create ${exerciseCatalogDisplayText(trimmedQuery)}`}
+                accessibilityHint="Choose how it's tracked"
+                testID="exercises-create"
+                onPress={() => setChoosingFor(choosingKind ? null : trimmedQuery)}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  minHeight: 44,
+                  paddingVertical: 8,
+                  opacity: pressed ? 0.7 : 1,
+                })}>
+                <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                  <Text style={type.row} numberOfLines={1}>
+                    Create “{exerciseCatalogDisplayText(trimmedQuery)}”
+                  </Text>
+                  <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
+                    {choosingKind ? 'How is it tracked?' : 'Your own exercise'}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    flexShrink: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <SymbolView name="plus" tintColor={colors.label} size={17} weight="semibold" />
+                </View>
+              </Pressable>
+              {choosingKind
+                ? CUSTOM_KINDS.map((kind) => (
+                    <Pressable
+                      key={kind.key}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Track as ${kind.title}`}
+                      testID={`exercises-create-${kind.key}`}
+                      onPress={() => createCustom(kind)}
+                      style={({ pressed }) => ({
+                        minHeight: 44,
+                        paddingVertical: 8,
+                        gap: 2,
+                        opacity: pressed ? 0.7 : 1,
+                      })}>
+                      <Text style={type.row} numberOfLines={1}>
+                        {kind.title}
+                      </Text>
+                      <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
+                        {kind.meta}
+                      </Text>
+                    </Pressable>
+                  ))
+                : null}
+            </View>
+          ) : null}
         </ScrollView>
 
         <View style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: 8 }}>
