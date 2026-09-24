@@ -1,9 +1,33 @@
-import type { BodyMetricKey, BodyCheckIn } from '@/domain/check-in';
-import { estimatedOneRM } from '@/domain/helpers';
+import {
+  bodyMetricForDisplay,
+  type BodyMetricKey,
+  type BodyCheckIn,
+  type WeightUnits,
+} from '@/domain/check-in';
+import { estimatedOneRM, formatLoggedSetLine } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
 
 export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
+
+export const PROGRESS_WINDOWS: ProgressWindow[] = ['3M', '6M', 'YTD', 'All'];
+
+/**
+ * Proposed Pro boundary for the follow-up gating work (not wired yet): free keeps the recent
+ * view (3M, about 90 days); Trim Pro unlocks the long view. YTD is Pro too, because from
+ * spring on it reaches further back than 3M. Feed `isProgressWindowLocked` to
+ * `WindowChips.locked`.
+ */
+export const FREE_PROGRESS_WINDOWS: readonly ProgressWindow[] = ['3M'];
+
+export function isProgressWindowLocked(window: ProgressWindow, isPro: boolean): boolean {
+  return !isPro && !FREE_PROGRESS_WINDOWS.includes(window);
+}
+
+/** Default chip: the widest window the user can open, capped at 6M. */
+export function defaultProgressWindow(isPro: boolean): ProgressWindow {
+  return isPro ? '6M' : '3M';
+}
 
 export type ProgressPoint = {
   date: string;
@@ -22,7 +46,10 @@ export type TrackedLift = {
   name: string;
   latestOneRM: number | null;
   sparkline: number[];
+  /** Best set of the latest session (`85 × 8`), not an e1RM: it reads as what was lifted. */
   indexValue: string;
+  /** VoiceOver phrasing of `indexValue`. */
+  spokenValue: string;
 };
 
 function isAddedWeightLift(name: string): boolean {
@@ -51,24 +78,29 @@ function liftIndexPresentation(
   name: string,
   history: LoggedWorkout[],
   units: 'kg' | 'lbs',
-): { indexValue: string; sparkline: number[]; latestOneRM: number | null } {
+): { indexValue: string; spokenValue: string; sparkline: number[]; latestOneRM: number | null } {
   const series = liftSeriesFromHistory(name, history);
 
   if (isAddedWeightLift(name)) {
     const weights = series.map((point) => point.bestSet.weight).filter((value) => value != null);
     const latestWeight = weights.length > 0 ? weights[weights.length - 1]! : null;
+    const indexValue = latestWeight != null ? formatAddedWeightIndex(latestWeight, units) : '—';
     return {
-      indexValue: latestWeight != null ? formatAddedWeightIndex(latestWeight, units) : '—',
+      indexValue,
+      spokenValue: latestWeight != null ? `plus ${latestWeight} ${units}` : 'no sets yet',
       sparkline: weights.slice(-8),
       latestOneRM: null,
     };
   }
 
-  const latestOneRM = series.length > 0 ? series[series.length - 1].oneRM : null;
+  const latest = series.length > 0 ? series[series.length - 1] : null;
   return {
-    indexValue: latestOneRM != null ? formatProgressOneRM(latestOneRM, units) : '—',
+    indexValue: latest ? formatLoggedSetLine(latest.bestSet) : '—',
+    spokenValue: latest
+      ? `best set ${latest.bestSet.weight} ${units} for ${latest.bestSet.reps} reps`
+      : 'no sets yet',
     sparkline: series.slice(-8).map((point) => point.oneRM),
-    latestOneRM,
+    latestOneRM: latest?.oneRM ?? null,
   };
 }
 
@@ -154,6 +186,16 @@ function windowStart(window: ProgressWindow, now = new Date()): Date | null {
   const months = window === '3M' ? 3 : 6;
   start.setMonth(start.getMonth() - months);
   return start;
+}
+
+/** True when `dateIso` falls inside `window` (same bounds as `filterPointsByWindow`). */
+export function isInProgressWindow(
+  dateIso: string,
+  window: ProgressWindow,
+  now = new Date(),
+): boolean {
+  const start = windowStart(window, now);
+  return start == null || new Date(dateIso).getTime() >= start.getTime();
 }
 
 export function filterPointsByWindow(
@@ -295,21 +337,27 @@ export function collectTrackedLifts(
     return left.name.localeCompare(right.name);
   });
 
-  return lifts.map(({ name, latestOneRM, sparkline, indexValue }) => ({
+  return lifts.map(({ name, latestOneRM, sparkline, indexValue, spokenValue }) => ({
     name,
     latestOneRM,
     sparkline,
     indexValue,
+    spokenValue,
   }));
 }
 
-export function bodyMetricSeries(checkIns: BodyCheckIn[], key: BodyMetricKey): ProgressPoint[] {
+/** Values come back in the user's units (bodyweight is stored in kg). */
+export function bodyMetricSeries(
+  checkIns: BodyCheckIn[],
+  key: BodyMetricKey,
+  units: WeightUnits = 'kg',
+): ProgressPoint[] {
   return [...checkIns]
     .filter((checkIn) => checkIn[key] != null)
     .sort((left, right) => left.recordedAt.localeCompare(right.recordedAt))
     .map((checkIn) => ({
       date: checkIn.recordedAt,
-      value: checkIn[key] as number,
+      value: bodyMetricForDisplay(key, checkIn[key] as number, units),
     }));
 }
 
@@ -330,7 +378,7 @@ export function formatCheckInDate(iso: string): string {
 }
 
 export function formatProgressShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return new Date(iso).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
   });
