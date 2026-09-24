@@ -10,6 +10,7 @@ import { PROGRESS_INDEX_BODY_METRICS } from '@/domain/check-in';
 import {
   bodyMetricSeries,
   collectTrackedLifts,
+  FREE_PROGRESS_WINDOWS,
   formatProgressShortDate,
   formatProgressWeight,
   latestCheckIn,
@@ -129,7 +130,8 @@ const LIFTS_COLLAPSED = 5;
 export function ProgressTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { activePlan, bodyCheckIns, saveCheckIn, units, workoutHistory } = useWorkoutStore();
+  const { activePlan, bodyCheckIns, isPro, saveCheckIn, units, workoutHistory } =
+    useWorkoutStore();
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [liftsExpanded, setLiftsExpanded] = useState(false);
 
@@ -140,9 +142,12 @@ export function ProgressTab() {
     }
   }, []);
 
+  // Free: each lift's sparkline stays inside the window lift detail opens (3M). Latest values
+  // stay, as on the log screen's last time.
   const lifts = useMemo(
-    () => collectTrackedLifts(workoutHistory, activePlan, units),
-    [activePlan, units, workoutHistory],
+    () =>
+      collectTrackedLifts(workoutHistory, activePlan, units, isPro ? null : FREE_PROGRESS_WINDOWS[0]),
+    [activePlan, isPro, units, workoutHistory],
   );
   const latest = useMemo(() => latestCheckIn(bodyCheckIns), [bodyCheckIns]);
 
@@ -159,14 +164,15 @@ export function ProgressTab() {
               : `${latestPoint.value} cm`;
         return {
           ...metric,
-          sparkline: series.slice(-8).map((point) => point.value),
+          // Body trends are Trim Pro: free rows keep the latest value and date, no line.
+          sparkline: isPro ? series.slice(-8).map((point) => point.value) : [],
           value,
           caption: latestPoint
             ? `Last ${formatProgressShortDate(latestPoint.date)}`
             : undefined,
         };
       }),
-    [bodyCheckIns, units],
+    [bodyCheckIns, isPro, units],
   );
 
   // Plan order already puts the lifts you train first; the tail waits behind a peer row.

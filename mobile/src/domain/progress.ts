@@ -13,10 +13,9 @@ export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
 export const PROGRESS_WINDOWS: ProgressWindow[] = ['3M', '6M', 'YTD', 'All'];
 
 /**
- * Proposed Pro boundary for the follow-up gating work (not wired yet): free keeps the recent
- * view (3M, about 90 days); Trim Pro unlocks the long view. YTD is Pro too, because from
- * spring on it reaches further back than 3M. Feed `isProgressWindowLocked` to
- * `WindowChips.locked`.
+ * Pro boundary: free keeps the recent view (3M, about 90 days); Trim Pro unlocks the long
+ * view. YTD is Pro too, because from spring on it reaches further back than 3M.
+ * `isProgressWindowLocked` feeds `WindowChips.locked` on lift and body detail.
  */
 export const FREE_PROGRESS_WINDOWS: readonly ProgressWindow[] = ['3M'];
 
@@ -78,8 +77,14 @@ function liftIndexPresentation(
   name: string,
   history: LoggedWorkout[],
   units: 'kg' | 'lbs',
+  sparklineWindow: ProgressWindow | null,
 ): { indexValue: string; spokenValue: string; sparkline: number[]; latestOneRM: number | null } {
   const series = liftSeriesFromHistory(name, history);
+  // The sparkline never reaches further back than the detail screen can open.
+  const sparkSeries =
+    sparklineWindow == null
+      ? series
+      : series.filter((point) => isInProgressWindow(point.date, sparklineWindow));
 
   if (isAddedWeightLift(name)) {
     const weights = series.map((point) => point.bestSet.weight).filter((value) => value != null);
@@ -88,7 +93,10 @@ function liftIndexPresentation(
     return {
       indexValue,
       spokenValue: latestWeight != null ? `plus ${latestWeight} ${units}` : 'no sets yet',
-      sparkline: weights.slice(-8),
+      sparkline: sparkSeries
+        .map((point) => point.bestSet.weight)
+        .filter((value) => value != null)
+        .slice(-8),
       latestOneRM: null,
     };
   }
@@ -99,7 +107,7 @@ function liftIndexPresentation(
     spokenValue: latest
       ? `best set ${latest.bestSet.weight} ${units} for ${latest.bestSet.reps} reps`
       : 'no sets yet',
-    sparkline: series.slice(-8).map((point) => point.oneRM),
+    sparkline: sparkSeries.slice(-8).map((point) => point.oneRM),
     latestOneRM: latest?.oneRM ?? null,
   };
 }
@@ -306,17 +314,22 @@ function planExerciseOrder(plan: WorkoutPlan | null | undefined): string[] {
   return order;
 }
 
+/**
+ * `sparklineWindow` clamps each row's sparkline to a window (free users: 3M). The index value
+ * stays the latest best set, which the log screen already shows as last time.
+ */
 export function collectTrackedLifts(
   history: LoggedWorkout[],
   activePlan?: WorkoutPlan | null,
   units: 'kg' | 'lbs' = 'kg',
+  sparklineWindow: ProgressWindow | null = null,
 ): TrackedLift[] {
   const names = exerciseNamesFromHistory(history);
   const planOrder = planExerciseOrder(activePlan);
   const planRank = new Map(planOrder.map((key, index) => [key, index]));
 
   const lifts = [...names.entries()].map(([key, name]) => {
-    const presentation = liftIndexPresentation(name, history, units);
+    const presentation = liftIndexPresentation(name, history, units, sparklineWindow);
 
     return { key, name, ...presentation };
   });
