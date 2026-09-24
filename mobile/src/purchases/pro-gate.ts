@@ -5,7 +5,16 @@ import { router } from 'expo-router';
  * To gate something new: add a reason here, call `requirePro(reason)` at the call site,
  * and fill in the per-reason copy the compiler then asks for.
  */
-export const PRO_REASONS = ['post_workout', 'second_plan', 'switch_plan', 'settings'] as const;
+export const PRO_REASONS = [
+  'onboarding',
+  'post_workout',
+  'second_plan',
+  'switch_plan',
+  'progress_history',
+  'body_trends',
+  'targets',
+  'settings',
+] as const;
 
 export type ProReason = (typeof PRO_REASONS)[number];
 

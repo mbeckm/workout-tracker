@@ -13,8 +13,12 @@ import { useTheme } from '@/theme/theme-context';
 const PRO_FEATURES = ['More than one plan', 'Switch plans anytime'];
 
 const REASON_LEAD: Record<ProReason, string | null> = {
+  onboarding: null,
   second_plan: 'A second plan needs Trim Pro.',
   switch_plan: 'Switching plans needs Trim Pro.',
+  progress_history: 'Your full history needs Trim Pro.',
+  body_trends: 'Body trends need Trim Pro.',
+  targets: 'Next-session targets need Trim Pro.',
   post_workout: null,
   settings: null,
 };
