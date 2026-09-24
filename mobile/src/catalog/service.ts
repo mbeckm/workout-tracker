@@ -1,4 +1,4 @@
-import { BUNDLED_EXERCISES } from './bundled';
+import { BUNDLED_BY_ID, BUNDLED_EXERCISES, bundledSearchAliases } from './bundled';
 import {
   cachedItemsForQuery,
   recentCatalogItemIDs,
@@ -6,9 +6,11 @@ import {
   saveCatalogQuery,
   saveSelectedCatalogItem,
 } from './cache';
+import { CATALOG } from './config';
 import {
   catalogItemFromCustom,
   catalogItemFromPrescription,
+  catalogItemId,
   catalogKey,
   prescriptionFromCatalogItem,
 } from './prescription';
@@ -43,13 +45,72 @@ export function offlineCatalogExercises(
   ];
 }
 
+/** Name match, or a catalog-only alias match for bundled rows ("RDL", "OHP"). */
+function localItemMatches(item: ExerciseCatalogItem, query: string): boolean {
+  if (exerciseCatalogNameMatches(item.name, query)) {
+    return true;
+  }
+  if (item.customExerciseID) {
+    return false;
+  }
+  return bundledSearchAliases(item.sourceId).some((alias) => exerciseCatalogNameMatches(alias, query));
+}
+
 function matchingLocalItems(
   query: string,
   customExercises: CustomExerciseDefinition[],
 ): ExerciseCatalogItem[] {
   return [...customCatalogItems(customExercises), ...SEED_ITEMS].filter((item) =>
-    exerciseCatalogNameMatches(item.name, query),
+    localItemMatches(item, query),
   );
+}
+
+/** Bundled rows come back exactly as shipped (names, metadata); custom rows as in browse. */
+function localPrescription(item: ExerciseCatalogItem): ExercisePrescription {
+  const bundled = !item.customExerciseID && item.sourceId ? BUNDLED_BY_ID.get(item.sourceId) : undefined;
+  return bundled ?? prescriptionFromCatalogItem(item);
+}
+
+const LOCAL_RESULT_LIMIT = 50;
+
+/** Exact name or exact alias ("rdl" → Romanian Deadlift, "dip" → Dip). */
+function isExactLocalMatch(item: ExerciseCatalogItem, normalizedQuery: string): boolean {
+  if (normalizedExerciseCatalogKey(item.name) === normalizedQuery) {
+    return true;
+  }
+  return (
+    !item.customExerciseID &&
+    bundledSearchAliases(item.sourceId).some(
+      (alias) => normalizedExerciseCatalogKey(alias) === normalizedQuery,
+    )
+  );
+}
+
+/**
+ * Ranked search over bundled + custom exercises. Synchronous and offline: this is the
+ * whole production search while `CATALOG.remote` is off.
+ *
+ * Order: exact name/alias, then recently picked, then catalog order (custom first, then
+ * the bundled file order, which is curated big lifts first). Catalog order beats word
+ * position so "bench" leads with Flat Barbell Bench Press, not Bench Dip.
+ */
+export function searchLocalExercises(
+  query: string,
+  customExercises: CustomExerciseDefinition[],
+  recentItemIDs: Set<string> = new Set(),
+): ExercisePrescription[] {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return uniqueCatalogExercises(offlineCatalogExercises(customExercises));
+  }
+  const normalizedQuery = normalizedExerciseCatalogKey(trimmedQuery);
+  const tier = (item: ExerciseCatalogItem) =>
+    (isExactLocalMatch(item, normalizedQuery) ? 0 : 2) + (recentItemIDs.has(catalogItemId(item)) ? 0 : 1);
+  const ranked = matchingLocalItems(trimmedQuery, customExercises)
+    .map((item, index) => ({ item, index, tier: tier(item) }))
+    .sort((left, right) => left.tier - right.tier || left.index - right.index)
+    .map(({ item }) => localPrescription(item));
+  return uniqueCatalogExercises(ranked, trimmedQuery).slice(0, LOCAL_RESULT_LIMIT);
 }
 
 function noticeForError(error: ExerciseCatalogError): ExerciseCatalogNotice {
@@ -113,6 +174,14 @@ export async function searchExercises(
   const recentItemIDs = await recentCatalogItemIDs();
   if (signal?.aborted) {
     throw new ExerciseCatalogError('aborted');
+  }
+
+  if (CATALOG.remote === 'off') {
+    // Local-only: no network, no query cache writes, no notice.
+    return {
+      exercises: searchLocalExercises(trimmedQuery, customExercises, recentItemIDs),
+      notice: null,
+    };
   }
 
   try {
