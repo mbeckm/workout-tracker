@@ -8,7 +8,15 @@ import { LEGAL_URLS } from '@/constants/legal';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import type { ProPeriod } from './entitlement';
-import { ctaTitle, defaultOfferId, introLine, termsText, type ProOffer } from './offers';
+import {
+  ctaTitle,
+  defaultOfferId,
+  freeTrial,
+  introLine,
+  termsText,
+  type FreeTrial,
+  type ProOffer,
+} from './offers';
 import { settlePaywall, type PaywallOutcome, type ProReason } from './pro-gate';
 import {
   PURCHASE_COPY,
@@ -16,6 +24,7 @@ import {
   purchaseOffer,
   restorePurchases,
   trackPaywallImpression,
+  type OffersResult,
 } from './purchases';
 
 export type PaywallLoadState =
@@ -41,6 +50,8 @@ export type PaywallController = {
   ctaTitle: string;
   /** Intro/trial line for the selected offer, only when eligible. */
   introLine: string | null;
+  /** The selected offer's eligible free trial, or null. */
+  trial: FreeTrial | null;
   /** Auto-renewal disclosure for the selected offer. */
   termsText: string | null;
   purchase: () => void;
@@ -60,12 +71,27 @@ function openLegal(url: string) {
   void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url).catch(() => undefined));
 }
 
+export type PaywallControllerOptions = {
+  /**
+   * Development previews only: replaces the store load. Impressions and the
+   * one-time post-workout flag are left alone so a preview never consumes them.
+   */
+  loadOffers?: (reason: ProReason) => Promise<OffersResult>;
+};
+
 /**
  * The paywall state machine: load offers for the placement (with intro eligibility),
  * select, purchase, restore, track the impression, mark the post-workout offer shown,
  * and settle the gate exactly once on every exit. Views only render what this returns.
  */
-export function usePaywallController(reason: ProReason, session: string | undefined): PaywallController {
+export function usePaywallController(
+  reason: ProReason,
+  session: string | undefined,
+  options?: PaywallControllerOptions,
+): PaywallController {
+  /** Pass a stable (module-level) function; a new one per render reloads offers. */
+  const previewLoad = options?.loadOffers;
+  const isPreview = previewLoad != null;
   const router = useRouter();
   const { isPro, applyEntitlement, markPaywallShown } = useWorkoutStore();
   const [load, setLoad] = useState<PaywallLoadState>({ status: 'loading' });
@@ -111,7 +137,7 @@ export function usePaywallController(reason: ProReason, session: string | undefi
 
   useEffect(() => {
     let cancelled = false;
-    void loadProOffers(reason).then((result) => {
+    void (previewLoad ?? loadProOffers)(reason).then((result) => {
       if (cancelled) {
         return;
       }
@@ -129,17 +155,17 @@ export function usePaywallController(reason: ProReason, session: string | undefi
     return () => {
       cancelled = true;
     };
-  }, [reason, attempt]);
+  }, [reason, attempt, previewLoad]);
 
   // Offers are on screen: count the impression and consume the one-time post-workout offer.
   useEffect(() => {
-    if (load.status !== 'ready' || impressionRef.current) {
+    if (load.status !== 'ready' || impressionRef.current || isPreview) {
       return;
     }
     impressionRef.current = true;
     trackPaywallImpression(reason, load.offering);
     markPaywallShown(reason);
-  }, [load, reason, markPaywallShown]);
+  }, [load, reason, markPaywallShown, isPreview]);
 
   // Pro turned on while open (Ask to Buy approved, another device, entitlement sync): resume the gate.
   useEffect(() => {
@@ -227,6 +253,7 @@ export function usePaywallController(reason: ProReason, session: string | undefi
     canPurchase: selected != null && busy === null,
     ctaTitle: ctaTitle(selected),
     introLine: selected ? introLine(selected) : null,
+    trial: freeTrial(selected),
     termsText: selected ? termsText(selected) : null,
     purchase,
     restore,

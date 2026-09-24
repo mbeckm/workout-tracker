@@ -1,187 +1,260 @@
-import { Stack } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { PaperLink } from '@/components/paper';
+import { paywallPreviewLoader } from '@/components/paywall/dev-preview';
+import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
+import { TrialTimeline } from '@/components/paywall/trial-timeline';
+import { billedPerPeriod } from '@/purchases/offers';
+import { proFeaturesFor } from '@/purchases/pro-features';
 import type { ProReason } from '@/purchases/pro-gate';
 import { usePaywallController, type PaywallController } from '@/purchases/use-paywall-controller';
 import { useTheme } from '@/theme/theme-context';
 
-/** Only what Pro unlocks today. Keep in sync with the `requirePro` call sites. */
-const PRO_FEATURES = ['More than one plan', 'Switch plans anytime'];
-
-const REASON_LEAD: Record<ProReason, string | null> = {
-  onboarding: null,
-  second_plan: 'A second plan needs Trim Pro.',
-  switch_plan: 'Switching plans needs Trim Pro.',
-  progress_history: 'Your full history needs Trim Pro.',
-  body_trends: 'Body trends need Trim Pro.',
-  targets: 'Next-session targets need Trim Pro.',
-  post_workout: null,
-  settings: null,
+/** What happened, or what they tried to do. Facts; no hype. */
+const REASON_COPY: Record<ProReason, { headline: string; lead: string }> = {
+  onboarding: { headline: 'Your plan is ready.', lead: 'Logging stays free. Trim Pro adds more.' },
+  post_workout: { headline: 'First workout logged.', lead: 'Logging stays free. Trim Pro adds more.' },
+  second_plan: { headline: 'Add another plan.', lead: 'More than one plan is part of Trim Pro.' },
+  switch_plan: { headline: 'Switch plans.', lead: 'Switching plans is part of Trim Pro.' },
+  progress_history: { headline: 'See all of your progress.', lead: 'Older progress is part of Trim Pro.' },
+  body_trends: { headline: 'See your body trends.', lead: 'Body trends are part of Trim Pro.' },
+  targets: { headline: 'Get next-session targets.', lead: 'Targets are part of Trim Pro.' },
+  settings: { headline: 'Trim Pro', lead: 'Logging stays free. Pro adds more.' },
 };
 
 export function PaywallScreen({ reason, session }: { reason: ProReason; session?: string }) {
-  const paywall = usePaywallController(reason, session);
+  // Development only: `?mock=trial|notrial|unavailable|offline|loading` previews without StoreKit.
+  const { mock } = useLocalSearchParams<{ mock?: string | string[] }>();
+  const paywall = usePaywallController(reason, session, { loadOffers: paywallPreviewLoader(mock) });
   return <PaywallView paywall={paywall} />;
 }
 
-/** Renders controller state only. The conversion redesign replaces this component. */
 function PaywallView({ paywall }: { paywall: PaywallController }) {
   const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
-  const lead = REASON_LEAD[paywall.reason];
+  // Hairline over the footer only while content continues beneath it.
+  const [contentBelow, setContentBelow] = useState(false);
+  const scrollMetrics = useRef({ offset: 0, viewport: 0, content: 0 });
+  const updateEdge = (next: Partial<typeof scrollMetrics.current>) => {
+    const metrics = { ...scrollMetrics.current, ...next };
+    scrollMetrics.current = metrics;
+    setContentBelow(metrics.viewport > 0 && metrics.offset + metrics.viewport < metrics.content - 1);
+  };
+
+  const copy = REASON_COPY[paywall.reason];
+  const features = proFeaturesFor(paywall.reason);
   const busy = paywall.busy !== null;
+  const { load, selected, trial } = paywall;
+  const failed = paywall.loadError != null;
+
+  const select = (offer: (typeof paywall.offers)[number]) => {
+    if (offer.id === selected?.id) {
+      return;
+    }
+    if (process.env.EXPO_OS === 'ios') {
+      void Haptics.selectionAsync();
+    }
+    paywall.select(offer.id);
+  };
+
+  const ctaTitle =
+    paywall.busy === 'purchase'
+      ? 'Purchasing…'
+      : failed
+        ? 'Try again'
+        : load.status === 'loading'
+          ? 'Loading prices…'
+          : paywall.ctaTitle;
+
+  // Next to the button: what happens to money when it is tapped.
+  const ctaNote = selected
+    ? trial
+      ? `No payment due now. Then ${billedPerPeriod(selected)}.`
+      : `${billedPerPeriod(selected)}. Cancel anytime.`
+    : null;
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
+      <Stack.Screen options={{ headerShown: false, title: 'Trim Pro' }} />
       <ScrollView
-        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="never"
+        scrollEventThrottle={32}
+        onLayout={(event) => updateEdge({ viewport: event.nativeEvent.layout.height })}
+        onContentSizeChange={(_, height) => updateEdge({ content: height })}
+        onScroll={(event) => updateEdge({ offset: event.nativeEvent.contentOffset.y })}
         contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: 'space-between',
-          paddingTop: insets.top + 24,
+          paddingTop: insets.top + 32,
           paddingHorizontal: 24,
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingBottom: 24,
           gap: 32,
         }}>
-        <View style={{ gap: 10 }}>
-          <Text style={type.largeTitle} accessibilityRole="header">
-            Trim Pro
+        <View style={{ gap: 8 }}>
+          <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
+            {copy.headline}
           </Text>
-          {lead ? <Text style={type.kicker}>{lead}</Text> : null}
-          <View style={{ paddingTop: 12 }}>
-            {PRO_FEATURES.map((feature) => (
-              <View key={feature} style={{ paddingVertical: 8 }}>
-                <Text style={type.row}>{feature}</Text>
-              </View>
+          <Text style={[type.body, { color: colors.secondaryLabel }]}>{copy.lead}</Text>
+        </View>
+
+        <View style={{ gap: 16 }} testID="paywall-features">
+          {features.map((feature) => (
+            <View key={feature.id} accessible style={{ gap: 2 }}>
+              <Text style={[type.row, { fontWeight: '600' }]}>{feature.title}</Text>
+              <Text style={type.kicker}>{feature.detail}</Text>
+            </View>
+          ))}
+        </View>
+
+        {load.status === 'loading' ? (
+          <View
+            accessible
+            accessibilityLabel="Loading prices"
+            accessibilityRole="progressbar"
+            style={{ gap: 12 }}>
+            <PlanOptionPlaceholder tall />
+            <PlanOptionPlaceholder />
+          </View>
+        ) : null}
+
+        {failed ? (
+          <Text style={[type.body, { color: colors.secondaryLabel }]} accessibilityLiveRegion="polite">
+            {paywall.loadError}
+          </Text>
+        ) : null}
+
+        {paywall.offers.length > 0 ? (
+          <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: 12 }}>
+            {paywall.offers.map((offer) => (
+              <PlanOption
+                key={offer.id}
+                offer={offer}
+                selected={offer.id === selected?.id}
+                disabled={busy}
+                onSelect={() => select(offer)}
+              />
             ))}
           </View>
-        </View>
+        ) : null}
 
-        <View>
-          {paywall.load.status === 'loading' ? (
-            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <ActivityIndicator color={colors.tertiaryLabel} accessibilityLabel="Loading prices" />
-            </View>
-          ) : null}
+        {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
 
-          {paywall.loadError ? (
-            <View style={{ paddingVertical: 12, gap: 4 }}>
-              <Text style={type.kicker}>{paywall.loadError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={paywall.retry}
-                hitSlop={8}
-                style={({ pressed }) => ({ alignSelf: 'flex-start', paddingVertical: 8, opacity: pressed ? 0.55 : 1 })}>
-                <Text style={[type.row, { color: colors.systemBlue }]}>Try again</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {paywall.offers.map((offer, index) => {
-            const selected = paywall.selected?.id === offer.id;
-            const detail = [
-              offer.billedLine,
-              offer.pricePerMonthString ? `${offer.pricePerMonthString} per month` : null,
-              offer.savingsPercent ? `Save ${offer.savingsPercent}%` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ');
-            return (
-              <Pressable
-                key={offer.id}
-                accessibilityRole="radio"
-                accessibilityState={{ selected, disabled: busy }}
-                accessibilityLabel={`${offer.title}, ${detail}`}
-                disabled={busy}
-                onPress={() => paywall.select(offer.id)}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 12,
-                  borderTopWidth: index === 0 ? 0 : 0.5,
-                  borderTopColor: colors.separator,
-                  opacity: pressed ? 0.7 : 1,
-                })}>
-                <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
-                  <Text style={[type.row, { color: selected ? colors.label : colors.secondaryLabel }]}>
-                    {offer.label}
-                  </Text>
-                  <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{detail}</Text>
-                </View>
-                {selected ? (
-                  <SymbolView name="checkmark" tintColor={colors.label} size={18} weight="medium" />
-                ) : null}
-              </Pressable>
-            );
-          })}
-
-          {paywall.introLine ? (
-            <Text style={[type.kicker, { paddingTop: 8 }]}>{paywall.introLine}</Text>
-          ) : null}
-
-          <View style={{ paddingTop: 20 }}>
-            <Button
-              title={paywall.busy === 'purchase' ? 'Purchasing…' : paywall.ctaTitle}
-              variant="green"
-              testID="paywall-cta"
-              disabled={!paywall.canPurchase}
-              onPress={paywall.purchase}
-            />
-          </View>
-          <PaperLink title="Not now" testID="paywall-not-now" onPress={paywall.close} />
-
-          {paywall.message ? (
-            <Text style={[type.kicker, { textAlign: 'center', paddingTop: 12 }]} accessibilityLiveRegion="polite">
-              {paywall.message}
-            </Text>
-          ) : null}
-
-          {paywall.termsText ? (
-            <Text style={[type.caption, { color: colors.tertiaryLabel, paddingTop: 20 }]}>
-              {paywall.termsText}
-            </Text>
-          ) : null}
-
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              columnGap: 16,
-              paddingTop: 16,
-            }}>
-            <FooterLink
-              title={paywall.busy === 'restore' ? 'Restoring…' : 'Restore Purchases'}
-              onPress={paywall.restore}
-              disabled={busy}
-            />
-            <FooterLink title="Terms of Use" onPress={paywall.openTerms} />
-            <FooterLink title="Privacy Policy" onPress={paywall.openPrivacy} />
-          </View>
-        </View>
+        {paywall.termsText ? (
+          <Text style={[type.caption, { fontWeight: '400' }]} testID="paywall-terms">
+            {paywall.termsText}
+          </Text>
+        ) : null}
       </ScrollView>
-      <Stack.Screen options={{ headerShown: false, title: 'Trim Pro' }} />
-    </>
+
+      <View
+        style={{
+          paddingTop: 12,
+          paddingHorizontal: 24,
+          paddingBottom: Math.max(insets.bottom, 8),
+          borderTopWidth: contentBelow ? 0.5 : 0,
+          borderTopColor: colors.separator,
+          backgroundColor: colors.systemBackground,
+        }}>
+        {paywall.message ? (
+          <Text
+            style={[type.kicker, { textAlign: 'center', paddingBottom: 12 }]}
+            accessibilityLiveRegion="polite"
+            testID="paywall-message">
+            {paywall.message}
+          </Text>
+        ) : null}
+
+        <Button
+          title={ctaTitle}
+          variant="black"
+          testID="paywall-cta"
+          disabled={failed ? load.status === 'loading' : !paywall.canPurchase}
+          onPress={failed ? paywall.retry : paywall.purchase}
+        />
+        {ctaNote ? (
+          <Text
+            style={[type.kicker, { textAlign: 'center', paddingTop: 8, fontVariant: ['tabular-nums'] }]}
+            testID="paywall-cta-note">
+            {ctaNote}
+          </Text>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          testID="paywall-not-now"
+          disabled={busy}
+          onPress={paywall.close}
+          style={({ pressed }) => ({
+            minHeight: 44,
+            marginTop: 4,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: busy ? 0.4 : pressed ? 0.55 : 1,
+          })}>
+          <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
+        </Pressable>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <FooterLink
+            title={paywall.busy === 'restore' ? 'Restoring…' : 'Restore'}
+            accessibilityLabel="Restore Purchases"
+            onPress={paywall.restore}
+            disabled={busy}
+          />
+          <Dot />
+          <FooterLink title="Terms of Use" onPress={paywall.openTerms} />
+          <Dot />
+          <FooterLink title="Privacy Policy" onPress={paywall.openPrivacy} />
+        </View>
+      </View>
+    </View>
   );
 }
 
-function FooterLink({ title, onPress, disabled }: { title: string; onPress: () => void; disabled?: boolean }) {
-  const { colors, type } = useTheme();
+function Dot() {
+  const { type } = useTheme();
+  return (
+    <Text style={type.caption} accessible={false} importantForAccessibility="no">
+      ·
+    </Text>
+  );
+}
+
+function FooterLink({
+  title,
+  accessibilityLabel,
+  onPress,
+  disabled,
+}: {
+  title: string;
+  accessibilityLabel?: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const { type } = useTheme();
   return (
     <Pressable
       accessibilityRole="link"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => ({ paddingVertical: 6, opacity: disabled ? 0.4 : pressed ? 0.55 : 1 })}>
-      <Text style={[type.caption, { color: colors.secondaryLabel }]}>{title}</Text>
+      style={({ pressed }) => ({
+        minHeight: 44,
+        paddingHorizontal: 8,
+        justifyContent: 'center',
+        opacity: disabled ? 0.4 : pressed ? 0.55 : 1,
+      })}>
+      <Text style={type.caption}>{title}</Text>
     </Pressable>
   );
 }
