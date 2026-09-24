@@ -2,8 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { exerciseMediaURL } from '@/catalog';
-import { ExerciseThumb } from '@/components/exercise-thumb';
+import { formatPlanMetric } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -11,6 +10,10 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * Not linked from anywhere in 1.0: day-preview rows are read-only (DP-1). Kept as a plain
+ * fact sheet (name, muscle · equipment, plan) so re-linking it never shows a media placeholder.
+ */
 export function ExerciseSheetScreen() {
   const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
@@ -53,24 +56,11 @@ export function ExerciseSheetScreen() {
           <Text style={type.title}>{exercise.name}</Text>
           {detail ? <Text style={type.kicker}>{detail}</Text> : null}
         </View>
-        <View
-          style={{
-            height: 200,
-            borderRadius: 16,
-            borderCurve: 'continuous',
-            backgroundColor: colors.secondarySystemBackground,
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}>
-          <ExerciseThumb
-            uri={exerciseMediaURL(exercise)}
-            name={exercise.name}
-            width={180}
-            height={180}
-            animated
-            backgroundColor={colors.secondarySystemBackground}
-          />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+          <Text style={type.body}>Plan</Text>
+          <Text style={[type.body, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
+            {formatPlanMetric(exercise)}
+          </Text>
         </View>
       </View>
       <Stack.Screen options={{ headerShown: false, title: exercise.name }} />

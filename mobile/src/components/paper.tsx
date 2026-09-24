@@ -21,43 +21,96 @@ export function PaperScreen({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView
-      testID={testID}
-      style={{ flex: 1, backgroundColor: colors.systemBackground }}
-      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-      contentInsetAdjustmentBehavior="never"
-      contentContainerStyle={[
-        {
-          flexGrow: 1,
-          paddingTop: insets.top + 28,
-          paddingHorizontal: 24,
-          paddingBottom: insets.bottom + 12,
-        },
-        contentContainerStyle,
-      ]}>
-      {children}
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
+      <ScrollView
+        testID={testID}
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={[
+          {
+            flexGrow: 1,
+            paddingTop: insets.top + 28,
+            paddingHorizontal: 24,
+            paddingBottom: insets.bottom + 12,
+          },
+          contentContainerStyle,
+        ]}>
+        {children}
+      </ScrollView>
+      {insets.top > 0 ? (
+        // Long lists scroll under the clock and Dynamic Island; keep that strip quiet.
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: insets.top,
+            backgroundColor: colors.systemBackground,
+            opacity: 0.94,
+          }}
+        />
+      ) : null}
+    </View>
   );
 }
 
-/** Stage empty: display subject + fact caption + optional black CTA. No tab title. */
+/**
+ * Stage empty: optional room title (28) + subject + optional fact caption + optional black CTA.
+ * With a room title the subject is 40, like a Home day; without one it stays the 56 display.
+ */
 export function PaperEmpty({
+  title,
   subject,
   caption,
   action,
   testID,
 }: {
+  title?: string;
   subject: string;
-  caption: string;
+  caption?: string;
   action?: { title: string; onPress: () => void; testID?: string };
   testID?: string;
 }) {
-  const { type } = useTheme();
+  const { colors, type } = useTheme();
+  if (title) {
+    return (
+      <View testID={testID} style={{ flex: 1 }}>
+        <View style={{ gap: spacing.s }}>
+          <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
+            {title}
+          </Text>
+          <View style={{ gap: spacing.sm }}>
+            <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
+              {subject}
+            </Text>
+            {caption ? (
+              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{caption}</Text>
+            ) : null}
+          </View>
+        </View>
+        {action ? (
+          <View style={{ paddingTop: 28 }}>
+            <Button
+              title={action.title}
+              variant="black"
+              onPress={action.onPress}
+              testID={action.testID}
+            />
+          </View>
+        ) : null}
+      </View>
+    );
+  }
   return (
     <View testID={testID} style={{ gap: spacing.s, flex: 1 }}>
       <View style={{ gap: spacing.sm }}>
-        <Text style={type.display}>{subject}</Text>
-        <Text style={type.kicker}>{caption}</Text>
+        <Text style={type.display} maxFontSizeMultiplier={1.2}>
+          {subject}
+        </Text>
+        {caption ? <Text style={type.kicker}>{caption}</Text> : null}
       </View>
       {action ? (
         <Button
