@@ -18,7 +18,7 @@ function formatDaysCount(count: number): string {
 export function PlansTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, deletePlan } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, deletePlan, isPro } = useWorkoutStore();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
   const otherPlans = plans.filter((plan) => plan.id !== activePlan?.id);
@@ -38,7 +38,7 @@ export function PlansTab() {
     }
     const plan = emptyPlan();
     savePlan(plan, { activate: plans.length === 0 });
-    router.push(`/plan/${plan.id}`);
+    router.push(`/plan/${plan.id}?new=1`);
   };
 
   const confirmDelete = (plan: WorkoutPlan) => {
@@ -54,8 +54,9 @@ export function PlansTab() {
         {plans.length === 0 ? (
           <PaperEmpty
             testID="plans-empty"
-            subject="Plan"
-            caption="None yet"
+            title="Plans"
+            subject="No plans yet"
+            caption="Days, exercises, sets and reps."
             action={{ title: 'Create plan', onPress: createPlan, testID: 'plans-create' }}
           />
         ) : (
@@ -67,7 +68,9 @@ export function PlansTab() {
                 justifyContent: 'space-between',
                 minHeight: 34,
               }}>
-              <Text style={type.planTitle}>Plans</Text>
+              <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
+                Plans
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Create plan"
@@ -100,6 +103,7 @@ export function PlansTab() {
                     key={plan.id}
                     plan={plan}
                     variant="row"
+                    proLabel={!isPro}
                     showSeparator={index < otherPlans.length - 1}
                     onActivate={async () => {
                       if (await requirePro('switch_plan')) {
@@ -123,12 +127,15 @@ function PlanMenuRow({
   plan,
   variant,
   showSeparator = false,
+  proLabel = false,
   onActivate,
   onDelete,
 }: {
   plan: WorkoutPlan;
   variant: 'active' | 'row';
   showSeparator?: boolean;
+  /** Free users: say the switch is Pro so the paywall isn't a surprise (PL-2). */
+  proLabel?: boolean;
   onActivate: () => void;
   onDelete: () => void;
 }) {
@@ -153,6 +160,7 @@ function PlanMenuRow({
                 gap: 12,
                 padding: 16,
                 borderRadius: radius.md,
+                borderCurve: 'continuous',
                 backgroundColor: colors.secondarySystemBackground,
               }}>
               <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
@@ -184,7 +192,11 @@ function PlanMenuRow({
       </Link.Trigger>
       <Link.Menu>
         {isActive ? null : (
-          <Link.MenuAction title="Use this plan" icon="checkmark.circle" onPress={onActivate} />
+          <Link.MenuAction
+            title={proLabel ? 'Use this plan (Pro)' : 'Use this plan'}
+            icon="checkmark.circle"
+            onPress={onActivate}
+          />
         )}
         <Link.MenuAction title="Delete" icon="trash" destructive onPress={onDelete} />
       </Link.Menu>
