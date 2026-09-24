@@ -18,6 +18,7 @@ import {
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
 
+/** Series values are already in the user's units (`bodyMetricSeries(…, units)`). */
 function formatBodyValue(value: number, key: BodyMetricKey, units: 'kg' | 'lbs'): string {
   if (key === 'bodyweightKg') {
     const rounded = Math.round(value * 10) / 10;
@@ -57,8 +58,8 @@ export function ProgressBodyDetailScreen() {
   const [scrubbed, setScrubbed] = useState<ProgressPoint | null>(null);
 
   const series = useMemo(
-    () => bodyMetricSeries(bodyCheckIns, metricKey),
-    [bodyCheckIns, metricKey],
+    () => bodyMetricSeries(bodyCheckIns, metricKey, units),
+    [bodyCheckIns, metricKey, units],
   );
 
   const filtered = useMemo(() => filterPointsByWindow(series, window), [series, window]);
@@ -70,8 +71,6 @@ export function ProgressBodyDetailScreen() {
   const delta =
     heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
   const deltaRounded = delta == null ? null : Math.round(delta);
-  const deltaColor =
-    deltaRounded != null && deltaRounded < 0 ? colors.systemRed : colors.systemGreen;
 
   const heroType = {
     fontSize: 52,
@@ -82,49 +81,60 @@ export function ProgressBodyDetailScreen() {
 
   const recent = useMemo(() => [...series].reverse().slice(0, 6), [series]);
 
+  const chartLabel =
+    filtered.length >= 2
+      ? `${metricMeta.label}, ${formatBodyValue(filtered[0].value, metricKey, units)} on ${formatProgressShortDate(filtered[0].date)} to ${formatBodyValue(filtered[filtered.length - 1].value, metricKey, units)} on ${formatProgressShortDate(filtered[filtered.length - 1].date)}`
+      : undefined;
+
   return (
     <>
       <PaperScreen testID="progress-body-detail">
         <PaperBack onPress={() => router.back()} label="Progress" />
-        <Text style={[type.largeTitle, { marginBottom: 12 }]}>{metricMeta.label}</Text>
+        <Text
+          style={[type.title, { marginBottom: 16 }]}
+          numberOfLines={1}
+          accessibilityRole="header">
+          {metricMeta.label}
+        </Text>
 
         <WindowChips value={window} onChange={setWindow} />
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: 16,
-            paddingTop: 28,
-            paddingBottom: 20,
-          }}>
-          <StaggerValue
-            value={heroNumber}
-            suffix={bodyHeroSuffix(metricKey, units)}
-            format={bodyHeroFormat(metricKey)}
-            style={heroType}
-          />
-          {deltaRounded != null ? <ProgressDelta percent={deltaRounded} color={deltaColor} /> : null}
+        <View style={{ paddingTop: 28, paddingBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
+            <StaggerValue
+              value={heroNumber}
+              suffix={bodyHeroSuffix(metricKey, units)}
+              format={bodyHeroFormat(metricKey)}
+              style={heroType}
+            />
+            {deltaRounded != null ? (
+              // Down is often the goal for weight and waist: body deltas are never judged
+              // by color. ▲/▼ carries direction; ink stays neutral.
+              <ProgressDelta percent={deltaRounded} color={colors.label} />
+            ) : null}
+          </View>
           {scrubbing && scrubbed ? (
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '400',
-                lineHeight: 18,
-                color: colors.tertiaryLabel,
-                transform: [{ translateY: -2 }],
-              }}>
+            <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
               {formatProgressShortDate(scrubbed.date)}
             </Text>
           ) : null}
         </View>
 
-        <ProgressLineChart
-          points={filtered}
-          width={width - 48}
-          height={180}
-          onScrub={setScrubbed}
-        />
+        {filtered.length >= 2 ? (
+          <ProgressLineChart
+            points={filtered}
+            width={width - 48}
+            height={180}
+            onScrub={setScrubbed}
+            accessibilityLabel={chartLabel}
+          />
+        ) : (
+          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingVertical: 12 }]}>
+            {filtered.length === 0
+              ? 'No check-ins in this window.'
+              : 'Check in again to draw a line.'}
+          </Text>
+        )}
 
         <View style={{ height: 28 }} />
 
@@ -143,13 +153,8 @@ export function ProgressBodyDetailScreen() {
                   justifyContent: 'space-between',
                   paddingVertical: 14,
                 }}>
-                <Text style={type.subhead}>
-                  {new Date(point.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </Text>
-                <Text style={[type.row, { fontWeight: '600' }]}>
+                <Text style={type.subhead}>{formatProgressShortDate(point.date)}</Text>
+                <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
                   {formatBodyValue(point.value, metricKey, units)}
                 </Text>
               </View>

@@ -31,6 +31,7 @@ function MetricRow({
   title,
   caption,
   value,
+  spokenValue,
   sparkline,
   onPress,
   showDivider,
@@ -39,6 +40,7 @@ function MetricRow({
   title: string;
   caption?: string;
   value: string;
+  spokenValue?: string;
   sparkline: number[];
   onPress: () => void;
   showDivider?: boolean;
@@ -49,7 +51,7 @@ function MetricRow({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={caption ? `${title}, ${caption}, ${value}` : `${title}, ${value}`}
+        accessibilityLabel={[title, caption, spokenValue ?? value].filter(Boolean).join(', ')}
         testID={testID}
         onPress={onPress}
         style={({ pressed }) => ({
@@ -71,7 +73,9 @@ function MetricRow({
             </Text>
           ) : null}
         </View>
-        <Text style={[type.subhead, { color: colors.tertiaryLabel }]}>{value}</Text>
+        <Text style={[type.subhead, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
+          {value}
+        </Text>
         <ProgressSparkline values={sparkline} />
         <SymbolView name="chevron.right" tintColor={colors.tertiaryLabel} size={12} />
       </Pressable>
@@ -82,11 +86,52 @@ function MetricRow({
   );
 }
 
+/** Truncation peer row (house rule 11): same lanes as the rows it reveals. */
+function MoreRow({
+  title,
+  expanded,
+  onPress,
+}: {
+  title: string;
+  expanded: boolean;
+  onPress: () => void;
+}) {
+  const { colors, type } = useTheme();
+  return (
+    <>
+      <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        testID="progress-lifts-more"
+        onPress={onPress}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          minHeight: 44,
+          paddingVertical: 14,
+          opacity: pressed ? 0.7 : 1,
+        })}>
+        <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>{title}</Text>
+        <SymbolView
+          name={expanded ? 'chevron.up' : 'chevron.down'}
+          tintColor={colors.tertiaryLabel}
+          size={14}
+        />
+      </Pressable>
+    </>
+  );
+}
+
+const LIFTS_COLLAPSED = 5;
+
 export function ProgressTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
   const { activePlan, bodyCheckIns, saveCheckIn, units, workoutHistory } = useWorkoutStore();
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [liftsExpanded, setLiftsExpanded] = useState(false);
 
   useEffect(() => {
     const mode = progressDemoMode();
@@ -104,7 +149,7 @@ export function ProgressTab() {
   const bodyRows = useMemo(
     () =>
       PROGRESS_INDEX_BODY_METRICS.map((metric) => {
-        const series = bodyMetricSeries(bodyCheckIns, metric.key);
+        const series = bodyMetricSeries(bodyCheckIns, metric.key, units);
         const latestPoint = series.length > 0 ? series[series.length - 1] : null;
         const value =
           latestPoint == null
@@ -123,6 +168,10 @@ export function ProgressTab() {
       }),
     [bodyCheckIns, units],
   );
+
+  // Plan order already puts the lifts you train first; the tail waits behind a peer row.
+  const hiddenLiftCount = Math.max(0, lifts.length - LIFTS_COLLAPSED);
+  const visibleLifts = liftsExpanded ? lifts : lifts.slice(0, LIFTS_COLLAPSED);
 
   return (
     <>
@@ -148,7 +197,7 @@ export function ProgressTab() {
               paddingTop: 6,
               opacity: pressed ? 0.55 : 1,
             })}>
-            <Text style={[type.headline, { color: colors.systemBlue, fontWeight: '500' }]}>
+            <Text style={[type.headline, { color: colors.label, fontWeight: '500' }]}>
               Log check-in
             </Text>
           </Pressable>
@@ -158,39 +207,77 @@ export function ProgressTab() {
         {lifts.length === 0 ? (
           <Text style={[type.kicker, { paddingTop: 8 }]}>Log a workout to track lifts here.</Text>
         ) : (
-          lifts.map((lift, index) => (
+          <>
+            {visibleLifts.map((lift, index) => (
+              <MetricRow
+                key={lift.name}
+                title={lift.name}
+                value={lift.indexValue}
+                spokenValue={lift.spokenValue}
+                sparkline={lift.sparkline}
+                showDivider={index < visibleLifts.length - 1}
+                testID={`progress-lift-row-${lift.name.replace(/\s+/g, '-').toLowerCase()}`}
+                onPress={() =>
+                  router.push({ pathname: '/progress-lift', params: { name: lift.name } })
+                }
+              />
+            ))}
+            {hiddenLiftCount > 0 ? (
+              <MoreRow
+                title={
+                  liftsExpanded
+                    ? 'Show less'
+                    : `${hiddenLiftCount} more ${hiddenLiftCount === 1 ? 'lift' : 'lifts'}`
+                }
+                expanded={liftsExpanded}
+                onPress={() => setLiftsExpanded((current) => !current)}
+              />
+            ) : null}
+          </>
+        )}
+
+        <SectionHeader title="Body" />
+        {bodyCheckIns.length === 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="No check-ins yet. Log check-in"
+            testID="progress-body-empty"
+            onPress={() => setCheckInOpen(true)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              minHeight: 44,
+              paddingVertical: 14,
+              opacity: pressed ? 0.7 : 1,
+            })}>
+            {/* The header carries the visible action; this row is a larger target for it. */}
+            <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>
+              No check-ins yet
+            </Text>
+          </Pressable>
+        ) : (
+          bodyRows.map((row, index) => (
             <MetricRow
-              key={lift.name}
-              title={lift.name}
-              value={lift.indexValue}
-              sparkline={lift.sparkline}
-              showDivider={index < lifts.length - 1}
-              testID={`progress-lift-row-${lift.name.replace(/\s+/g, '-').toLowerCase()}`}
+              key={row.key}
+              title={row.label}
+              caption={row.caption}
+              value={row.value}
+              sparkline={row.sparkline}
+              showDivider={index < bodyRows.length - 1}
+              testID={`progress-body-row-${row.key}`}
               onPress={() =>
-                router.push({ pathname: '/progress-lift', params: { name: lift.name } })
+                router.push({ pathname: '/progress-body', params: { metric: row.key } })
               }
             />
           ))
         )}
-
-        <SectionHeader title="Body" />
-        {bodyRows.map((row, index) => (
-          <MetricRow
-            key={row.key}
-            title={row.label}
-            caption={row.caption}
-            value={row.value}
-            sparkline={row.sparkline}
-            showDivider={index < bodyRows.length - 1}
-            testID={`progress-body-row-${row.key}`}
-            onPress={() => router.push({ pathname: '/progress-body', params: { metric: row.key } })}
-          />
-        ))}
       </PaperScreen>
 
       <CheckInSheet
         visible={checkInOpen}
         latest={latest}
+        units={units}
         onClose={() => setCheckInOpen(false)}
         onSave={saveCheckIn}
       />
