@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -16,9 +16,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { ExerciseThumb } from '@/components/exercise-thumb';
 import { PaperEmpty, PaperScreen } from '@/components/paper';
-import { exerciseStillMediaURL } from '@/catalog';
 import { radius, spacing } from '@/constants/theme';
 import { EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
@@ -172,6 +170,7 @@ export function WorkoutTab() {
                             : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`
                         }
                         onPress={() => setExpandedForDayId(expanded ? null : nextDay.id)}
+                        hitSlop={{ top: 6, bottom: 16 }}
                         style={({ pressed }) => ({
                           flexDirection: 'row',
                           alignItems: 'center',
@@ -179,14 +178,6 @@ export function WorkoutTab() {
                           width: '100%',
                           opacity: pressed ? 0.7 : 1,
                         })}>
-                        <StillSlot>
-                          <SymbolView
-                            name={expanded ? 'chevron.up' : 'plus'}
-                            tintColor={colors.tertiaryLabel}
-                            size={expanded ? 14 : 18}
-                            weight="medium"
-                          />
-                        </StillSlot>
                         <Text
                           style={[
                             type.row,
@@ -202,15 +193,13 @@ export function WorkoutTab() {
                             ? 'Show less'
                             : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`}
                         </Text>
-                        {expanded ? null : (
-                          <SymbolView
-                            name="chevron.down"
-                            tintColor={colors.tertiaryLabel}
-                            size={14}
-                            weight="medium"
-                            style={{ flexShrink: 0 }}
-                          />
-                        )}
+                        <SymbolView
+                          name={expanded ? 'chevron.up' : 'chevron.down'}
+                          tintColor={colors.tertiaryLabel}
+                          size={14}
+                          weight="medium"
+                          style={{ flexShrink: 0 }}
+                        />
                       </Pressable>
                     </Animated.View>
                   ) : null}
@@ -247,40 +236,11 @@ function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
   const { colors, type } = useTheme();
   const fact = { ...factBase, color: colors.tertiaryLabel };
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.s }}>
-      <ExerciseThumb
-        uri={exerciseStillMediaURL(exercise)}
-        name={exercise.name}
-        size={44}
-        animated={false}
-        contentFit="contain"
-        backgroundColor={colors.systemGray5}
-      />
-      <View style={{ flexGrow: 1, flexShrink: 1, minWidth: 0, gap: 2 }}>
-        <Text style={type.row} numberOfLines={1}>
-          {exercise.name}
-        </Text>
-        <Text style={fact}>{formatPlanMetric(exercise)}</Text>
-      </View>
-    </View>
-  );
-}
-
-function StillSlot({ children }: { children?: ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: radius.sm,
-        borderCurve: 'continuous',
-        backgroundColor: colors.systemGray5,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-      {children}
+    <View style={{ gap: 2 }}>
+      <Text style={type.row} numberOfLines={1}>
+        {exercise.name}
+      </Text>
+      <Text style={fact}>{formatPlanMetric(exercise)}</Text>
     </View>
   );
 }

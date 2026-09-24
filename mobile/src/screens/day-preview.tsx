@@ -1,11 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
-import { ExerciseThumb } from '@/components/exercise-thumb';
-import { exerciseStillMediaURL } from '@/catalog';
 import { useTheme } from '@/theme/theme-context';
 import { formatPlanMetric } from '@/domain/helpers';
 import type { WorkoutDay } from '@/domain/types';
@@ -18,13 +16,11 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export function DayPreviewBody({
   day,
   onStart,
-  onOpenExercise,
 }: {
   day: WorkoutDay;
   onStart: () => void;
-  onOpenExercise: (exerciseId: string) => void;
 }) {
-  const { colors, type } = useTheme();
+  const { type } = useTheme();
   const insets = useSafeAreaInsets();
   const count = day.exercises.length;
   const meta = `${count} ${count === 1 ? 'exercise' : 'exercises'}`;
@@ -50,31 +46,13 @@ export function DayPreviewBody({
         style={{ maxHeight: 420 }}
         contentContainerStyle={{ paddingBottom: 20 }}>
         {day.exercises.map((exercise) => (
-          <Pressable
-            key={exercise.id}
-            accessibilityRole="button"
-            onPress={() => onOpenExercise(exercise.id)}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              paddingVertical: 12,
-              opacity: pressed ? 0.7 : 1,
-            })}>
-            <ExerciseThumb
-              uri={exerciseStillMediaURL(exercise)}
-              name={exercise.name}
-              size={44}
-              animated={false}
-              backgroundColor={colors.systemGray5}
-            />
-            <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
-              <Text style={type.row} numberOfLines={1}>
-                {exercise.name}
-              </Text>
-              <Text style={type.kicker}>{formatPlanMetric(exercise)}</Text>
-            </View>
-          </Pressable>
+          // Read-only rows: the exercise sheet they used to open only held media.
+          <View key={exercise.id} style={{ gap: 2, paddingVertical: 12 }}>
+            <Text style={type.row} numberOfLines={1}>
+              {exercise.name}
+            </Text>
+            <Text style={type.kicker}>{formatPlanMetric(exercise)}</Text>
+          </View>
         ))}
       </ScrollView>
       {count > 0 ? (
@@ -116,12 +94,6 @@ export function DayPreviewScreen() {
               }`,
             );
           }}
-          onOpenExercise={(exerciseId) =>
-            router.push({
-              pathname: '/exercise-sheet',
-              params: { planId: plan.id, dayId: day.id, exerciseId },
-            })
-          }
         />
       </AnimatedSheet>
       <Stack.Screen options={{ headerShown: false, title: day.title }} />

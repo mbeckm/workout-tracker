@@ -13,18 +13,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  CATALOG,
   catalogKey,
   EXERCISE_JUMP_CHIP_ORDER,
   exerciseCatalogDisplayText,
-  exerciseCatalogNameMatches,
   exercisePickerMeta,
-  exerciseStillMediaURL,
   EXERCISE_CATALOG_NOTICE_MESSAGE,
   groupExercisesForBrowse,
   offlineCatalogExercises,
   recentOfflineExercises,
   recordExerciseSelection,
   searchExercises,
+  searchLocalExercises,
   uniqueCatalogExercises,
 } from '@/catalog';
 import type {
@@ -33,7 +33,6 @@ import type {
   ExerciseJumpChipTitle,
 } from '@/catalog';
 import { Button } from '@/components/button';
-import { ExerciseThumb } from '@/components/exercise-thumb';
 import { PaperBack } from '@/components/paper';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, withDay } from '@/domain/helpers';
@@ -113,7 +112,8 @@ export function ExercisePickerScreen() {
   }, [customExercises]);
 
   useEffect(() => {
-    if (!trimmedQuery) {
+    // Remote search is off in 1.0: local results below are the whole answer.
+    if (!trimmedQuery || CATALOG.remote === 'off') {
       return;
     }
 
@@ -145,7 +145,7 @@ export function ExercisePickerScreen() {
       ? offline
       : remote?.query === trimmedQuery
         ? remote.exercises
-        : offline.filter((item) => exerciseCatalogNameMatches(item.name, trimmedQuery)),
+        : searchLocalExercises(trimmedQuery, customExercises),
     trimmedQuery,
   );
   const notice = remote?.query === trimmedQuery ? remote.notice : null;
@@ -330,13 +330,6 @@ export function ExercisePickerScreen() {
           paddingVertical: 8,
           opacity: inDay ? 1 : pressed ? 0.7 : 1,
         })}>
-        <ExerciseThumb
-          uri={exerciseStillMediaURL(item)}
-          name={item.name}
-          size={44}
-          animated={false}
-          backgroundColor={colors.systemGray4}
-        />
         <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
           <Text
             style={[type.row, inDay ? { color: colors.secondaryLabel } : null]}
@@ -496,22 +489,12 @@ export function ExercisePickerScreen() {
                   style={({ pressed }) => ({
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 12,
+                    gap: 8,
                     minHeight: 44,
                     opacity: pressed ? 0.7 : 1,
                   })}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: colors.secondarySystemBackground,
-                    }}>
-                    <Text style={[type.planTitle, { lineHeight: 28 }]}>+</Text>
-                  </View>
-                  <Text style={type.row} numberOfLines={1}>
+                  <SymbolView name="plus" tintColor={colors.label} size={17} weight="semibold" />
+                  <Text style={[type.row, { flexShrink: 1 }]} numberOfLines={1}>
                     Create “{exerciseCatalogDisplayText(trimmedQuery)}”
                   </Text>
                 </Pressable>
