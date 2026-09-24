@@ -1,7 +1,9 @@
+import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
 import { Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
-import { Alert, Linking, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { PaperRow, PaperScreen } from '@/components/paper';
 import { LEGAL_URLS } from '@/constants/legal';
@@ -15,6 +17,16 @@ import {
 } from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
+
+const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
+const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
+
+/** `Trim 1.0.0 (42)`: marketing version plus the native build (CFBundleVersion) when known. */
+function versionLabel(): string {
+  const version = Constants.expoConfig?.version ?? '1.0.0';
+  const build = Constants.platform?.ios?.buildNumber ?? Constants.expoConfig?.ios?.buildNumber;
+  return build ? `Trim ${version} (${build})` : `Trim ${version}`;
+}
 
 export function SettingsTab() {
   const { colors, type } = useTheme();
@@ -55,8 +67,16 @@ export function SettingsTab() {
     void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url).catch(() => undefined));
   };
 
+  const contactSupport = () => {
+    // No Mail account on the device: show the address so it can still be copied.
+    void Linking.openURL(SUPPORT_MAILTO).catch(() =>
+      Alert.alert('Contact support', `Write to ${SUPPORT_EMAIL}.`),
+    );
+  };
+
   const pickUnits = () => {
-    Alert.alert('Weight', undefined, [
+    // Switching relabels; it does not convert what was logged.
+    Alert.alert('Weight', 'Past workouts keep their numbers.', [
       { text: 'Kilograms', onPress: () => setUnits('kg') },
       { text: 'Pounds', onPress: () => setUnits('lbs') },
       { text: 'Cancel', style: 'cancel' },
@@ -114,6 +134,7 @@ export function SettingsTab() {
             testID="settings-restore"
             onPress={restoring ? undefined : () => void restore()}
           />
+          <PaperRow title="Contact support" testID="settings-support" onPress={contactSupport} />
           <PaperRow title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
           <PaperRow title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
           <PaperRow
@@ -135,6 +156,12 @@ export function SettingsTab() {
             }
           />
         </View>
+        <Text
+          style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400', paddingTop: 24 }]}
+          selectable
+          testID="settings-version">
+          {versionLabel()}
+        </Text>
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: 'Settings' }} />
     </>
