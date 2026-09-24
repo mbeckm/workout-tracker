@@ -19,7 +19,9 @@ export type WorkoutSnapshot = {
   /** Last observed OS light/dark — used when Appearance is poisoned by a prior override. */
   systemScheme: ColorScheme;
   hasCompletedOnboarding: boolean;
-  hasSeenPaywall: boolean;
+  /** When the one-time post-workout Pro offer actually rendered prices. Null = not yet. */
+  postWorkoutPaywallShownAt: string | null;
+  /** Cold-start cache of the RevenueCat entitlement. Only definite answers write it. */
   isPro: boolean;
 };
 
@@ -35,7 +37,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   appearance: 'system',
   systemScheme: 'light',
   hasCompletedOnboarding: false,
-  hasSeenPaywall: false,
+  postWorkoutPaywallShownAt: null,
   isPro: false,
 };
 
@@ -56,9 +58,19 @@ function normalizeSystemScheme(value: unknown): ColorScheme {
 type RawSnapshot = Partial<WorkoutSnapshot> & {
   routines?: WorkoutPlan[];
   archivedRoutines?: WorkoutPlan[];
+  /** Pre-1.0: one flag for "post-workout offer consumed". */
+  hasSeenPaywall?: boolean;
 };
 
-export function normalizeSnapshot(raw: unknown): WorkoutSnapshot | null {
+function normalizePostWorkoutPaywallShownAt(data: RawSnapshot, now: Date): string | null {
+  if (typeof data.postWorkoutPaywallShownAt === 'string') {
+    return data.postWorkoutPaywallShownAt;
+  }
+  // Legacy `hasSeenPaywall: true` becomes the migration time, so the offer isn't shown again.
+  return data.hasSeenPaywall === true ? now.toISOString() : null;
+}
+
+export function normalizeSnapshot(raw: unknown, now: Date = new Date()): WorkoutSnapshot | null {
   if (!raw || typeof raw !== 'object') {
     return null;
   }
@@ -87,7 +99,7 @@ export function normalizeSnapshot(raw: unknown): WorkoutSnapshot | null {
     appearance: normalizeAppearance(data.appearance),
     systemScheme: normalizeSystemScheme(data.systemScheme),
     hasCompletedOnboarding: data.hasCompletedOnboarding ?? false,
-    hasSeenPaywall: data.hasSeenPaywall ?? false,
-    isPro: data.isPro ?? false,
+    postWorkoutPaywallShownAt: normalizePostWorkoutPaywallShownAt(data, now),
+    isPro: data.isPro === true,
   };
 }

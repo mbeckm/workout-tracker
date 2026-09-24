@@ -8,7 +8,7 @@ import { Button } from '@/components/button';
 import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import { formatLoggedSetLine, formatPaperMinutes } from '@/domain/helpers';
-import { unlockPro } from '@/purchases/purchases';
+import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
 export function WorkoutCompleteScreen() {
@@ -20,32 +20,23 @@ export function WorkoutCompleteScreen() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workoutHistory, lastCompletedWorkout, shouldOfferPaywall, setPro, dismissPaywall } =
-    useWorkoutStore();
-  const presentingPaywall = useRef(false);
+  const { workoutHistory, lastCompletedWorkout, shouldOfferPostWorkoutPaywall } = useWorkoutStore();
+  const leaving = useRef(false);
   const workout =
     workoutHistory.find((item) => item.id === id) ??
     (lastCompletedWorkout?.id === id ? lastCompletedWorkout : null);
 
   const done = async () => {
-    if (presentingPaywall.current) {
+    if (leaving.current) {
       return;
     }
-    if (!shouldOfferPaywall) {
-      router.replace('/');
-      return;
+    leaving.current = true;
+    // The paywall marks the offer shown only once prices render, so a failed load retries next time.
+    if (shouldOfferPostWorkoutPaywall) {
+      await openPaywall('post_workout');
     }
-    presentingPaywall.current = true;
-    dismissPaywall();
-    let openedInAppPaywall = false;
-    const isPro = await unlockPro(() => {
-      openedInAppPaywall = true;
-      router.replace('/paywall');
-    });
-    setPro(isPro);
-    if (!openedInAppPaywall) {
-      router.replace('/');
-    }
+    // Pop back to the existing tabs instead of replacing into a second tab navigator.
+    router.dismissTo('/');
   };
 
   if (!workout) {

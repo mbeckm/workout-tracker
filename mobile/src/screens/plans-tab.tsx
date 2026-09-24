@@ -1,5 +1,6 @@
 import { Link, Stack, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { useRef } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { PaperEmpty, PaperScreen } from '@/components/paper';
@@ -7,7 +8,7 @@ import { radius } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
-import { unlockPro } from '@/purchases/purchases';
+import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
 function formatDaysCount(count: number): string {
@@ -17,19 +18,23 @@ function formatDaysCount(count: number): string {
 export function PlansTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, isPro, setPro, savePlan, activatePlan, deletePlan } =
-    useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, deletePlan } = useWorkoutStore();
+  const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
   const otherPlans = plans.filter((plan) => plan.id !== activePlan?.id);
 
-  const showProPaywall = async () => {
-    setPro(await unlockPro(() => router.push('/paywall?from=settings')));
-  };
-
   const createPlan = async () => {
-    if (!isPro && plans.length > 0) {
-      await showProPaywall();
+    if (gating.current) {
       return;
+    }
+    if (plans.length > 0) {
+      gating.current = true;
+      const allowed = await requirePro('second_plan').finally(() => {
+        gating.current = false;
+      });
+      if (!allowed) {
+        return;
+      }
     }
     const plan = emptyPlan();
     savePlan(plan, { activate: plans.length === 0 });
@@ -96,7 +101,11 @@ export function PlansTab() {
                     plan={plan}
                     variant="row"
                     showSeparator={index < otherPlans.length - 1}
-                    onActivate={() => (isPro ? activatePlan(plan) : void showProPaywall())}
+                    onActivate={async () => {
+                      if (await requirePro('switch_plan')) {
+                        activatePlan(plan);
+                      }
+                    }}
                     onDelete={() => confirmDelete(plan)}
                   />
                 ))}

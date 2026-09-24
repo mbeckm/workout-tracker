@@ -1,16 +1,16 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Alert, Text, View } from 'react-native';
 
 import { PaperRow, PaperScreen } from '@/components/paper';
 import { appearanceLabel, type AppearancePreference } from '@/constants/theme';
+import { openPaywall } from '@/purchases/pro-gate';
 import { restorePurchases } from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 export function SettingsTab() {
   const { colors, type } = useTheme();
-  const router = useRouter();
-  const { units, setUnits, appearance, setAppearance, isPro, setPro, clearWorkoutHistory } =
+  const { units, setUnits, appearance, setAppearance, isPro, applyEntitlement, clearWorkoutHistory } =
     useWorkoutStore();
 
   const pickUnits = () => {
@@ -57,14 +57,14 @@ export function SettingsTab() {
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>{isPro ? 'On' : 'Off'}</Text>
             }
-            onPress={() => router.push('/paywall?from=settings')}
+            onPress={() => void openPaywall('settings')}
           />
           <PaperRow
             title="Restore purchases"
             onPress={async () => {
               const result = await restorePurchases();
-              if (result.isPro) {
-                setPro(true);
+              if (result.kind !== 'error') {
+                applyEntitlement(result.entitlement);
               }
             }}
           />

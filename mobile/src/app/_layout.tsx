@@ -14,7 +14,7 @@ import { KeyboardProvider } from '@/keyboard';
 import { colors, spacing, type } from '@/constants/theme';
 import { peekWorkoutFocus, rememberWorkoutFocus } from '@/live-activity/controller';
 import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
-import { configurePurchases, isExpoGo, isProEntitlementActive } from '@/purchases/purchases';
+import { startEntitlementSync } from '@/purchases/purchases';
 import { progressDemoMode, shouldUseProgressDemo } from '@/store/progress-demo';
 import { WorkoutProvider, useWorkoutStore } from '@/store/workout-store';
 import { AppThemeProvider, useTheme } from '@/theme/theme-context';
@@ -98,7 +98,7 @@ function RootNav() {
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const segments = useSegments();
-  const { isHydrated, hasCompletedOnboarding, setPro } = useWorkoutStore();
+  const { isHydrated, hasCompletedOnboarding, applyEntitlement } = useWorkoutStore();
   const segmentsRef = useRef(segments);
   const handledInitialUrl = useRef(false);
   const openedProgressDemo = useRef(false);
@@ -108,20 +108,11 @@ function RootNav() {
     segmentsRef.current = segments;
   }, [segments]);
 
-  useEffect(() => {
-    if (!isHydrated || isExpoGo) {
-      return;
-    }
-
-    void (async () => {
-      try {
-        await configurePurchases();
-        setPro(await isProEntitlementActive());
-      } catch {
-        setPro(false);
-      }
-    })();
-  }, [isHydrated, setPro]);
+  // Keeps isPro live; a no-op in Expo Go, on web, and without a store key.
+  useEffect(
+    () => (isHydrated ? startEntitlementSync(applyEntitlement) : undefined),
+    [isHydrated, applyEntitlement],
+  );
 
   useEffect(() => {
     if (!isHydrated) {
@@ -156,7 +147,7 @@ function RootNav() {
       !openedProgressDemo.current ||
       openedLiftDemo.current ||
       segments[0] !== '(tabs)' ||
-      segments[1] !== 'progress'
+      (segments as readonly string[])[1] !== 'progress'
     ) {
       return;
     }
@@ -231,7 +222,15 @@ function RootNav() {
     <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'Pro' }} />
+      <Stack.Screen
+        name="paywall"
+        options={{
+          presentation: 'fullScreenModal',
+          headerShown: false,
+          gestureEnabled: false,
+          title: 'Trim Pro',
+        }}
+      />
       <Stack.Screen
         name="log"
         options={{

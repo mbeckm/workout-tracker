@@ -1,72 +1,21 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { LogBox, NativeModules, Platform } from 'react-native';
+import { Linking, LogBox, NativeModules, Platform } from 'react-native';
+import type PurchasesClass from 'react-native-purchases';
+import type { CustomerInfo, CustomerInfoUpdateListener, PurchasesOffering } from 'react-native-purchases';
 
-/** Must match the entitlement identifier in the RevenueCat dashboard. */
-export const PRO_ENTITLEMENT = 'Scratch Pro';
+import {
+  createCustomerInfoOrdering,
+  entitlementFromCustomerInfo,
+  rememberProductPeriod,
+  type Entitlement,
+} from './entitlement';
+import type { ProReason } from './pro-gate';
+import { buildProOffers, pickProPackages, type EligibilityMap, type ProOffer } from './offers';
 
-export type ProPlanId = 'monthly' | 'annual' | 'lifetime';
+export { PRO_ENTITLEMENT, proPeriodLabel, type Entitlement, type ProPeriod } from './entitlement';
+export type { ProOffer } from './offers';
 
-export type ProPlan = {
-  id: ProPlanId;
-  title: string;
-  price: string;
-  detail: string;
-  cta: string;
-  available: boolean;
-  savingsPercent: number | null;
-};
-
-const PLAN_ORDER: ProPlanId[] = ['monthly', 'annual', 'lifetime'];
-
-const PLAN_COPY: Record<ProPlanId, { title: string; detail: string; cta: string }> = {
-  monthly: { title: 'MONTHLY', detail: 'Billed monthly', cta: 'Subscribe to Monthly' },
-  annual: { title: 'ANNUAL', detail: 'Billed annually', cta: 'Subscribe to Annual' },
-  lifetime: { title: 'LIFETIME', detail: 'Pay once', cta: 'Purchase Lifetime' },
-};
-
-type PurchasesPackage = {
-  identifier: string;
-  packageType: string;
-  product: { price: number; priceString: string };
-};
-
-type CustomerInfo = {
-  entitlements: { active: Record<string, unknown> };
-};
-
-type Offerings = {
-  current?: {
-    monthly?: PurchasesPackage;
-    annual?: PurchasesPackage;
-    lifetime?: PurchasesPackage;
-    availablePackages: PurchasesPackage[];
-  } | null;
-};
-
-type PurchasesSdk = {
-  configure: (options: { apiKey: string }) => void;
-  setLogLevel?: (level: unknown) => void;
-  getCustomerInfo: () => Promise<CustomerInfo>;
-  getOfferings: () => Promise<Offerings>;
-  purchasePackage: (pkg: PurchasesPackage) => Promise<unknown>;
-  restorePurchases: () => Promise<unknown>;
-  LOG_LEVEL?: { ERROR: unknown; INFO: unknown };
-};
-
-type PurchasesUiSdk = {
-  default?: {
-    presentPaywallIfNeeded: (options: { requiredEntitlementIdentifier: string }) => Promise<string>;
-  };
-  presentPaywallIfNeeded?: (options: { requiredEntitlementIdentifier: string }) => Promise<string>;
-  PAYWALL_RESULT: {
-    PURCHASED: string;
-    RESTORED: string;
-    NOT_PRESENTED: string;
-    CANCELLED: string;
-  };
-};
-
-let packagesById: Partial<Record<ProPlanId, PurchasesPackage>> = {};
+type Sdk = typeof PurchasesClass;
 
 const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? '';
 
@@ -105,351 +54,271 @@ export const purchasesConfigured =
 
 if (__DEV__) {
   LogBox.ignoreLogs([/\[RevenueCat\]/, 'Invalid API Key', 'credentials issue']);
-}
-
-let configured = false;
-let purchasesSdk: PurchasesSdk | null | undefined;
-
-function nativePurchases(): PurchasesSdk | null {
-  if (isExpoGo || Platform.OS === 'web') {
-    return null;
-  }
-  if (purchasesSdk !== undefined) {
-    return purchasesSdk;
-  }
-  try {
-    const mod = require('react-native-purchases') as { default?: PurchasesSdk } & PurchasesSdk;
-    purchasesSdk = (mod.default ?? mod) as PurchasesSdk;
-  } catch {
-    purchasesSdk = null;
-  }
-  return purchasesSdk;
-}
-
-function nativePurchasesUi(): PurchasesUiSdk | null {
-  if (isExpoGo || Platform.OS === 'web') {
-    return null;
-  }
-  try {
-    return require('react-native-purchases-ui') as PurchasesUiSdk;
-  } catch {
-    return null;
-  }
-}
-
-export async function configurePurchases(): Promise<void> {
-  if (!apiKey || configured || !purchasesConfigured) {
-    return;
-  }
-
-  const Purchases = nativePurchases();
-  if (!Purchases) {
-    return;
-  }
-
-  try {
-    const errorLevel = Purchases.LOG_LEVEL?.ERROR ?? Purchases.LOG_LEVEL?.INFO;
-    if (errorLevel != null && typeof Purchases.setLogLevel === 'function') {
-      Purchases.setLogLevel(errorLevel);
-    }
-    Purchases.configure({ apiKey });
-    configured = true;
-  } catch {
-    configured = false;
-  }
-}
-
-export async function isProEntitlementActive(): Promise<boolean> {
   if (!purchasesConfigured) {
-    return false;
-  }
-
-  const Purchases = nativePurchases();
-  if (!Purchases) {
-    return false;
-  }
-
-  try {
-    await configurePurchases();
-    const info = await Purchases.getCustomerInfo();
-    return info.entitlements.active[PRO_ENTITLEMENT] !== undefined;
-  } catch {
-    return false;
+    console.warn(
+      '[purchases] Unavailable in this build: needs a development or store build and an appl_ EXPO_PUBLIC_REVENUECAT_API_KEY.',
+    );
   }
 }
 
-function planIdForPackage(pkg: PurchasesPackage): ProPlanId | null {
-  const type = String(pkg.packageType);
-  if (type === 'MONTHLY') {
-    return 'monthly';
+let sdk: Sdk | null | undefined;
+
+/** The configured SDK, or null in Expo Go, on web, or without a store key. */
+function purchasesSdk(): Sdk | null {
+  if (sdk !== undefined) {
+    return sdk;
   }
-  if (type === 'ANNUAL') {
-    return 'annual';
+  sdk = null;
+  if (!purchasesConfigured) {
+    return sdk;
   }
-  if (type === 'LIFETIME') {
-    return 'lifetime';
+  try {
+    // Lazy so Expo Go and web never load the native module.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('react-native-purchases') as { default?: Sdk } & Sdk;
+    const Purchases = mod.default ?? mod;
+    void Purchases.setLogLevel(Purchases.LOG_LEVEL.ERROR).catch(() => undefined);
+    Purchases.configure({ apiKey });
+    sdk = Purchases;
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[purchases] configure failed', error);
+    }
   }
-  const identifier = pkg.identifier.toLowerCase();
-  if (identifier.includes('month')) {
-    return 'monthly';
+  return sdk;
+}
+
+// ---------------------------------------------------------------------------
+// Entitlement
+
+const ordering = createCustomerInfoOrdering();
+
+/** Maps CustomerInfo, or returns null when it is older than what was already applied. */
+function freshEntitlement(info: CustomerInfo): Entitlement | null {
+  return ordering.accept(info) ? entitlementFromCustomerInfo(info) : null;
+}
+
+/**
+ * Configures once, reads the current CustomerInfo, then follows every update
+ * (renewals, expirations, refunds, Ask to Buy approvals, other devices; the SDK
+ * refreshes on foreground). Errors report nothing, so a cached Pro stays Pro.
+ * Returns an unsubscribe function.
+ */
+export function startEntitlementSync(onChange: (entitlement: Entitlement) => void): () => void {
+  const Purchases = purchasesSdk();
+  if (!Purchases) {
+    return () => undefined;
   }
-  if (identifier.includes('annual') || identifier.includes('year')) {
-    return 'annual';
-  }
-  if (identifier.includes('life')) {
-    return 'lifetime';
+  let active = true;
+  const listener: CustomerInfoUpdateListener = (info) => {
+    const entitlement = active ? freshEntitlement(info) : null;
+    if (entitlement) {
+      onChange(entitlement);
+    }
+  };
+  Purchases.addCustomerInfoUpdateListener(listener);
+  Purchases.getCustomerInfo().then(listener, (error: unknown) => {
+    if (__DEV__) {
+      console.warn('[purchases] getCustomerInfo failed; keeping cached Pro state', error);
+    }
+  });
+  return () => {
+    active = false;
+    Purchases.removeCustomerInfoUpdateListener(listener);
+  };
+}
+
+// ---------------------------------------------------------------------------
+// User-facing copy
+
+export const PURCHASE_COPY = {
+  unavailable: "Purchases aren't available right now. Please try again later.",
+  notActiveYet:
+    "Your purchase went through. If Trim Pro doesn't turn on in a moment, tap Restore Purchases.",
+  pendingTitle: 'Waiting for approval',
+  pendingBody: "Trim Pro turns on as soon as the purchase is approved.",
+  restoredTitle: 'Trim Pro restored',
+  restoredBody: 'Welcome back. Pro is on.',
+  noneTitle: 'No purchases found',
+  noneBody:
+    "We couldn't find Trim Pro on this Apple Account. If you subscribed with a different Apple Account, sign in with it and try again.",
+  restoreFailedTitle: "Couldn't restore purchases",
+  restoreFailed: "Couldn't restore purchases. Check your connection and try again.",
+} as const;
+
+const ERROR = {
+  cancelled: '1',
+  storeProblem: '2',
+  notAllowed: '3',
+  alreadyPurchased: '6',
+  network: '10',
+  paymentPending: '20',
+  offline: '35',
+} as const;
+
+function errorCode(error: unknown): string | null {
+  if (error != null && typeof error === 'object' && 'code' in error) {
+    return String((error as { code: unknown }).code);
   }
   return null;
 }
 
-export function defaultProPlans(): ProPlan[] {
-  return PLAN_ORDER.map((id) => ({
-    id,
-    ...PLAN_COPY[id],
-    price: '—',
-    available: false,
-    savingsPercent: null,
-  }));
-}
-
-function annualSavingsPercent(monthlyPrice: number | null, annualPrice: number | null): number | null {
-  if (monthlyPrice == null || annualPrice == null || monthlyPrice <= 0 || annualPrice <= 0) {
-    return null;
-  }
-  const yearOfMonthly = monthlyPrice * 12;
-  if (annualPrice >= yearOfMonthly) {
-    return null;
-  }
-  return Math.round((1 - annualPrice / yearOfMonthly) * 100);
-}
-
-export async function fetchProPlans(): Promise<ProPlan[]> {
-  if (!purchasesConfigured) {
-    packagesById = {};
-    return defaultProPlans();
-  }
-
-  const Purchases = nativePurchases();
-  if (!Purchases) {
-    packagesById = {};
-    return defaultProPlans();
-  }
-
-  try {
-    await configurePurchases();
-    const offerings = await Purchases.getOfferings();
-    const current = offerings.current;
-    const found: Partial<Record<ProPlanId, PurchasesPackage>> = {};
-
-    if (current?.monthly) {
-      found.monthly = current.monthly;
-    }
-    if (current?.annual) {
-      found.annual = current.annual;
-    }
-    if (current?.lifetime) {
-      found.lifetime = current.lifetime;
-    }
-
-    for (const pkg of current?.availablePackages ?? []) {
-      const id = planIdForPackage(pkg);
-      if (id && !found[id]) {
-        found[id] = pkg;
-      }
-    }
-
-    packagesById = found;
-    const monthlyPrice = found.monthly?.product.price ?? null;
-    const annualPrice = found.annual?.product.price ?? null;
-    const savings = annualSavingsPercent(monthlyPrice, annualPrice);
-
-    return PLAN_ORDER.map((id) => {
-      const pkg = found[id];
-      return {
-        id,
-        ...PLAN_COPY[id],
-        price: pkg?.product.priceString ?? '—',
-        available: pkg != null,
-        savingsPercent: id === 'annual' ? savings : null,
-      };
-    });
-  } catch {
-    packagesById = {};
-    return defaultProPlans();
-  }
-}
-
-export async function purchaseProPlan(id: ProPlanId): Promise<{
-  ok: boolean;
-  isPro: boolean;
-  message: string;
-}> {
-  if (isExpoGo) {
-    return {
-      ok: false,
-      isPro: false,
-      message:
-        'Expo Go cannot talk to the App Store. Purchases need a development build and the Apple public SDK key (starts with appl_).',
-    };
-  }
-
-  if (!apiKey) {
-    return {
-      ok: false,
-      isPro: false,
-      message: 'Missing EXPO_PUBLIC_REVENUECAT_API_KEY.',
-    };
-  }
-
-  const pkg = packagesById[id];
-  if (!pkg) {
-    return {
-      ok: false,
-      isPro: false,
-      message: 'This plan is not in the current RevenueCat offering yet.',
-    };
-  }
-
-  const Purchases = nativePurchases();
-  if (!Purchases) {
-    return { ok: false, isPro: false, message: 'Purchases are not available in this build.' };
-  }
-
-  try {
-    await configurePurchases();
-    await Purchases.purchasePackage(pkg);
-    const isPro = await isProEntitlementActive();
-    return {
-      ok: isPro,
-      isPro,
-      message: isPro ? 'Trim Pro is on.' : 'Purchase completed, but Trim Pro is not active yet.',
-    };
-  } catch (error) {
-    const cancelled =
-      error != null &&
+function isCancelled(error: unknown): boolean {
+  return (
+    errorCode(error) === ERROR.cancelled ||
+    (error != null &&
       typeof error === 'object' &&
-      'userCancelled' in error &&
-      Boolean((error as { userCancelled?: boolean }).userCancelled);
-    return {
-      ok: false,
-      isPro: false,
-      message: cancelled
-        ? 'Purchase cancelled.'
-        : error instanceof Error
-          ? error.message
-          : 'Purchase failed.',
-    };
+      (error as { userCancelled?: unknown }).userCancelled === true)
+  );
+}
+
+function isOffline(error: unknown): boolean {
+  const code = errorCode(error);
+  return code === ERROR.network || code === ERROR.offline;
+}
+
+function purchaseErrorMessage(error: unknown): string {
+  switch (errorCode(error)) {
+    case ERROR.network:
+    case ERROR.offline:
+      return "You're offline. Connect and try again.";
+    case ERROR.storeProblem:
+      return "The App Store couldn't complete the purchase. Please try again.";
+    case ERROR.notAllowed:
+      return "This Apple Account can't make purchases. Check Screen Time settings.";
+    case ERROR.alreadyPurchased:
+      return 'You already own Trim Pro. Tap Restore Purchases.';
+    default:
+      return "The purchase didn't go through. Please try again.";
   }
 }
 
-export async function presentScratchPaywall(): Promise<{
-  ok: boolean;
-  isPro: boolean;
-  message: string;
-}> {
-  if (isExpoGo) {
-    return {
-      ok: false,
-      isPro: false,
-      message:
-        'Expo Go cannot talk to the App Store. Purchases need a development build and the Apple public SDK key (starts with appl_), not the Test Store key (starts with test_).',
-    };
-  }
+// ---------------------------------------------------------------------------
+// Offers
 
-  if (!apiKey) {
-    return {
-      ok: false,
-      isPro: false,
-      message: 'Missing EXPO_PUBLIC_REVENUECAT_API_KEY.',
-    };
-  }
+export type OffersResult =
+  | { status: 'ok'; offering: PurchasesOffering; offers: ProOffer[] }
+  | { status: 'offline' | 'unavailable' };
 
-  const ui = nativePurchasesUi();
-  const present = ui?.default?.presentPaywallIfNeeded ?? ui?.presentPaywallIfNeeded;
-  if (!ui || !present) {
-    return { ok: false, isPro: false, message: 'Purchases are not available in this build.' };
-  }
-
-  try {
-    await configurePurchases();
-    const result = await present({
-      requiredEntitlementIdentifier: PRO_ENTITLEMENT,
-    });
-
-    const isPro = await isProEntitlementActive();
-    const purchased =
-      result === ui.PAYWALL_RESULT.PURCHASED ||
-      result === ui.PAYWALL_RESULT.RESTORED ||
-      isPro;
-
-    return {
-      ok: purchased,
-      isPro,
-      message:
-        result === ui.PAYWALL_RESULT.NOT_PRESENTED
-          ? 'Already subscribed.'
-          : result === ui.PAYWALL_RESULT.CANCELLED
-            ? 'Purchase cancelled.'
-            : purchased
-              ? 'Trim Pro is on.'
-              : 'No purchase completed.',
-    };
-  } catch (error) {
-    const details = error instanceof Error ? error.message : 'Paywall failed.';
-    return {
-      ok: false,
-      isPro: false,
-      message: details,
-    };
-  }
-}
-
-/** RevenueCat paywall when the SDK is configured; otherwise the in-app paywall screen. */
-export async function unlockPro(openInAppPaywall: () => void): Promise<boolean> {
-  if (!purchasesConfigured) {
-    openInAppPaywall();
-    return false;
-  }
-  const result = await presentScratchPaywall();
-  return result.isPro;
-}
-
-export async function restorePurchases(): Promise<{
-  ok: boolean;
-  isPro: boolean;
-  message: string;
-}> {
-  if (isExpoGo) {
-    return {
-      ok: false,
-      isPro: false,
-      message: 'Restore only works in a development or TestFlight build.',
-    };
-  }
-
-  if (!apiKey || Platform.OS === 'web') {
-    return { ok: false, isPro: false, message: 'Purchases are not configured.' };
-  }
-
-  const Purchases = nativePurchases();
+/**
+ * The offering for this placement (falls back to the current offering), with intro
+ * pricing only where the store says the account is eligible.
+ */
+export async function loadProOffers(reason: ProReason): Promise<OffersResult> {
+  const Purchases = purchasesSdk();
   if (!Purchases) {
-    return { ok: false, isPro: false, message: 'Purchases are not available in this build.' };
+    return { status: 'unavailable' };
   }
-
   try {
-    await configurePurchases();
-    await Purchases.restorePurchases();
-    const isPro = await isProEntitlementActive();
+    let offering: PurchasesOffering | null = null;
+    try {
+      offering = await Purchases.getCurrentOfferingForPlacement(reason);
+    } catch {
+      offering = null;
+    }
+    offering ??= (await Purchases.getOfferings()).current;
+    if (!offering || pickProPackages(offering).length === 0) {
+      return { status: 'unavailable' };
+    }
+
+    const productIds = pickProPackages(offering).map(({ pkg }) => pkg.product.identifier);
+    let eligibility: EligibilityMap = {};
+    try {
+      eligibility = await Purchases.checkTrialOrIntroductoryPriceEligibility(productIds);
+    } catch {
+      eligibility = {};
+    }
+
+    const offers = buildProOffers(offering, eligibility);
+    for (const offer of offers) {
+      rememberProductPeriod(offer.productId, offer.id);
+    }
+    return { status: 'ok', offering, offers };
+  } catch (error) {
+    return { status: isOffline(error) ? 'offline' : 'unavailable' };
+  }
+}
+
+export function trackPaywallImpression(reason: ProReason, offering: PurchasesOffering): void {
+  const Purchases = purchasesSdk();
+  if (!Purchases) {
+    return;
+  }
+  try {
+    void Purchases.trackCustomPaywallImpression({ paywallId: `in_app:${reason}`, offering }).catch(
+      () => undefined,
+    );
+  } catch {
+    // Analytics only.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Purchase, restore, manage
+
+export type PurchaseOutcome =
+  | { kind: 'success'; entitlement: Entitlement }
+  | { kind: 'cancelled' }
+  | { kind: 'pending' }
+  | { kind: 'error'; message: string };
+
+export async function purchaseOffer(offer: ProOffer): Promise<PurchaseOutcome> {
+  const Purchases = purchasesSdk();
+  if (!Purchases) {
+    return { kind: 'error', message: PURCHASE_COPY.unavailable };
+  }
+  try {
+    const { customerInfo } = await Purchases.purchasePackage(offer.pkg);
     return {
-      ok: true,
-      isPro,
-      message: isPro ? 'Trim Pro restored.' : 'No active subscription found.',
+      kind: 'success',
+      entitlement: freshEntitlement(customerInfo) ?? entitlementFromCustomerInfo(customerInfo),
     };
   } catch (error) {
+    if (isCancelled(error)) {
+      return { kind: 'cancelled' };
+    }
+    if (errorCode(error) === ERROR.paymentPending) {
+      return { kind: 'pending' };
+    }
+    return { kind: 'error', message: purchaseErrorMessage(error) };
+  }
+}
+
+export type RestoreOutcome =
+  | { kind: 'restored'; entitlement: Entitlement }
+  | { kind: 'none'; entitlement: Entitlement }
+  | { kind: 'error'; message: string };
+
+export async function restorePurchases(): Promise<RestoreOutcome> {
+  const Purchases = purchasesSdk();
+  if (!Purchases) {
+    return { kind: 'error', message: PURCHASE_COPY.unavailable };
+  }
+  try {
+    const info = await Purchases.restorePurchases();
+    const entitlement = freshEntitlement(info) ?? entitlementFromCustomerInfo(info);
+    return entitlement.status === 'pro'
+      ? { kind: 'restored', entitlement }
+      : { kind: 'none', entitlement };
+  } catch (error) {
     return {
-      ok: false,
-      isPro: false,
-      message: error instanceof Error ? error.message : 'Restore failed.',
+      kind: 'error',
+      message: isOffline(error) ? "You're offline. Connect and try again." : PURCHASE_COPY.restoreFailed,
     };
+  }
+}
+
+const APPLE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
+
+/** Apple's manage-subscription sheet; the App Store subscriptions page when the SDK can't show it. */
+export async function manageSubscription(): Promise<void> {
+  const Purchases = purchasesSdk();
+  try {
+    if (!Purchases) {
+      throw new Error('unavailable');
+    }
+    await Purchases.showManageSubscriptions();
+  } catch {
+    await Linking.openURL(APPLE_SUBSCRIPTIONS_URL).catch(() => undefined);
   }
 }

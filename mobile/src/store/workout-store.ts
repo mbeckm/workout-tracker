@@ -22,6 +22,8 @@ import type {
 } from '../domain/types';
 import { newId, normalizedStatsKey } from '../domain/types';
 import type { AppearancePreference, ColorScheme } from '@/constants/theme';
+import type { Entitlement, ProPeriod } from '@/purchases/entitlement';
+import { setProCache, type ProReason } from '@/purchases/pro-gate';
 
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
@@ -56,10 +58,13 @@ type WorkoutStoreState = {
   appearance: AppearancePreference;
   systemScheme: ColorScheme;
   hasCompletedOnboarding: boolean;
-  hasSeenPaywall: boolean;
+  postWorkoutPaywallShownAt: string | null;
+  /** Cached entitlement; written only by `applyEntitlement`. */
   isPro: boolean;
+  /** Known after the first entitlement sync this launch; null when not Pro or not known yet. */
+  proPeriod: ProPeriod | null;
   isHydrated: boolean;
-  shouldOfferPaywall: boolean;
+  shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
   savePlan: (plan: WorkoutPlan, options?: { activate?: boolean }) => void;
   updatePlan: (plan: WorkoutPlan) => void;
@@ -76,8 +81,10 @@ type WorkoutStoreState = {
   setAppearance: (appearance: AppearancePreference) => void;
   setSystemScheme: (systemScheme: ColorScheme) => void;
   completeOnboarding: () => void;
-  dismissPaywall: () => void;
-  setPro: (isPro: boolean) => void;
+  /** Call once the paywall has rendered offers. Only `post_workout` is recorded. */
+  markPaywallShown: (reason: ProReason) => void;
+  /** Ignores `unknown`, so offline or an SDK error never downgrades a cached Pro user. */
+  applyEntitlement: (entitlement: Entitlement) => void;
 };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
@@ -86,6 +93,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<WorkoutSnapshot>(defaultSnapshot);
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<LoggedWorkout | null>(null);
+  const [proPeriod, setProPeriod] = useState<ProPeriod | null>(null);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -373,26 +381,37 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const dismissPaywall = useCallback(() => {
-    setSnapshot((current) => ({
-      ...current,
-      hasSeenPaywall: true,
-    }));
+  const markPaywallShown = useCallback((reason: ProReason) => {
+    if (reason !== 'post_workout') {
+      return;
+    }
+    setSnapshot((current) =>
+      current.postWorkoutPaywallShownAt != null
+        ? current
+        : { ...current, postWorkoutPaywallShownAt: new Date().toISOString() },
+    );
   }, []);
 
-  const setPro = useCallback((isPro: boolean) => {
-    setSnapshot((current) => ({
-      ...current,
-      isPro,
-      hasSeenPaywall: isPro ? true : current.hasSeenPaywall,
-    }));
+  const applyEntitlement = useCallback((entitlement: Entitlement) => {
+    if (entitlement.status === 'unknown') {
+      return;
+    }
+    const isPro = entitlement.status === 'pro';
+    setProPeriod(isPro ? entitlement.period : null);
+    setSnapshot((current) => (current.isPro === isPro ? current : { ...current, isPro }));
   }, []);
+
+  useEffect(() => {
+    setProCache(snapshot.isPro);
+  }, [snapshot.isPro]);
 
   const activePlan =
     snapshot.plans.find((plan) => plan.id === snapshot.activePlanId) ?? snapshot.plans[0] ?? null;
 
-  const shouldOfferPaywall =
-    snapshot.workoutHistory.length > 0 && !snapshot.hasSeenPaywall && !snapshot.isPro;
+  const shouldOfferPostWorkoutPaywall =
+    snapshot.workoutHistory.length > 0 &&
+    !snapshot.isPro &&
+    snapshot.postWorkoutPaywallShownAt == null;
 
   const value = useMemo<WorkoutStoreState>(() => {
     const loop = planLoopProgress(activePlan, snapshot.workoutHistory, snapshot.nextDayIndex);
@@ -410,10 +429,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       appearance: snapshot.appearance,
       systemScheme: snapshot.systemScheme,
       hasCompletedOnboarding: snapshot.hasCompletedOnboarding,
-      hasSeenPaywall: snapshot.hasSeenPaywall,
+      postWorkoutPaywallShownAt: snapshot.postWorkoutPaywallShownAt,
       isPro: snapshot.isPro,
+      proPeriod: snapshot.isPro ? proPeriod : null,
       isHydrated,
-      shouldOfferPaywall,
+      shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
       savePlan,
       updatePlan,
@@ -430,14 +450,15 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setAppearance,
       setSystemScheme,
       completeOnboarding,
-      dismissPaywall,
-      setPro,
+      markPaywallShown,
+      applyEntitlement,
     };
   }, [
     snapshot,
     activePlan,
+    proPeriod,
     isHydrated,
-    shouldOfferPaywall,
+    shouldOfferPostWorkoutPaywall,
     lastCompletedWorkout,
     savePlan,
     updatePlan,
@@ -454,8 +475,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setAppearance,
     setSystemScheme,
     completeOnboarding,
-    dismissPaywall,
-    setPro,
+    markPaywallShown,
+    applyEntitlement,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);
