@@ -153,12 +153,49 @@ export function introLine(offer: ProOffer): string | null {
   return `${intro.priceString} for ${duration(intro.periodNumberOfUnits * cycles, intro.periodUnit)}, ${then}`;
 }
 
+export type FreeTrial = {
+  /** Whole days when the store period is days or weeks; null for month/year trials. */
+  days: number | null;
+  /** "7 days", "1 month". */
+  length: string;
+  /** "7-day", "1-month". For "Start 7-day free trial". */
+  adjective: string;
+};
+
+/** The eligible free trial on this offer, from the store's intro price. Null for paid intros and ineligible accounts. */
+export function freeTrial(offer: ProOffer | null): FreeTrial | null {
+  const intro = offer?.intro;
+  if (!intro?.isFreeTrial) {
+    return null;
+  }
+  const count = intro.periodNumberOfUnits * Math.max(1, intro.cycles);
+  if (count <= 0) {
+    return null;
+  }
+  const unit = intro.periodUnit.toUpperCase();
+  const days = unit === 'DAY' ? count : unit === 'WEEK' ? count * 7 : null;
+  if (days != null) {
+    return { days, length: duration(days, 'day'), adjective: `${days}-day` };
+  }
+  const word = unit.toLowerCase();
+  return { days: null, length: duration(count, word), adjective: `${count}-${word}` };
+}
+
+/** "$39.99 a year" / "$6.99 a month" / "$99.99 once". The billed amount, for the most prominent price. */
+export function billedPerPeriod(offer: ProOffer): string {
+  if (offer.id === 'lifetime') {
+    return `${offer.priceString} once`;
+  }
+  return `${offer.priceString} a ${offer.id === 'annual' ? 'year' : 'month'}`;
+}
+
 export function ctaTitle(offer: ProOffer | null): string {
   if (offer?.id === 'lifetime') {
     return 'Buy lifetime';
   }
-  if (offer?.intro?.isFreeTrial) {
-    return 'Start free trial';
+  const trial = freeTrial(offer);
+  if (trial) {
+    return `Start ${trial.adjective} free trial`;
   }
   return 'Subscribe';
 }
@@ -172,7 +209,9 @@ export function termsText(offer: ProOffer): string {
   return [
     `${offer.title}: ${offer.billedLine}.`,
     intro,
-    'Payment is charged to your Apple Account at confirmation.',
+    offer.intro?.isFreeTrial
+      ? 'Payment is charged to your Apple Account when the free trial ends.'
+      : 'Payment is charged to your Apple Account at confirmation.',
     'The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Your account is charged for renewal within 24 hours before the current period ends.',
     offer.intro?.isFreeTrial
       ? 'Any unused part of a free trial ends when you buy a subscription.'
