@@ -12,7 +12,7 @@ Current project facts:
 - Marketing version: `1.0`
 - Build number: `1`
 - Storage today: local `UserDefaults` persistence for workout data
-- Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev`
+- Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev` *(historical: the Expo app (Trim 1.0) ships a local-only first-party catalog with no ExerciseDB data, search or media; see `AGENTS.md` → Exercise catalog)*
 - Current permissions found in source: no HealthKit, location, camera, photos, notifications, accounts, or analytics
 - Privacy manifest: `ScratchWorkout/PrivacyInfo.xcprivacy` is included in the app target for UserDefaults required-reason API usage
 - Current app icon state: an `AppIcon.appiconset` exists, but it only has `Contents.json`; a real 1024 x 1024 app icon image still needs to be added
@@ -92,7 +92,7 @@ Then fix release blockers:
    - Verify the reason against Apple's current required-reason API list before final submission.
 3. Make sure there is no placeholder content.
 4. Make sure first launch is useful even with no data.
-5. Review the ExerciseDB provider decision before public release.
+5. *(Historical: resolved. Trim 1.0 ships no ExerciseDB data, search or media.)* Review the ExerciseDB provider decision before public release.
    - The current free API is suitable for prototype/start usage.
    - The provider documents non-commercial use, attribution, and strict rate limits.
    - Keep the in-app AscendAPI attribution unless a paid/provider agreement says otherwise.
@@ -237,8 +237,8 @@ Privacy policy should say, for the current app:
 - Workout entries are stored locally on the user's device.
 - The app does not require an account.
 - The app does not transmit workout data to a server.
-- Exercise search terms are sent to the ExerciseDB/AscendAPI provider to return exercise suggestions.
-- Provider exercise metadata may include exercise names, target muscles, equipment, body parts, instructions, and GIF media URLs.
+- *(Historical: Trim 1.0 sends no search terms anywhere; exercise search is on-device.)* Exercise search terms are sent to the ExerciseDB/AscendAPI provider to return exercise suggestions.
+- *(Historical.)* Provider exercise metadata may include exercise names, target muscles, equipment, body parts, instructions, and GIF media URLs.
 - The app does not use third-party analytics or advertising SDKs.
 - Users can delete app data by deleting the app, unless you add an in-app reset option.
 
@@ -396,7 +396,7 @@ Official links:
 2. Privacy mismatch.
    - If the app says it collects no data, do not include analytics, ads, remote logging, or crash SDKs without updating App Privacy.
 3. Provider terms mismatch.
-   - The current free ExerciseDB API documents non-commercial use, attribution, and strict rate limits. Confirm rights before public/commercial release.
+   - *(Historical: resolved for Trim 1.0, which ships no ExerciseDB content.)* The current free ExerciseDB API documents non-commercial use, attribution, and strict rate limits. Confirm rights before public/commercial release.
 4. Missing privacy policy URL.
    - Required for iOS apps.
 5. App feels unfinished.
@@ -436,7 +436,7 @@ Before inviting friends:
 - [ ] What to Test text added.
 - [ ] TestFlight App Review approved.
 - [ ] Friend invite link or emails ready.
-- [ ] At least one friend can search for and add an ExerciseDB-backed exercise.
+- [ ] At least one friend can search for and add a built-in exercise. *(Was: an ExerciseDB-backed exercise; historical.)*
 
 Before public App Store submission:
 
@@ -445,7 +445,7 @@ Before public App Store submission:
 - [ ] Screenshots uploaded.
 - [ ] Description, subtitle, keywords, and category are filled out.
 - [ ] App privacy answers are published.
-- [ ] ExerciseDB provider usage rights, attribution, and rate limits are cleared for the intended release.
+- [ ] Release bundle contains no ExerciseDB host (`npx expo export -p ios`, then grep for `exercisedb`). *(Was: ExerciseDB rights cleared; historical.)*
 - [ ] Age rating completed.
 - [ ] Pricing and availability completed.
 - [ ] Correct build selected.

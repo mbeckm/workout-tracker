@@ -16,7 +16,7 @@ Tabs: Workout, Plans, History, Settings.
 
 Ship: plan-first home (active plan + days), plan creation (pick exercises, then sets and reps per set — no per-set rows, no weights), Alpha Progression logging (exercise strip, active set, previous session, auto-advance), bundled + custom exercises, 2–3 screen onboarding, paywall after first completed workout, restore purchases, local persistence.
 
-Do not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB in production, cloud auth.
+Do not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, cloud auth.
 
 ## How to implement UI
 
@@ -58,6 +58,10 @@ Swift sources depend on Apple frameworks; do not attempt a Linux Swift build.
 
 ## Exercise catalog
 
-Hybrid catalog: bundled seed in `mobile/src/catalog/` + user-created custom exercises + ExerciseDB search when the query is non-empty. Empty search is local-only (seed + custom) and remains the offline catalog — never treat ExerciseDB as the only source.
+Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalog/bundled.ts`, ~200 exercises, no third-party data) + user-created custom exercises. Search, browse and Alternatives never touch the network, and no exercise media (GIFs, thumbnails) ships. Rows lead with the name; the picker meta line (`Equipment · Section`) tells variants apart.
 
-Expo Go / development may call `https://oss.exercisedb.dev` (non-commercial). Store builds must set `EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_KEY` before submit (optional `EXPO_PUBLIC_EXERCISE_CATALOG_BASE_URL` and `EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_HOST`). Do not ship OSS ExerciseDB as the production catalog.
+- **One switch:** `mobile/src/catalog/config.ts` (`CATALOG.media`, `CATALOG.remote`). Both default off; `eas.json` pins them off for `production`. See `mobile/.env.example`.
+- **ExerciseDB is dev-only behind flags.** `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=oss` enables the non-commercial OSS host in `__DEV__` builds only (the literal is stripped from release bundles). `rapidapi` needs a key plus a base URL (a proxy for store builds). Never hardcode an ExerciseDB host or media URL, and never ship OSS ExerciseDB data or media in a paid build.
+- **Stable identity:** bundled ids are `bundled-<slug of name>`; shipped names and ids never change (name is the "last time" key, `catalogKey` uses `providerExerciseId` first on the original rows). Starter templates reference rows via `bundledExerciseById(id)`.
+- **Media** resolves from catalog identity only (`catalog/media.ts`), never from URLs saved on plans or history. `ExerciseThumb` renders nothing while media is off.
+- New exercises: add rows to `bundled.ts` (big lifts first: file order is search priority and Alternatives order); search aliases are catalog-only and never persisted. Distance-based moves stay out until the log screen can record distance.
