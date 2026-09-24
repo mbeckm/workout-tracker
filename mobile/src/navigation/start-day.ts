@@ -30,7 +30,7 @@ export function resumeHref(session: ActiveSession) {
  */
 export function useStartDay() {
   const router = useRouter();
-  const { activeSession, plans } = useWorkoutStore();
+  const { activeSession, plans, clearLogSession } = useWorkoutStore();
 
   return useCallback(
     (plan: WorkoutPlan, day: WorkoutDay, options: { replace?: boolean } = {}) => {
@@ -64,7 +64,15 @@ export function useStartDay() {
             : `Resume it, or start ${day.title} instead.`,
           [
             { text: `Resume ${sessionDay.title}`, onPress: () => go(resumeHref(activeSession)) },
-            { text: `Start ${day.title}`, style: 'destructive', onPress: () => go(startDayHref(plan.id, day)) },
+            {
+              text: `Start ${day.title}`,
+              style: 'destructive',
+              // The user chose to drop the other session here, so the log must not ask again.
+              onPress: () => {
+                clearLogSession({ planId: activeSession.planId, dayId: activeSession.dayId });
+                go(startDayHref(plan.id, day));
+              },
+            },
             { text: 'Cancel', style: 'cancel' },
           ],
         );
@@ -73,6 +81,6 @@ export function useStartDay() {
 
       go(startDayHref(plan.id, day));
     },
-    [activeSession, plans, router],
+    [activeSession, clearLogSession, plans, router],
   );
 }
