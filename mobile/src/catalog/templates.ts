@@ -250,7 +250,7 @@ export const STARTER_TEMPLATES: readonly StarterTemplate[] = [
   },
   {
     id: 'upper-lower-ppl-5',
-    name: 'Upper Lower + PPL',
+    name: 'Upper Lower PPL',
     daysPerWeek: 5,
     days: [
       titled(UPPER_A, 'Upper'),
