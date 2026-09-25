@@ -3,7 +3,6 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { CheckInSheet } from '@/components/check-in-sheet';
 import { PaperScreen } from '@/components/paper';
 import { ProgressSparkline } from '@/components/progress-sparkline';
 import { PROGRESS_INDEX_BODY_METRICS } from '@/domain/check-in';
@@ -130,16 +129,16 @@ const LIFTS_COLLAPSED = 5;
 export function ProgressTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { activePlan, bodyCheckIns, isPro, saveCheckIn, units, workoutHistory } =
-    useWorkoutStore();
-  const [checkInOpen, setCheckInOpen] = useState(false);
+  const { activePlan, bodyCheckIns, isPro, units, workoutHistory } = useWorkoutStore();
+  const openCheckIn = () => router.push('/check-in');
   const [liftsExpanded, setLiftsExpanded] = useState(false);
 
   useEffect(() => {
     const mode = progressDemoMode();
     if (mode === 'checkin' || mode === 'dark-checkin') {
-      setCheckInOpen(true);
+      router.push('/check-in');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- demo deep link, once on mount
   }, []);
 
   // Free: each lift's sparkline stays inside the window lift detail opens (3M). Latest values
@@ -196,7 +195,7 @@ export function ProgressTab() {
             accessibilityRole="button"
             accessibilityLabel="Log check-in"
             testID="progress-log-check-in"
-            onPress={() => setCheckInOpen(true)}
+            onPress={openCheckIn}
             style={({ pressed }) => ({
               flexGrow: 0,
               flexShrink: 0,
@@ -248,7 +247,7 @@ export function ProgressTab() {
             accessibilityRole="button"
             accessibilityLabel="No check-ins yet. Log check-in"
             testID="progress-body-empty"
-            onPress={() => setCheckInOpen(true)}
+            onPress={openCheckIn}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -279,14 +278,6 @@ export function ProgressTab() {
           ))
         )}
       </PaperScreen>
-
-      <CheckInSheet
-        visible={checkInOpen}
-        latest={latest}
-        units={units}
-        onClose={() => setCheckInOpen(false)}
-        onSave={saveCheckIn}
-      />
 
       <Stack.Screen options={{ headerShown: false, title: 'Progress' }} />
     </>
