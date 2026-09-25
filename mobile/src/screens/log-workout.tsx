@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   AppState,
   Keyboard,
@@ -36,10 +36,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { confirmAction } from '@/components/confirm-action';
-import { LastTimeLine } from '@/components/last-time-line';
 import { LogRest } from '@/components/log-rest';
 import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
+import { TargetLine } from '@/components/target-line';
 import { exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
 import { radius } from '@/constants/theme';
 import {
@@ -59,6 +59,7 @@ import {
 import {
   bestSetForExercise,
   buildDrafts,
+  carryForward,
   exerciseIsComplete,
   findSessionDay,
   formatSetsCompact,
@@ -66,6 +67,7 @@ import {
   loggedSetCount,
   nextIncompleteIndex,
   openLogSession,
+  prefillTargets,
   sessionDurationMinutes,
   unloggedSetCount,
   type BestSet,
@@ -75,6 +77,7 @@ import {
   type RestWindow,
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
+import { spokenTargets, targetsFromHistory, type SetTarget } from '@/domain/targets';
 import { EASE_OUT } from '@/motion';
 import {
   newId,
@@ -85,6 +88,7 @@ import {
 import { endWorkoutLiveActivity, loadWorkoutFocus, syncWorkoutLiveActivity } from '@/live-activity/controller';
 import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
 import { upcomingExerciseIndex } from '@/live-activity/upcoming';
+import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore, type PreviousExerciseLog } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
@@ -217,6 +221,7 @@ export function LogWorkoutScreen() {
   const {
     plans,
     units,
+    isPro,
     customExercises,
     workoutHistory,
     previousSetsForExercise,
@@ -242,7 +247,22 @@ export function LogWorkoutScreen() {
   const startedAt = opened.startedAt;
   const [rest, setRest] = useState<RestWindow | null>(opened.rest);
   const [exerciseIndex, setExerciseIndex] = useState(opened.exerciseIndex);
-  const [drafts, setDrafts] = useState<DraftExercise[]>(opened.drafts);
+  // Pro targets (next-session targets). Computed for free users too: the quiet
+  // `Target ›` offer only appears where a target would exist.
+  const [targetsUnlocked, setTargetsUnlocked] = useState(false);
+  const [targetOfferDismissed, setTargetOfferDismissed] = useState(false);
+  const showTargets = isPro || targetsUnlocked;
+  const targetsFor = useCallback(
+    (exercise: DraftExercise): (SetTarget | null)[] | null =>
+      targetsFromHistory(exercise.prescription, workoutHistory, units, exercise.sets.length),
+    [units, workoutHistory],
+  );
+  // A fresh Pro log opens with targets in the wells; a restored one keeps what it had.
+  const [drafts, setDrafts] = useState<DraftExercise[]>(() =>
+    isPro && !opened.restored
+      ? prefillTargets(opened.drafts, targetsFor, previousSetsForExercise)
+      : opened.drafts,
+  );
   const draftsRef = useRef(drafts);
   const [wellFocus, setWellFocus] = useState<WellFocus>(null);
   const [editing, setEditing] = useState<SetEdit | null>(null);
@@ -472,6 +492,9 @@ export function LogWorkoutScreen() {
   const stageSetIndex = editingSet && current ? current.sets.indexOf(editingSet) : activeSetIndex;
   const setHint =
     current && stageSetIndex >= 0 ? `Set ${stageSetIndex + 1} of ${current.sets.length}` : undefined;
+  const currentTargets = useMemo(() => (current ? targetsFor(current) : null), [current, targetsFor]);
+  const stageTarget =
+    currentTargets && stageSetIndex >= 0 ? (currentTargets[stageSetIndex] ?? null) : null;
 
   const updateSet = (setIndex: number, patch: Partial<LoggedSet>) => {
     setDrafts((items) =>
@@ -565,29 +588,15 @@ export function LogWorkoutScreen() {
       return;
     }
 
-    const nextDrafts = drafts.map((exercise, index) => {
-      if (index !== exerciseIndex) {
-        return exercise;
-      }
-      return {
-        ...exercise,
-        sets: exercise.sets.map((set, inner) => {
-          if (inner === setIndex) {
-            return { ...set, done: true };
-          }
-          if (inner > setIndex && !set.done) {
-            return {
-              ...set,
-              weight: target.weight ?? set.weight,
-              reps: target.reps ?? set.reps,
-              counterweight: target.counterweight ?? set.counterweight,
-              durationSeconds: target.durationSeconds ?? set.durationSeconds,
-            };
-          }
-          return set;
-        }),
-      };
-    });
+    // Later sets inherit this one; with targets, each keeps its own target (a chosen load carries).
+    const nextDrafts = drafts.map((exercise, index) =>
+      index !== exerciseIndex
+        ? exercise
+        : {
+            ...exercise,
+            sets: carryForward(exercise.sets, setIndex, target, showTargets ? currentTargets : null),
+          },
+    );
     setDrafts(nextDrafts);
 
     setLoggedPulseId(target.id);
@@ -813,8 +822,8 @@ export function LogWorkoutScreen() {
     };
     const hadLogs = current.sets.some((set) => set.done);
     setEditing(null);
-    setDrafts((items) =>
-      items.map((exercise, index) => {
+    setDrafts((items) => {
+      const next = items.map((exercise, index) => {
         if (index !== exerciseIndex) {
           return exercise;
         }
@@ -822,8 +831,9 @@ export function LogWorkoutScreen() {
           prescription: swapped,
           sets: hadLogs ? exercise.sets : buildDrafts([swapped], previousSetsForExercise)[0]?.sets ?? exercise.sets,
         };
-      }),
-    );
+      });
+      return showTargets && !hadLogs ? prefillTargets(next, targetsFor, previousSetsForExercise) : next;
+    });
     updatePlan(
       withDay(plan, day.id, (currentDay) => ({
         ...currentDay,
@@ -876,6 +886,21 @@ export function LogWorkoutScreen() {
   } else {
     cta = { title: 'Finish workout', onPress: () => finish() };
   }
+
+  // Free: `Target ›` opens the paywall once; a purchase or restore shows targets and
+  // puts them in untouched wells. A dismissal hides the offer for the rest of this log.
+  const unlockTargets = () => {
+    Keyboard.dismiss();
+    void requirePro('targets').then((unlocked) => {
+      if (!unlocked) {
+        setTargetOfferDismissed(true);
+        return;
+      }
+      setTargetsUnlocked(true);
+      setDrafts((items) => prefillTargets(items, targetsFor, previousSetsForExercise));
+    });
+  };
+  const offerTargets = !showTargets && !targetOfferDismissed && rest == null && !edit && activeSet != null;
 
   const wellPatchFromDuration = (value: string): Partial<SetValues> => {
     const parsed = parsePositiveNumber(value);
@@ -997,10 +1022,14 @@ export function LogWorkoutScreen() {
                         />
                       ) : null}
                     </View>
-                    <LastTimeLine
+                    <TargetLine
                       previousSets={previous?.sets}
                       setIndex={exerciseComplete && !edit ? 'all' : Math.max(0, stageSetIndex)}
                       minutes={minutes}
+                      units={units}
+                      target={stageTarget}
+                      unlocked={showTargets}
+                      onUnlock={offerTargets ? unlockTargets : undefined}
                     />
                   </View>
 
@@ -1218,6 +1247,8 @@ export function LogWorkoutScreen() {
             exercise={current.prescription}
             previous={previous}
             best={bestSetForExercise(workoutHistory, current.prescription.name)}
+            targets={showTargets ? currentTargets : null}
+            units={units}
             minutes={minutes}
             alternatives={alternativesFor(current.prescription, catalog)}
             onSwap={swapCurrent}
@@ -1774,6 +1805,8 @@ function LogExerciseSheet({
   exercise,
   previous,
   best,
+  targets,
+  units,
   minutes,
   alternatives,
   onSwap,
@@ -1781,6 +1814,9 @@ function LogExerciseSheet({
   exercise: ExercisePrescription;
   previous: PreviousExerciseLog | null;
   best: BestSet | null;
+  /** Pro only: today's target for every set. */
+  targets: (SetTarget | null)[] | null;
+  units: 'kg' | 'lbs';
   minutes: boolean;
   alternatives: ExercisePrescription[];
   onSwap: (next: ExercisePrescription) => void;
@@ -1789,7 +1825,8 @@ function LogExerciseSheet({
   const muscle = exercise.targetMuscles[0];
   const equipment = exercise.equipments[0];
   const detail = [muscle, equipment].filter(Boolean).join(' · ');
-  const facts: { label: string; value: string }[] = [
+  const targetSets = targets?.every((target) => target != null) ? (targets as SetTarget[]) : null;
+  const facts: { label: string; value: string; spoken?: string }[] = [
     { label: 'Plan', value: formatPlanMetric(exercise) },
     {
       label: 'Last time',
@@ -1797,6 +1834,18 @@ function LogExerciseSheet({
         ? `${formatSetsCompact(previous.sets, { minutes })} · ${formatHistoryWhenInMonth(previous.completedAt)}`
         : 'First time',
     },
+    ...(targetSets
+      ? [
+          {
+            label: 'Next target',
+            value: formatSetsCompact(
+              targetSets.map((target, index) => ({ ...target, id: `target-${index}`, index: index + 1 })),
+              { minutes },
+            ),
+            spoken: spokenTargets(targetSets, units),
+          },
+        ]
+      : []),
     ...(best
       ? [
           {
@@ -1815,7 +1864,7 @@ function LogExerciseSheet({
       </View>
       <View style={{ paddingBottom: 16 }}>
         {facts.map((fact) => (
-          <FactRow key={fact.label} label={fact.label} value={fact.value} />
+          <FactRow key={fact.label} label={fact.label} value={fact.value} spoken={fact.spoken} />
         ))}
       </View>
       {alternatives.length > 0 ? (
@@ -1844,12 +1893,12 @@ function LogExerciseSheet({
   );
 }
 
-function FactRow({ label, value }: { label: string; value: string }) {
+function FactRow({ label, value, spoken }: { label: string; value: string; spoken?: string }) {
   const { colors, type } = useTheme();
   return (
     <View
       accessible
-      accessibilityLabel={`${label}, ${value}`}
+      accessibilityLabel={`${label}, ${spoken ?? value}`}
       style={{
         flexDirection: 'row',
         alignItems: 'baseline',

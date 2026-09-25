@@ -21,9 +21,8 @@ export type LastTimeLineProps = {
  * Units never ride along (the well label carries them). Text comes from the pure
  * `lastTimeText` in `domain/log-session.ts`.
  *
- * Seam for next-session targets: a `TargetLine` (suggested weight × reps) takes the
- * same props plus its suggestion and renders beside or instead of this line, in the
- * same 15pt caption slot, so the stage keeps its height and never jumps.
+ * Next-session targets wrap this line in `TargetLine` (`target-line.tsx`), in the same
+ * 15pt caption slot, so the stage keeps its height and never jumps.
  */
 export function LastTimeLine({ previousSets, setIndex, minutes }: LastTimeLineProps) {
   const { colors, type } = useTheme();
