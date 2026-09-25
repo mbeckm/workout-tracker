@@ -1,7 +1,9 @@
 import * as Haptics from 'expo-haptics';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -9,21 +11,25 @@ import { paywallPreviewLoader } from '@/components/paywall/dev-preview';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
 import { TrialTimeline } from '@/components/paywall/trial-timeline';
 import { billedPerPeriod } from '@/purchases/offers';
-import { proFeaturesFor } from '@/purchases/pro-features';
+import { proFeaturesFor, type ProFeature } from '@/purchases/pro-features';
 import type { ProReason } from '@/purchases/pro-gate';
 import { usePaywallController, type PaywallController } from '@/purchases/use-paywall-controller';
+import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
-/** What happened, or what they tried to do. Facts; no hype. */
-const REASON_COPY: Record<ProReason, { headline: string; lead: string }> = {
-  onboarding: { headline: 'Your plan is ready.', lead: 'Logging stays free. Trim Pro adds more.' },
-  post_workout: { headline: 'First workout logged.', lead: 'Logging stays free. Trim Pro adds more.' },
-  second_plan: { headline: 'Add another plan.', lead: 'More than one plan is part of Trim Pro.' },
-  switch_plan: { headline: 'Switch plans.', lead: 'Switching plans is part of Trim Pro.' },
-  progress_history: { headline: 'See all of your progress.', lead: 'Older progress is part of Trim Pro.' },
-  body_trends: { headline: 'See your body trends.', lead: 'Body trends are part of Trim Pro.' },
-  targets: { headline: 'See a target for every set.', lead: 'Targets are part of Trim Pro.' },
-  settings: { headline: 'Trim Pro', lead: 'Logging stays free. Pro adds more.' },
+/**
+ * What happened, or what they tried to do. Facts; no hype. One line, no subheading: the
+ * feature rows under it say what Pro adds, with the gate's own feature first.
+ */
+const REASON_HEADLINE: Record<ProReason, string> = {
+  onboarding: 'Your plan is ready.',
+  post_workout: 'First workout logged.',
+  second_plan: 'Add another plan with Pro.',
+  switch_plan: 'Switch plans with Pro.',
+  progress_history: 'See all of your progress.',
+  body_trends: 'See your body trends.',
+  targets: 'Get a target for every set.',
+  settings: 'Trim Pro',
 };
 
 export function PaywallScreen({ reason, session }: { reason: ProReason; session?: string }) {
@@ -36,16 +42,19 @@ export function PaywallScreen({ reason, session }: { reason: ProReason; session?
 function PaywallView({ paywall }: { paywall: PaywallController }) {
   const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   // Hairline over the footer only while content continues beneath it.
   const [contentBelow, setContentBelow] = useState(false);
+  const [contentAbove, setContentAbove] = useState(false);
   const scrollMetrics = useRef({ offset: 0, viewport: 0, content: 0 });
   const updateEdge = (next: Partial<typeof scrollMetrics.current>) => {
     const metrics = { ...scrollMetrics.current, ...next };
     scrollMetrics.current = metrics;
     setContentBelow(metrics.viewport > 0 && metrics.offset + metrics.viewport < metrics.content - 1);
+    setContentAbove(metrics.offset > 1);
   };
 
-  const copy = REASON_COPY[paywall.reason];
+  const headline = REASON_HEADLINE[paywall.reason];
   const features = proFeaturesFor(paywall.reason);
   const busy = paywall.busy !== null;
   const { load, selected, trial } = paywall;
@@ -88,24 +97,22 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         onContentSizeChange={(_, height) => updateEdge({ content: height })}
         onScroll={(event) => updateEdge({ offset: event.nativeEvent.contentOffset.y })}
         contentContainerStyle={{
-          paddingTop: insets.top + 32,
+          paddingTop: insets.top + 44,
           paddingHorizontal: 24,
           paddingBottom: 24,
-          gap: 32,
+          gap: 28,
         }}>
-        <View style={{ gap: 8 }}>
-          <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
-            {copy.headline}
-          </Text>
-          <Text style={[type.body, { color: colors.secondaryLabel }]}>{copy.lead}</Text>
-        </View>
+        <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
+          {headline}
+        </Text>
 
-        <View style={{ gap: 16 }} testID="paywall-features">
-          {features.map((feature) => (
-            <View key={feature.id} accessible style={{ gap: 2 }}>
-              <Text style={[type.row, { fontWeight: '600' }]}>{feature.title}</Text>
-              <Text style={type.kicker}>{feature.detail}</Text>
-            </View>
+        <View style={{ gap: 18 }} testID="paywall-features">
+          {features.map((feature, index) => (
+            <Animated.View
+              key={feature.id}
+              entering={enterUp(Boolean(reduceMotion), 60 + index * 50)}>
+              <FeatureRow feature={feature} />
+            </Animated.View>
           ))}
         </View>
 
@@ -149,6 +156,41 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         ) : null}
       </ScrollView>
 
+      {/* Solid band under the status bar and Not now, so scrolled copy never runs under
+          either. Hairline only while content sits beneath it, like the footer. */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: insets.top + 44,
+          backgroundColor: colors.systemBackground,
+          borderBottomWidth: contentAbove ? 0.5 : 0,
+          borderBottomColor: colors.separator,
+        }}
+      />
+
+      {/* Always reachable, never hidden or delayed: top right, where a close lives on iOS. */}
+      <Pressable
+        accessibilityRole="button"
+        testID="paywall-not-now"
+        disabled={busy}
+        onPress={paywall.close}
+        hitSlop={8}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          top: insets.top,
+          right: 12,
+          minHeight: 44,
+          paddingHorizontal: 12,
+          justifyContent: 'center',
+          opacity: busy ? 0.4 : pressed ? 0.55 : 1,
+        })}>
+        <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
+      </Pressable>
+
       <View
         style={{
           paddingTop: 12,
@@ -181,21 +223,8 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
             {ctaNote}
           </Text>
         ) : null}
+        <View style={{ height: 4 }} />
 
-        <Pressable
-          accessibilityRole="button"
-          testID="paywall-not-now"
-          disabled={busy}
-          onPress={paywall.close}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            marginTop: 4,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: busy ? 0.4 : pressed ? 0.55 : 1,
-          })}>
-          <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
-        </Pressable>
 
         <View
           style={{
@@ -215,6 +244,34 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           <Dot />
           <FooterLink title="Privacy Policy" onPress={paywall.openPrivacy} />
         </View>
+      </View>
+    </View>
+  );
+}
+
+/** Icon tile + title + one line. The tile gives each benefit a scannable anchor. */
+function FeatureRow({ feature }: { feature: ProFeature }) {
+  const { colors, type } = useTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${feature.title}. ${feature.detail}`}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          borderCurve: 'continuous',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.secondarySystemBackground,
+        }}>
+        <SymbolView name={feature.symbol as SFSymbol} size={18} weight="semibold" tintColor={colors.label} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+        <Text style={[type.row, { fontWeight: '600' }]}>{feature.title}</Text>
+        <Text style={type.kicker}>{feature.detail}</Text>
       </View>
     </View>
   );
