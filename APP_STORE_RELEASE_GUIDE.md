@@ -1,5 +1,55 @@
 # App Store Release Guide for ScratchWorkout
 
+## 1.0 submission checklist (Trim, Expo app in `mobile/`)
+
+Do these in order. This section is current. Below it, anything that conflicts (Xcode-only build, ExerciseDB, "does not collect data", free-only pricing) is historical.
+
+**App Store Connect: subscriptions**
+- [ ] One subscription group (for example "Trim Pro") with two auto-renewable products: yearly at **$39.99** and monthly at **$6.99**.
+- [ ] Introductory offer on the **yearly product only**: free trial, 7 days, new subscribers. None on monthly.
+- [ ] Each product has a display name, description and review screenshot (the paywall), and status "Ready to Submit".
+- [ ] On the 1.0 version page, under In-App Purchases and Subscriptions, attach both products so they are reviewed with the binary.
+- [ ] Paid Apps agreement, tax and banking are active (purchases fail in review without them).
+
+**RevenueCat**
+- [ ] Entitlement identifier is exactly `Scratch Pro` (case-sensitive; `mobile/src/purchases/entitlement.ts`), with both products attached.
+- [ ] A **current** offering with the `$rc_annual` and `$rc_monthly` packages. Add a lifetime package only if lifetime is sold; the paywall shows it automatically when present.
+- [ ] Optional: placements `onboarding`, `post_workout`, `second_plan`, `switch_plan`, `progress_history`, `body_trends`, `targets`, `settings` (`mobile/src/purchases/pro-gate.ts`). Without them every gate uses the current offering.
+- [ ] App Store Connect API key / in-app purchase key uploaded so RevenueCat can validate transactions.
+
+**EAS build**
+- [ ] `EXPO_PUBLIC_REVENUECAT_API_KEY` = the RevenueCat Apple public key (`appl_…`) in the EAS **production** environment. Without it the paywall shows "Purchases aren't available".
+- [ ] `eas.json` production keeps `EXPO_PUBLIC_EXERCISE_MEDIA=off` and `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=off`.
+- [ ] `npx eas-cli build --platform ios --profile production`, then submit to TestFlight.
+
+**Metadata**
+- [ ] In `mobile/store.config.json`, add `apple.review.phone` (`+<country code> …`). The current eas-cli schema requires it, and `eas metadata:push` refuses to run until it is set.
+- [ ] If next-session targets do not ship in this build, delete the "Next-session targets" bullet from the description and step 6 from `apple.review.notes`.
+- [ ] `cd mobile && npx eas-cli metadata:push`. Check the description, keywords, review notes and age rating in App Store Connect afterwards. Release notes are ignored for a first version.
+- [ ] Answer the new age-rating question "Health or Wellness Topics" in App Store Connect (not set in `store.config.json`).
+- [ ] Open https://scratch-legal.vercel.app and https://scratch-legal.vercel.app/privacy on a phone and confirm the deployed pages match `legal/` (dated 24 September 2026).
+
+**App Privacy (App Store Connect → App Privacy)**
+- [ ] Data is collected: Yes, only by RevenueCat.
+- [ ] Purchases → Purchase History: App Functionality (add Analytics if you use RevenueCat charts or paywall analytics). Not linked to the user. Not used for tracking.
+- [ ] Identifiers → User ID (RevenueCat's anonymous app user ID): App Functionality. Not linked. Not tracking.
+- [ ] Usage Data → Product Interaction (paywall impressions sent by `trackCustomPaywallImpression`): Analytics. Not linked. Not tracking.
+- [ ] Nothing else: no contact info, health and fitness data, location, contacts, content, search history, diagnostics or other data leaves the device. Tracking: No.
+- [ ] Privacy Policy URL: https://scratch-legal.vercel.app/privacy.
+
+**Screenshots**
+- [ ] New 6.9" (and 6.5" if required) iPhone screenshots from this build: Home with a plan, log screen with Last time and rest, Done, Progress, Plans. No prices in screenshots.
+
+**Device QA (could not be checked on the Linux agent)**
+- [ ] Native context menus: plan rows, day rows, History rows.
+- [ ] VoiceOver: custom actions (Show the day, Delete workout, Remove day) and labels on the log screen.
+- [ ] Alerts and action sheets: discard workout, finish with sets left, clear history, delete plan, restore results.
+- [ ] Keyboard docking: log footer and wells ride the keyboard; plan and day editors don't jump.
+- [ ] Kill the app mid-workout: the workout resumes, and the Live Activity resumes and ends on Finish or Cancel.
+- [ ] Sandbox purchases: yearly with trial, monthly, restore, manage subscription from Settings, cancel, Ask to Buy (pending).
+- [ ] Paywall with a real intro offer: trial timeline, "Start free trial", and terms text, for an eligible and an ineligible sandbox account.
+- [ ] With the release build on a device, the only network traffic is RevenueCat (and the legal pages when opened).
+
 This guide is tailored to the active app in this repository.
 
 Current project facts:
