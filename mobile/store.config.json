@@ -2,16 +2,31 @@
   "configVersion": 0,
   "apple": {
     "copyright": "2026 Marvin Beckmann",
-    "categories": ["HEALTH_AND_FITNESS", "SPORTS"],
+    "categories": [
+      "HEALTH_AND_FITNESS",
+      "SPORTS"
+    ],
     "info": {
       "en-US": {
         "title": "Trim Workout",
         "subtitle": "Log sets. Follow a plan",
-        "description": "Trim is a plan-first iPhone workout logger. Build a plan of training days, log sets in a table, and reuse last time’s weights.\n\nKEY FEATURES:\n• Create a plan with multiple training days\n• Set table with previous values, kg/lbs, and a rest timer\n• Custom exercises when the catalog doesn’t have yours\n• History of completed sessions on this iPhone\n\nTrim stays on your iPhone. No account.\n\nTrim Pro is optional: extra plans, full history, and stats. Download Trim and log your next session in seconds.",
+        "description": "Trim is a workout logger built around your plan. Open today's day and log one set at a time.\n\nPLAN\n• Plans made of training days, each with exercises, sets and reps\n• Start from a starter plan, or build your own\n• 200+ built-in exercises, plus your own custom exercises\n\nLOG\n• One set at a time, with what you lifted last time\n• A rest timer that starts when you log a set\n• A workout in progress stays saved if you leave or close the app\n• kg or lbs\n\nREVIEW\n• History of every completed workout, with personal records\n• Progress: estimated 1RM for each lift, and body check-ins\n\nYour data stays on your iPhone. No account, no sign-in.\n\nTRIM PRO\nLogging is free. The free version includes one plan, your full workout history, and the last 3 months of Progress.\n\nTrim Pro adds:\n• Unlimited plans, and switching between them\n• Progress beyond 3 months, plus body trends\n• Next-session targets\n\nTrim Pro is an optional auto-renewable subscription, billed monthly or yearly. The yearly option includes a 7-day free trial for eligible new subscribers. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in Settings › Apple Account › Subscriptions.\n\nPrivacy Policy: https://scratch-legal.vercel.app/privacy\nTerms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
         "keywords": [
-          "gym,sets,reps,plan,training,fitness,weights,strength,exercise,log,tracker,hevy,strong,barbell,lifting"
+          "gym",
+          "reps",
+          "training",
+          "fitness",
+          "weights",
+          "strength",
+          "exercise",
+          "tracker",
+          "lifting",
+          "routine",
+          "program",
+          "split",
+          "1rm"
         ],
-        "releaseNotes": "First release: plans, set-table logging, rest timer, history, and Trim Pro.",
+        "releaseNotes": "First release of Trim: plans, one-set-at-a-time logging with last time and a rest timer, history with personal records, Progress, and Trim Pro.",
         "privacyPolicyUrl": "https://scratch-legal.vercel.app/privacy",
         "supportUrl": "https://scratch-legal.vercel.app",
         "marketingUrl": "https://scratch-legal.vercel.app"
@@ -32,11 +47,27 @@
       "contests": "NONE",
       "gambling": false,
       "unrestrictedWebAccess": false,
-      "seventeenPlus": false
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "koreaAgeRatingOverride": "NONE",
+      "gunsOrOtherWeapons": "NONE",
+      "advertising": false,
+      "lootBox": false,
+      "messagingAndChat": false,
+      "userGeneratedContent": false,
+      "parentalControls": false,
+      "ageAssurance": false
     },
     "release": {
       "automaticRelease": false,
       "phasedRelease": true
+    },
+    "review": {
+      "firstName": "Marvin",
+      "lastName": "Beckmann",
+      "email": "marvinbeckm@gmail.com",
+      "demoRequired": false,
+      "notes": "No account or login is needed. Every feature works without signing in, and all workout data stays on the device.\n\nTrim Pro is an auto-renewable subscription (monthly, or yearly with a 7-day free trial) bought in the in-app paywall. Prices load from StoreKit through RevenueCat. Each Pro gate opens the same paywall:\n1. Settings tab > Trim Pro.\n2. Plans tab > + (after the first plan exists) opens \"Add another plan\". Free users keep one plan.\n3. Finish a first workout: Workout tab > Start on a day > Log set > Finish > Done. The paywall opens once after the first completed workout.\n4. Progress tab > tap a lift (after logging a workout) > the 6M, YTD or All chip. Free shows the last 3 months.\n5. Progress tab > Log check-in > tap a body metric > \"Trends over time with Trim Pro\".\n6. Next-session targets: shown during logging for Pro users; free users see the Pro prompt there.\n\nRestore Purchases is in the paywall footer and in Settings. Terms of Use (Apple standard EULA) and Privacy Policy are linked from the paywall footer and Settings."
     }
   }
 }
