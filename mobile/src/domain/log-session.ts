@@ -495,3 +495,114 @@ export function formatShortDate(iso: string, now = new Date()): string {
     ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Next-session targets (Trim Pro) in the wells
+
+/** The values a well holds. Targets and history prefill compare on these. */
+export type WellValues = Pick<LoggedSet, 'weight' | 'reps' | 'counterweight' | 'durationSeconds'>;
+
+export function sameWellValues(left: WellValues, right: WellValues): boolean {
+  return (
+    (left.weight ?? null) === (right.weight ?? null) &&
+    (left.reps ?? null) === (right.reps ?? null) &&
+    (left.counterweight ?? null) === (right.counterweight ?? null) &&
+    (left.durationSeconds ?? null) === (right.durationSeconds ?? null)
+  );
+}
+
+function targetValues(target: WellValues): WellValues {
+  return {
+    weight: target.weight ?? null,
+    reps: target.reps ?? null,
+    counterweight: target.counterweight ?? null,
+    durationSeconds: target.durationSeconds ?? null,
+  };
+}
+
+/**
+ * Targets replace the history prefill on sets nobody has touched: undone plan sets whose
+ * values still equal what `buildDrafts` put there. Typed, carried and logged sets stay.
+ * Returns the same array when nothing changes.
+ */
+export function prefillTargets(
+  drafts: DraftExercise[],
+  targetsFor: (exercise: DraftExercise) => readonly (WellValues | null)[] | null,
+  previousSetsForExercise: (name: string) => LoggedSet[],
+): DraftExercise[] {
+  let changed = false;
+  const next = drafts.map((exercise) => {
+    if (exercise.orphan) {
+      return exercise;
+    }
+    const targets = targetsFor(exercise);
+    if (!targets) {
+      return exercise;
+    }
+    const baseline = buildDrafts([exercise.prescription], previousSetsForExercise)[0]?.sets ?? [];
+    let touched = false;
+    const sets = exercise.sets.map((set, index) => {
+      const target = targets[index];
+      const prefill = baseline[index];
+      if (set.done || set.extra || !target || !prefill || !sameWellValues(set, prefill)) {
+        return set;
+      }
+      const values = targetValues(target);
+      if (sameWellValues(set, values)) {
+        return set;
+      }
+      touched = true;
+      return { ...set, ...values };
+    });
+    if (!touched) {
+      return exercise;
+    }
+    changed = true;
+    return { ...exercise, sets };
+  });
+  return changed ? next : drafts;
+}
+
+/**
+ * After logging set `index`, later undone sets inherit what was logged, so the next set
+ * is one tap. With targets, a later set that has its own target keeps it, except the
+ * load: a load the lifter chose over this set's target carries forward. Without
+ * targets every logged value carries (the free behavior).
+ */
+export function carryForward(
+  sets: DraftSet[],
+  index: number,
+  logged: WellValues,
+  targets?: readonly (WellValues | null)[] | null,
+): DraftSet[] {
+  const own = targets?.[index] ?? null;
+  const loadChosen =
+    own != null &&
+    ((logged.weight ?? null) !== (own.weight ?? null) ||
+      (logged.counterweight ?? null) !== (own.counterweight ?? null));
+  return sets.map((set, inner) => {
+    if (inner === index) {
+      return { ...set, done: true };
+    }
+    if (inner < index || set.done) {
+      return set;
+    }
+    const later = targets?.[inner] ?? null;
+    if (own && later) {
+      return loadChosen
+        ? {
+            ...set,
+            weight: logged.weight ?? set.weight,
+            counterweight: logged.counterweight ?? set.counterweight,
+          }
+        : set;
+    }
+    return {
+      ...set,
+      weight: logged.weight ?? set.weight,
+      reps: logged.reps ?? set.reps,
+      counterweight: logged.counterweight ?? set.counterweight,
+      durationSeconds: logged.durationSeconds ?? set.durationSeconds,
+    };
+  });
+}
