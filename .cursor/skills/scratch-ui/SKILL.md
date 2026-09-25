@@ -83,7 +83,7 @@ One of each on a screen. Never two heroes.
 | Residue / second | 28px medium | black → `#3C3C43` → `#8E8E93` | Logged weights×reps, quiet numbers |
 | Row | 17px | black or `#8E8E93` | List items |
 | Caption | 15px | `#8E8E93` | Fact labels, meta under a name |
-| Meta | 13px | `#8E8E93` | `4 × 8`, duration |
+| Meta | 13px | `#8E8E93` | `4 × 8 reps`, duration |
 
 Air belongs to the subject. Thumb actions stay at the bottom on tool screens. Density lives in sheets, not on the stage.
 
@@ -94,6 +94,14 @@ Air belongs to the subject. Thumb actions stay at the bottom on tool screens. De
 - **Green `#34C759` light / `#30D158` dark** = completed work and the one gym CTA (`Log set`, `Finish`, `Done`, checks). Never green titles. Never a second green control on the same stage.
 - **Active plan** uses type + check / `Active` — not a vague `On` alone if the word is ambiguous.
 - **Appearance** (Settings): System / Light / Dark. Paper dark drafts live on the **Dark mode** page. Default preference is System.
+
+## Units
+
+Every load carries its unit where it is shown: `60 kg × 8`, `Last time 72.5 kg × 8`, `Target 87.5 kg × 8`. Prescriptions say what the number is: `4 × 8 reps`, `3 × 30s`. (Replaces the old unit-once rule, G-9.)
+
+## Toast
+
+`showToast({ title })` (`components/toast.tsx`) confirms an action whose result isn't on screen yet — a sheet that just closed. Inverted ink pill with a green check, above the tab bar, ~2s, tap to dismiss; enter 240ms ease-out rise, reduced motion = fade. One at a time. Never for errors, never for something the screen already shows.
 
 ## Do not
 
@@ -109,15 +117,17 @@ Same voices. Different winner. Do not invent a new type scale.
 | --- | --- | --- | --- |
 | Home | Day name (under `Next Workout` 28) | Identity: day title + meta only (`n exercises · ~Xm`) — no focus/region subtitle. Exercise list as **one object** on its 16 inset: name 17 + prescription meta 15, no thumbnail column (1.0 ships no exercise media; an initials tile never wins). Truncate after ~4 rows with a **full list row**: `n more exercise(s)` 17 on the text lane + chevron down trailing — same lanes as exercise rows. Tap expands in place (show all + Show less, chevron up). Black Start sits with the list (tighter than the week). Week = **amount** (`n of m` + dots; **completed dots are green**), with clear air above the tab bar. Tap list/day → preview, not log. | Completed week dots + checks only. |
 | Log | Exercise name | Strip; quiet `Set n of m`; **Last time** as the target; checked set lines grow below (no Previous Sets card). Wells: **tap the number → system keyboard → type** (primary path for big jumps / first set of a new exercise). −/+ only for small gym adjustments (e.g. +2.5). Focused well: white fill + 2px black ring. Green `Log set` at thumb. Frame must not jump as sets appear. | `Log set` (+ checks) |
-| Done | `Done` 64 + check | Day 15; air; duration / sets 28; recap 17 + 15; green Done at thumb | Check + Done |
+| Done | `Done` 64 + check | Day 15; air; duration / sets 28; recap = exercise name 17, then **one 15 row per set** (set number in a narrow tertiary lane + `60 kg × 8`; crown on the PR set), shared with Session detail (`RecapExercise`); green Done at thumb | Check + Done |
 | Plans | Tab title 28 | Active plan as **one prominent row/card** (name + day count + ✓ Active). Other plans quieter name + count. Tap → detail. No plan icons. No permanent rename/delete on rows. | `Active` check/label only |
 | Plan detail | Plan name (40) | `n days` (+ green Active); days as title + 2-line `·` exercise names; empty = Add exercises; Add day quiet; Use/Delete later | Active only |
 | History | Tab title 28 | Month caption is amount (`August · 4 sessions`). Session row = title 17 + meta 15 (`{when} · {n} exercises · {duration}`) on the left — `when` is `Today` / `Yesterday` / `Wed 13` under the month (no repeated month name). Quiet hairline between sessions in a month; air between months. When the session has PRs, a quiet grey pill on the right (vertically centered): yellow crown · count · `PR`/`PRs`. Empty = `No completed workouts yet.` Long-press deletes. Tap → session detail. | Yellow crown for PRs only |
 | Session detail | Workout title (40) | A **record**, not a Done ceremony. Back; one facts line (`{when} · {duration} · {n} exercises · {n} sets`); exercises as name 17 + one 15 line per set (tabular). Yellow crown next to the set that beat a prior session’s 10RM. No green, no Done button — `workout-complete` keeps that job. | Yellow crown on PR set |
 | Home preview | Sheet | Name 17 + `n × reps` 15 per row, no thumbnail; rows are read-only (no exercise sheet); Start black starts that day | None |
 | Home empty | `Plan` 56 | Caption; black Create plan | None |
-| Settings | Tab title 28 | 17 rows; Clear history red | None |
-| Exercises / Prescribe / Onboarding / Units / Paywall | Unchanged intent from product | Keep sparse; black Continue / Add; green only where already specified | As before |
+| Settings | Tab title 28 | 17 rows in groups separated by air: preferences (Weight, Appearance) · Pro (Trim Pro, Restore) · **links out** (Contact support, Privacy Policy, Terms of Use: link role + trailing `arrow.up.right`, never a value) · Clear history red | None |
+| Paywall | Headline (34) | One headline, **no subheading**. Benefit rows = 36pt SF Symbol tile + title 17 semibold + one detail line 15 (≤ ~45 chars). Plan options, then the trial timeline (glyph nodes: ink `lock.open.fill` today, grey `creditcard.fill` on the charge day) — all above the fold on a 6.3" phone. `Not now` top right on a solid band (hairline once content scrolls under). Black CTA + price note in the footer; Restore · Terms · Privacy under it. | None |
+| Body check-in | Sheet title 17 | Native `formSheet` route: Cancel · Check in · Save in one header row (Save disabled until a value), fields scroll with the keyboard inset, Next / Done in a native input accessory. Save closes the sheet and shows the toast `Check-in saved`. | Green dot on fields that will save |
+| Exercises / Prescribe / Onboarding / Units | Unchanged intent from product | Keep sparse; black Continue / Add; green only where already specified | As before |
 
 ---
 
