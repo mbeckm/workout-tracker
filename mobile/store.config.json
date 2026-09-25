@@ -66,6 +66,7 @@
       "firstName": "Marvin",
       "lastName": "Beckmann",
       "email": "marvinbeckm@gmail.com",
+      "phone": "+49 160 5736073",
       "demoRequired": false,
       "notes": "No account or login is needed. Every feature works without signing in, and all workout data stays on the device.\n\nTrim Pro is an auto-renewable subscription (monthly, or yearly with a 7-day free trial) bought in the in-app paywall. Prices load from StoreKit through RevenueCat. Each Pro gate opens the same paywall:\n1. Settings tab > Trim Pro.\n2. Plans tab > + (after the first plan exists) opens \"Add another plan\". Free users keep one plan.\n3. Finish a first workout: Workout tab > Start on a day > Log set > Finish > Done. The paywall opens once after the first completed workout.\n4. Progress tab > tap a lift (after logging a workout) > the 6M, YTD or All chip. Free shows the last 3 months.\n5. Progress tab > Log check-in > tap a body metric > \"Trends over time with Trim Pro\".\n6. Next-session targets: shown during logging for Pro users; free users see the Pro prompt there.\n\nRestore Purchases is in the paywall footer and in Settings. Terms of Use (Apple standard EULA) and Privacy Policy are linked from the paywall footer and Settings."
     }
