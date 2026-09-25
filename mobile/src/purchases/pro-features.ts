@@ -36,8 +36,8 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   {
     id: 'targets',
     title: 'Next-session targets',
-    detail: 'The weight and reps to beat, set from last time.',
-    shipped: false,
+    detail: 'The weight and reps for every set, worked out from last time.',
+    shipped: true,
     reasons: ['targets'],
   },
 ];

@@ -22,7 +22,7 @@ const REASON_COPY: Record<ProReason, { headline: string; lead: string }> = {
   switch_plan: { headline: 'Switch plans.', lead: 'Switching plans is part of Trim Pro.' },
   progress_history: { headline: 'See all of your progress.', lead: 'Older progress is part of Trim Pro.' },
   body_trends: { headline: 'See your body trends.', lead: 'Body trends are part of Trim Pro.' },
-  targets: { headline: 'Get next-session targets.', lead: 'Targets are part of Trim Pro.' },
+  targets: { headline: 'See a target for every set.', lead: 'Targets are part of Trim Pro.' },
   settings: { headline: 'Trim Pro', lead: 'Logging stays free. Pro adds more.' },
 };
 
