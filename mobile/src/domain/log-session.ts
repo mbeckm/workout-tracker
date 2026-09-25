@@ -5,6 +5,7 @@
 import {
   emptyLoggedSet,
   formatLoggedSetLine,
+  type SetLineOptions,
   repsForSet,
   setCount,
   tenRMForSet,
@@ -401,13 +402,13 @@ export function lastTimeSetFor(
 }
 
 /**
- * `Last time 72.5 × 8` for the set on the stage (0-based), or `Last time 80 × 8 · 8 · 7`
+ * `Last time 72.5 kg × 8` for the set on the stage (0-based), or `Last time 80 kg × 8 · 8 · 7`
  * for the whole last session (`'all'`, exercise done). Null when there is no history.
  */
 export function lastTimeText(
   previousSets: readonly LoggedSet[] | null | undefined,
   setIndex: number | 'all',
-  options?: { minutes?: boolean },
+  options?: SetLineOptions,
 ): string | null {
   if (!previousSets || previousSets.length === 0) {
     return null;
@@ -419,10 +420,10 @@ export function lastTimeText(
   return set ? `Last time ${formatLoggedSetLine(set, options)}` : null;
 }
 
-/** `80 × 8 · 8 · 7` when the load is constant, else `80 × 8 · 85 × 6`. Units never ride along. */
+/** `80 kg × 8 · 8 · 7` when the load is constant, else `80 kg × 8 · 85 kg × 6`. */
 export function formatSetsCompact(
   sets: readonly LoggedSet[],
-  options?: { minutes?: boolean },
+  options?: SetLineOptions,
 ): string {
   if (sets.length === 0) {
     return '—';
@@ -432,7 +433,7 @@ export function formatSetsCompact(
   const firstLoad = loads[0];
   if (allReps && firstLoad != null && loads.every((load) => load === firstLoad)) {
     const [first, ...rest] = sets;
-    const head = formatLoggedSetLine({ weight: firstLoad, reps: first?.reps });
+    const head = formatLoggedSetLine({ weight: firstLoad, reps: first?.reps }, { unit: options?.unit });
     return [head, ...rest.map((set) => String(set.reps))].join(' · ');
   }
   if (allReps && loads.every((load) => load == null)) {

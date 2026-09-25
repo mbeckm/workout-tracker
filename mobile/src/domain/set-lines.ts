@@ -1,9 +1,14 @@
-import { formatLoggedSetLine, formatSetsCount, personalBestSetIds } from '@/domain/helpers';
+import {
+  formatLoggedSetLine,
+  formatSetsCount,
+  personalBestSetIds,
+  type SetLineOptions,
+} from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout } from '@/domain/types';
 
-/** One recap line: consecutive sets at the same load, e.g. `85 × 8, 8, 8, 7`. */
+/** One recap line: consecutive sets at the same load, e.g. `85 kg × 8, 8, 8, 7`. */
 export type SetLine = {
-  /** Unitless text. The screen states the unit once (G-9). */
+  /** Carries the weight unit on the load (`85 kg × 8`) when one is passed. */
   text: string;
   /** Spoken form for VoiceOver: `85 for 8, 8, 8 and 7 reps`. */
   accessibilityLabel: string;
@@ -32,7 +37,7 @@ function spokenList(values: string[]): string {
   return `${values.slice(0, -1).join(', ')} and ${values[values.length - 1]}`;
 }
 
-function lineFor(group: LineSet[], options?: { minutes?: boolean }): SetLine {
+function lineFor(group: LineSet[], options?: SetLineOptions): SetLine {
   const first = group[0];
   const setIds = group.map((set) => set.id);
   const key = first ? groupKey(first) : null;
@@ -52,7 +57,7 @@ function lineFor(group: LineSet[], options?: { minutes?: boolean }): SetLine {
     };
   }
 
-  const load = formatLoggedSetLine({ weight: loadOf(first) });
+  const load = formatLoggedSetLine({ weight: loadOf(first) }, { unit: options?.unit });
   const repsUnit = group.length === 1 && first.reps === 1 ? 'rep' : 'reps';
   return {
     text: `${load} × ${reps.join(', ')}`,
@@ -63,11 +68,11 @@ function lineFor(group: LineSet[], options?: { minutes?: boolean }): SetLine {
 
 /**
  * Same-weight compression for recaps (D-1, SD-1).
- * Consecutive sets at the same load collapse into one line (`85 × 8, 8, 8, 7`);
+ * Consecutive sets at the same load collapse into one line (`85 kg × 8, 8, 8, 7`);
  * a load change starts a new line. Duration and other sets stay one line each,
  * except that identical consecutive durations collapse too (`45s, 45s` → `45s × 2`).
  */
-export function compressSetLines(sets: LineSet[], options?: { minutes?: boolean }): SetLine[] {
+export function compressSetLines(sets: LineSet[], options?: SetLineOptions): SetLine[] {
   const groups: LineSet[][] = [];
   for (const set of sets) {
     const current = groups[groups.length - 1];

@@ -705,7 +705,7 @@ export function LogWorkoutScreen() {
   };
 
   const confirmUndoSet = (set: DraftSet) => {
-    const line = formatLoggedSetLine(set, { minutes });
+    const line = formatLoggedSetLine(set, { minutes, unit: units });
     confirmAction(
       {
         title: 'Undo this set?',
@@ -1037,7 +1037,7 @@ export function LogWorkoutScreen() {
                     {residueSets.map((set) => (
                       <ResidueSetRow
                         key={set.id}
-                        label={formatLoggedSetLine(set, { minutes })}
+                        label={formatLoggedSetLine(set, { minutes, unit: units })}
                         reduceMotion={Boolean(reduceMotion)}
                         resetKey={residueResetKeys[set.id] ?? 0}
                         editing={edit?.setId === set.id}
@@ -1850,7 +1850,7 @@ function LogExerciseSheet({
       ? [
           {
             label: 'Best',
-            value: `${formatLoggedSetLine(best.set, { minutes })} · ${formatShortDate(best.completedAt)}`,
+            value: `${formatLoggedSetLine(best.set, { minutes, unit: units })} · ${formatShortDate(best.completedAt)}`,
           },
         ]
       : []),

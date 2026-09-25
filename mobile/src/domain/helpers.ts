@@ -111,7 +111,7 @@ export function formatPlanMetric(exercise: ExercisePrescription): string {
   if (usesDuration(exercise.trackingMode) && !usesReps(exercise.trackingMode)) {
     return `${setCount(exercise)} × ${exercise.durationSeconds ?? 30}s`;
   }
-  return `${setCount(exercise)} × ${exercise.reps || 8}`;
+  return `${setCount(exercise)} × ${exercise.reps || 8} reps`;
 }
 
 export function exerciseSubtitle(exercise: ExercisePrescription): string {
@@ -552,13 +552,26 @@ export function stripLabel(name: string): string {
   return joinStripParts(parts) || trimmed;
 }
 
+export type WeightUnit = 'kg' | 'lbs';
+
+export type SetLineOptions = {
+  minutes?: boolean;
+  /** The user's weight unit. Every load carries it: `60 kg × 8`, not `60 × 8`. */
+  unit?: WeightUnit | null;
+};
+
+/** `60 kg`, or `60` when no unit is known. */
+export function formatLoadWithUnit(value: number, unit?: WeightUnit | null): string {
+  return unit ? `${formatLoad(value)} ${unit}` : formatLoad(value);
+}
+
 export function formatLoggedSetLine(
   set: Pick<LoggedSet, 'weight' | 'reps' | 'counterweight' | 'durationSeconds'>,
-  options?: { minutes?: boolean },
+  options?: SetLineOptions,
 ): string {
   const load = set.weight ?? set.counterweight;
   if (load != null && set.reps != null) {
-    return `${formatLoad(load)} × ${set.reps}`;
+    return `${formatLoadWithUnit(load, options?.unit)} × ${set.reps}`;
   }
   if (set.reps != null && load == null) {
     return `${set.reps} reps`;
@@ -570,7 +583,7 @@ export function formatLoggedSetLine(
     return `${set.durationSeconds}s`;
   }
   if (load != null) {
-    return formatLoad(load);
+    return formatLoadWithUnit(load, options?.unit);
   }
   return '—';
 }
