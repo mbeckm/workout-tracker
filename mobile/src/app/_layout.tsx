@@ -114,17 +114,28 @@ function RootNav() {
     [isHydrated, applyEntitlement],
   );
 
+  // Onboarding closes its own one-way door: in one tap it saves the plan, completes
+  // onboarding, replaces itself with Home and opens the paywall or plan editor on top.
+  // Segments can trail that state by a render, so while that exit is in flight a stale
+  // `onboarding` segment must not trigger a second replace here (it would remove the
+  // paywall or editor). Once the app has been reached, any way back into onboarding
+  // (a stale link, web history) is sent Home.
+  const onboardingExit = useRef<'none' | 'pending' | 'done'>('none');
   useEffect(() => {
     if (!isHydrated) {
       return;
     }
 
     const onOnboarding = segments[0] === 'onboarding';
-    if (!hasCompletedOnboarding && !onOnboarding) {
-      router.replace('/onboarding');
-      return;
-    }
-    if (hasCompletedOnboarding && onOnboarding) {
+    if (!hasCompletedOnboarding) {
+      onboardingExit.current = 'pending';
+      if (!onOnboarding) {
+        router.replace('/onboarding');
+        return;
+      }
+    } else if (!onOnboarding) {
+      onboardingExit.current = 'done';
+    } else if (onboardingExit.current !== 'pending') {
       router.replace('/');
     }
     void SplashScreen.hideAsync().catch(() => undefined);

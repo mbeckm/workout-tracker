@@ -14,7 +14,7 @@ EAS project ID: `88024391-8ffd-4a6d-923d-18c766972365`.
 
 Tabs: Workout, Plans, History, Settings.
 
-Ship: plan-first home (active plan + days), plan creation (pick exercises, then sets and reps per set — no per-set rows, no weights), Alpha Progression logging (exercise strip, active set, previous session, auto-advance), bundled + custom exercises, 2–3 screen onboarding, paywall after first completed workout, restore purchases, local persistence.
+Ship: plan-first home (active plan + days), plan creation (pick exercises, then sets and reps per set — no per-set rows, no weights), Alpha Progression logging (exercise strip, active set, previous session, auto-advance), bundled + custom exercises, five-screen onboarding that ends with a real plan (free starter templates in `mobile/src/catalog/templates.ts`, or Build my own), paywall at the end of onboarding (soft, template path only) and once after the first completed workout, plus feature gates, restore purchases, local persistence.
 
 Do not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, cloud auth.
 
