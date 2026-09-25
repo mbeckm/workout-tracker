@@ -1366,7 +1366,7 @@ function DayStrip({
                 lineHeight: 20,
                 fontWeight: selected || complete ? '500' : '400',
                 color: selectedComplete
-                  ? colors.onTint
+                  ? colors.onGreen
                   : selected || complete
                     ? colors.label
                     : colors.tertiaryLabel,
@@ -1378,7 +1378,7 @@ function DayStrip({
                 name="checkmark"
                 size={12}
                 weight="bold"
-                tintColor={selected ? colors.onTint : colors.systemGreen}
+                tintColor={selected ? colors.onGreen : colors.systemGreen}
               />
             ) : null}
           </Pressable>
