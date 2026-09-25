@@ -97,7 +97,12 @@ Air belongs to the subject. Thumb actions stay at the bottom on tool screens. De
 
 ## Units
 
-Every load carries its unit where it is shown: `60 kg × 8`, `Last time 72.5 kg × 8`, `Target 87.5 kg × 8`. Prescriptions say what the number is: `4 × 8 reps`, `3 × 30s`. (Replaces the old unit-once rule, G-9.)
+Every load carries its unit where it is shown: `60 kg × 8`, `Last time 72.5 kg × 8`, `Target 87.5 kg × 8`. Prescriptions say what the number is: `4 × 8 reps`, `3 × 30s`; on Home and the day preview they add the last working weight from history: `4 × 8 reps · 15 kg` (plans store no weights). A finished exercise on the log stage reads one fact: `Last time 4 sets · best 15 kg × 10`. (Replaces the old unit-once rule, G-9.)
+
+## Home: week and other days
+
+- **Week celebration.** While Home is covered (log, Done, paywall) the week amount keeps its old value. When Home is visible again (~320ms, after the modal leaves) the new dot fills with a springy pop (0.5 → 1, dampingRatio 0.42) and two soft green rings (scale ×3.4, opacity 0.45 → 0, 760ms, 140ms apart), and the count rolls up with NumberFlow. A completed week adds a staggered bump across all dots. Reduced motion: color crossfade only. No extra haptic (Finish already has the success tap).
+- **Other days.** Captioned `Other days` (the list was unreadable without it). Row = day title 17 + its first exercise names 15 (`Bench Press · Incline Press · +2`), so same-named days read apart; a green check trails a day done this week.
 
 ## Toast
 
@@ -125,7 +130,7 @@ Same voices. Different winner. Do not invent a new type scale.
 | Home preview | Sheet | Name 17 + `n × reps` 15 per row, no thumbnail; rows are read-only (no exercise sheet); Start black starts that day | None |
 | Home empty | `Plan` 56 | Caption; black Create plan | None |
 | Settings | Tab title 28 | 17 rows in groups separated by air: preferences (Weight, Appearance) · Pro (Trim Pro, Restore) · **links out** (Contact support, Privacy Policy, Terms of Use: link role + trailing `arrow.up.right`, never a value) · Clear history red | None |
-| Paywall | Headline (34) | One headline, **no subheading**. Benefit rows = 36pt SF Symbol tile + title 17 semibold + one detail line 15 (≤ ~45 chars). Plan options, then the trial timeline (glyph nodes: ink `lock.open.fill` today, grey `creditcard.fill` on the charge day) — all above the fold on a 6.3" phone. `Not now` top right on a solid band (hairline once content scrolls under). Black CTA + price note in the footer; Restore · Terms · Privacy under it. | None |
+| Paywall | Headline (34) | One headline, **no subheading**. **One text edge:** feature tiles, the plan radios and the timeline nodes all sit in a 36pt lane so every title/detail starts at the same x; every row is title + one line. Benefit rows = 36pt SF Symbol tile + title 17 semibold + one detail line 15 (≤ ~45 chars). Plan options, then the trial timeline (glyph nodes: ink `lock.open.fill` today, grey `creditcard.fill` on the charge day) — all above the fold on a 6.3" phone. `Not now` top right on a solid band (hairline once content scrolls under). Black CTA + price note in the footer; Restore · Terms · Privacy under it. | None |
 | Body check-in | Sheet title 17 | Native `formSheet` route: Cancel · Check in · Save in one header row (Save disabled until a value), fields scroll with the keyboard inset, Next / Done in a native input accessory. Save closes the sheet and shows the toast `Check-in saved`. | Green dot on fields that will save |
 | Exercises / Prescribe / Onboarding / Units | Unchanged intent from product | Keep sparse; black Continue / Add; green only where already specified | As before |
 

@@ -12,13 +12,15 @@ export function trialSteps(offer: ProOffer, trial: FreeTrial): Step[] {
     { when: 'Today', what: 'Full access to Trim Pro.', now: true },
     {
       when: trial.days != null ? `Day ${trial.days}` : `In ${trial.length}`,
-      what: `${billedPerPeriod(offer)}, charged unless you cancel before then.`,
+      what: `Charged ${billedPerPeriod(offer)} unless you cancel.`,
       now: false,
     },
   ];
 }
 
-const NODE = 26;
+const NODE = 28;
+/** Same lane as the paywall's 36pt feature tiles, so every text edge on the page lines up. */
+const LANE = 36;
 
 /**
  * Home week-dot language, with a glyph in each node: ink for now (unlocked), grey for
@@ -38,7 +40,7 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
             accessible
             accessibilityLabel={`${step.when}: ${step.what}`}
             style={{ flexDirection: 'row', gap: 14 }}>
-            <View style={{ width: NODE, alignItems: 'center' }}>
+            <View style={{ width: LANE, alignItems: 'center' }}>
               <View
                 style={{
                   width: NODE,
@@ -50,7 +52,7 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
                 }}>
                 <SymbolView
                   name={step.now ? 'lock.open.fill' : 'creditcard.fill'}
-                  size={12}
+                  size={13}
                   weight="semibold"
                   tintColor={step.now ? colors.onLabel : colors.secondaryLabel}
                 />
@@ -59,7 +61,7 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
                 <View style={{ flex: 1, width: 2, marginVertical: 3, backgroundColor: colors.systemGray5 }} />
               )}
             </View>
-            <View style={{ flex: 1, minWidth: 0, gap: 1, paddingTop: 3, paddingBottom: last ? 0 : 16 }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 1, paddingTop: 4, paddingBottom: last ? 0 : 16 }}>
               <Text style={[type.kicker, { color: colors.label, fontWeight: '600' }]}>{step.when}</Text>
               <Text style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>{step.what}</Text>
             </View>
