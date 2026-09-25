@@ -18,5 +18,5 @@ description: Implements a Scratch Expo screen from Paper Family loop. Use when a
 
 - Visual source of truth is `scratch-ui` + the current Paper artboard for that screen.
 - `references/1.0/` is historical. Do not match its tables, blue titles, or AP log chrome.
-- Haptics only when a set is logged.
+- Haptics only for: a logged set (light impact), rest end and Finish (success), stepper and option selection (selection: well −/+, swiping between exercises, a paywall option), and a sheet snapping (light impact). Nothing else buzzes. See `PRODUCT-DECISIONS.md` item 24.
 - Never skip Paper: critique → Paper → judge → then `mobile/`.
