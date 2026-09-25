@@ -414,7 +414,7 @@ export function lastTimeText(
     return null;
   }
   if (setIndex === 'all') {
-    return `Last time ${formatSetsCompact(previousSets, options)}`;
+    return lastTimeSummary(previousSets, options);
   }
   const set = lastTimeSetFor(previousSets, setIndex);
   return set ? `Last time ${formatLoggedSetLine(set, options)}` : null;
@@ -440,6 +440,28 @@ export function formatSetsCompact(
     return sets.map((set) => String(set.reps)).join(' · ');
   }
   return sets.map((set) => formatLoggedSetLine(set, options)).join(' · ');
+}
+
+/**
+ * One glanceable fact for a finished exercise: `Last time 4 sets · best 15 kg × 10`.
+ * Best = heaviest load, then most reps. Sets without a load fall back to the compact list.
+ */
+export function lastTimeSummary(
+  previousSets: readonly LoggedSet[],
+  options?: SetLineOptions,
+): string {
+  const count = previousSets.length;
+  const sets = `${count} ${count === 1 ? 'set' : 'sets'}`;
+  const loaded = previousSets.filter((set) => (set.weight ?? set.counterweight) != null && set.reps != null);
+  if (loaded.length === 0) {
+    return `Last time ${formatSetsCompact(previousSets, options)}`;
+  }
+  const best = loaded.reduce((top, set) => {
+    const load = set.weight ?? set.counterweight ?? 0;
+    const topLoad = top.weight ?? top.counterweight ?? 0;
+    return load > topLoad || (load === topLoad && (set.reps ?? 0) > (top.reps ?? 0)) ? set : top;
+  });
+  return `Last time ${sets} · best ${formatLoggedSetLine(best, options)}`;
 }
 
 export type BestSet = { set: LoggedSet; completedAt: string };

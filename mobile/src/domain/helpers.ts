@@ -114,6 +114,26 @@ export function formatPlanMetric(exercise: ExercisePrescription): string {
   return `${setCount(exercise)} × ${exercise.reps || 8} reps`;
 }
 
+/**
+ * `4 × 8 reps · 15 kg`: the prescription plus the working weight from the last session
+ * (its heaviest set). Plans store no weights, so the load comes from history; without
+ * history, or for bodyweight and timed work, it's the prescription alone.
+ */
+export function formatPlanMetricWithLoad(
+  exercise: ExercisePrescription,
+  previousSets: readonly Pick<LoggedSet, 'weight'>[] | null | undefined,
+  unit: WeightUnit,
+): string {
+  const base = formatPlanMetric(exercise);
+  const loads = (previousSets ?? [])
+    .map((set) => set.weight)
+    .filter((value): value is number => value != null && value > 0);
+  if (loads.length === 0) {
+    return base;
+  }
+  return `${base} · ${formatLoadWithUnit(Math.max(...loads), unit)}`;
+}
+
 export function exerciseSubtitle(exercise: ExercisePrescription): string {
   const equipment = exercise.equipments[0] ?? exercise.exerciseType ?? exercise.itemType;
   return `${equipment} · ${formatPlanMetric(exercise)}`;

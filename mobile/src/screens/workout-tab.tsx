@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useIsFocused, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
@@ -7,16 +7,21 @@ import Animated, {
   FadeInDown,
   FadeOut,
   FadeOutUp,
+  interpolateColor,
   LinearTransition,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { HomeDayRow } from '@/components/home-day-row';
+import { StaggerValue } from '@/components/stagger-value';
 import { PaperEmpty, PaperScreen } from '@/components/paper';
 import { radius, spacing } from '@/constants/theme';
 import { EASE_OUT } from '@/motion';
@@ -29,7 +34,7 @@ import {
   formatLoggedSets,
   lastDoneAt,
 } from '@/domain/day-facts';
-import { emptyPlan, formatPlanMetric } from '@/domain/helpers';
+import { emptyPlan, formatPlanMetricWithLoad } from '@/domain/helpers';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
 import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { useStartDay } from '@/navigation/start-day';
@@ -274,17 +279,20 @@ export function WorkoutTab() {
             ) : null}
 
             {otherDays.length > 0 ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 28 }} testID="home-other-days">
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 36 }} testID="home-other-days">
+                {/* Names the list: without it the rows read as an unexplained table (H-1). */}
+                <Text style={[fact, { paddingBottom: 2 }]} accessibilityRole="header">
+                  Other days
+                </Text>
                 {otherDays.map((item, index) => {
-                  const doneAt = lastDoneAt(activePlan, item.id, workoutHistory);
-                  const rowMeta = doneAt
-                    ? `${formatExerciseCount(item.exercises.length)} · ${formatDoneLabel(doneAt)}`
-                    : formatExerciseCount(item.exercises.length);
+                  const doneThisWeek = doneIds.includes(item.id);
+                  const doneAt = doneThisWeek ? lastDoneAt(activePlan, item.id, workoutHistory) : null;
                   return (
                     <HomeDayRow
                       key={item.id}
                       day={item}
-                      meta={rowMeta}
+                      doneThisWeek={doneThisWeek}
+                      doneLabel={doneAt ? formatDoneLabel(doneAt) : null}
                       showSeparator={index < otherDays.length - 1}
                       onPress={() => openPreview(activePlan, item)}
                       testID={`home-day-row-${index}`}
@@ -311,80 +319,174 @@ export function WorkoutTab() {
 
 function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
   const { colors, type } = useTheme();
+  const { previousLogForExercise, units } = useWorkoutStore();
+  const metric = formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units);
   const fact = { ...factBase, color: colors.tertiaryLabel };
   return (
     <View style={{ gap: 2 }}>
       <Text style={type.row} numberOfLines={1}>
         {exercise.name}
       </Text>
-      <Text style={fact}>{formatPlanMetric(exercise)}</Text>
+      <Text style={[fact, { fontVariant: ['tabular-nums'] }]}>{metric}</Text>
     </View>
   );
 }
 
+/** Wait for the modal that finished the workout to slide away before celebrating. */
+const CELEBRATE_DELAY_MS = 320;
+
+/**
+ * Week amount: `n of m this week` + dots. While Home is covered (log, Done, paywall) it
+ * keeps showing the old amount; when Home is visible again the new dot fills with a small
+ * celebration and the count rolls up, so finishing a workout lands on the goal it moved.
+ */
 function WeekAmount({ done, total }: { done: number; total: number }) {
   const { colors, type } = useTheme();
   const fact = { ...factBase, color: colors.tertiaryLabel };
-  const previousDone = useRef<number | null>(null);
-  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
+  const isFocused = useIsFocused();
+  const seenDone = useRef<number | null>(null);
+  const [shown, setShown] = useState(done);
+  const [celebrate, setCelebrate] = useState<{ index: number; weekDone: boolean; key: number } | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (previousDone.current == null) {
-      previousDone.current = done;
+    if (seenDone.current == null) {
+      seenDone.current = done;
+      setShown(done);
       return;
     }
-    if (done > previousDone.current) {
-      setPulseIndex(done - 1);
+    if (done <= seenDone.current) {
+      // A deleted workout or a new week: no ceremony.
+      seenDone.current = done;
+      setShown(done);
+      return;
     }
-    previousDone.current = done;
-  }, [done]);
+    if (!isFocused) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      seenDone.current = done;
+      setShown(done);
+      setCelebrate({ index: done - 1, weekDone: done >= total, key: Date.now() });
+    }, CELEBRATE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [done, isFocused, total]);
 
   return (
-    <View style={{ gap: spacing.s, alignItems: 'flex-start' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm }}>
-        <Text style={type.title}>
-          {done} of {total}
-        </Text>
-        <Text style={fact}>this week</Text>
+    <View
+      style={{ gap: spacing.s, alignItems: 'flex-start' }}
+      accessible
+      accessibilityLabel={`${shown} of ${total} this week`}>
+      {/* NumberFlow has no text baseline to align to; bottom edges match within a point. */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
+        {/* One NumberFlow with a suffix: a sibling Text would sit on a different baseline. */}
+        <StaggerValue value={shown} suffix={` of ${total}`} style={type.title} />
+        <Text style={[fact, { lineHeight: 18, paddingBottom: 1 }]}>this week</Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         {Array.from({ length: total }, (_, index) => (
-          <WeekDot key={index} filled={index < done} pulse={pulseIndex === index} />
+          <WeekDot
+            key={index}
+            filled={index < shown}
+            celebrateKey={celebrate?.index === index ? celebrate.key : null}
+            waveKey={celebrate?.weekDone ? celebrate.key : null}
+            waveDelay={index * 70}
+          />
         ))}
       </View>
     </View>
   );
 }
 
-function WeekDot({ filled, pulse }: { filled: boolean; pulse: boolean }) {
+const DOT = 10;
+
+/**
+ * One week dot. `celebrateKey` fills it with a springy pop and two soft green rings;
+ * `waveKey` gives it a small staggered bump when the whole week is done.
+ */
+function WeekDot({
+  filled,
+  celebrateKey,
+  waveKey,
+  waveDelay,
+}: {
+  filled: boolean;
+  celebrateKey: number | null;
+  waveKey: number | null;
+  waveDelay: number;
+}) {
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
+  const fill = useSharedValue(filled ? 1 : 0);
   const scale = useSharedValue(1);
+  const ringA = useSharedValue(0);
+  const ringB = useSharedValue(0);
 
   useEffect(() => {
-    if (!pulse || reduceMotion) {
+    if (celebrateKey != null) {
       return;
     }
-    scale.set(0.95);
-    scale.set(withTiming(1, { duration: 200, easing: EASE_OUT }));
-  }, [pulse, reduceMotion, scale]);
+    fill.set(filled ? 1 : 0);
+  }, [celebrateKey, fill, filled]);
 
-  const style = useAnimatedStyle(() => ({
+  useEffect(() => {
+    if (celebrateKey == null) {
+      return;
+    }
+    fill.set(withTiming(1, { duration: reduceMotion ? 220 : 160, easing: EASE_OUT }));
+    if (reduceMotion) {
+      return;
+    }
+    scale.set(0.5);
+    scale.set(withSpring(1, { duration: 520, dampingRatio: 0.42 }));
+    ringA.set(0);
+    ringA.set(withTiming(1, { duration: 760, easing: EASE_OUT }));
+    ringB.set(0);
+    ringB.set(withDelay(140, withTiming(1, { duration: 760, easing: EASE_OUT })));
+  }, [celebrateKey, fill, reduceMotion, ringA, ringB, scale]);
+
+  useEffect(() => {
+    if (waveKey == null || reduceMotion) {
+      return;
+    }
+    scale.set(
+      withDelay(
+        420 + waveDelay,
+        withSequence(
+          withTiming(1.35, { duration: 140, easing: EASE_OUT }),
+          withSpring(1, { duration: 360, dampingRatio: 0.5 }),
+        ),
+      ),
+    );
+  }, [reduceMotion, scale, waveDelay, waveKey]);
+
+  const dotStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.get() }],
+    backgroundColor: interpolateColor(fill.get(), [0, 1], [colors.systemGray5, colors.systemGreen]),
+  }));
+  const ringAStyle = useAnimatedStyle(() => ({
+    opacity: ringA.get() === 0 ? 0 : 0.45 * (1 - ringA.get()),
+    transform: [{ scale: 1 + ringA.get() * 2.4 }],
+  }));
+  const ringBStyle = useAnimatedStyle(() => ({
+    opacity: ringB.get() === 0 ? 0 : 0.45 * (1 - ringB.get()),
+    transform: [{ scale: 1 + ringB.get() * 2.4 }],
   }));
 
+  const ring = {
+    position: 'absolute' as const,
+    width: DOT,
+    height: DOT,
+    borderRadius: radius.full,
+    backgroundColor: colors.systemGreen,
+  };
+
   return (
-    <Animated.View
-      style={[
-        {
-          width: 10,
-          height: 10,
-          borderRadius: radius.full,
-          flexShrink: 0,
-          backgroundColor: filled ? colors.systemGreen : colors.systemGray5,
-        },
-        style,
-      ]}
-    />
+    <View style={{ width: DOT, height: DOT }}>
+      <Animated.View pointerEvents="none" style={[ring, ringAStyle]} />
+      <Animated.View pointerEvents="none" style={[ring, ringBStyle]} />
+      <Animated.View style={[{ width: DOT, height: DOT, borderRadius: radius.full }, dotStyle]} />
+    </View>
   );
 }
