@@ -1,6 +1,6 @@
 import { ThemeProvider as NavigationThemeProvider, DefaultTheme, DarkTheme } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -17,6 +17,8 @@ import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
 import { startEntitlementSync } from '@/purchases/purchases';
 import { progressDemoMode, shouldUseProgressDemo } from '@/store/progress-demo';
 import { WorkoutProvider, useWorkoutStore } from '@/store/workout-store';
+import { ToastHost } from '@/components/toast';
+import { trackScreen } from '@/analytics/analytics';
 import { AppThemeProvider, useTheme } from '@/theme/theme-context';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -63,8 +65,19 @@ function ThemedApp() {
       systemScheme={systemScheme}
       onSystemSchemeChange={setSystemScheme}>
       <ThemedNavigation />
+      <ScreenTracker />
+      <ToastHost />
     </AppThemeProvider>
   );
+}
+
+/** One `$screen` event per route change; the pathname carries no ids or params. */
+function ScreenTracker() {
+  const pathname = usePathname();
+  useEffect(() => {
+    trackScreen(pathname);
+  }, [pathname]);
+  return null;
 }
 
 function ThemedNavigation() {
@@ -307,6 +320,18 @@ function RootNav() {
           // A step in the editor stack: a push, so the back chevron and edge swipe agree.
           headerShown: false,
           title: 'Exercises',
+        }}
+      />
+      <Stack.Screen
+        name="check-in"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
+          title: 'Check in',
         }}
       />
       <Stack.Screen

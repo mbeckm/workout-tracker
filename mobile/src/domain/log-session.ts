@@ -5,6 +5,7 @@
 import {
   emptyLoggedSet,
   formatLoggedSetLine,
+  type SetLineOptions,
   repsForSet,
   setCount,
   tenRMForSet,
@@ -401,28 +402,28 @@ export function lastTimeSetFor(
 }
 
 /**
- * `Last time 72.5 × 8` for the set on the stage (0-based), or `Last time 80 × 8 · 8 · 7`
+ * `Last time 72.5 kg × 8` for the set on the stage (0-based), or `Last time 80 kg × 8 · 8 · 7`
  * for the whole last session (`'all'`, exercise done). Null when there is no history.
  */
 export function lastTimeText(
   previousSets: readonly LoggedSet[] | null | undefined,
   setIndex: number | 'all',
-  options?: { minutes?: boolean },
+  options?: SetLineOptions,
 ): string | null {
   if (!previousSets || previousSets.length === 0) {
     return null;
   }
   if (setIndex === 'all') {
-    return `Last time ${formatSetsCompact(previousSets, options)}`;
+    return lastTimeSummary(previousSets, options);
   }
   const set = lastTimeSetFor(previousSets, setIndex);
   return set ? `Last time ${formatLoggedSetLine(set, options)}` : null;
 }
 
-/** `80 × 8 · 8 · 7` when the load is constant, else `80 × 8 · 85 × 6`. Units never ride along. */
+/** `80 kg × 8 · 8 · 7` when the load is constant, else `80 kg × 8 · 85 kg × 6`. */
 export function formatSetsCompact(
   sets: readonly LoggedSet[],
-  options?: { minutes?: boolean },
+  options?: SetLineOptions,
 ): string {
   if (sets.length === 0) {
     return '—';
@@ -432,13 +433,35 @@ export function formatSetsCompact(
   const firstLoad = loads[0];
   if (allReps && firstLoad != null && loads.every((load) => load === firstLoad)) {
     const [first, ...rest] = sets;
-    const head = formatLoggedSetLine({ weight: firstLoad, reps: first?.reps });
+    const head = formatLoggedSetLine({ weight: firstLoad, reps: first?.reps }, { unit: options?.unit });
     return [head, ...rest.map((set) => String(set.reps))].join(' · ');
   }
   if (allReps && loads.every((load) => load == null)) {
     return sets.map((set) => String(set.reps)).join(' · ');
   }
   return sets.map((set) => formatLoggedSetLine(set, options)).join(' · ');
+}
+
+/**
+ * One glanceable fact for a finished exercise: `Last time 4 sets · best 15 kg × 10`.
+ * Best = heaviest load, then most reps. Sets without a load fall back to the compact list.
+ */
+export function lastTimeSummary(
+  previousSets: readonly LoggedSet[],
+  options?: SetLineOptions,
+): string {
+  const count = previousSets.length;
+  const sets = `${count} ${count === 1 ? 'set' : 'sets'}`;
+  const loaded = previousSets.filter((set) => (set.weight ?? set.counterweight) != null && set.reps != null);
+  if (loaded.length === 0) {
+    return `Last time ${formatSetsCompact(previousSets, options)}`;
+  }
+  const best = loaded.reduce((top, set) => {
+    const load = set.weight ?? set.counterweight ?? 0;
+    const topLoad = top.weight ?? top.counterweight ?? 0;
+    return load > topLoad || (load === topLoad && (set.reps ?? 0) > (top.reps ?? 0)) ? set : top;
+  });
+  return `Last time ${sets} · best ${formatLoggedSetLine(best, options)}`;
 }
 
 export type BestSet = { set: LoggedSet; completedAt: string };

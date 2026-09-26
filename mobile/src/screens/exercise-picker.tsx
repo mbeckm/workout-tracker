@@ -48,8 +48,8 @@ type PickerRow = ExercisePrescription & { listKey: string };
 
 /** EP-2: how a custom exercise is tracked. Meta shows what the plan row will read. */
 const CUSTOM_KINDS = [
-  { key: 'weight', title: 'Weight × reps', meta: '3 × 12, load in the gym', exerciseType: 'strength', trackingMode: 'weightAndReps' },
-  { key: 'reps', title: 'Reps only', meta: '3 × 12, body weight', exerciseType: 'strength', trackingMode: 'reps' },
+  { key: 'weight', title: 'Weight × reps', meta: '3 × 12 reps, load in the gym', exerciseType: 'strength', trackingMode: 'weightAndReps' },
+  { key: 'reps', title: 'Reps only', meta: '3 × 12 reps, body weight', exerciseType: 'strength', trackingMode: 'reps' },
   { key: 'time', title: 'Time', meta: '3 × 30s holds', exerciseType: 'stability', trackingMode: 'duration' },
   { key: 'cardio', title: 'Cardio (minutes)', meta: '20 min', exerciseType: 'cardio', trackingMode: 'duration' },
 ] as const satisfies readonly {

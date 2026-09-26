@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "Trim",
-    "slug": "scratch-workout",
+    "slug": "workout-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/trim-icon.png",
     "scheme": "scratchworkout",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.marvinbeckmann.ScratchWorkout",
       "supportsTablet": false,
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/trim.icon",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSSupportsLiveActivities": true,
@@ -38,10 +38,11 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76,
+          "image": "./assets/images/trim-splash.png",
+          "imageWidth": 96,
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#000000",
+            "image": "./assets/images/trim-splash-dark.png"
           }
         }
       ],
@@ -52,7 +53,9 @@
           "bundleIdentifier": "com.marvinbeckmann.ScratchWorkout.ExpoWidgetsTarget",
           "groupIdentifier": "group.com.marvinbeckmann.ScratchWorkout"
         }
-      ]
+      ],
+      "./plugins/with-quoted-bundle-script",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

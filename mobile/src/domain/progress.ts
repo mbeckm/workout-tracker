@@ -103,7 +103,7 @@ function liftIndexPresentation(
 
   const latest = series.length > 0 ? series[series.length - 1] : null;
   return {
-    indexValue: latest ? formatLoggedSetLine(latest.bestSet) : '—',
+    indexValue: latest ? formatLoggedSetLine(latest.bestSet, { unit: units }) : '—',
     spokenValue: latest
       ? `best set ${latest.bestSet.weight} ${units} for ${latest.bestSet.reps} reps`
       : 'no sets yet',
