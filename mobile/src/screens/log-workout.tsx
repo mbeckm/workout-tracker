@@ -91,6 +91,8 @@ import { upcomingExerciseIndex } from '@/live-activity/upcoming';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore, type PreviousExerciseLog } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
+import { track } from '@/analytics/analytics';
+import { workoutPersonalBests } from '@/domain/set-lines';
 
 type WellFocus = 'weight' | 'reps' | 'duration' | null;
 
@@ -606,6 +608,7 @@ export function LogWorkoutScreen() {
     if (process.env.EXPO_OS === 'ios') {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+    track('set_logged', { set_number: setIndex + 1 });
     // No rest after the last set of the whole workout.
     if (unloggedSetCount(nextDrafts) > 0) {
       startRest(restSecondsForExercise(current.prescription));
@@ -781,6 +784,12 @@ export function LogWorkoutScreen() {
       dayId: day.id,
     });
     clearLogSession({ planId: plan.id, dayId: day.id });
+    track('workout_completed', {
+      exercises: workout.exercises.length,
+      sets: workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0),
+      duration_minutes: workout.durationMinutes,
+      prs: workoutPersonalBests(workout, workoutHistory).count,
+    });
     hapticSuccess();
     void endWorkoutLiveActivity();
     router.replace(

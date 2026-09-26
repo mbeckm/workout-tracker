@@ -53,7 +53,8 @@
           "groupIdentifier": "group.com.marvinbeckmann.ScratchWorkout"
         }
       ],
-      "./plugins/with-quoted-bundle-script"
+      "./plugins/with-quoted-bundle-script",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

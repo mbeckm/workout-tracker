@@ -24,6 +24,7 @@ import {
 import { latestCheckIn } from '@/domain/progress';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
+import { track } from '@/analytics/analytics';
 
 const ACCESSORY_ID = 'check-in-accessory';
 /** Lets the sheet finish closing before the toast rises over Progress. */
@@ -81,6 +82,7 @@ export function CheckInScreen() {
     saving.current = true;
     Keyboard.dismiss();
     saveCheckIn(parsed);
+    track('check_in_saved', { fields: count });
     router.back();
     setTimeout(() => showToast({ title: 'Check-in saved' }), TOAST_DELAY_MS);
   };
