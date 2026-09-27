@@ -1,15 +1,15 @@
 ---
-name: scratch-ui
-description: Visual grammar for Scratch screens. Use when designing or implementing Home, Plans, History, Settings, log, drawers, Done, onboarding, or paywall — or when visually QA'ing mobile/ against Paper.
+name: trim-ui
+description: Visual grammar for Trim screens. Use when designing or implementing Home, Plans, History, Settings, log, drawers, Done, onboarding, or paywall — or when visually QA'ing mobile/ against Paper.
 ---
 
-# Scratch UI
+# Trim UI
 
 Do not copy the log layout onto other screens. Copy these rules. The log is the oracle because it is the hardest screen, not because every tab should look like a gym loop.
 
-**Paper:** Exploration SoT for Home / Plans / Log / History lives on the **Deliberate empty** page in [Scratch workout new](https://app.paper.design/file/01M0FJ7CD2XE6GM8BGDAPR9QP5). Family loop (`5-0`) remains the reference for sheets and older boards until those artboards are replaced. Do not ship `mobile/` from critique screenshots alone — Paper first, then code.
+**Paper:** Exploration SoT for Home / Plans / Log / History lives on the **Deliberate empty** page in the Paper file [Scratch workout new](https://app.paper.design/file/01M0FJ7CD2XE6GM8BGDAPR9QP5) (Trim’s design file; the name predates the rename). App icon artwork: Paper file “Trim Logo”. Family loop (`5-0`) remains the reference for sheets and older boards until those artboards are replaced. Do not ship `mobile/` from critique screenshots alone — Paper first, then code.
 
-**Product** stays `PRODUCT.md`. **Logic** stays `ScratchWorkout/`. Not `references/1.0/`, not Hevy/Strong/Alpha Progression screenshots, not Swift Inter/lime.
+**Product** stays `PRODUCT.md`; decisions that changed the model live in `PRODUCT-DECISIONS.md`. Not Hevy/Strong/Alpha Progression screenshots.
 
 ---
 
@@ -66,7 +66,7 @@ If a control or label does not serve that job, cut it.
 3. Confirm every label passes the eyebrow test.
 4. Squint: do related pieces read as one object? Is empty space a pause after a group, or a hole between chunks?
 5. Strip once.
-6. Fail if it matches Hevy/Strong/AP chrome more than Scratch Paper.
+6. Fail if it matches Hevy/Strong/AP chrome more than the Trim Paper file.
 
 ---
 
@@ -110,7 +110,7 @@ Every load carries its unit where it is shown: `60 kg × 8`, `Last time 72.5 kg 
 
 ## Do not
 
-Tables, set-number circles, overlapping pills, 10RM as chrome, heatmap, achievement chrome, calculator-sized `80 × 8` as the hero, custom page transitions, lime/Inter from the Swift prototype, hierarchy-only eyebrows, motivational progress copy, decorative plan icons.
+Tables, set-number circles, overlapping pills, 10RM as chrome, heatmap, achievement chrome, calculator-sized `80 × 8` as the hero, custom page transitions, lime green or Inter, hierarchy-only eyebrows, motivational progress copy, decorative plan icons.
 
 ---
 
@@ -156,7 +156,7 @@ Drive docking with `react-native-keyboard-controller` on the footer only (`trans
 
 ### Paper artboards (Deliberate empty `A-0`)
 
-Ship against these, not Family loop Home / old clipboard:
+Ship against these:
 
 | Artboard | Use |
 | --- | --- |
@@ -179,6 +179,6 @@ Screenshot the target next to the current Paper artboard for that screen. Fail i
 3. Status is a pill / badge / table instead of type + optional mark/check.
 4. Hierarchy-only eyebrows or motivational filler.
 5. Primary action not in the thumb cluster on a tool screen.
-6. Matches Hevy, Strong, or Alpha Progression more than Scratch Paper.
+6. Matches Hevy, Strong, or Alpha Progression more than the Trim Paper file.
 7. On log: the upper stage jumps between set 1, rest, later sets, or keyboard open.
 8. Keyboard covers the wells or `Log set`.

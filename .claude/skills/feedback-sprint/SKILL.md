@@ -58,12 +58,12 @@ Then:
   - the files to touch, and the files other workers are editing right now (don't touch those)
   - any decision already made (product call, design direction)
 - **Review each report as it arrives.** Don't wait for the whole wave.
-  1. Read the diff: `git diff -- <files>`. Check it against the acceptance criteria, AGENTS.md rules and scratch-ui. Look for scope creep, unrelated edits, missed states and hacks.
+  1. Read the diff: `git diff -- <files>`. Check it against the acceptance criteria, AGENTS.md rules and trim-ui. Look for scope creep, unrelated edits, missed states and hacks.
   2. If it needs changes, use **SendMessage to the same agent** (it keeps its context). Give specific, actionable feedback: what's wrong, where, and what "right" looks like. The limit is 2 rounds per tier, then escalate.
 - **QA after each wave.** Start one `qa-tester` with the QA scripts for every item that passed review. Tell it whether Expo is already running. Send failures back to the original worker through SendMessage, including the screenshot paths.
 - **Design review (you, not QA).** QA checks that the acceptance criteria are met. Your job here is to judge whether the result is *good*. Do this for every `designer` item and every UI-visible `builder` item:
   1. Open QA's screenshots yourself with Read, in light and dark mode and at large Dynamic Type. Judge the rendered screens, not the diff.
-  2. Hold them to `.cursor/skills/scratch-ui/SKILL.md` and the Paper artboard, and to the `family-values` bar: simple, fluid, delightful. Check hierarchy, spacing rhythm, alignment, and that green is used only for completed work and the one gym CTA. Look for anything that feels more like a website than an iOS app. For motion, compare the designer's stated timing and curves with what QA observed.
+  2. Hold them to `.cursor/skills/trim-ui/SKILL.md` and the Paper artboard, and to the `family-values` bar: simple, fluid, delightful. Check hierarchy, spacing rhythm, alignment, and that green is used only for completed work and the one gym CTA. Look for anything that feels more like a website than an iOS app. For motion, compare the designer's stated timing and curves with what QA observed.
   3. Check the designer's **Research** section. If it's missing or thin, send the item back before reviewing anything else. Then check the result against the stated **Decision**, and check that the decision follows from the research. If the direction itself looks wrong, say so and send it back. Don't approve a well-built answer to the wrong question.
   4. Give feedback as concrete deltas, e.g. "title sits 4pt too close to the strip; the empty state reads as an error, soften the copy and drop the icon". "Make it nicer" is not feedback.
   5. If you've gone two rounds and still aren't sure it's right, don't approve it. Mark it ❓ with the screenshots and let Marvin make the call.
@@ -74,7 +74,7 @@ Then:
 
 1. Run `cd mobile && npx tsc --noEmit && npm run lint` on the whole branch.
 2. Do a final QA pass over every touched screen, in light and dark mode and at large Dynamic Type. Look for interactions between changes.
-3. If any design decision changed, check that `.cursor/skills/scratch-ui/SKILL.md` or the relevant docs were updated.
+3. If any design decision changed, check that `.cursor/skills/trim-ui/SKILL.md` or the relevant docs were updated.
 4. Push and open a PR with `gh`. The body lists items by status and links the key screenshots.
 5. Report to Marvin: ✅ done (with evidence), ⏸ deferred (why), ❓ waiting on him (the exact question), and anything QA noticed outside scope as suggested follow-ups. Don't claim anything that wasn't verified on screen.
 

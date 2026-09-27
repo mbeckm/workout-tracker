@@ -58,7 +58,7 @@ function isCardioEquipment(equipment: string): boolean {
   ].some((token) => equipment.includes(token));
 }
 
-/** Port of Swift `ExerciseCatalogPrescriptionSuggester`. */
+/** Default sets, reps or duration for a catalog exercise, from its type and equipment. */
 export function suggestionForCatalogItem(item: ExerciseCatalogItem): PrescriptionSuggestion {
   const name = normalized(item.name);
   const exerciseType = normalized(item.exerciseType ?? '');

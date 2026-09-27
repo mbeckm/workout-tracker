@@ -1,0 +1,14 @@
+---
+description: Trim 1.0 is the Expo app in mobile/. Read before changing product behavior or UI.
+globs: mobile/**,AGENTS.md,PRODUCT.md
+alwaysApply: false
+---
+
+# Trim 1.0
+
+The app is `mobile/` (Expo + Expo Router). Read `AGENTS.md` first.
+
+- Product model: `PRODUCT.md`; changes to it: `PRODUCT-DECISIONS.md`.
+- Visual rules: `.cursor/skills/trim-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
+- Never rename the `scratchWorkout.*` storage keys, the `ScratchWorkout` bundle IDs, the `scratchworkout` scheme or the `Scratch Pro` entitlement (see *Names that must not change* in `AGENTS.md`).
+- Update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change when behavior or design rules change.
