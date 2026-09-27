@@ -1,20 +1,85 @@
-import { Stack, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
+import * as Linking from 'expo-linking';
+import { Stack } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { useRef, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 
 import { PaperRow, PaperScreen } from '@/components/paper';
+import { LEGAL_URLS } from '@/constants/legal';
 import { appearanceLabel, type AppearancePreference } from '@/constants/theme';
-import { restorePurchases } from '@/purchases/purchases';
+import { openPaywall } from '@/purchases/pro-gate';
+import {
+  PURCHASE_COPY,
+  manageSubscription,
+  proPeriodLabel,
+  restorePurchases,
+} from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
+/** Air between setting groups: preferences, Pro, links out, data. */
+const GROUP_GAP = 20;
+
+const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
+const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
+
+/** `Trim 1.0.0 (42)`: marketing version plus the native build (CFBundleVersion) when known. */
+function versionLabel(): string {
+  const version = Constants.expoConfig?.version ?? '1.0.0';
+  const build = Constants.platform?.ios?.buildNumber ?? Constants.expoConfig?.ios?.buildNumber;
+  return build ? `Trim ${version} (${build})` : `Trim ${version}`;
+}
+
 export function SettingsTab() {
   const { colors, type } = useTheme();
-  const router = useRouter();
-  const { units, setUnits, appearance, setAppearance, isPro, setPro, clearWorkoutHistory } =
-    useWorkoutStore();
+  const {
+    units,
+    setUnits,
+    appearance,
+    setAppearance,
+    isPro,
+    proPeriod,
+    applyEntitlement,
+    clearWorkoutHistory,
+  } = useWorkoutStore();
+  const [restoring, setRestoring] = useState(false);
+  const restoringRef = useRef(false);
+
+  const restore = async () => {
+    if (restoringRef.current) {
+      return;
+    }
+    restoringRef.current = true;
+    setRestoring(true);
+    const result = await restorePurchases();
+    restoringRef.current = false;
+    setRestoring(false);
+    if (result.kind === 'restored') {
+      applyEntitlement(result.entitlement);
+      Alert.alert(PURCHASE_COPY.restoredTitle, PURCHASE_COPY.restoredBody);
+    } else if (result.kind === 'none') {
+      applyEntitlement(result.entitlement);
+      Alert.alert(PURCHASE_COPY.noneTitle, PURCHASE_COPY.noneBody);
+    } else {
+      Alert.alert(PURCHASE_COPY.restoreFailedTitle, result.message);
+    }
+  };
+
+  const openLegal = (url: string) => {
+    void WebBrowser.openBrowserAsync(url).catch(() => Linking.openURL(url).catch(() => undefined));
+  };
+
+  const contactSupport = () => {
+    // No Mail account on the device: show the address so it can still be copied.
+    void Linking.openURL(SUPPORT_MAILTO).catch(() =>
+      Alert.alert('Contact support', `Write to ${SUPPORT_EMAIL}.`),
+    );
+  };
 
   const pickUnits = () => {
-    Alert.alert('Weight', undefined, [
+    // Switching relabels; it does not convert what was logged.
+    Alert.alert('Weight', 'Past workouts keep their numbers.', [
       { text: 'Kilograms', onPress: () => setUnits('kg') },
       { text: 'Pounds', onPress: () => setUnits('lbs') },
       { text: 'Cancel', style: 'cancel' },
@@ -51,23 +116,37 @@ export function SettingsTab() {
             }
             onPress={pickAppearance}
           />
+        </View>
+        <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Trim Pro"
             testID="settings-pro"
             trailing={
-              <Text style={[type.row, { color: colors.tertiaryLabel }]}>{isPro ? 'On' : 'Off'}</Text>
+              <Text style={[type.row, { color: colors.tertiaryLabel }]}>
+                {isPro ? (proPeriod ? `On · ${proPeriodLabel(proPeriod)}` : 'On') : 'Off'}
+              </Text>
             }
-            onPress={() => router.push('/paywall?from=settings')}
+            onPress={
+              !isPro
+                ? () => void openPaywall('settings')
+                : proPeriod === 'lifetime'
+                  ? undefined
+                  : () => void manageSubscription()
+            }
           />
           <PaperRow
-            title="Restore purchases"
-            onPress={async () => {
-              const result = await restorePurchases();
-              if (result.isPro) {
-                setPro(true);
-              }
-            }}
+            title={restoring ? 'Restoring…' : 'Restore purchases'}
+            testID="settings-restore"
+            onPress={restoring ? undefined : () => void restore()}
           />
+        </View>
+        {/* Rows that leave the app sit in their own group and carry the ↗ arrow. */}
+        <View style={{ paddingTop: GROUP_GAP }}>
+          <PaperRow link title="Contact support" testID="settings-support" onPress={contactSupport} />
+          <PaperRow link title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
+          <PaperRow link title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
+        </View>
+        <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Clear history"
             destructive
@@ -87,6 +166,12 @@ export function SettingsTab() {
             }
           />
         </View>
+        <Text
+          style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400', paddingTop: 24 }]}
+          selectable
+          testID="settings-version">
+          {versionLabel()}
+        </Text>
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: 'Settings' }} />
     </>

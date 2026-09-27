@@ -17,8 +17,13 @@ export type ThemeColors = {
   systemYellow: string;
   systemGray4: string;
   systemGray5: string;
-  /** Text on green / blue tint fills. Always white. */
+  /** Text on blue tint fills. Always white. */
   onTint: string;
+  /**
+   * Text on `systemGreen` fills (Log set / Finish / Done). White in light; black in dark,
+   * where white on #30D158 is 2.0:1 and black is 10.4:1 (Apple Fitness convention).
+   */
+  onGreen: string;
   /** Text on `label` fills (Start / Continue). Inverts with scheme. */
   onLabel: string;
 };
@@ -26,7 +31,8 @@ export type ThemeColors = {
 export const lightColors: ThemeColors = {
   label: '#000000',
   secondaryLabel: '#3C3C43',
-  tertiaryLabel: '#8E8E93',
+  // #8E8E93 was 3.3:1 on white / 2.9:1 on #F2F2F7. #6C6C70 is 5.2:1 / 4.7:1 (AA for 15pt meta).
+  tertiaryLabel: '#6C6C70',
   separator: '#C6C6C8',
   systemBackground: '#FFFFFF',
   secondarySystemBackground: '#F2F2F7',
@@ -38,6 +44,7 @@ export const lightColors: ThemeColors = {
   systemGray4: '#D1D1D6',
   systemGray5: '#E5E5EA',
   onTint: '#ffffff',
+  onGreen: '#ffffff',
   onLabel: '#ffffff',
 };
 
@@ -45,7 +52,8 @@ export const lightColors: ThemeColors = {
 export const darkColors: ThemeColors = {
   label: '#FFFFFF',
   secondaryLabel: '#98989F',
-  tertiaryLabel: '#636366',
+  // #636366 was 3.5:1 on black / 2.8:1 on #1C1C1E. #8E8E93 is 6.4:1 / 5.2:1.
+  tertiaryLabel: '#8E8E93',
   separator: '#38383A',
   systemBackground: '#000000',
   secondarySystemBackground: '#1C1C1E',
@@ -57,6 +65,7 @@ export const darkColors: ThemeColors = {
   systemGray4: '#48484A',
   systemGray5: '#3A3A3C',
   onTint: '#FFFFFF',
+  onGreen: '#000000',
   onLabel: '#000000',
 };
 

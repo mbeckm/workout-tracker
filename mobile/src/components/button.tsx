@@ -35,21 +35,39 @@ export function Button({
   const [pressed, setPressed] = useState(false);
   const compact = size === 'compact';
   const pill = variant === 'filled' || variant === 'black' || variant === 'green' || variant === 'gray';
-  const color =
-    variant === 'black'
+  // A disabled green pill at 40% reads as broken, not unavailable. Render it as a quiet
+  // gray pill instead so the one green on a stage always means "ready".
+  const quietDisabled = Boolean(disabled) && variant === 'green';
+  const color = quietDisabled
+    ? colors.tertiaryLabel
+    : variant === 'black'
       ? colors.onLabel
-      : pill && variant !== 'gray'
-        ? colors.onTint
-        : variant === 'destructive'
-          ? colors.systemRed
+      : variant === 'green'
+        ? colors.onGreen
+        : variant === 'filled'
+          ? colors.onTint
+          : variant === 'destructive'
+            ? colors.systemRed
+            : variant === 'gray'
+              ? colors.label
+              : colors.systemBlue;
+  const backgroundColor = quietDisabled
+    ? colors.secondarySystemBackground
+    : variant === 'green'
+      ? colors.systemGreen
+      : variant === 'black'
+        ? colors.label
+        : variant === 'filled'
+          ? colors.systemBlue
           : variant === 'gray'
-            ? colors.label
-            : colors.systemBlue;
+            ? colors.secondarySystemBackground
+            : 'transparent';
   const scalePress = Boolean(pressed && !disabled && !reduceMotion);
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
       onPressIn={() => setPressed(true)}
@@ -65,26 +83,25 @@ export function Button({
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: compact ? 12 : spacing.lg,
-          paddingVertical: compact ? 6 : 0,
+          // Heights are minimums; vertical padding lets Dynamic Type grow the pill.
+          paddingVertical: compact ? 6 : pill ? 12 : 8,
           borderRadius: pill ? radius.full : 0,
           borderCurve: 'continuous',
-          backgroundColor:
-            variant === 'green'
-              ? colors.systemGreen
-              : variant === 'black'
-                ? colors.label
-                : variant === 'filled'
-                  ? colors.systemBlue
-                  : variant === 'gray'
-                    ? colors.secondarySystemBackground
-                    : 'transparent',
-          opacity: disabled ? 0.4 : reduceMotion && pressed ? 0.7 : 1,
+          backgroundColor,
+          opacity: disabled && !quietDisabled ? 0.4 : reduceMotion && pressed ? 0.7 : 1,
           transform: [{ scale: scalePress ? PRESS_SCALE : 1 }],
           transitionProperty: 'transform',
           transitionDuration: `${PRESS_MS}ms`,
           transitionTimingFunction: 'ease-out',
         }}>
-        <Text style={{ ...type.headline, fontWeight: '700', fontSize: compact ? 15 : 17, color }}>
+        <Text
+          style={{
+            ...type.headline,
+            fontWeight: '700',
+            fontSize: compact ? 15 : 17,
+            textAlign: 'center',
+            color,
+          }}>
           {title}
         </Text>
       </Animated.View>

@@ -6,21 +6,31 @@ import { Button } from '@/components/button';
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { KeyboardStickyView } from '@/keyboard';
 import { spacing } from '@/constants/theme';
-import { CHECK_IN_METRICS, type BodyCheckIn, type BodyMetricKey } from '@/domain/check-in';
+import {
+  bodyMetricForDisplay,
+  bodyweightToKg,
+  checkInMetrics,
+  type BodyCheckIn,
+  type BodyMetricKey,
+  type CheckInMetric,
+  type WeightUnits,
+} from '@/domain/check-in';
 import { useTheme } from '@/theme/theme-context';
 
+const FIELDS_KG = checkInMetrics('kg');
+
 function emptyDraft(): Record<BodyMetricKey, string> {
-  return Object.fromEntries(CHECK_IN_METRICS.map((metric) => [metric.key, ''])) as Record<
+  return Object.fromEntries(FIELDS_KG.map((metric) => [metric.key, ''])) as Record<
     BodyMetricKey,
     string
   >;
 }
 
-function formatFieldValue(value: number | undefined, unit: 'kg' | 'cm'): string {
+function formatFieldValue(value: number | undefined, metric: CheckInMetric): string {
   if (value == null || !Number.isFinite(value)) {
     return '';
   }
-  return unit === 'kg' ? value.toFixed(1) : String(value);
+  return metric.unit === 'cm' ? String(value) : value.toFixed(1);
 }
 
 function parseFieldValue(text: string): number | null {
@@ -35,11 +45,14 @@ function parseFieldValue(text: string): number | null {
 export function CheckInSheet({
   visible,
   latest,
+  units = 'kg',
   onClose,
   onSave,
 }: {
   visible: boolean;
   latest: BodyCheckIn | null;
+  /** The user's weight units. Bodyweight is typed in these and stored in kg. */
+  units?: WeightUnits;
   onClose: () => void;
   onSave: (input: Partial<BodyCheckIn>) => void;
 }) {
@@ -48,7 +61,8 @@ export function CheckInSheet({
   const [draft, setDraft] = useState(emptyDraft);
   const [focused, setFocused] = useState<BodyMetricKey | null>(null);
   const inputs = useRef<Partial<Record<BodyMetricKey, TextInput | null>>>({});
-  const lastField = CHECK_IN_METRICS[CHECK_IN_METRICS.length - 1]?.key;
+  const fields = useMemo(() => checkInMetrics(units), [units]);
+  const lastField = fields[fields.length - 1]?.key;
 
   useEffect(() => {
     if (!visible) {
@@ -60,20 +74,23 @@ export function CheckInSheet({
 
   const placeholders = useMemo(() => {
     const next = emptyDraft();
-    for (const metric of CHECK_IN_METRICS) {
-      next[metric.key] = formatFieldValue(latest?.[metric.key], metric.unit) || '0';
+    for (const metric of fields) {
+      const stored = latest?.[metric.key];
+      const shown = stored == null ? undefined : bodyMetricForDisplay(metric.key, stored, units);
+      // Last value as a hint, never "0" (it reads as a value that will be saved).
+      next[metric.key] = formatFieldValue(shown, metric) || '—';
     }
     return next;
-  }, [latest]);
+  }, [fields, latest, units]);
 
   const save = () => {
     Keyboard.dismiss();
     const next: Partial<BodyCheckIn> = {};
     let hasValue = false;
-    for (const metric of CHECK_IN_METRICS) {
+    for (const metric of fields) {
       const parsed = parseFieldValue(draft[metric.key]);
       if (parsed != null) {
-        next[metric.key] = parsed;
+        next[metric.key] = metric.key === 'bodyweightKg' ? bodyweightToKg(parsed, units) : parsed;
         hasValue = true;
       }
     }
@@ -94,8 +111,8 @@ export function CheckInSheet({
       Keyboard.dismiss();
       return;
     }
-    const index = CHECK_IN_METRICS.findIndex((field) => field.key === focused);
-    const next = CHECK_IN_METRICS[index + 1];
+    const index = fields.findIndex((field) => field.key === focused);
+    const next = fields[index + 1];
     if (next) {
       focusField(next.key);
       return;
@@ -115,7 +132,7 @@ export function CheckInSheet({
         <View
           style={{
             flexDirection: 'row',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
             paddingHorizontal: 16,
             paddingVertical: 10,
@@ -123,21 +140,22 @@ export function CheckInSheet({
             borderTopWidth: 1,
             borderTopColor: colors.separator,
           }}>
+          {/* One control: Next walks the fields, Done on the last one closes the keyboard. */}
           <Pressable
-            onPress={focusNext}
+            onPress={focused === lastField ? dismissKeyboard : focusNext}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={focused === lastField ? 'Done' : 'Next field'}>
-            <Text style={[type.body, { color: colors.systemBlue }]}>
+            accessibilityLabel={focused === lastField ? 'Done' : 'Next field'}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              minWidth: 44,
+              justifyContent: 'center',
+              alignItems: 'flex-end',
+              opacity: pressed ? 0.55 : 1,
+            })}>
+            <Text style={[type.body, { color: colors.label, fontWeight: '600' }]}>
               {focused === lastField ? 'Done' : 'Next'}
             </Text>
-          </Pressable>
-          <Pressable
-            onPress={dismissKeyboard}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss keyboard">
-            <Text style={[type.body, { color: colors.systemBlue, fontWeight: '600' }]}>Done</Text>
           </Pressable>
         </View>
       </KeyboardStickyView>
@@ -162,7 +180,7 @@ export function CheckInSheet({
             paddingBottom: spacing.sm,
           }}>
           <View>
-            {CHECK_IN_METRICS.map((field, index) => {
+            {fields.map((field, index) => {
               const active = draft[field.key].trim().length > 0;
               return (
                 <View
@@ -172,7 +190,7 @@ export function CheckInSheet({
                     alignItems: 'center',
                     gap: spacing.sm,
                     paddingVertical: spacing.md,
-                    borderBottomWidth: index < CHECK_IN_METRICS.length - 1 ? 1 : 0,
+                    borderBottomWidth: index < fields.length - 1 ? 1 : 0,
                     borderBottomColor: colors.separator,
                   }}>
                   <Pressable
@@ -202,7 +220,7 @@ export function CheckInSheet({
                       flexDirection: 'row',
                       alignItems: 'flex-end',
                       minWidth: 100,
-                      height: 22,
+                      minHeight: 22,
                       justifyContent: 'flex-end',
                     }}>
                     <TextInput
@@ -216,7 +234,7 @@ export function CheckInSheet({
                       onFocus={() => setFocused(field.key)}
                       onBlur={() => {
                         setTimeout(() => {
-                          const stillFocused = CHECK_IN_METRICS.some((item) =>
+                          const stillFocused = fields.some((item) =>
                             inputs.current[item.key]?.isFocused(),
                           );
                           if (!stillFocused) {
@@ -225,12 +243,13 @@ export function CheckInSheet({
                         }, 40);
                       }}
                       keyboardType="decimal-pad"
+                      accessibilityLabel={`${field.label}, ${field.unit === 'cm' ? 'centimeters' : field.unit === 'lbs' ? 'pounds' : 'kilograms'}`}
                       placeholder={placeholders[field.key]}
                       placeholderTextColor={colors.tertiaryLabel}
                       selectionColor={colors.label}
                       style={{
                         minWidth: 72,
-                        height: 22,
+                        minHeight: 22,
                         fontSize: 17,
                         fontWeight: '400',
                         lineHeight: 22,

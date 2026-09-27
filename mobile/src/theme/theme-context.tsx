@@ -8,7 +8,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from 'react';
-import { AccessibilityInfo, Appearance, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Appearance, StyleSheet, useColorScheme, View } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import Animated, {
   cancelAnimation,
@@ -50,7 +50,8 @@ function resolveScheme(
 
 /**
  * Light/Dark are JS-only. Never force Appearance.setColorScheme('light'|'dark').
- * System uses a persisted OS scheme from the store (updated by Appearance listener).
+ * System follows the live OS scheme (`useColorScheme`, correct at boot); the store keeps a
+ * persisted copy as the fallback when the runtime reports none.
  */
 export function AppThemeProvider({
   appearance,
@@ -63,7 +64,13 @@ export function AppThemeProvider({
   onSystemSchemeChange: (scheme: ColorScheme) => void;
   children: ReactNode;
 }) {
-  const scheme = resolveScheme(appearance, systemScheme);
+  // Live OS scheme, current at boot and on every change. The persisted `systemScheme`
+  // defaults to 'light' and store hydration replaces it asynchronously, so it is only the
+  // fallback for runtimes that report no scheme.
+  const osScheme = useColorScheme();
+  const liveScheme: ColorScheme | null =
+    osScheme === 'light' || osScheme === 'dark' ? osScheme : null;
+  const scheme = resolveScheme(appearance, liveScheme ?? systemScheme);
   const reduceMotionRef = useRef(false);
   const onSystemSchemeChangeRef = useRef(onSystemSchemeChange);
   onSystemSchemeChangeRef.current = onSystemSchemeChange;
@@ -91,15 +98,14 @@ export function AppThemeProvider({
     } catch {
       // Some runtimes reject 'unspecified'; safe to ignore.
     }
-
-    const sub = Appearance.addChangeListener(({ colorScheme }) => {
-      if (colorScheme === 'light' || colorScheme === 'dark') {
-        onSystemSchemeChangeRef.current(colorScheme);
-      }
-    });
-
-    return () => sub.remove();
   }, []);
+
+  // Keep the persisted copy in step (also after hydration overwrites it).
+  useEffect(() => {
+    if (liveScheme && liveScheme !== systemScheme) {
+      onSystemSchemeChangeRef.current(liveScheme);
+    }
+  }, [liveScheme, systemScheme]);
 
   useEffect(() => {
     const palette = colorsForScheme(scheme);

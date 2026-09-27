@@ -1,64 +1,68 @@
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View } from 'react-native';
 
-import type { PlanDayStatus } from '@/domain/plan-loop';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
+/** `Bench Press · Incline Press · Fly`: what the day is, so two "Push" days read apart. */
+export function dayExerciseNames(day: Pick<WorkoutDay, 'exercises'>, limit = 3): string {
+  const names = day.exercises.slice(0, limit).map((exercise) => exercise.name.trim());
+  const more = day.exercises.length - names.length;
+  return more > 0 ? `${names.join(' · ')} · +${more}` : names.join(' · ');
+}
+
+/**
+ * One of the plan's other days on Home: title 17 + its exercises 15. A green check marks a
+ * day already done this week. Tap opens the preview, where it can be started.
+ */
 export function HomeDayRow({
   day,
-  index,
-  status = 'upcoming',
-  isFirst = false,
+  doneThisWeek,
+  doneLabel,
+  showSeparator = false,
   onPress,
-  onLongPress,
+  testID,
 }: {
   day: WorkoutDay;
-  index: number;
-  status?: PlanDayStatus;
-  isFirst?: boolean;
-  onPress?: () => void;
-  onLongPress?: () => void;
+  doneThisWeek: boolean;
+  /** Spoken only: `Done today`. */
+  doneLabel?: string | null;
+  showSeparator?: boolean;
+  onPress: () => void;
+  testID?: string;
 }) {
   const { colors, type } = useTheme();
-  const count = day.exercises.length;
-  const rest = count === 0;
-  const meta = rest ? 'Off' : `${count} ${count === 1 ? 'exercise' : 'exercises'}`;
-  const completed = status === 'completed';
+  const names = dayExerciseNames(day);
 
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
-      disabled={!onPress && !onLongPress}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`Day ${index + 1}, ${day.title}, ${meta}${completed ? ', completed' : ''}`}
-      testID={`home-day-row-${index}`}
+      accessibilityRole="button"
+      accessibilityLabel={[day.title, names, doneThisWeek ? doneLabel ?? 'Done this week' : null]
+        .filter(Boolean)
+        .join(', ')}
+      accessibilityHint="Shows this day. Start it from there."
+      testID={testID}
       style={({ pressed }) => ({
+        width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        paddingTop: isFirst ? 0 : 14,
-        paddingBottom: 14,
+        gap: 12,
+        paddingVertical: 14,
+        borderBottomWidth: showSeparator ? 0.5 : 0,
+        borderBottomColor: colors.separator,
         opacity: pressed ? 0.7 : 1,
       })}>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         <Text style={type.row} numberOfLines={1}>
           {day.title}
         </Text>
-        <Text style={type.kicker} numberOfLines={1}>
-          {meta}
+        <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
+          {names}
         </Text>
       </View>
-      {completed ? (
-        <SymbolView
-          name="checkmark"
-          tintColor={colors.systemGreen}
-          size={15}
-          weight="bold"
-          style={{ flexShrink: 0 }}
-        />
+      {doneThisWeek ? (
+        <SymbolView name="checkmark" tintColor={colors.systemGreen} size={16} weight="semibold" />
       ) : null}
     </Pressable>
   );

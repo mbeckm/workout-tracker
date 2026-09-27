@@ -1,3 +1,9 @@
+import { nextIncompleteIndex } from '@/domain/log-session';
+
+/**
+ * The exercise the Live Activity shows: the current one while it has sets left,
+ * else the next one with work left (wrapping), else the current one.
+ */
 export function upcomingExerciseIndex(
   drafts: readonly { sets: readonly { done: boolean }[] }[],
   exerciseIndex: number,
@@ -9,6 +15,6 @@ export function upcomingExerciseIndex(
   if (current.sets.some((set) => !set.done)) {
     return exerciseIndex;
   }
-  const next = exerciseIndex + 1;
-  return next < drafts.length ? next : exerciseIndex;
+  const next = nextIncompleteIndex(drafts, exerciseIndex);
+  return next >= 0 ? next : exerciseIndex;
 }

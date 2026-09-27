@@ -1,5 +1,55 @@
 # App Store Release Guide for ScratchWorkout
 
+## 1.0 submission checklist (Trim, Expo app in `mobile/`)
+
+Do these in order. This section is current. Below it, anything that conflicts (Xcode-only build, ExerciseDB, "does not collect data", free-only pricing) is historical.
+
+**App Store Connect: subscriptions**
+- [ ] One subscription group (for example "Trim Pro") with two auto-renewable products: yearly at **$39.99** and monthly at **$6.99**.
+- [ ] Introductory offer on the **yearly product only**: free trial, 7 days, new subscribers. None on monthly.
+- [ ] Each product has a display name, description and review screenshot (the paywall), and status "Ready to Submit".
+- [ ] On the 1.0 version page, under In-App Purchases and Subscriptions, attach both products so they are reviewed with the binary.
+- [ ] Paid Apps agreement, tax and banking are active (purchases fail in review without them).
+
+**RevenueCat**
+- [ ] Entitlement identifier is exactly `Scratch Pro` (case-sensitive; `mobile/src/purchases/entitlement.ts`), with both products attached.
+- [ ] A **current** offering with the `$rc_annual` and `$rc_monthly` packages. Add a lifetime package only if lifetime is sold; the paywall shows it automatically when present.
+- [ ] Optional: placements `onboarding`, `post_workout`, `second_plan`, `switch_plan`, `progress_history`, `body_trends`, `targets`, `settings` (`mobile/src/purchases/pro-gate.ts`). Without them every gate uses the current offering.
+- [ ] App Store Connect API key / in-app purchase key uploaded so RevenueCat can validate transactions.
+
+**EAS build**
+- [ ] `EXPO_PUBLIC_REVENUECAT_API_KEY` = the RevenueCat Apple public key (`appl_…`) in the EAS **production** environment. Without it the paywall shows "Purchases aren't available".
+- [ ] `eas.json` production keeps `EXPO_PUBLIC_EXERCISE_MEDIA=off` and `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=off`.
+- [ ] `npx eas-cli build --platform ios --profile production`, then submit to TestFlight.
+
+**Metadata**
+- [ ] In `mobile/store.config.json`, add `apple.review.phone` (`+<country code> …`). The current eas-cli schema requires it, and `eas metadata:push` refuses to run until it is set.
+- [ ] If next-session targets do not ship in this build, delete the "Next-session targets" bullet from the description and step 6 from `apple.review.notes`.
+- [ ] `cd mobile && npx eas-cli metadata:push`. Check the description, keywords, review notes and age rating in App Store Connect afterwards. Release notes are ignored for a first version.
+- [ ] Answer the new age-rating question "Health or Wellness Topics" in App Store Connect (not set in `store.config.json`).
+- [ ] Open https://scratch-legal.vercel.app and https://scratch-legal.vercel.app/privacy on a phone and confirm the deployed pages match `legal/` (dated 24 September 2026).
+
+**App Privacy (App Store Connect → App Privacy)**
+- [ ] Data is collected: Yes, only by RevenueCat.
+- [ ] Purchases → Purchase History: App Functionality (add Analytics if you use RevenueCat charts or paywall analytics). Not linked to the user. Not used for tracking.
+- [ ] Identifiers → User ID (RevenueCat's anonymous app user ID): App Functionality. Not linked. Not tracking.
+- [ ] Usage Data → Product Interaction (paywall impressions sent by `trackCustomPaywallImpression`): Analytics. Not linked. Not tracking.
+- [ ] Nothing else: no contact info, health and fitness data, location, contacts, content, search history, diagnostics or other data leaves the device. Tracking: No.
+- [ ] Privacy Policy URL: https://scratch-legal.vercel.app/privacy.
+
+**Screenshots**
+- [ ] New 6.9" (and 6.5" if required) iPhone screenshots from this build: Home with a plan, log screen with Last time and rest, Done, Progress, Plans. No prices in screenshots.
+
+**Device QA (could not be checked on the Linux agent)**
+- [ ] Native context menus: plan rows, day rows, History rows.
+- [ ] VoiceOver: custom actions (Show the day, Delete workout, Remove day) and labels on the log screen.
+- [ ] Alerts and action sheets: discard workout, finish with sets left, clear history, delete plan, restore results.
+- [ ] Keyboard docking: log footer and wells ride the keyboard; plan and day editors don't jump.
+- [ ] Kill the app mid-workout: the workout resumes, and the Live Activity resumes and ends on Finish or Cancel.
+- [ ] Sandbox purchases: yearly with trial, monthly, restore, manage subscription from Settings, cancel, Ask to Buy (pending).
+- [ ] Paywall with a real intro offer: trial timeline, "Start free trial", and terms text, for an eligible and an ineligible sandbox account.
+- [ ] With the release build on a device, the only network traffic is RevenueCat (and the legal pages when opened).
+
 This guide is tailored to the active app in this repository.
 
 Current project facts:
@@ -12,7 +62,7 @@ Current project facts:
 - Marketing version: `1.0`
 - Build number: `1`
 - Storage today: local `UserDefaults` persistence for workout data
-- Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev`
+- Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev` *(historical: the Expo app (Trim 1.0) ships a local-only first-party catalog with no ExerciseDB data, search or media; see `AGENTS.md` → Exercise catalog)*
 - Current permissions found in source: no HealthKit, location, camera, photos, notifications, accounts, or analytics
 - Privacy manifest: `ScratchWorkout/PrivacyInfo.xcprivacy` is included in the app target for UserDefaults required-reason API usage
 - Current app icon state: an `AppIcon.appiconset` exists, but it only has `Contents.json`; a real 1024 x 1024 app icon image still needs to be added
@@ -92,7 +142,7 @@ Then fix release blockers:
    - Verify the reason against Apple's current required-reason API list before final submission.
 3. Make sure there is no placeholder content.
 4. Make sure first launch is useful even with no data.
-5. Review the ExerciseDB provider decision before public release.
+5. *(Historical: resolved. Trim 1.0 ships no ExerciseDB data, search or media.)* Review the ExerciseDB provider decision before public release.
    - The current free API is suitable for prototype/start usage.
    - The provider documents non-commercial use, attribution, and strict rate limits.
    - Keep the in-app AscendAPI attribution unless a paid/provider agreement says otherwise.
@@ -237,8 +287,8 @@ Privacy policy should say, for the current app:
 - Workout entries are stored locally on the user's device.
 - The app does not require an account.
 - The app does not transmit workout data to a server.
-- Exercise search terms are sent to the ExerciseDB/AscendAPI provider to return exercise suggestions.
-- Provider exercise metadata may include exercise names, target muscles, equipment, body parts, instructions, and GIF media URLs.
+- *(Historical: Trim 1.0 sends no search terms anywhere; exercise search is on-device.)* Exercise search terms are sent to the ExerciseDB/AscendAPI provider to return exercise suggestions.
+- *(Historical.)* Provider exercise metadata may include exercise names, target muscles, equipment, body parts, instructions, and GIF media URLs.
 - The app does not use third-party analytics or advertising SDKs.
 - Users can delete app data by deleting the app, unless you add an in-app reset option.
 
@@ -396,7 +446,7 @@ Official links:
 2. Privacy mismatch.
    - If the app says it collects no data, do not include analytics, ads, remote logging, or crash SDKs without updating App Privacy.
 3. Provider terms mismatch.
-   - The current free ExerciseDB API documents non-commercial use, attribution, and strict rate limits. Confirm rights before public/commercial release.
+   - *(Historical: resolved for Trim 1.0, which ships no ExerciseDB content.)* The current free ExerciseDB API documents non-commercial use, attribution, and strict rate limits. Confirm rights before public/commercial release.
 4. Missing privacy policy URL.
    - Required for iOS apps.
 5. App feels unfinished.
@@ -436,7 +486,7 @@ Before inviting friends:
 - [ ] What to Test text added.
 - [ ] TestFlight App Review approved.
 - [ ] Friend invite link or emails ready.
-- [ ] At least one friend can search for and add an ExerciseDB-backed exercise.
+- [ ] At least one friend can search for and add a built-in exercise. *(Was: an ExerciseDB-backed exercise; historical.)*
 
 Before public App Store submission:
 
@@ -445,7 +495,7 @@ Before public App Store submission:
 - [ ] Screenshots uploaded.
 - [ ] Description, subtitle, keywords, and category are filled out.
 - [ ] App privacy answers are published.
-- [ ] ExerciseDB provider usage rights, attribution, and rate limits are cleared for the intended release.
+- [ ] Release bundle contains no ExerciseDB host (`npx expo export -p ios`, then grep for `exercisedb`). *(Was: ExerciseDB rights cleared; historical.)*
 - [ ] Age rating completed.
 - [ ] Pricing and availability completed.
 - [ ] Correct build selected.

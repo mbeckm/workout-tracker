@@ -9,9 +9,17 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 
 import { withLoggedTenRM } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
+import {
+  clearedSession,
+  loggedSetCount,
+  sessionAfterWorkout,
+  sessionStillValid,
+  type LogSession,
+} from '../domain/log-session';
 import { planLoopProgress } from '../domain/plan-loop';
 import type {
   CustomExerciseDefinition,
@@ -22,6 +30,8 @@ import type {
 } from '../domain/types';
 import { newId, normalizedStatsKey } from '../domain/types';
 import type { AppearancePreference, ColorScheme } from '@/constants/theme';
+import type { Entitlement, ProPeriod } from '@/purchases/entitlement';
+import { setProCache, type ProReason } from '@/purchases/pro-gate';
 
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
@@ -32,6 +42,21 @@ export type PreviousExerciseLog = {
   workoutTitle: string;
   sets: LoggedSet[];
 };
+
+/**
+ * The workout currently open in the log, if any. Home shows Resume for it.
+ * Derived from the persisted `logSession`; null when its plan or day is gone.
+ */
+export type ActiveSession = {
+  planId: string;
+  dayId: string;
+  startedAt: string;
+  loggedSetCount: number;
+  /** ISO time of the last set change. */
+  updatedAt?: string;
+};
+
+export type { LogSession } from '../domain/log-session';
 
 type CompleteWorkoutInput = {
   title: string;
@@ -56,11 +81,22 @@ type WorkoutStoreState = {
   appearance: AppearancePreference;
   systemScheme: ColorScheme;
   hasCompletedOnboarding: boolean;
-  hasSeenPaywall: boolean;
+  postWorkoutPaywallShownAt: string | null;
+  /** Cached entitlement; written only by `applyEntitlement`. */
   isPro: boolean;
+  /** Known after the first entitlement sync this launch; null when not Pro or not known yet. */
+  proPeriod: ProPeriod | null;
   isHydrated: boolean;
-  shouldOfferPaywall: boolean;
+  shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
+  /** In-progress workout summary for Home (Resume). */
+  activeSession: ActiveSession | null;
+  /** Full persisted log state (drafts, exercise, rest). Only the log reads this. */
+  logSession: LogSession | null;
+  /** Written by the log on every set change. `flush` also writes storage now (app backgrounding). */
+  saveLogSession: (session: LogSession, options?: { flush?: boolean }) => void;
+  /** Finish or discard. With `match`, clears only that plan/day's session. */
+  clearLogSession: (match?: { planId: string; dayId: string }) => void;
   savePlan: (plan: WorkoutPlan, options?: { activate?: boolean }) => void;
   updatePlan: (plan: WorkoutPlan) => void;
   deletePlan: (plan: WorkoutPlan, options?: { archive?: boolean }) => void;
@@ -76,8 +112,10 @@ type WorkoutStoreState = {
   setAppearance: (appearance: AppearancePreference) => void;
   setSystemScheme: (systemScheme: ColorScheme) => void;
   completeOnboarding: () => void;
-  dismissPaywall: () => void;
-  setPro: (isPro: boolean) => void;
+  /** Call once the paywall has rendered offers. Only `post_workout` is recorded. */
+  markPaywallShown: (reason: ProReason) => void;
+  /** Ignores `unknown`, so offline or an SDK error never downgrades a cached Pro user. */
+  applyEntitlement: (entitlement: Entitlement) => void;
 };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
@@ -86,7 +124,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<WorkoutSnapshot>(defaultSnapshot);
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<LoggedWorkout | null>(null);
+  const [proPeriod, setProPeriod] = useState<ProPeriod | null>(null);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snapshotRef = useRef(snapshot);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +150,26 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    snapshotRef.current = snapshot;
+    hydratedRef.current = isHydrated;
+  }, [isHydrated, snapshot]);
+
+  // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' || !hydratedRef.current) {
+        return;
+      }
+      if (persistTimeoutRef.current) {
+        clearTimeout(persistTimeoutRef.current);
+        persistTimeoutRef.current = null;
+      }
+      void saveSnapshot(snapshotRef.current);
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -152,7 +213,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       if (planIndex >= 0) {
         const plans = [...current.plans];
         plans[planIndex] = plan;
-        return { ...current, plans };
+        return { ...current, plans, activeSession: sessionStillValid(current.activeSession, plans) };
       }
 
       const archivedIndex = current.archivedPlans.findIndex((item) => item.id === plan.id);
@@ -185,6 +246,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         plans,
         archivedPlans,
         activePlanId,
+        activeSession: sessionStillValid(current.activeSession, plans),
       };
     });
   }, []);
@@ -293,6 +355,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => ({
       ...current,
       workoutHistory: [workout, ...current.workoutHistory],
+      activeSession: sessionAfterWorkout(current.activeSession, workout),
     }));
 
     return workout;
@@ -346,6 +409,24 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const saveLogSession = useCallback((session: LogSession, options?: { flush?: boolean }) => {
+    setSnapshot((current) => {
+      const next = { ...current, activeSession: session };
+      if (options?.flush) {
+        // Backgrounding: write now instead of waiting for the debounce. Idempotent.
+        void saveSnapshot(next);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearLogSession = useCallback((match?: { planId: string; dayId: string }) => {
+    setSnapshot((current) => {
+      const activeSession = clearedSession(current.activeSession, match);
+      return activeSession === current.activeSession ? current : { ...current, activeSession };
+    });
+  }, []);
+
   const setUnits = useCallback((units: 'kg' | 'lbs') => {
     setSnapshot((current) => ({
       ...current,
@@ -373,29 +454,50 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const dismissPaywall = useCallback(() => {
-    setSnapshot((current) => ({
-      ...current,
-      hasSeenPaywall: true,
-    }));
+  const markPaywallShown = useCallback((reason: ProReason) => {
+    if (reason !== 'post_workout') {
+      return;
+    }
+    setSnapshot((current) =>
+      current.postWorkoutPaywallShownAt != null
+        ? current
+        : { ...current, postWorkoutPaywallShownAt: new Date().toISOString() },
+    );
   }, []);
 
-  const setPro = useCallback((isPro: boolean) => {
-    setSnapshot((current) => ({
-      ...current,
-      isPro,
-      hasSeenPaywall: isPro ? true : current.hasSeenPaywall,
-    }));
+  const applyEntitlement = useCallback((entitlement: Entitlement) => {
+    if (entitlement.status === 'unknown') {
+      return;
+    }
+    const isPro = entitlement.status === 'pro';
+    setProPeriod(isPro ? entitlement.period : null);
+    setSnapshot((current) => (current.isPro === isPro ? current : { ...current, isPro }));
   }, []);
+
+  useEffect(() => {
+    setProCache(snapshot.isPro);
+  }, [snapshot.isPro]);
 
   const activePlan =
     snapshot.plans.find((plan) => plan.id === snapshot.activePlanId) ?? snapshot.plans[0] ?? null;
 
-  const shouldOfferPaywall =
-    snapshot.workoutHistory.length > 0 && !snapshot.hasSeenPaywall && !snapshot.isPro;
+  const shouldOfferPostWorkoutPaywall =
+    snapshot.workoutHistory.length > 0 &&
+    !snapshot.isPro &&
+    snapshot.postWorkoutPaywallShownAt == null;
 
   const value = useMemo<WorkoutStoreState>(() => {
     const loop = planLoopProgress(activePlan, snapshot.workoutHistory, snapshot.nextDayIndex);
+    const logSession = sessionStillValid(snapshot.activeSession, snapshot.plans);
+    const activeSession: ActiveSession | null = logSession
+      ? {
+          planId: logSession.planId,
+          dayId: logSession.dayId,
+          startedAt: logSession.startedAt,
+          loggedSetCount: loggedSetCount(logSession.drafts),
+          updatedAt: logSession.updatedAt,
+        }
+      : null;
     return {
       plans: snapshot.plans,
       archivedPlans: snapshot.archivedPlans,
@@ -410,11 +512,16 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       appearance: snapshot.appearance,
       systemScheme: snapshot.systemScheme,
       hasCompletedOnboarding: snapshot.hasCompletedOnboarding,
-      hasSeenPaywall: snapshot.hasSeenPaywall,
+      postWorkoutPaywallShownAt: snapshot.postWorkoutPaywallShownAt,
       isPro: snapshot.isPro,
+      proPeriod: snapshot.isPro ? proPeriod : null,
       isHydrated,
-      shouldOfferPaywall,
+      shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
+      activeSession,
+      logSession,
+      saveLogSession,
+      clearLogSession,
       savePlan,
       updatePlan,
       deletePlan,
@@ -430,14 +537,15 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setAppearance,
       setSystemScheme,
       completeOnboarding,
-      dismissPaywall,
-      setPro,
+      markPaywallShown,
+      applyEntitlement,
     };
   }, [
     snapshot,
     activePlan,
+    proPeriod,
     isHydrated,
-    shouldOfferPaywall,
+    shouldOfferPostWorkoutPaywall,
     lastCompletedWorkout,
     savePlan,
     updatePlan,
@@ -454,8 +562,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setAppearance,
     setSystemScheme,
     completeOnboarding,
-    dismissPaywall,
-    setPro,
+    markPaywallShown,
+    applyEntitlement,
+    saveLogSession,
+    clearLogSession,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

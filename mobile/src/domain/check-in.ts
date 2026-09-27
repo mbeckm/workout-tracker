@@ -38,12 +38,41 @@ export const BODY_METRICS: { key: BodyMetricKey; label: string }[] = [
   { key: 'calfRightCm', label: 'Calf right' },
 ];
 
+export type WeightUnits = 'kg' | 'lbs';
+
+const KG_PER_LB = 0.45359237;
+
+/** Bodyweight is stored in kg (`bodyweightKg`); lbs users type and read pounds. */
+export function bodyweightForDisplay(kg: number, units: WeightUnits): number {
+  const value = units === 'lbs' ? kg / KG_PER_LB : kg;
+  return Math.round(value * 10) / 10;
+}
+
+export function bodyweightToKg(value: number, units: WeightUnits): number {
+  return units === 'lbs' ? Math.round(value * KG_PER_LB * 100) / 100 : value;
+}
+
+/** Convert a stored metric value to the unit the user reads (only bodyweight changes). */
+export function bodyMetricForDisplay(
+  key: BodyMetricKey,
+  value: number,
+  units: WeightUnits,
+): number {
+  return key === 'bodyweightKg' ? bodyweightForDisplay(value, units) : value;
+}
+
+export type CheckInMetric = { key: BodyMetricKey; label: string; unit: WeightUnits | 'cm' };
+
 /** Fields shown in the check-in sheet (bodyweight first, then circumferences). */
-export const CHECK_IN_METRICS: { key: BodyMetricKey; label: string; unit: 'kg' | 'cm' }[] =
-  BODY_METRICS.map((metric) => ({
+export function checkInMetrics(units: WeightUnits): CheckInMetric[] {
+  return BODY_METRICS.map((metric) => ({
     ...metric,
-    unit: metric.key === 'bodyweightKg' ? 'kg' : 'cm',
+    unit: metric.key === 'bodyweightKg' ? units : 'cm',
   }));
+}
+
+/** @deprecated Use `checkInMetrics(units)`; this assumes kg. */
+export const CHECK_IN_METRICS: CheckInMetric[] = checkInMetrics('kg');
 
 /** Progress index keeps a short primary set; limb pairs live in check-in + detail. */
 export const PROGRESS_INDEX_BODY_METRICS = BODY_METRICS.filter((metric) =>

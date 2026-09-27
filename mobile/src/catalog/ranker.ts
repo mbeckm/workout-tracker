@@ -3,6 +3,31 @@ import { normalizedExerciseCatalogKey, normalizedExerciseCatalogWords } from './
 import type { ExerciseCatalogItem } from './types';
 import type { ExercisePrescription } from '@/domain/types';
 
+/** Gym shorthand typed as one query word. Matched in addition to the literal token. */
+const QUERY_TOKEN_SYNONYMS: Record<string, string> = {
+  db: 'dumbbell',
+  bb: 'barbell',
+};
+
+/**
+ * Plural-tolerant prefix match. Name words already match by prefix ("tricep" finds
+ * "Triceps"), so only the query side needs the plural dropped: a trailing `s` (not `ss`)
+ * is stripped for words of 4+ letters ("triceps" finds "Tricep Pushdowns"), and a short
+ * plural matches its whole singular word ("ups" finds "Push-Up", "abs" finds "Ab Wheel"
+ * but not "Abduction").
+ */
+function queryWordMatches(token: string, word: string): boolean {
+  if (word.startsWith(token)) {
+    return true;
+  }
+  if (!token.endsWith('s') || token.endsWith('ss')) {
+    return false;
+  }
+  const stem = token.slice(0, -1);
+  return token.length >= 4 ? word.startsWith(stem) : word === stem;
+}
+
+/** Ordered word-prefix match: every query word starts a later name word, in order. */
 export function exerciseCatalogNameMatches(name: string, query: string): boolean {
   const queryTokens = normalizedExerciseCatalogWords(query);
   if (queryTokens.length === 0) {
@@ -16,9 +41,11 @@ export function exerciseCatalogNameMatches(name: string, query: string): boolean
 
   let wordIndex = 0;
   for (const token of queryTokens) {
+    const synonym = QUERY_TOKEN_SYNONYMS[token];
     let matched = false;
     while (wordIndex < nameWords.length) {
-      if (nameWords[wordIndex]?.startsWith(token)) {
+      const word = nameWords[wordIndex] ?? '';
+      if (queryWordMatches(token, word) || (synonym != null && word.startsWith(synonym))) {
         matched = true;
         wordIndex += 1;
         break;

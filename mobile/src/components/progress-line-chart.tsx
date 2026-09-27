@@ -116,7 +116,7 @@ function smoothPath(points: { x: number; y: number }[]): string {
 }
 
 function axisLabel(dateIso: string): string {
-  return new Date(dateIso).toLocaleDateString('en-US', { month: 'short' });
+  return new Date(dateIso).toLocaleDateString(undefined, { month: 'short' });
 }
 
 function nearestIndex(plotted: Plotted[], x: number): number {
@@ -167,12 +167,15 @@ export function ProgressLineChart({
   width,
   height = 180,
   onScrub,
+  accessibilityLabel,
 }: {
   points: ProgressPoint[];
   width: number;
   height?: number;
   /** `null` when the finger lifts — restore the latest value. */
   onScrub?: (point: ProgressPoint | null) => void;
+  /** Spoken summary of the trend; the drawn line is invisible to VoiceOver otherwise. */
+  accessibilityLabel?: string;
 }) {
   const { colors, type } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -310,7 +313,11 @@ export function ProgressLineChart({
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ width, height }}>
+      <View
+        style={{ width, height }}
+        accessible={accessibilityLabel != null}
+        accessibilityRole={accessibilityLabel != null ? 'image' : undefined}
+        accessibilityLabel={accessibilityLabel}>
         <Svg width={width} height={chartHeight}>
           <Line
             x1={padX}

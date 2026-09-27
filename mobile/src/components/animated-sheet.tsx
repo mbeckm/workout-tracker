@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useRef } from 'react';
-import { Modal, Pressable, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -25,6 +25,9 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
   'worklet';
   return (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
 }
+
+/** Light dims the page; dark needs more, or the scrim vanishes on a black page. */
+const SCRIM = { light: '#00000047', dark: '#0000009E' } as const;
 
 const SPRING_SHEET = { duration: 300, dampingRatio: 0.8, reduceMotion: ReduceMotion.System } as const;
 const SPRING_DISMISS = {
@@ -65,11 +68,15 @@ export function AnimatedSheet({
   expanded?: boolean;
   onDragStart?: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
+  const dark = scheme === 'dark';
   const { height: windowHeight } = useWindowDimensions();
   const largeHeight = Math.round(windowHeight * 0.92);
   const onDragStartRef = useRef(onDragStart);
-  onDragStartRef.current = onDragStart;
+
+  useEffect(() => {
+    onDragStartRef.current = onDragStart;
+  }, [onDragStart]);
 
   const notifyDragStart = useMemo(
     () => () => {
@@ -313,10 +320,19 @@ export function AnimatedSheet({
       }}
       style={[
         {
+          // Elevated surface: #F2F2F7 light, #1C1C1E dark (never the #000 page color).
           backgroundColor: colors.secondarySystemBackground,
           borderTopLeftRadius: radius.lg,
           borderTopRightRadius: radius.lg,
           borderCurve: 'continuous',
+          // Dark: a hairline keeps the sheet's edge against a black page.
+          ...(dark
+            ? {
+                borderWidth: StyleSheet.hairlineWidth,
+                borderBottomWidth: 0,
+                borderColor: colors.separator,
+              }
+            : null),
           paddingHorizontal: 24,
           paddingTop: 8,
           overflow: 'hidden',
@@ -338,7 +354,7 @@ export function AnimatedSheet({
             right: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: '#00000047',
+            backgroundColor: dark ? SCRIM.dark : SCRIM.light,
           },
           backdropStyle,
         ]}>

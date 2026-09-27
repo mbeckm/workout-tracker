@@ -1,10 +1,8 @@
+import { CATALOG } from './config';
 import { createCatalogItem } from './prescription';
 import type { ExerciseCatalogItem } from './types';
 import { ExerciseCatalogError } from './types';
 
-const OSS_BASE_URL = 'https://oss.exercisedb.dev';
-const RAPIDAPI_BASE_URL = 'https://exercisedb.p.rapidapi.com';
-const DEFAULT_RAPIDAPI_HOST = 'exercisedb.p.rapidapi.com';
 const TIMEOUT_MS = 12_000;
 
 type CatalogConfig = {
@@ -18,19 +16,33 @@ function trimEnv(value: string | undefined): string | null {
   return trimmed.length > 0 ? trimmed.replace(/\/+$/, '') : null;
 }
 
-export function exerciseCatalogConfig(): CatalogConfig {
-  const customBase = trimEnv(process.env.EXPO_PUBLIC_EXERCISE_CATALOG_BASE_URL);
-  const rapidApiKey = trimEnv(process.env.EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_KEY);
-  const rapidApiHost =
-    trimEnv(process.env.EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_HOST) ?? DEFAULT_RAPIDAPI_HOST;
+/**
+ * Remote search config, or `null` when `CATALOG.remote` is off (the 1.0 default).
+ * No ExerciseDB host is hardcoded for release builds: RapidAPI mode takes its base URL
+ * (RapidAPI itself or a proxy) from `EXPO_PUBLIC_EXERCISE_CATALOG_BASE_URL`.
+ */
+export function exerciseCatalogConfig(): CatalogConfig | null {
+  if (CATALOG.remote === 'off') {
+    return null;
+  }
 
-  if (customBase) {
-    return { baseURL: customBase, rapidApiKey, rapidApiHost };
+  if (CATALOG.remote === 'oss') {
+    // Non-commercial host. Keep the literal inside `__DEV__` so release bundles drop it.
+    if (__DEV__) {
+      const baseURL = 'https://oss.exercisedb.dev';
+      return { baseURL, rapidApiKey: null, rapidApiHost: new URL(baseURL).hostname };
+    }
+    return null;
   }
-  if (rapidApiKey) {
-    return { baseURL: RAPIDAPI_BASE_URL, rapidApiKey, rapidApiHost };
+
+  const rapidApiKey = trimEnv(process.env.EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_KEY);
+  const baseURL = trimEnv(process.env.EXPO_PUBLIC_EXERCISE_CATALOG_BASE_URL);
+  if (!rapidApiKey || !baseURL) {
+    return null;
   }
-  return { baseURL: OSS_BASE_URL, rapidApiKey: null, rapidApiHost };
+  const rapidApiHost =
+    trimEnv(process.env.EXPO_PUBLIC_EXERCISEDB_RAPIDAPI_HOST) ?? new URL(baseURL).hostname;
+  return { baseURL, rapidApiKey, rapidApiHost };
 }
 
 function asString(value: unknown): string | null {
@@ -262,6 +274,9 @@ export async function fetchCatalogSearch(
   signal?: AbortSignal,
 ): Promise<ExerciseCatalogItem[]> {
   const config = exerciseCatalogConfig();
+  if (!config) {
+    throw new ExerciseCatalogError('unavailable');
+  }
   const urls = searchURLs(query, limit, config);
   let lastError: ExerciseCatalogError | null = null;
 

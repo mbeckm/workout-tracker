@@ -1,6 +1,6 @@
 import { ThemeProvider as NavigationThemeProvider, DefaultTheme, DarkTheme } from 'expo-router/react-navigation';
 import { Stack } from 'expo-router';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -14,9 +14,11 @@ import { KeyboardProvider } from '@/keyboard';
 import { colors, spacing, type } from '@/constants/theme';
 import { peekWorkoutFocus, rememberWorkoutFocus } from '@/live-activity/controller';
 import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
-import { configurePurchases, isExpoGo, isProEntitlementActive } from '@/purchases/purchases';
+import { startEntitlementSync } from '@/purchases/purchases';
 import { progressDemoMode, shouldUseProgressDemo } from '@/store/progress-demo';
 import { WorkoutProvider, useWorkoutStore } from '@/store/workout-store';
+import { ToastHost } from '@/components/toast';
+import { trackScreen } from '@/analytics/analytics';
 import { AppThemeProvider, useTheme } from '@/theme/theme-context';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -63,8 +65,19 @@ function ThemedApp() {
       systemScheme={systemScheme}
       onSystemSchemeChange={setSystemScheme}>
       <ThemedNavigation />
+      <ScreenTracker />
+      <ToastHost />
     </AppThemeProvider>
   );
+}
+
+/** One `$screen` event per route change; the pathname carries no ids or params. */
+function ScreenTracker() {
+  const pathname = usePathname();
+  useEffect(() => {
+    trackScreen(pathname);
+  }, [pathname]);
+  return null;
 }
 
 function ThemedNavigation() {
@@ -98,7 +111,7 @@ function RootNav() {
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const segments = useSegments();
-  const { isHydrated, hasCompletedOnboarding, setPro } = useWorkoutStore();
+  const { isHydrated, hasCompletedOnboarding, applyEntitlement } = useWorkoutStore();
   const segmentsRef = useRef(segments);
   const handledInitialUrl = useRef(false);
   const openedProgressDemo = useRef(false);
@@ -108,32 +121,34 @@ function RootNav() {
     segmentsRef.current = segments;
   }, [segments]);
 
-  useEffect(() => {
-    if (!isHydrated || isExpoGo) {
-      return;
-    }
+  // Keeps isPro live; a no-op in Expo Go, on web, and without a store key.
+  useEffect(
+    () => (isHydrated ? startEntitlementSync(applyEntitlement) : undefined),
+    [isHydrated, applyEntitlement],
+  );
 
-    void (async () => {
-      try {
-        await configurePurchases();
-        setPro(await isProEntitlementActive());
-      } catch {
-        setPro(false);
-      }
-    })();
-  }, [isHydrated, setPro]);
-
+  // Onboarding closes its own one-way door: in one tap it saves the plan, completes
+  // onboarding, replaces itself with Home and opens the paywall or plan editor on top.
+  // Segments can trail that state by a render, so while that exit is in flight a stale
+  // `onboarding` segment must not trigger a second replace here (it would remove the
+  // paywall or editor). Once the app has been reached, any way back into onboarding
+  // (a stale link, web history) is sent Home.
+  const onboardingExit = useRef<'none' | 'pending' | 'done'>('none');
   useEffect(() => {
     if (!isHydrated) {
       return;
     }
 
     const onOnboarding = segments[0] === 'onboarding';
-    if (!hasCompletedOnboarding && !onOnboarding) {
-      router.replace('/onboarding');
-      return;
-    }
-    if (hasCompletedOnboarding && onOnboarding) {
+    if (!hasCompletedOnboarding) {
+      onboardingExit.current = 'pending';
+      if (!onOnboarding) {
+        router.replace('/onboarding');
+        return;
+      }
+    } else if (!onOnboarding) {
+      onboardingExit.current = 'done';
+    } else if (onboardingExit.current !== 'pending') {
       router.replace('/');
     }
     void SplashScreen.hideAsync().catch(() => undefined);
@@ -156,7 +171,7 @@ function RootNav() {
       !openedProgressDemo.current ||
       openedLiftDemo.current ||
       segments[0] !== '(tabs)' ||
-      segments[1] !== 'progress'
+      (segments as readonly string[])[1] !== 'progress'
     ) {
       return;
     }
@@ -231,7 +246,15 @@ function RootNav() {
     <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-      <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'Pro' }} />
+      <Stack.Screen
+        name="paywall"
+        options={{
+          presentation: 'fullScreenModal',
+          headerShown: false,
+          gestureEnabled: false,
+          title: 'Trim Pro',
+        }}
+      />
       <Stack.Screen
         name="log"
         options={{
@@ -294,9 +317,21 @@ function RootNav() {
       <Stack.Screen
         name="exercises"
         options={{
-          presentation: 'fullScreenModal',
+          // A step in the editor stack: a push, so the back chevron and edge swipe agree.
           headerShown: false,
           title: 'Exercises',
+        }}
+      />
+      <Stack.Screen
+        name="check-in"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
+          title: 'Check in',
         }}
       />
       <Stack.Screen

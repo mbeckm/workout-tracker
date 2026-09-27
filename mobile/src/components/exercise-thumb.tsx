@@ -2,20 +2,11 @@ import { Image, type ImageContentFit } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { CATALOG } from '@/catalog/config';
 import { initials } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 
-export function ExerciseThumb({
-  uri,
-  name,
-  size = 40,
-  width,
-  height,
-  completed = false,
-  animated = true,
-  contentFit = 'cover',
-  backgroundColor,
-}: {
+type ExerciseThumbProps = {
   uri?: string | null;
   name: string;
   size?: number;
@@ -25,7 +16,30 @@ export function ExerciseThumb({
   animated?: boolean;
   contentFit?: ImageContentFit;
   backgroundColor?: string;
-}) {
+};
+
+/**
+ * Exercise media tile. Renders nothing while `CATALOG.media` is off (Trim 1.0), so rows
+ * that use flex `gap` collapse the column with no layout fork.
+ */
+export function ExerciseThumb(props: ExerciseThumbProps) {
+  if (!CATALOG.media) {
+    return null;
+  }
+  return <ExerciseThumbTile {...props} />;
+}
+
+function ExerciseThumbTile({
+  uri,
+  name,
+  size = 40,
+  width,
+  height,
+  completed = false,
+  animated = true,
+  contentFit = 'cover',
+  backgroundColor,
+}: ExerciseThumbProps) {
   const { colors } = useTheme();
   const [failed, setFailed] = useState(false);
   const thumbWidth = width ?? size;

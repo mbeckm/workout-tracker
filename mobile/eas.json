@@ -21,6 +21,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_EXERCISE_MEDIA": "off",
+        "EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH": "off"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }
@@ -43,7 +47,8 @@
     "production": {
       "ios": {
         "language": "en-US",
-        "metadataPath": "./store.config.json"
+        "metadataPath": "./store.config.json",
+        "ascAppId": "6805436799"
       }
     }
   }
