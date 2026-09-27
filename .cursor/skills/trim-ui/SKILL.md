@@ -106,7 +106,16 @@ Every load carries its unit where it is shown: `60 kg × 8`, `Last time 72.5 kg 
 
 ## Toast
 
-`showToast({ title })` (`components/toast.tsx`) confirms an action whose result isn't on screen yet — a sheet that just closed. Inverted ink pill with a green check, above the tab bar, ~2s, tap to dismiss; enter 240ms ease-out rise, reduced motion = fade. One at a time. Never for errors, never for something the screen already shows.
+`showToast({ title })` (`components/toast.tsx`) confirms an action whose result isn't on screen yet — a sheet or editor that just closed. Inverted ink pill with a green check, above the tab bar inside the 24 margin (wraps at large type), ~2s, tap to dismiss; enter 240ms ease-out rise, reduced motion = fade. One at a time. Never for errors, never for something the screen already shows. Copy is `<Thing> <past participle>`: `Check-in saved`, `Plan created`.
+
+## Plan created
+
+A new plan is confirmed where it lands, not with a finish screen (the editor already shows the whole plan; a ceremony would repeat it). `navigation/plan-created.ts` does it once for every way out of a new plan that has exercises (Done, Back, edge swipe; not Delete):
+
+- **Done** fires one success haptic with the press, then closes the editor: the active plan lands on Home (next day + Start is the next step), any other plan back on Plans.
+- **Toast** `Plan created` rises ~320ms later (same beat as Home's week celebration), so it lands on the destination, not on the editor sliding away. Back/swipe get the toast without a haptic.
+- **Plans row reveal** (plan not active): the new row wears a `systemGray5` surface on the 16 inset (radius 12, 2pt clear of separators) for a moment — fade in 180ms ease-out after 240ms, hold 700ms, fade out 520ms ease-in-out. Opacity only, so it plays under Reduce Motion. No reveal on Home.
+- Onboarding's template path keeps `Plan ready` as its finish screen (no toast); Build my own uses the editor and gets this confirmation.
 
 ## Do not
 

@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
@@ -11,6 +12,7 @@ import { PaperBack } from '@/components/paper';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
+import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -18,7 +20,8 @@ export function PlanEditorScreen() {
   const { colors, type } = useTheme();
   const params = useLocalSearchParams<{ id: string; new?: string }>();
   const id = params.id;
-  // PE-2: opened from Create plan, so it gets a visible way out once it has work in it.
+  // PE-2: opened to create a plan (Plans +, Home's Create plan, onboarding's Build my own),
+  // so it gets a visible way out once it has work in it, and leaving confirms the plan.
   const isNew = params.new === '1';
   const router = useRouter();
   const navigation = useNavigation();
@@ -27,6 +30,7 @@ export function PlanEditorScreen() {
     useWorkoutStore();
   const plan = plans.find((item) => item.id === id);
   const planRef = useRef(plan);
+  const deletedRef = useRef(false);
   const [openedUnnamed] = useState(() => plan != null && !plan.name.trim());
 
   useEffect(() => {
@@ -36,16 +40,21 @@ export function PlanEditorScreen() {
   useEffect(() => {
     return navigation.addListener('beforeRemove', () => {
       const current = planRef.current;
-      const unusedDraft =
-        openedUnnamed &&
-        current != null &&
-        !current.name.trim() &&
-        current.days.every((day) => day.exercises.length === 0);
-      if (unusedDraft) {
+      if (current == null || deletedRef.current) {
+        return;
+      }
+      const hasWork = current.days.some((day) => day.exercises.length > 0);
+      if (openedUnnamed && !current.name.trim() && !hasWork) {
         deletePlan(current, { archive: false });
+        return;
+      }
+      // Done, Back and the edge swipe all keep a new plan with work in it, so all of them
+      // confirm it. Only a plan that isn't active lands on Plans, where its row lights up.
+      if (isNew && hasWork) {
+        confirmPlanCreated(current.id, { reveal: current.id !== activePlanId });
       }
     });
-  }, [deletePlan, navigation, openedUnnamed]);
+  }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed]);
 
   if (!plan) {
     return <View style={{ flex: 1, backgroundColor: colors.systemBackground }} />;
@@ -122,6 +131,9 @@ export function PlanEditorScreen() {
   const showDone = isNew && hasExercises;
 
   const finish = () => {
+    // The commit of a rare, long flow: one success tap with the press. The toast (and the
+    // Plans row) follow from `beforeRemove` once the editor leaves.
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     // The plan Home shows: land there, ready to press Start. Another plan: back to Plans.
     if (plan.id === activePlanId) {
       router.dismissTo('/');
@@ -225,6 +237,8 @@ export function PlanEditorScreen() {
                       text: 'Delete',
                       style: 'destructive',
                       onPress: () => {
+                        // Leaving by Delete must not confirm the plan it just removed.
+                        deletedRef.current = true;
                         deletePlan(plan);
                         router.back();
                       },

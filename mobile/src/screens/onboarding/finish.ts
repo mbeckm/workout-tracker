@@ -40,7 +40,10 @@ export function useFinishOnboarding() {
     [completeOnboarding, isPro, router, savePlan],
   );
 
-  /** Build my own: Home underneath, the plan editor on top. No onboarding paywall. */
+  /**
+   * Build my own: Home underneath, the plan editor on top, opened as a new plan so it gets
+   * Done and the "Plan created" confirmation like every other new plan. No onboarding paywall.
+   */
   const finishBuildingOwn = useCallback(
     (daysPerWeek: number) => {
       if (finished.current) {
@@ -52,7 +55,7 @@ export function useFinishOnboarding() {
       completeOnboarding();
       track('onboarding_completed', { path: 'own', days_per_week: daysPerWeek });
       router.replace('/');
-      router.push(`/plan/${plan.id}`);
+      router.push(`/plan/${plan.id}?new=1`);
     },
     [completeOnboarding, router, savePlan],
   );

@@ -80,11 +80,14 @@ export function ToastHost() {
         left: 0,
         right: 0,
         bottom: insets.bottom + 84,
+        // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
+        paddingHorizontal: 24,
         alignItems: 'center',
       }}>
       {toast ? (
         <Animated.View
           key={toast.id}
+          style={{ maxWidth: '100%' }}
           entering={reduceMotion ? FadeIn.duration(160) : ENTER}
           exiting={reduceMotion ? FadeOut.duration(120) : EXIT}>
           <ToastPill toast={toast} />
@@ -125,7 +128,7 @@ function ToastPill({ toast }: { toast: ToastState }) {
         tintColor={colors.systemGreen}
         fallback={<Text style={{ color: colors.systemGreen, fontSize: 16 }}>✓</Text>}
       />
-      <Text style={[type.body, { color: colors.onLabel, fontWeight: '600' }]}>{title}</Text>
+      <Text style={[type.body, { color: colors.onLabel, fontWeight: '600', flexShrink: 1 }]}>{title}</Text>
     </Pressable>
   );
 }
