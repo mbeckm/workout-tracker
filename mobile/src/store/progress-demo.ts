@@ -131,7 +131,11 @@ export function progressDemoSnapshot(base: WorkoutSnapshot): WorkoutSnapshot {
 
 export type ProgressDemoMode = 'index' | 'dark' | 'checkin' | 'dark-checkin' | 'lift' | 'body';
 
+/** Development only: the fixture replaces the user's data and appearance, so release builds ignore the flag. */
 export function progressDemoMode(): ProgressDemoMode | null {
+  if (!__DEV__) {
+    return null;
+  }
   const value = process.env.EXPO_PUBLIC_PROGRESS_DEMO;
   if (!value || value === '0') {
     return null;

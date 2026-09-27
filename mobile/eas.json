@@ -23,7 +23,8 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_EXERCISE_MEDIA": "off",
-        "EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH": "off"
+        "EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH": "off",
+        "EXPO_PUBLIC_PROGRESS_DEMO": "0"
       },
       "ios": {
         "resourceClass": "m-medium"
