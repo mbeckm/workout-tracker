@@ -1,4 +1,4 @@
-/** Title-case like Swift `exerciseCatalogDisplayText`. */
+/** Title-case catalog names for display ("barbell bench press" → "Barbell Bench Press"). */
 export function exerciseCatalogDisplayText(value: string | null | undefined): string {
   if (value == null || value === '') {
     return '';

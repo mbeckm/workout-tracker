@@ -188,7 +188,7 @@ export function estimatedOneRM(
   return weight * (1 + reps / 30);
 }
 
-/** Epley 1RM, then convert to 10RM. Matches ScratchWorkout `LoggedSet.estimatedTenRM`. */
+/** Epley 1RM, then convert to 10RM: 1RM = weight × (1 + reps/30), 10RM = 1RM / (1 + 10/30). */
 export function estimatedTenRM(
   weight: number | null | undefined,
   reps: number | null | undefined,

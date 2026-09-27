@@ -34,7 +34,7 @@ class RootErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Scratch root error', error, info.componentStack);
+    console.error('Trim root error', error, info.componentStack);
   }
 
   render() {
