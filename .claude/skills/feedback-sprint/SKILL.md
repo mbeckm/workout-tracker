@@ -25,6 +25,7 @@ Routing rules:
 - If you're unsure between two tiers, pick the higher one for design items and the lower one for technical items.
 - If an item fails review twice at one tier, escalate it one tier (quick-fixer → builder → designer) and pass on what went wrong.
 - An item that mixes technical and taste work goes to `designer`. Splitting it creates coordination overhead.
+- **Design work always starts with research.** Any item that needs a design decision goes to `designer`, which researches Mobbin and Appllama before designing. Only send a UX item to `builder` or `quick-fixer` if the design is already fully settled (exact copy, token or spacing).
 
 ## Phase 1: Set up
 
@@ -63,7 +64,7 @@ Then:
 - **Design review (you, not QA).** QA checks that the acceptance criteria are met. Your job here is to judge whether the result is *good*. Do this for every `designer` item and every UI-visible `builder` item:
   1. Open QA's screenshots yourself with Read, in light and dark mode and at large Dynamic Type. Judge the rendered screens, not the diff.
   2. Hold them to `.cursor/skills/scratch-ui/SKILL.md` and the Paper artboard, and to the `family-values` bar: simple, fluid, delightful. Check hierarchy, spacing rhythm, alignment, and that green is used only for completed work and the one gym CTA. Look for anything that feels more like a website than an iOS app. For motion, compare the designer's stated timing and curves with what QA observed.
-  3. Check the result against the designer's stated **Decision**. If the direction itself looks wrong, say so and send it back. Don't approve a well-built answer to the wrong question.
+  3. Check the designer's **Research** section. If it's missing or thin, send the item back before reviewing anything else. Then check the result against the stated **Decision**, and check that the decision follows from the research. If the direction itself looks wrong, say so and send it back. Don't approve a well-built answer to the wrong question.
   4. Give feedback as concrete deltas, e.g. "title sits 4pt too close to the strip; the empty state reads as an error, soften the copy and drop the icon". "Make it nicer" is not feedback.
   5. If you've gone two rounds and still aren't sure it's right, don't approve it. Mark it ❓ with the screenshots and let Marvin make the call.
 - **Commit per item** once it passes review and QA. Stage only that item's files (`git add <paths>`, never `git add -A`) and write the message in the repo's style: one sentence describing the user-facing change, e.g. "Keep the rest timer visible when the keyboard opens."
