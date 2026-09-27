@@ -60,6 +60,12 @@ Then:
   1. Read the diff: `git diff -- <files>`. Check it against the acceptance criteria, AGENTS.md rules and scratch-ui. Look for scope creep, unrelated edits, missed states and hacks.
   2. If it needs changes, use **SendMessage to the same agent** (it keeps its context). Give specific, actionable feedback: what's wrong, where, and what "right" looks like. The limit is 2 rounds per tier, then escalate.
 - **QA after each wave.** Start one `qa-tester` with the QA scripts for every item that passed review. Tell it whether Expo is already running. Send failures back to the original worker through SendMessage, including the screenshot paths.
+- **Design review (you, not QA).** QA checks that the acceptance criteria are met. Your job here is to judge whether the result is *good*. Do this for every `designer` item and every UI-visible `builder` item:
+  1. Open QA's screenshots yourself with Read, in light and dark mode and at large Dynamic Type. Judge the rendered screens, not the diff.
+  2. Hold them to `.cursor/skills/scratch-ui/SKILL.md` and the Paper artboard, and to the `family-values` bar: simple, fluid, delightful. Check hierarchy, spacing rhythm, alignment, and that green is used only for completed work and the one gym CTA. Look for anything that feels more like a website than an iOS app. For motion, compare the designer's stated timing and curves with what QA observed.
+  3. Check the result against the designer's stated **Decision**. If the direction itself looks wrong, say so and send it back. Don't approve a well-built answer to the wrong question.
+  4. Give feedback as concrete deltas, e.g. "title sits 4pt too close to the strip; the empty state reads as an error, soften the copy and drop the icon". "Make it nicer" is not feedback.
+  5. If you've gone two rounds and still aren't sure it's right, don't approve it. Mark it ❓ with the screenshots and let Marvin make the call.
 - **Commit per item** once it passes review and QA. Stage only that item's files (`git add <paths>`, never `git add -A`) and write the message in the repo's style: one sentence describing the user-facing change, e.g. "Keep the rest timer visible when the keyboard opens."
 - Update the ledger after every state change.
 
