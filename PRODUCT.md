@@ -34,7 +34,7 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 
 - **Workout (Home):** `Next Workout` and the next day (name, plan · exercise count · time estimate), its exercises with prescription and last working weight (`4 × 8 reps · 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, which celebrate a newly finished day), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
 - **Plans:** the active plan and other plans. Plan editor: name, days, add day. Day editor: pick exercises, then sets and reps (or duration).
-- **Progress:** each tracked lift with a sparkline; lift detail shows the estimated 1RM chart and sessions. Free sees the last 3 months; 6M, YTD and All are Pro. Body check-ins (native sheet); trends over time are Pro.
+- **Progress:** each tracked lift and body metric with a sparkline; lift detail shows the estimated 1RM chart and sessions, body detail the metric's chart and check-ins. Body works exactly like lifts: free sees the last 3 months (chart, delta, scrubbing); 6M, YTD and All are Pro for both. Body check-ins are a native sheet.
 - **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.
 - **Settings:** Weight (kg/lbs), Appearance (System/Light/Dark), Trim Pro, Restore purchases; links out to Contact support, Privacy Policy, Terms of Use; Clear history.
 
@@ -54,7 +54,7 @@ One exercise, one set at a time:
 
 ## Trim Pro
 
-Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, and next-session targets. Logging and history are free. Prices always come from the App Store through RevenueCat.
+Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months, for lifts and body, and next-session targets. Logging and history are free. Prices always come from the App Store through RevenueCat.
 
 ## Privacy
 
