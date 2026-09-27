@@ -11,7 +11,6 @@ export const PRO_REASONS = [
   'second_plan',
   'switch_plan',
   'progress_history',
-  'body_trends',
   'targets',
   'settings',
 ] as const;

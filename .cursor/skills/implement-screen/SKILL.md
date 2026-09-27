@@ -17,5 +17,5 @@ description: Implements a Trim screen in mobile/ from the Paper design file. Use
 ## Guardrails
 
 - Visual source of truth is `trim-ui` plus the current Paper artboard for that screen.
-- Haptics only for: a logged set (light impact), rest end, Finish and Done on a new plan (success), stepper and option selection (selection: well −/+, swiping between exercises, a paywall option), and a sheet snapping (light impact). Nothing else buzzes. See `PRODUCT-DECISIONS.md` item 24.
+- Haptics only for: a logged set (light impact), rest end, Finish, Done on a new plan and Trim Pro turning on in the paywall (success), stepper and option selection (selection: well −/+, swiping between exercises, a paywall option), and a sheet snapping (light impact). Nothing else buzzes. See `PRODUCT-DECISIONS.md` item 24.
 - Never skip Paper: critique → Paper → judge → then `mobile/`.

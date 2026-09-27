@@ -1,20 +1,21 @@
 import * as Haptics from 'expo-haptics';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { paywallPreviewLoader } from '@/components/paywall/dev-preview';
+import { paywallPreview } from '@/components/paywall/dev-preview';
+import { FeatureRow } from '@/components/paywall/feature-row';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
+import { PaywallSuccessBody, trialLine } from '@/components/paywall/success';
 import { TrialTimeline } from '@/components/paywall/trial-timeline';
 import { billedPerPeriod } from '@/purchases/offers';
-import { proFeaturesFor, type ProFeature } from '@/purchases/pro-features';
+import { proFeaturesFor } from '@/purchases/pro-features';
 import type { ProReason } from '@/purchases/pro-gate';
 import { usePaywallController, type PaywallController } from '@/purchases/use-paywall-controller';
-import { enterUp } from '@/motion';
+import { EASE_OUT, enterUp, exitFade } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 /**
@@ -27,15 +28,33 @@ const REASON_HEADLINE: Record<ProReason, string> = {
   second_plan: 'Add another plan with Pro.',
   switch_plan: 'Switch plans with Pro.',
   progress_history: 'See all of your progress.',
-  body_trends: 'See your body trends.',
   targets: 'Get a target for every set.',
   settings: 'Trim Pro',
 };
 
+/**
+ * Success CTA: what tapping it resumes. Gates name the action they were holding; the rest
+ * just continue where they were.
+ */
+const REASON_RESUME: Record<ProReason, string> = {
+  onboarding: 'Start training',
+  post_workout: 'Continue',
+  second_plan: 'Add plan',
+  switch_plan: 'Use this plan',
+  // The gate doesn't know which window was tapped (6M, YTD or All), only that it was one.
+  progress_history: 'Show progress',
+  targets: 'Use targets',
+  settings: 'Continue',
+};
+
+const NOTE_FADE = FadeIn.duration(200).easing(EASE_OUT);
+
 export function PaywallScreen({ reason, session }: { reason: ProReason; session?: string }) {
-  // Development only: `?mock=trial|notrial|unavailable|offline|loading` previews without StoreKit.
+  // Development only: `?mock=trial|notrial|unavailable|offline|loading` previews without
+  // StoreKit (Subscribe and Restore then succeed locally); `?mock=success|success-notrial|restored`
+  // opens on the success state.
   const { mock } = useLocalSearchParams<{ mock?: string | string[] }>();
-  const paywall = usePaywallController(reason, session, { loadOffers: paywallPreviewLoader(mock) });
+  const paywall = usePaywallController(reason, session, { preview: paywallPreview(mock) });
   return <PaywallView paywall={paywall} />;
 }
 
@@ -57,8 +76,16 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
   const headline = REASON_HEADLINE[paywall.reason];
   const features = proFeaturesFor(paywall.reason);
   const busy = paywall.busy !== null;
-  const { load, selected, trial } = paywall;
+  const { load, selected, trial, success } = paywall;
   const failed = paywall.loadError != null;
+
+  // The success state starts at the top, even if the offer was scrolled to its terms.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (success) {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }
+  }, [success]);
 
   const select = (offer: (typeof paywall.offers)[number]) => {
     if (offer.id === selected?.id) {
@@ -70,8 +97,9 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
     paywall.select(offer.id);
   };
 
-  const ctaTitle =
-    paywall.busy === 'purchase'
+  const ctaTitle = success
+    ? REASON_RESUME[paywall.reason]
+    : paywall.busy === 'purchase'
       ? 'Purchasing…'
       : failed
         ? 'Try again'
@@ -79,17 +107,22 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           ? 'Loading prices…'
           : paywall.ctaTitle;
 
-  // Next to the button: what happens to money when it is tapped.
-  const ctaNote = selected
-    ? trial
-      ? `No payment due now. Then ${billedPerPeriod(selected)}.`
-      : `${billedPerPeriod(selected)}. Cancel anytime.`
-    : null;
+  // Under the button: what happens to money. After a purchase, only the trial's end is left.
+  const ctaNote = success
+    ? trialLine(success)
+    : selected
+      ? trial
+        ? `No payment due now. Then ${billedPerPeriod(selected)}.`
+        : `${billedPerPeriod(selected)}. Cancel anytime.`
+      : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
+    <View
+      style={{ flex: 1, backgroundColor: colors.systemBackground }}
+      onAccessibilityEscape={success ? paywall.proceed : busy ? undefined : paywall.close}>
       <Stack.Screen options={{ headerShown: false, title: 'Trim Pro' }} />
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="never"
         scrollEventThrottle={32}
@@ -100,96 +133,115 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           paddingTop: insets.top + 44,
           paddingHorizontal: 24,
           paddingBottom: 24,
-          gap: 28,
         }}>
-        <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
-          {headline}
-        </Text>
+        {success ? (
+          // Same modal, same footer: the offer fades out and the success state rises in its place.
+          <PaywallSuccessBody
+            key="success"
+            success={success}
+            features={features}
+            reduceMotion={Boolean(reduceMotion)}
+          />
+        ) : (
+          <Animated.View key="offer" exiting={exitFade(Boolean(reduceMotion))} style={{ gap: 28 }}>
+            <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
+              {headline}
+            </Text>
 
-        <View style={{ gap: 18 }} testID="paywall-features">
-          {features.map((feature, index) => (
-            <Animated.View
-              key={feature.id}
-              entering={enterUp(Boolean(reduceMotion), 60 + index * 50)}>
-              <FeatureRow feature={feature} />
-            </Animated.View>
-          ))}
-        </View>
+            <View style={{ gap: 18 }} testID="paywall-features">
+              {features.map((feature, index) => (
+                <Animated.View
+                  key={feature.id}
+                  entering={enterUp(Boolean(reduceMotion), 60 + index * 50)}>
+                  <FeatureRow title={feature.title} detail={feature.detail} symbol={feature.symbol} />
+                </Animated.View>
+              ))}
+            </View>
 
-        {load.status === 'loading' ? (
-          <View
-            accessible
-            accessibilityLabel="Loading prices"
-            accessibilityRole="progressbar"
-            style={{ gap: 12 }}>
-            <PlanOptionPlaceholder tall />
-            <PlanOptionPlaceholder />
-          </View>
-        ) : null}
+            {load.status === 'loading' ? (
+              <View
+                accessible
+                accessibilityLabel="Loading prices"
+                accessibilityRole="progressbar"
+                style={{ gap: 12 }}>
+                <PlanOptionPlaceholder tall />
+                <PlanOptionPlaceholder />
+              </View>
+            ) : null}
 
-        {failed ? (
-          <Text style={[type.body, { color: colors.secondaryLabel }]} accessibilityLiveRegion="polite">
-            {paywall.loadError}
-          </Text>
-        ) : null}
+            {failed ? (
+              <Text style={[type.body, { color: colors.secondaryLabel }]} accessibilityLiveRegion="polite">
+                {paywall.loadError}
+              </Text>
+            ) : null}
 
-        {paywall.offers.length > 0 ? (
-          <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: 12 }}>
-            {paywall.offers.map((offer) => (
-              <PlanOption
-                key={offer.id}
-                offer={offer}
-                selected={offer.id === selected?.id}
-                disabled={busy}
-                onSelect={() => select(offer)}
-              />
-            ))}
-          </View>
-        ) : null}
+            {paywall.offers.length > 0 ? (
+              <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: 12 }}>
+                {paywall.offers.map((offer) => (
+                  <PlanOption
+                    key={offer.id}
+                    offer={offer}
+                    selected={offer.id === selected?.id}
+                    disabled={busy}
+                    onSelect={() => select(offer)}
+                  />
+                ))}
+              </View>
+            ) : null}
 
-        {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
+            {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
 
-        {paywall.termsText ? (
-          <Text style={[type.caption, { fontWeight: '400' }]} testID="paywall-terms">
-            {paywall.termsText}
-          </Text>
-        ) : null}
+            {paywall.termsText ? (
+              <Text style={[type.caption, { fontWeight: '400' }]} testID="paywall-terms">
+                {paywall.termsText}
+              </Text>
+            ) : null}
+          </Animated.View>
+        )}
       </ScrollView>
 
       {/* Solid band under the status bar and Not now, so scrolled copy never runs under
-          either. Hairline only while content sits beneath it, like the footer. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: insets.top + 44,
-          backgroundColor: colors.systemBackground,
-          borderBottomWidth: contentAbove ? 0.5 : 0,
-          borderBottomColor: colors.separator,
-        }}
-      />
+          either. Hairline only while content sits beneath it, like the footer. On the success
+          state (no Not now) it only appears once content scrolls, so the check's rings can
+          open into the air above it. */}
+      {success && !contentAbove ? null : (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: insets.top + 44,
+            backgroundColor: colors.systemBackground,
+            borderBottomWidth: contentAbove ? 0.5 : 0,
+            borderBottomColor: colors.separator,
+          }}
+        />
+      )}
 
-      {/* Always reachable, never hidden or delayed: top right, where a close lives on iOS. */}
-      <Pressable
-        accessibilityRole="button"
-        testID="paywall-not-now"
-        disabled={busy}
-        onPress={paywall.close}
-        hitSlop={8}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          top: insets.top,
-          right: 12,
-          minHeight: 44,
-          paddingHorizontal: 12,
-          justifyContent: 'center',
-          opacity: busy ? 0.4 : pressed ? 0.55 : 1,
-        })}>
-        <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
-      </Pressable>
+      {/* On the offer, always reachable, never hidden or delayed: top right, where a close
+          lives on iOS. Gone on the success state, where the one way on is the CTA. */}
+      {success ? null : (
+        <Animated.View
+          exiting={exitFade(Boolean(reduceMotion))}
+          style={{ position: 'absolute', top: insets.top, right: 12 }}>
+          <Pressable
+            accessibilityRole="button"
+            testID="paywall-not-now"
+            disabled={busy}
+            onPress={paywall.close}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              paddingHorizontal: 12,
+              justifyContent: 'center',
+              opacity: busy ? 0.4 : pressed ? 0.55 : 1,
+            })}>
+            <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
       <View
         style={{
@@ -200,7 +252,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           borderTopColor: colors.separator,
           backgroundColor: colors.systemBackground,
         }}>
-        {paywall.message ? (
+        {paywall.message && !success ? (
           <Text
             style={[type.kicker, { textAlign: 'center', paddingBottom: 12 }]}
             accessibilityLiveRegion="polite"
@@ -209,69 +261,61 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           </Text>
         ) : null}
 
+        {/* The one element that stays put through the success transition: same pill, same
+            place, new job. Only the label changes. */}
         <Button
           title={ctaTitle}
           variant="black"
-          testID="paywall-cta"
-          disabled={failed ? load.status === 'loading' : !paywall.canPurchase}
-          onPress={failed ? paywall.retry : paywall.purchase}
+          testID={success ? 'paywall-success-cta' : 'paywall-cta'}
+          disabled={success ? false : failed ? load.status === 'loading' : !paywall.canPurchase}
+          onPress={success ? paywall.proceed : failed ? paywall.retry : paywall.purchase}
         />
         {ctaNote ? (
-          <Text
+          <Animated.Text
+            key={success ? 'success-note' : 'offer-note'}
+            entering={success ? NOTE_FADE : undefined}
             style={[type.kicker, { textAlign: 'center', paddingTop: 8, fontVariant: ['tabular-nums'] }]}
-            testID="paywall-cta-note">
+            testID={success ? 'paywall-trial-note' : 'paywall-cta-note'}>
             {ctaNote}
+          </Animated.Text>
+        ) : success ? (
+          // Holds the note's line (at any text size) so the CTA doesn't drop without a trial.
+          <Text
+            accessible={false}
+            importantForAccessibility="no"
+            style={[type.kicker, { paddingTop: 8 }]}>
+            {' '}
           </Text>
         ) : null}
         <View style={{ height: 4 }} />
 
-
-        <View
+        {/* On success the links fade but keep their row, so the CTA stays exactly where the
+            buyer's thumb just was. */}
+        <Animated.View
+          accessibilityElementsHidden={success != null}
+          importantForAccessibility={success ? 'no-hide-descendants' : 'auto'}
+          pointerEvents={success ? 'none' : 'auto'}
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'center',
             alignItems: 'center',
+            opacity: success ? 0 : 1,
+            transitionProperty: 'opacity',
+            transitionDuration: reduceMotion ? 120 : 150,
+            transitionTimingFunction: 'ease-out',
           }}>
           <FooterLink
             title={paywall.busy === 'restore' ? 'Restoring…' : 'Restore'}
             accessibilityLabel="Restore Purchases"
             onPress={paywall.restore}
-            disabled={busy}
+            disabled={busy || success != null}
           />
           <Dot />
           <FooterLink title="Terms of Use" onPress={paywall.openTerms} />
           <Dot />
           <FooterLink title="Privacy Policy" onPress={paywall.openPrivacy} />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-/** Icon tile + title + one line. The tile gives each benefit a scannable anchor. */
-function FeatureRow({ feature }: { feature: ProFeature }) {
-  const { colors, type } = useTheme();
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${feature.title}. ${feature.detail}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          borderCurve: 'continuous',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.secondarySystemBackground,
-        }}>
-        <SymbolView name={feature.symbol as SFSymbol} size={18} weight="semibold" tintColor={colors.label} />
-      </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={[type.row, { fontWeight: '600' }]}>{feature.title}</Text>
-        <Text style={type.kicker}>{feature.detail}</Text>
+        </Animated.View>
       </View>
     </View>
   );

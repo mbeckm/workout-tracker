@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import type { PurchasesOffering } from 'react-native-purchases';
 
+import type { PaywallPreview } from '@/components/paywall/dev-preview';
 import { LEGAL_URLS } from '@/constants/legal';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -24,7 +25,6 @@ import {
   purchaseOffer,
   restorePurchases,
   trackPaywallImpression,
-  type OffersResult,
 } from './purchases';
 import { track } from '@/analytics/analytics';
 
@@ -34,6 +34,14 @@ export type PaywallLoadState =
   | { status: 'offline' | 'unavailable' };
 
 export type PaywallBusy = 'purchase' | 'restore' | null;
+
+/** Pro turned on from this paywall. The modal stays open on this until Continue. */
+export type PaywallSuccess = {
+  /** A purchase here, or a restore from this paywall's footer. */
+  kind: 'purchased' | 'restored';
+  /** When the free trial this purchase started ends. Null without a trial (and for restores). */
+  trialEndsAt: Date | null;
+};
 
 export type PaywallController = {
   reason: ProReason;
@@ -55,6 +63,13 @@ export type PaywallController = {
   trial: FreeTrial | null;
   /** Auto-renewal disclosure for the selected offer. */
   termsText: string | null;
+  /**
+   * Set once a purchase or a restore here turns Pro on. The paywall shows its success
+   * state and the gate stays open until `proceed` (or the modal goes away some other way).
+   */
+  success: PaywallSuccess | null;
+  /** Success state's CTA: settle the gate as purchased/restored so the placement resumes. */
+  proceed: () => void;
   purchase: () => void;
   restore: () => void;
   retry: () => void;
@@ -74,11 +89,44 @@ function openLegal(url: string) {
 
 export type PaywallControllerOptions = {
   /**
-   * Development previews only: replaces the store load. Impressions and the
-   * one-time post-workout flag are left alone so a preview never consumes them.
+   * Development previews only: replaces the store load, purchase and restore. Impressions,
+   * the one-time post-workout flag and the real entitlement are left alone, so a preview
+   * never consumes or changes anything.
    */
-  loadOffers?: (reason: ProReason) => Promise<OffersResult>;
+  preview?: PaywallPreview;
 };
+
+/**
+ * The end of the free trial `offer` starts at `from`, from the store's intro period (the
+ * same offer the paywall's timeline described). Null when the offer has no eligible trial.
+ */
+export function trialEndDate(offer: ProOffer, from: Date): Date | null {
+  const intro = offer.intro;
+  if (!intro?.isFreeTrial) {
+    return null;
+  }
+  const count = intro.periodNumberOfUnits * Math.max(1, intro.cycles);
+  if (count <= 0) {
+    return null;
+  }
+  const end = new Date(from.getTime());
+  switch (intro.periodUnit.toUpperCase()) {
+    case 'DAY':
+      end.setDate(end.getDate() + count);
+      return end;
+    case 'WEEK':
+      end.setDate(end.getDate() + count * 7);
+      return end;
+    case 'MONTH':
+      end.setMonth(end.getMonth() + count);
+      return end;
+    case 'YEAR':
+      end.setFullYear(end.getFullYear() + count);
+      return end;
+    default:
+      return null;
+  }
+}
 
 /**
  * The paywall state machine: load offers for the placement (with intro eligibility),
@@ -90,9 +138,9 @@ export function usePaywallController(
   session: string | undefined,
   options?: PaywallControllerOptions,
 ): PaywallController {
-  /** Pass a stable (module-level) function; a new one per render reloads offers. */
-  const previewLoad = options?.loadOffers;
-  const isPreview = previewLoad != null;
+  /** Pass a stable (module-level) preview; a new one per render reloads offers. */
+  const preview = options?.preview;
+  const isPreview = preview != null;
   const router = useRouter();
   const { isPro, applyEntitlement, markPaywallShown } = useWorkoutStore();
   const [load, setLoad] = useState<PaywallLoadState>({ status: 'loading' });
@@ -100,8 +148,17 @@ export function usePaywallController(
   const [selectedId, setSelectedId] = useState<ProPeriod | null>(null);
   const [busy, setBusy] = useState<PaywallBusy>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [success, setSuccess] = useState<PaywallSuccess | null>(null);
+  /** The store took the money but the entitlement wasn't active yet (`notActiveYet`). */
+  const [pendingSuccess, setPendingSuccess] = useState<PaywallSuccess | null>(null);
   const closingRef = useRef(false);
   const impressionRef = useRef(false);
+  // A purchase that went through before Pro was active celebrates once the entitlement lands.
+  const shownSuccess = success ?? (isPro ? pendingSuccess : null);
+  const successRef = useRef<PaywallSuccess | null>(null);
+  useEffect(() => {
+    successRef.current = shownSuccess;
+  }, [shownSuccess]);
 
   const finish = useCallback(
     (outcome: PaywallOutcome) => {
@@ -120,17 +177,20 @@ export function usePaywallController(
     [router, session],
   );
 
-  // Unmount without a close path (hardware back, parent dismissed): settle as dismissed.
-  // A no-op when this session already settled. Deferred so a StrictMode remount doesn't count.
+  // Unmount without a close path (hardware back, a swipe, parent dismissed): settle as
+  // dismissed, or as purchased/restored once the success state is up, so a paid gate always
+  // resumes. A no-op when this session already settled. Deferred so a StrictMode remount
+  // doesn't count.
   const mountedRef = useRef(false);
   useEffect(() => {
     const mounted = mountedRef;
+    const won = successRef;
     mounted.current = true;
     return () => {
       mounted.current = false;
       setTimeout(() => {
         if (!mounted.current) {
-          settlePaywall(session, 'dismissed');
+          settlePaywall(session, won.current?.kind ?? 'dismissed');
         }
       }, 0);
     };
@@ -138,7 +198,7 @@ export function usePaywallController(
 
   useEffect(() => {
     let cancelled = false;
-    void (previewLoad ?? loadProOffers)(reason).then((result) => {
+    void (preview?.loadOffers ?? loadProOffers)(reason).then((result) => {
       if (cancelled) {
         return;
       }
@@ -149,6 +209,15 @@ export function usePaywallController(
             ? current
             : defaultOfferId(result.offers),
         );
+        // Development preview of the success state (`?mock=success|success-notrial|restored`).
+        if (preview?.opensOn) {
+          const offer = result.offers.find((item) => item.id === defaultOfferId(result.offers));
+          setSuccess({
+            kind: preview.opensOn,
+            trialEndsAt:
+              preview.opensOn === 'purchased' && offer ? trialEndDate(offer, new Date()) : null,
+          });
+        }
       } else {
         setLoad({ status: result.status });
       }
@@ -156,7 +225,7 @@ export function usePaywallController(
     return () => {
       cancelled = true;
     };
-  }, [reason, attempt, previewLoad]);
+  }, [reason, attempt, preview]);
 
   // Offers are on screen: count the impression and consume the one-time post-workout offer.
   useEffect(() => {
@@ -168,32 +237,44 @@ export function usePaywallController(
     markPaywallShown(reason);
   }, [load, reason, markPaywallShown, isPreview]);
 
-  // Pro turned on while open (Ask to Buy approved, another device, entitlement sync): resume the gate.
+  // Pro turned on from outside while open (Ask to Buy approved, another device, entitlement
+  // sync): resume the gate quietly. Not while a purchase or restore is in flight (the SDK's
+  // listener can land first) and not once this paywall owns the moment with its success state.
   useEffect(() => {
-    if (isPro && busy === null) {
+    if (isPro && busy === null && shownSuccess === null && !isPreview) {
       finish('restored');
     }
-  }, [isPro, busy, finish]);
+  }, [isPro, busy, shownSuccess, isPreview, finish]);
 
   const offers = load.status === 'ready' ? load.offers : [];
   const selected = offers.find((offer) => offer.id === selectedId) ?? null;
 
   const purchase = useCallback(() => {
-    if (!selected || busy || closingRef.current) {
+    if (!selected || busy || shownSuccess || closingRef.current) {
       return;
     }
     setBusy('purchase');
     setMessage(null);
-    track('purchase_started', { reason, package: selected.id });
-    void purchaseOffer(selected).then((result) => {
-      track('purchase_finished', { reason, package: selected.id, outcome: result.kind });
+    if (!isPreview) {
+      track('purchase_started', { reason, package: selected.id });
+    }
+    // The trial the buyer just agreed to, dated from now: the store starts it on purchase.
+    const won: PaywallSuccess = { kind: 'purchased', trialEndsAt: trialEndDate(selected, new Date()) };
+    void (preview?.purchase ?? purchaseOffer)(selected).then((result) => {
+      if (!isPreview) {
+        track('purchase_finished', { reason, package: selected.id, outcome: result.kind });
+      }
       if (result.kind === 'success') {
-        applyEntitlement(result.entitlement);
-        if (result.entitlement.status === 'pro') {
-          finish('purchased');
-          return;
+        if (!isPreview) {
+          applyEntitlement(result.entitlement);
         }
-        setMessage(PURCHASE_COPY.notActiveYet);
+        // Same batch as the entitlement, so the outside-change effect never sees Pro without it.
+        if (result.entitlement.status === 'pro') {
+          setSuccess(won);
+        } else {
+          setPendingSuccess(won);
+          setMessage(PURCHASE_COPY.notActiveYet);
+        }
       } else if (result.kind === 'pending') {
         Alert.alert(PURCHASE_COPY.pendingTitle, PURCHASE_COPY.pendingBody, [
           { text: 'OK', onPress: () => finish('dismissed') },
@@ -203,30 +284,39 @@ export function usePaywallController(
       }
       setBusy(null);
     });
-  }, [selected, busy, applyEntitlement, finish, reason]);
+  }, [selected, busy, shownSuccess, isPreview, preview, applyEntitlement, finish, reason]);
 
   const restore = useCallback(() => {
-    if (busy || closingRef.current) {
+    if (busy || shownSuccess || closingRef.current) {
       return;
     }
     setBusy('restore');
     setMessage(null);
-    void restorePurchases().then((result) => {
-      track('restore_finished', { outcome: result.kind });
-      if (result.kind === 'restored') {
-        applyEntitlement(result.entitlement);
-        finish('restored');
-        return;
+    void (preview?.restore ?? restorePurchases)().then((result) => {
+      if (!isPreview) {
+        track('restore_finished', { outcome: result.kind });
       }
       setBusy(null);
-      if (result.kind === 'none') {
+      if (result.kind === 'restored') {
+        if (!isPreview) {
+          applyEntitlement(result.entitlement);
+        }
+        // Restore after "not active yet" is still this purchase landing, not a welcome back.
+        setSuccess(pendingSuccess ?? { kind: 'restored', trialEndsAt: null });
+      } else if (result.kind === 'none') {
         applyEntitlement(result.entitlement);
         Alert.alert(PURCHASE_COPY.noneTitle, PURCHASE_COPY.noneBody);
       } else {
         setMessage(result.message);
       }
     });
-  }, [busy, applyEntitlement, finish]);
+  }, [busy, shownSuccess, pendingSuccess, isPreview, preview, applyEntitlement]);
+
+  const proceed = useCallback(() => {
+    if (shownSuccess) {
+      finish(shownSuccess.kind);
+    }
+  }, [shownSuccess, finish]);
 
   const retry = useCallback(() => {
     if (load.status === 'loading') {
@@ -241,8 +331,12 @@ export function usePaywallController(
     if (busy) {
       return;
     }
+    if (shownSuccess) {
+      finish(shownSuccess.kind);
+      return;
+    }
     finish(load.status === 'offline' || load.status === 'unavailable' ? 'unavailable' : 'dismissed');
-  }, [busy, load.status, finish]);
+  }, [busy, shownSuccess, load.status, finish]);
 
   return {
     reason,
@@ -254,11 +348,13 @@ export function usePaywallController(
     message,
     loadError:
       load.status === 'offline' || load.status === 'unavailable' ? LOAD_ERROR_COPY[load.status] : null,
-    canPurchase: selected != null && busy === null,
+    canPurchase: selected != null && busy === null && shownSuccess === null,
     ctaTitle: ctaTitle(selected),
     introLine: selected ? introLine(selected) : null,
     trial: freeTrial(selected),
     termsText: selected ? termsText(selected) : null,
+    success: shownSuccess,
+    proceed,
     purchase,
     restore,
     retry,
