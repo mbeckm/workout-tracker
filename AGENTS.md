@@ -74,3 +74,9 @@ Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalo
 - **Stable identity:** bundled ids are `bundled-<slug of name>`; shipped names and ids never change (the name is the "last time" key). Starter templates reference rows via `bundledExerciseById(id)`.
 - **Media** resolves from catalog identity only (`catalog/media.ts`), never from URLs saved on plans or history.
 - New exercises: add rows to `bundled.ts` (big lifts first: file order is search priority and Alternatives order). Search aliases are catalog-only and never persisted. Distance-based moves stay out until the log screen can record distance.
+
+## Feedback sprints (Claude Code agents)
+
+Paste a list of dogfooding feedback into a new Claude Code session running **Opus 5.5 at medium effort** and run `/feedback-sprint`. The main session acts as orchestrator/PM (`.claude/skills/feedback-sprint/SKILL.md`): it triages every item, routes it to a worker, reviews the diff, sends it back with feedback, runs simulator QA, commits per item and opens a PR.
+
+Workers live in `.claude/agents/`. Effort is set per agent, so the orchestrator picks effort by picking the agent: `quick-fixer` (low), `builder` (medium, default), `designer` (xhigh, taste-heavy items), `product-thinker` (high, read-only product calls), `qa-tester` (medium, simulator, one at a time). The run's ledger is written to `.claude/feedback-runs/` (gitignored).
