@@ -1,14 +1,27 @@
-# Scratch Workout Tracker
+# Trim
 
-This workspace is for the Scratch SwiftUI workout tracker.
+A plan-first iPhone workout logger. Build your week once, then just press Start. Published on the App Store as **Trim Workout**.
 
-Active app:
-- `ScratchWorkout.xcodeproj` is the active Xcode project.
-- `ScratchWorkout/` contains the app source.
-- `PRODUCT.md`, `DESIGN.md`, and `MOBBIN_RESEARCH.md` are the root product and design context for future work.
+| Folder | What it is |
+|---|---|
+| `mobile/` | The app: Expo + Expo Router, TypeScript |
+| `legal/` | Support and privacy pages, deployed to https://scratch-legal.vercel.app |
+| `.cursor/skills/` | Project skills: `trim-ui` (visual rules) and `implement-screen` |
+| `.agents/skills/` | Official Expo skills |
 
-Working notes:
-- Keep app implementation changes inside `ScratchWorkout/` unless the task is explicitly project or workspace cleanup.
-- Preserve the existing Scratch visual system: dark surfaces, Inter typography, bright green accent, dense workout cards, and the custom bottom tab flow.
-- Treat the Scratch Figma file as the source of truth when design fidelity questions come up.
-- Before making code changes, check the working tree because another agent may be actively implementing in the app.
+## Start here
+
+- `AGENTS.md`: how the repo works, how to build and run, and the names that must not change.
+- `PRODUCT.md`: what Trim is and how it behaves.
+- `PRODUCT-DECISIONS.md`: decisions that changed the product.
+- `APP_STORE_RELEASE_GUIDE.md`: App Store Connect, RevenueCat and TestFlight.
+
+## Run it
+
+```sh
+cd mobile
+npm install
+npx expo run:ios
+```
+
+Requires macOS, Xcode and the iOS Simulator.

@@ -2,66 +2,75 @@
 
 ## What this repo is
 
-**Scratch** is a plan-first iPhone workout logger.
+**Trim** ("Trim Workout" on the App Store) is a plan-first iPhone workout logger. The project started as "Scratch", which is why some identifiers still carry that name (see *Names that must not change*).
 
-- **Active app:** `mobile/` — Expo + Expo Router, iPhone-only, light iOS-native UI.
-- **Logic oracle:** `ScratchWorkout/` — SwiftUI prototype. Port domain types and store behavior from here. Do not copy its visual system (Inter, lime, charcoal, custom motion).
-- Root `*.md` files: **`PRODUCT.md` is the 1.0 product model** (plans → days → exercises, no ad-hoc workouts). `DESIGN.md` and other root docs are historical. **UI source of truth is `.cursor/skills/scratch-ui/SKILL.md` + Paper Family loop.** `references/1.0/` is historical.
+- **App:** `mobile/`, Expo + Expo Router, iPhone only, light and dark iOS-native UI.
+- **Legal pages:** `legal/`, deployed to https://scratch-legal.vercel.app (support, privacy policy).
+- **Docs:** `PRODUCT.md` is the product model. `PRODUCT-DECISIONS.md` records decisions that changed it. `APP_STORE_RELEASE_GUIDE.md` covers store setup and shipping builds.
+- **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md` plus the Paper design file.
 
-EAS project ID: `88024391-8ffd-4a6d-923d-18c766972365`.
+EAS project: `@mbeckms-team/workout-app` (ID `88024391-8ffd-4a6d-923d-18c766972365`). App Store Connect app ID: `6805436799`.
 
 ## 1.0 product
 
-Tabs: Workout, Plans, History, Settings.
+Tabs: Workout, Plans, Progress, History, Settings.
 
-Ship: plan-first home (active plan + days), plan creation (pick exercises, then sets and reps per set — no per-set rows, no weights), Alpha Progression logging (exercise strip, active set, previous session, auto-advance), bundled + custom exercises, five-screen onboarding that ends with a real plan (free starter templates in `mobile/src/catalog/templates.ts`, or Build my own), paywall at the end of onboarding (soft, template path only) and once after the first completed workout, plus feature gates, restore purchases, local persistence.
+Ships: plan-first Home (next day, week progress, other days), plan creation (pick exercises, then sets and reps per set; no per-set rows, no weights), one-set-at-a-time logging (exercise strip, `Set n of m`, last time, rest timer, auto-advance), bundled and custom exercises, Progress (estimated 1RM per lift, body check-ins), five-screen onboarding that ends with a real plan (free starter templates in `mobile/src/catalog/templates.ts`, or Build my own), Trim Pro (paywall at the end of onboarding on the template path, once after the first completed workout, and at feature gates), restore purchases, local persistence.
 
-Do not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, cloud auth.
+Does not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, accounts or cloud sync.
 
 ## How to implement UI
 
-1. Read `.cursor/skills/scratch-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
-2. Match Paper Family loop. Logging oracle is artboards 09, 11, 16, 17, 18.
-3. System font and iOS semantic colors. Green is for completed work and the one gym CTA — not titles.
+1. Read `.cursor/skills/trim-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
+2. Match the Paper artboard for the screen.
+3. System font and iOS semantic colors. Green is for completed work and the one gym CTA, never titles.
+4. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
 
-## Build / run / test (macOS + Xcode)
-
-```sh
-cd mobile
-npx expo start
-```
-
-iOS Simulator required. Official Expo Skills live in `.agents/skills/` (`npx skills add expo/skills`). For Expo MCP screenshots:
+## Build / run (macOS + Xcode)
 
 ```sh
 cd mobile
-npx expo install expo-mcp --dev
-EXPO_UNSTABLE_MCP_SERVER=1 npx expo start
+npm install
+npx expo run:ios          # builds the dev client into the Simulator
+npx expo start --dev-client
 ```
 
-Then reconnect Expo MCP in Cursor.
+- Native dependency changes (a new Expo module, `app.json` plugins, icon or splash) need a new dev build: `npx expo prebuild --platform ios` then `npx expo run:ios`. `mobile/ios/` is generated and gitignored.
+- The repo path contains spaces; `mobile/plugins/with-quoted-bundle-script.js` keeps the iOS bundle phase working. Keep it in `app.json`.
+- CocoaPods: this Mac uses a user-level install (`~/.gem/ruby/2.6.0/bin`). Put it on `PATH` before prebuild.
+- Official Expo skills live in `.agents/skills/`.
+- Checks: `npx tsc --noEmit` (0 errors) and `npx eas-cli metadata:lint`. There is no unit test target yet.
 
-Command-line iOS build (after `npx expo prebuild` or EAS):
+Store builds: see `APP_STORE_RELEASE_GUIDE.md` (`npx eas-cli build --platform ios --profile production --auto-submit`).
 
-```sh
-cd mobile
-npx eas-cli build --platform ios --profile development
-```
+## Services
 
-There is no test target yet. Persistence is local (MMKV/SQLite). No backend.
+- **Purchases:** RevenueCat project "Scratch", entitlement `Scratch Pro`, current offering `default` (`$rc_annual`, `$rc_monthly`). Key: `EXPO_PUBLIC_REVENUECAT_API_KEY` (`appl_…`) in `mobile/.env` and EAS.
+- **Analytics:** PostHog EU, anonymous (`mobile/src/analytics/analytics.ts`). Key: `EXPO_PUBLIC_POSTHOG_KEY`. Development builds only log events unless `EXPO_PUBLIC_ANALYTICS_IN_DEV=1`. Keep events free of workout contents; if what's collected changes, update `legal/privacy.html` and App Privacy.
+- **Persistence:** local only (`mobile/src/store/persistence*.ts`). No backend.
+
+## Names that must not change
+
+These still say "Scratch" and are load-bearing. Renaming them loses user data or breaks purchases:
+
+- Storage keys `scratchWorkout.*` (app state, catalog cache, Live Activity focus).
+- Bundle IDs `com.marvinbeckmann.ScratchWorkout` (+ `.ExpoWidgetsTarget`) and app group `group.com.marvinbeckmann.ScratchWorkout`.
+- URL scheme `scratchworkout` (Live Activity deep links).
+- RevenueCat entitlement `Scratch Pro` and product IDs `com.marvinbeckmann.ScratchWorkout.pro.yearly` / `.monthly`.
+- EAS slug `workout-app`.
+
+The Scratch-era SwiftUI prototype and its docs were removed; they are preserved at git tag `archive/scratch-era`.
 
 ## Cloud Agent (Linux) limits
 
-The Cloud Agent VM cannot run the iOS Simulator or Expo MCP local screenshot tools. It can still edit `mobile/` TypeScript. Visual QA happens on macOS.
-
-Swift sources depend on Apple frameworks; do not attempt a Linux Swift build.
+The Cloud Agent VM cannot run the iOS Simulator. It can still edit `mobile/` TypeScript and run `tsc`. Visual QA happens on macOS.
 
 ## Exercise catalog
 
-Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalog/bundled.ts`, ~200 exercises, no third-party data) + user-created custom exercises. Search, browse and Alternatives never touch the network, and no exercise media (GIFs, thumbnails) ships. Rows lead with the name; the picker meta line (`Equipment · Section`) tells variants apart.
+Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalog/bundled.ts`, ~200 exercises, no third-party data) plus user-created custom exercises. Search, browse and Alternatives never touch the network, and no exercise media ships. Rows lead with the name; the picker meta line (`Equipment · Section`) tells variants apart.
 
 - **One switch:** `mobile/src/catalog/config.ts` (`CATALOG.media`, `CATALOG.remote`). Both default off; `eas.json` pins them off for `production`. See `mobile/.env.example`.
-- **ExerciseDB is dev-only behind flags.** `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=oss` enables the non-commercial OSS host in `__DEV__` builds only (the literal is stripped from release bundles). `rapidapi` needs a key plus a base URL (a proxy for store builds). Never hardcode an ExerciseDB host or media URL, and never ship OSS ExerciseDB data or media in a paid build.
-- **Stable identity:** bundled ids are `bundled-<slug of name>`; shipped names and ids never change (name is the "last time" key, `catalogKey` uses `providerExerciseId` first on the original rows). Starter templates reference rows via `bundledExerciseById(id)`.
-- **Media** resolves from catalog identity only (`catalog/media.ts`), never from URLs saved on plans or history. `ExerciseThumb` renders nothing while media is off.
-- New exercises: add rows to `bundled.ts` (big lifts first: file order is search priority and Alternatives order); search aliases are catalog-only and never persisted. Distance-based moves stay out until the log screen can record distance.
+- **ExerciseDB is dev-only behind flags.** `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=oss` enables the non-commercial OSS host in `__DEV__` builds only. `rapidapi` needs a key plus a base URL (a proxy for store builds). Never hardcode an ExerciseDB host or media URL, and never ship ExerciseDB data or media in a paid build.
+- **Stable identity:** bundled ids are `bundled-<slug of name>`; shipped names and ids never change (the name is the "last time" key). Starter templates reference rows via `bundledExerciseById(id)`.
+- **Media** resolves from catalog identity only (`catalog/media.ts`), never from URLs saved on plans or history.
+- New exercises: add rows to `bundled.ts` (big lifts first: file order is search priority and Alternatives order). Search aliases are catalog-only and never persisted. Distance-based moves stay out until the log screen can record distance.
