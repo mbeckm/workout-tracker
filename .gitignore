@@ -15,3 +15,6 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Claude Code feedback-sprint ledgers
+.claude/feedback-runs/
