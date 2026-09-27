@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
+import { meta as metaItem, MetaRow, type MetaItem } from '@/components/meta-row';
 import { useTheme } from '@/theme/theme-context';
-import { estimateDayMinutes, formatDoneLabel, formatExerciseCount, lastDoneAt } from '@/domain/day-facts';
+import { estimateDayMinutes, lastDoneAt } from '@/domain/day-facts';
 import { formatPlanMetricWithLoad } from '@/domain/helpers';
 import type { LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { sessionIsFor, useStartDay } from '@/navigation/start-day';
@@ -16,7 +17,8 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 }
 
 /**
- * "What is this day": name + prescription per row, then Start (or Resume).
+ * "What is this day": name + prescription per row, then Start (or Resume). Opens from Home's
+ * Other days only; the next day's list is already on Home, so it gets no preview (F7).
  * Rows stay read-only (DP-1): the prescription is already on the row, and last time / best
  * belong in the log where they're actionable. A tap target per row would be a hidden
  * affordance on a sheet whose one job is Start.
@@ -28,7 +30,7 @@ export function DayPreviewBody({
   onStart,
 }: {
   day: WorkoutDay;
-  meta: string;
+  meta: (MetaItem | null)[];
   actionTitle?: string;
   onStart: () => void;
 }) {
@@ -39,13 +41,15 @@ export function DayPreviewBody({
 
   return (
     <>
-      <View style={{ gap: 4, paddingBottom: 12 }}>
-        <Text style={type.title} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+      <View style={{ gap: 6, paddingBottom: 12 }}>
+        <Text
+          style={type.title}
+          accessibilityRole="header"
+          numberOfLines={2}
+          maxFontSizeMultiplier={1.3}>
           {day.title}
         </Text>
-        <Text style={[type.kicker, { color: colors.tertiaryLabel }]} testID="preview-meta">
-          {meta}
-        </Text>
+        <MetaRow items={meta} testID="preview-meta" />
       </View>
       <ScrollView
         bounces={false}
@@ -77,17 +81,15 @@ export function DayPreviewBody({
   );
 }
 
-/** DP-2: `6 exercises · ~48 min · Done Thu 17`. */
-function previewMeta(plan: WorkoutPlan, day: WorkoutDay, history: LoggedWorkout[]): string {
+/** DP-2, as a meta row: `6 exercises  ~48 min  Done Thu 17`. */
+function previewMeta(plan: WorkoutPlan, day: WorkoutDay, history: LoggedWorkout[]): (MetaItem | null)[] {
   const minutes = estimateDayMinutes(plan, day, history);
   const doneAt = lastDoneAt(plan, day.id, history);
   return [
-    formatExerciseCount(day.exercises.length),
-    minutes != null ? `~${minutes} min` : '',
-    doneAt ? formatDoneLabel(doneAt) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+    metaItem.exercises(day.exercises.length),
+    minutes != null ? metaItem.minutes(minutes, { estimate: true }) : null,
+    doneAt ? metaItem.lastDone(doneAt) : null,
+  ];
 }
 
 export function DayPreviewScreen() {

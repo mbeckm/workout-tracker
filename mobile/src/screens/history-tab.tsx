@@ -2,6 +2,7 @@ import { Link, Stack } from 'expo-router';
 import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { meta as metaItem, MetaRow } from '@/components/meta-row';
 import { PaperScreen } from '@/components/paper';
 import { PrCrownCount } from '@/components/pr-crown';
 import { spacing } from '@/constants/theme';
@@ -10,6 +11,8 @@ import {
   formatHistoryMonth,
   formatHistoryMonthCount,
   formatHistorySessionMeta,
+  formatHistoryWhenInMonth,
+  loggedExerciseCount,
   personalBestCount,
 } from '@/domain/helpers';
 import { formatPrCount } from '@/domain/set-lines';
@@ -84,13 +87,19 @@ function SessionRow({
               borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0,
               borderBottomColor: colors.separator,
             }}>
-            <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
               <Text style={type.row} numberOfLines={1}>
                 {workout.title}
               </Text>
-              <Text style={[type.kicker, { lineHeight: 18 }]} numberOfLines={2}>
-                {meta}
-              </Text>
+              {/* The row's label already reads the facts; the meta row is for the eye. */}
+              <MetaRow
+                accessibilityLabel={meta}
+                items={[
+                  metaItem.when(formatHistoryWhenInMonth(workout.completedAt)),
+                  metaItem.exercises(loggedExerciseCount(workout)),
+                  metaItem.minutes(workout.durationMinutes),
+                ]}
+              />
             </View>
             {prCount > 0 ? <PrCrownCount count={prCount} /> : null}
           </View>

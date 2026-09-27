@@ -4,12 +4,13 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EditorActionRow } from '@/components/editor-chrome';
+import { meta as metaItem, MetaRow } from '@/components/meta-row';
 import { PaperBack } from '@/components/paper';
 import { RecapExercise } from '@/components/recap-exercise';
 import { useTheme } from '@/theme/theme-context';
-import { formatHistoryWhen, formatSessionFacts } from '@/domain/helpers';
+import { formatHistoryWhen } from '@/domain/helpers';
 import {
-  recapFacts,
+  loggedSetTotal,
   workoutPersonalBests,
   workoutUsesLoad,
 } from '@/domain/set-lines';
@@ -60,9 +61,6 @@ export function HistorySessionScreen() {
     );
   }
 
-  // One facts line; each set row carries its own unit.
-  const facts = recapFacts([formatSessionFacts(workout)], null);
-
   return (
     <>
       <View
@@ -78,12 +76,17 @@ export function HistorySessionScreen() {
           <Text style={type.displayDay} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
             {workout.title}
           </Text>
-          <Text
-            style={[type.kicker, { paddingTop: 4, fontVariant: ['tabular-nums'] }]}
-            accessibilityLabel={facts.accessibilityLabel}
-            testID="session-facts">
-            {facts.text}
-          </Text>
+          {/* One facts row, like Done's: when, how long, how much. The exercises are listed
+              right below, so their count isn't repeated. Each set row carries its own unit. */}
+          <MetaRow
+            style={{ paddingTop: 6 }}
+            testID="session-facts"
+            items={[
+              metaItem.when(formatHistoryWhen(workout.completedAt)),
+              metaItem.minutes(workout.durationMinutes),
+              metaItem.sets(loggedSetTotal(workout)),
+            ]}
+          />
           <View style={{ paddingTop: 18 }}>
             {workout.exercises.map((exercise) => (
               <RecapExercise

@@ -5,10 +5,12 @@ import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { meta as metaItem, MetaRow } from '@/components/meta-row';
 import { RecapExercise } from '@/components/recap-exercise';
 import {
   formatLoggedSetTotal,
   formatPrCount,
+  loggedSetTotal,
   recapFacts,
   workoutPersonalBests,
   workoutUsesLoad,
@@ -77,7 +79,7 @@ export function WorkoutCompleteScreen() {
     );
   }
 
-  // Facts line (D-1): day · duration · sets · PRs. Each set row carries its own unit.
+  // Facts (D-1) as a meta row: day, duration, sets, PRs. Each set row carries its own unit.
   const prCount = personalBests?.count ?? 0;
   const facts = recapFacts(
     [
@@ -105,12 +107,16 @@ export function WorkoutCompleteScreen() {
             <Text style={type.hero} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
               Done
             </Text>
-            <Text
-              style={[type.kicker, { fontVariant: ['tabular-nums'] }]}
+            <MetaRow
               testID="done-facts"
-              accessibilityLabel={facts.accessibilityLabel}>
-              {facts.text}
-            </Text>
+              accessibilityLabel={facts.accessibilityLabel}
+              items={[
+                metaItem.name(workout.title),
+                metaItem.minutes(workout.durationMinutes),
+                metaItem.sets(loggedSetTotal(workout)),
+                prCount > 0 && metaItem.prs(prCount),
+              ]}
+            />
           </Animated.View>
         </View>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>

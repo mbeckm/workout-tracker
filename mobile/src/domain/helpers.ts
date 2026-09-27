@@ -417,14 +417,9 @@ export function formatPersonalBests(count: number): string {
   return count === 1 ? '1 personal best' : `${count} personal bests`;
 }
 
-function loggedExerciseCount(workout: LoggedWorkout): number {
+/** Exercises in a logged workout, counting the list when `exerciseCount` is missing. */
+export function loggedExerciseCount(workout: LoggedWorkout): number {
   return workout.exerciseCount || workout.exercises.length;
-}
-
-function loggedSetCount(workout: LoggedWorkout): number {
-  return (
-    workout.setCount || workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
-  );
 }
 
 /** History row meta: `Yesterday · 3 exercises · 8 min`. */
@@ -440,16 +435,6 @@ export function formatHistorySessionMeta(
     when,
     formatExercisesCount(loggedExerciseCount(workout)),
     formatPaperMinutes(workout.durationMinutes),
-  ].join(' · ');
-}
-
-/** Session detail facts: `Yesterday · 8 min · 3 exercises · 12 sets`. */
-export function formatSessionFacts(workout: LoggedWorkout, now = new Date()): string {
-  return [
-    formatHistoryWhen(workout.completedAt, now),
-    formatPaperMinutes(workout.durationMinutes),
-    formatExercisesCount(loggedExerciseCount(workout)),
-    formatSetsCount(loggedSetCount(workout)),
   ].join(' · ');
 }
 

@@ -5,10 +5,6 @@ import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } fro
 /** Seconds of work per strength set, before rest. */
 const WORK_SECONDS_PER_SET = 40;
 
-export function formatExerciseCount(count: number): string {
-  return count === 1 ? '1 exercise' : `${count} exercises`;
-}
-
 /** Completed sessions of this plan day, newest first. */
 function sessionsForDay(
   planId: string,
@@ -97,10 +93,6 @@ export function formatDoneWhen(iso: string, now = new Date()): string {
 /** `18:02` or `6:02 PM`, following the device locale. */
 export function formatClockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-}
-
-export function formatLoggedSets(count: number): string {
-  return count === 1 ? '1 set logged' : `${count} sets logged`;
 }
 
 /** `Done today`, `Done yesterday`, `Done Thu 17`. */
