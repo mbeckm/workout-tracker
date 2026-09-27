@@ -36,6 +36,7 @@
       "alcoholTobaccoOrDrugUseOrReferences": "NONE",
       "gamblingSimulated": "NONE",
       "medicalOrTreatmentInformation": "NONE",
+      "healthOrWellnessTopics": true,
       "profanityOrCrudeHumor": "NONE",
       "sexualContentGraphicAndNudity": "NONE",
       "sexualContentOrNudity": "NONE",

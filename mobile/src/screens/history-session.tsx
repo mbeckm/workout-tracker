@@ -5,12 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EditorActionRow } from '@/components/editor-chrome';
 import { PaperBack } from '@/components/paper';
-import { PrCrown } from '@/components/pr-crown';
+import { RecapExercise } from '@/components/recap-exercise';
 import { useTheme } from '@/theme/theme-context';
-import { formatHistoryWhen, formatLoggedSetLine, formatSessionFacts } from '@/domain/helpers';
+import { formatHistoryWhen, formatSessionFacts } from '@/domain/helpers';
 import {
-  compressSetLines,
-  exerciseRecapLabel,
   recapFacts,
   workoutPersonalBests,
   workoutUsesLoad,
@@ -62,8 +60,8 @@ export function HistorySessionScreen() {
     );
   }
 
-  // One facts line; the weight unit appears once here, set lines stay unitless (G-9).
-  const facts = recapFacts([formatSessionFacts(workout)], workoutUsesLoad(workout) ? units : null);
+  // One facts line; each set row carries its own unit.
+  const facts = recapFacts([formatSessionFacts(workout)], null);
 
   return (
     <>
@@ -87,36 +85,14 @@ export function HistorySessionScreen() {
             {facts.text}
           </Text>
           <View style={{ paddingTop: 18 }}>
-            {workout.exercises.map((exercise) => {
-              const lines = compressSetLines(exercise.sets);
-              const prSet = exercise.sets.find((set) => personalBests?.setIds.has(set.id));
-              return (
-                <View
-                  key={exercise.id}
-                  accessible
-                  accessibilityLabel={exerciseRecapLabel(
-                    exercise,
-                    lines,
-                    prSet ? formatLoggedSetLine(prSet) : null,
-                  )}
-                  style={{ gap: 2, paddingVertical: 10 }}>
-                  <Text style={type.row}>{exercise.exerciseName}</Text>
-                  {lines.map((line) => (
-                    <View
-                      key={line.setIds[0] ?? line.text}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text
-                        style={[type.kicker, { flexShrink: 1, fontVariant: ['tabular-nums'] }]}>
-                        {line.text}
-                      </Text>
-                      {line.setIds.some((setId) => personalBests?.setIds.has(setId)) ? (
-                        <PrCrown size={13} />
-                      ) : null}
-                    </View>
-                  ))}
-                </View>
-              );
-            })}
+            {workout.exercises.map((exercise) => (
+              <RecapExercise
+                key={exercise.id}
+                exercise={exercise}
+                unit={workoutUsesLoad(workout) ? units : null}
+                prSetIds={personalBests?.setIds}
+              />
+            ))}
           </View>
           <View style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
             <EditorActionRow

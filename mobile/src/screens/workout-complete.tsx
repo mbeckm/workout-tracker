@@ -5,10 +5,8 @@ import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { PrCrown } from '@/components/pr-crown';
+import { RecapExercise } from '@/components/recap-exercise';
 import {
-  compressSetLines,
-  exerciseRecapLabel,
   formatLoggedSetTotal,
   formatPrCount,
   recapFacts,
@@ -17,7 +15,7 @@ import {
 } from '@/domain/set-lines';
 import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
-import { formatLoggedSetLine, formatPaperMinutes } from '@/domain/helpers';
+import { formatPaperMinutes } from '@/domain/helpers';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -79,7 +77,7 @@ export function WorkoutCompleteScreen() {
     );
   }
 
-  // Facts line (D-1): day · duration · sets · PRs, and the weight unit once (G-9).
+  // Facts line (D-1): day · duration · sets · PRs. Each set row carries its own unit.
   const prCount = personalBests?.count ?? 0;
   const facts = recapFacts(
     [
@@ -88,7 +86,7 @@ export function WorkoutCompleteScreen() {
       formatLoggedSetTotal(workout),
       prCount > 0 && formatPrCount(prCount),
     ],
-    workoutUsesLoad(workout) ? units : null,
+    null,
   );
 
   return (
@@ -116,35 +114,15 @@ export function WorkoutCompleteScreen() {
           </Animated.View>
         </View>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>
-          {workout.exercises.map((exercise) => {
-            const lines = compressSetLines(exercise.sets);
-            const prSet = exercise.sets.find((set) => personalBests?.setIds.has(set.id));
-            const isPr = prSet != null;
-            return (
-              <View
-                key={exercise.id}
-                accessible
-                accessibilityLabel={exerciseRecapLabel(
-                  exercise,
-                  lines,
-                  prSet ? formatLoggedSetLine(prSet) : null,
-                )}
-                testID={`done-recap-${exercise.id}`}
-                style={{ gap: 2, paddingVertical: 10 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[type.row, { flexShrink: 1 }]}>{exercise.exerciseName}</Text>
-                  {isPr ? <PrCrown size={13} /> : null}
-                </View>
-                {lines.map((line) => (
-                  <Text
-                    key={line.setIds[0] ?? line.text}
-                    style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>
-                    {line.text}
-                  </Text>
-                ))}
-              </View>
-            );
-          })}
+          {workout.exercises.map((exercise) => (
+            <RecapExercise
+              key={exercise.id}
+              exercise={exercise}
+              unit={workoutUsesLoad(workout) ? units : null}
+              prSetIds={personalBests?.setIds}
+              testID={`done-recap-${exercise.id}`}
+            />
+          ))}
         </ScrollView>
         <Button
           title="Done"

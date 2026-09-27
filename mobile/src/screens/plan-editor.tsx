@@ -154,7 +154,9 @@ export function PlanEditorScreen() {
           submitBehavior="blurAndSubmit"
           scrollEnabled={false}
           maxFontSizeMultiplier={1.2}
-          style={[type.displayDay, { padding: 0, margin: 0 }]}
+          // No lineHeight on the input: iOS applies it to typed text but not the placeholder,
+          // so the first letter would shift the baseline. A fixed height holds the frame.
+          style={[type.displayDay, { lineHeight: undefined, height: 46, padding: 0, margin: 0 }]}
         />
         <View
           style={{

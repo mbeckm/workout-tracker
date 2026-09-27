@@ -47,7 +47,8 @@
     "production": {
       "ios": {
         "language": "en-US",
-        "metadataPath": "./store.config.json"
+        "metadataPath": "./store.config.json",
+        "ascAppId": "6805436799"
       }
     }
   }

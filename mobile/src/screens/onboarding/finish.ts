@@ -5,6 +5,7 @@ import { emptyPlanWithDays } from '@/catalog/templates';
 import type { WorkoutPlan } from '@/domain/types';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
+import { track } from '@/analytics/analytics';
 
 /**
  * The onboarding → app boundary is a one-way door. Each finish, in one tap:
@@ -30,6 +31,7 @@ export function useFinishOnboarding() {
       finished.current = true;
       savePlan(plan, { activate: true });
       completeOnboarding();
+      track('onboarding_completed', { path: 'template', days_per_week: plan.days.length });
       router.replace('/');
       if (!isPro) {
         void openPaywall('onboarding');
@@ -48,6 +50,7 @@ export function useFinishOnboarding() {
       const plan = emptyPlanWithDays(daysPerWeek);
       savePlan(plan, { activate: true });
       completeOnboarding();
+      track('onboarding_completed', { path: 'own', days_per_week: daysPerWeek });
       router.replace('/');
       router.push(`/plan/${plan.id}`);
     },

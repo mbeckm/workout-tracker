@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 
 import type { WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { workoutLogHref } from '@/live-activity/url';
+import { track } from '@/analytics/analytics';
 import { useWorkoutStore, type ActiveSession } from '@/store/workout-store';
 
 export function sessionIsFor(
@@ -43,12 +44,14 @@ export function useStartDay() {
       };
 
       if (activeSession && sessionIsFor(activeSession, plan.id, day.id)) {
+        track('workout_started', { exercises: day.exercises.length, resumed: true });
         go(resumeHref(activeSession));
         return;
       }
       if (day.exercises.length === 0) {
         return;
       }
+      track('workout_started', { exercises: day.exercises.length, resumed: false });
 
       const sessionDay = activeSession
         ? plans

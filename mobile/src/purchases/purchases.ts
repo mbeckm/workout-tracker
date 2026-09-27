@@ -11,6 +11,7 @@ import {
 } from './entitlement';
 import type { ProReason } from './pro-gate';
 import { buildProOffers, pickProPackages, type EligibilityMap, type ProOffer } from './offers';
+import { track } from '@/analytics/analytics';
 
 export { PRO_ENTITLEMENT, proPeriodLabel, type Entitlement, type ProPeriod } from './entitlement';
 export type { ProOffer } from './offers';
@@ -240,6 +241,7 @@ export async function loadProOffers(reason: ProReason): Promise<OffersResult> {
 }
 
 export function trackPaywallImpression(reason: ProReason, offering: PurchasesOffering): void {
+  track('paywall_viewed', { reason });
   const Purchases = purchasesSdk();
   if (!Purchases) {
     return;

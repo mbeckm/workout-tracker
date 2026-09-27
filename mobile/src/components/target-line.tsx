@@ -26,8 +26,8 @@ export type TargetLineProps = {
 };
 
 /**
- * The 15pt caption under `Set n of m`. Pro: `Target 87.5 × 8 · Last time 85 × 8` on one
- * line, the target a notch stronger. Free: `Last time 85 × 8`, with a trailing
+ * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8 · Last time 85 kg × 8` on one
+ * line, the target a notch stronger. Free: `Last time 85 kg × 8`, with a trailing
  * `Target ›` when a target exists. Always one line, so the upper stage never jumps.
  */
 export function TargetLine({
@@ -53,9 +53,9 @@ export function TargetLine({
         accessibilityLabel={spokenTargetLine(target, last, units)}
         style={[caption, { color: colors.tertiaryLabel }]}>
         <Text style={{ color: colors.secondaryLabel, fontWeight: '600' }}>
-          {`Target ${formatLoggedSetLine(target, { minutes })}`}
+          {`Target ${formatLoggedSetLine(target, { minutes, unit: units })}`}
         </Text>
-        {last ? ` · Last time ${formatLoggedSetLine(last, { minutes })}` : null}
+        {last ? ` · Last time ${formatLoggedSetLine(last, { minutes, unit: units })}` : null}
       </Text>
     );
   }
@@ -64,7 +64,7 @@ export function TargetLine({
     return (
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flexShrink: 1 }}>
-          <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} />
+          <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} units={units} />
         </View>
         <Pressable
           onPress={onUnlock}
@@ -82,5 +82,5 @@ export function TargetLine({
     );
   }
 
-  return <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} />;
+  return <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} units={units} />;
 }

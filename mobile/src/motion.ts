@@ -1,4 +1,3 @@
-import { Easing as RNEasing } from 'react-native';
 import {
   Easing,
   FadeIn,
@@ -9,8 +8,11 @@ import {
 
 /** Strong ease-out for UI enter/exit and press. */
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
-/** NumberFlow wants a `(t) => number`; RN Easing.bezier is that form. */
-export const EASE_OUT_FN = RNEasing.bezier(0.23, 1, 0.32, 1);
+/**
+ * NumberFlow wants a plain `(t) => number` that runs on the UI thread, so it must be a
+ * worklet: Reanimated's `bezierFn`, not RN's `Easing.bezier` (that throws once it animates).
+ */
+export const EASE_OUT_FN = Easing.bezierFn(0.23, 1, 0.32, 1);
 /** On-screen movement / morph. */
 export const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);
 /** iOS sheet curve. */

@@ -1,5 +1,12 @@
 import { type ReactNode, useEffect, useSyncExternalStore } from 'react';
-import { Keyboard, Platform, type KeyboardEvent, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Keyboard,
+  Platform,
+  TurboModuleRegistry,
+  type KeyboardEvent,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -18,6 +25,11 @@ type KeyboardMotion = {
 
 function loadKeyboard(): KeyboardModule | null {
   if (isExpoGo) {
+    return null;
+  }
+  // The JS package can be present while the native module isn't (a dev build older than the
+  // dependency). Using it then breaks sticky footers, so fall back to plain RN events.
+  if (Platform.OS === 'web' || TurboModuleRegistry?.get?.('KeyboardController') == null) {
     return null;
   }
   try {

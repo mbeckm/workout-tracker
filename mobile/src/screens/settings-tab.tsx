@@ -18,6 +18,9 @@ import {
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
+/** Air between setting groups: preferences, Pro, links out, data. */
+const GROUP_GAP = 20;
+
 const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
 const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
 
@@ -113,6 +116,8 @@ export function SettingsTab() {
             }
             onPress={pickAppearance}
           />
+        </View>
+        <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Trim Pro"
             testID="settings-pro"
@@ -134,9 +139,14 @@ export function SettingsTab() {
             testID="settings-restore"
             onPress={restoring ? undefined : () => void restore()}
           />
-          <PaperRow title="Contact support" testID="settings-support" onPress={contactSupport} />
-          <PaperRow title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
-          <PaperRow title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
+        </View>
+        {/* Rows that leave the app sit in their own group and carry the ↗ arrow. */}
+        <View style={{ paddingTop: GROUP_GAP }}>
+          <PaperRow link title="Contact support" testID="settings-support" onPress={contactSupport} />
+          <PaperRow link title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
+          <PaperRow link title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
+        </View>
+        <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Clear history"
             destructive

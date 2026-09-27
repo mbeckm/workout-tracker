@@ -157,6 +157,7 @@ export function PaperRow({
   onPress,
   onLongPress,
   destructive = false,
+  link = false,
   testID,
 }: {
   title: string;
@@ -165,12 +166,25 @@ export function PaperRow({
   onPress?: () => void;
   onLongPress?: () => void;
   destructive?: boolean;
+  /** Opens something outside the app (web page, Mail): link role + trailing arrow. */
+  link?: boolean;
   testID?: string;
 }) {
   const { colors, type } = useTheme();
+  const trailingContent = link ? (
+    <SymbolView
+      name="arrow.up.right"
+      tintColor={colors.tertiaryLabel}
+      size={14}
+      weight="semibold"
+      fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>↗</Text>}
+    />
+  ) : (
+    trailing
+  );
   return (
     <Pressable
-      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityRole={link ? 'link' : onPress ? 'button' : undefined}
       accessibilityLabel={meta ? `${title}, ${meta}` : title}
       disabled={!onPress && !onLongPress}
       onPress={onPress}
@@ -198,7 +212,7 @@ export function PaperRow({
           </Text>
         ) : null}
       </View>
-      {trailing ? <View style={{ flexShrink: 0 }}>{trailing}</View> : null}
+      {trailingContent ? <View style={{ flexShrink: 0 }}>{trailingContent}</View> : null}
     </Pressable>
   );
 }

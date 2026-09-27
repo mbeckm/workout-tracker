@@ -26,6 +26,7 @@ import {
   trackPaywallImpression,
   type OffersResult,
 } from './purchases';
+import { track } from '@/analytics/analytics';
 
 export type PaywallLoadState =
   | { status: 'loading' }
@@ -183,7 +184,9 @@ export function usePaywallController(
     }
     setBusy('purchase');
     setMessage(null);
+    track('purchase_started', { reason, package: selected.id });
     void purchaseOffer(selected).then((result) => {
+      track('purchase_finished', { reason, package: selected.id, outcome: result.kind });
       if (result.kind === 'success') {
         applyEntitlement(result.entitlement);
         if (result.entitlement.status === 'pro') {
@@ -200,7 +203,7 @@ export function usePaywallController(
       }
       setBusy(null);
     });
-  }, [selected, busy, applyEntitlement, finish]);
+  }, [selected, busy, applyEntitlement, finish, reason]);
 
   const restore = useCallback(() => {
     if (busy || closingRef.current) {
@@ -209,6 +212,7 @@ export function usePaywallController(
     setBusy('restore');
     setMessage(null);
     void restorePurchases().then((result) => {
+      track('restore_finished', { outcome: result.kind });
       if (result.kind === 'restored') {
         applyEntitlement(result.entitlement);
         finish('restored');

@@ -172,7 +172,7 @@ export function ProgressLiftDetailScreen() {
                       type.subhead,
                       { flex: 1, color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
                     ]}>
-                    {formatLoggedSetLine(session.bestSet)}
+                    {formatLoggedSetLine(session.bestSet, { unit: units })}
                   </Text>
                   <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
                     {formatProgressOneRM(session.oneRM, units)}

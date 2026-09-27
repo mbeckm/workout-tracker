@@ -14,19 +14,20 @@ export type LastTimeLineProps = {
   setIndex: number | 'all';
   /** Cardio: duration reads in minutes. */
   minutes: boolean;
+  units: 'kg' | 'lbs';
 };
 
 /**
- * The quiet fact under `Set n of m` on the log stage: `Last time 72.5 × 8`.
- * Units never ride along (the well label carries them). Text comes from the pure
+ * The quiet fact under `Set n of m` on the log stage: `Last time 72.5 kg × 8`.
+ * The load carries the unit so the line reads on its own. Text comes from the pure
  * `lastTimeText` in `domain/log-session.ts`.
  *
  * Next-session targets wrap this line in `TargetLine` (`target-line.tsx`), in the same
  * 15pt caption slot, so the stage keeps its height and never jumps.
  */
-export function LastTimeLine({ previousSets, setIndex, minutes }: LastTimeLineProps) {
+export function LastTimeLine({ previousSets, setIndex, minutes, units }: LastTimeLineProps) {
   const { colors, type } = useTheme();
-  const text = lastTimeText(previousSets, setIndex, { minutes });
+  const text = lastTimeText(previousSets, setIndex, { minutes, unit: units });
   if (!text) {
     return null;
   }

@@ -6,7 +6,7 @@ import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { useTheme } from '@/theme/theme-context';
 import { estimateDayMinutes, formatDoneLabel, formatExerciseCount, lastDoneAt } from '@/domain/day-facts';
-import { formatPlanMetric } from '@/domain/helpers';
+import { formatPlanMetricWithLoad } from '@/domain/helpers';
 import type { LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { sessionIsFor, useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -33,6 +33,7 @@ export function DayPreviewBody({
   onStart: () => void;
 }) {
   const { colors, type } = useTheme();
+  const { previousLogForExercise, units } = useWorkoutStore();
   const insets = useSafeAreaInsets();
   const count = day.exercises.length;
 
@@ -57,8 +58,8 @@ export function DayPreviewBody({
             <Text style={type.row} numberOfLines={1}>
               {exercise.name}
             </Text>
-            <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>
-              {formatPlanMetric(exercise)}
+            <Text style={[type.kicker, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
+              {formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units)}
             </Text>
           </View>
         ))}
