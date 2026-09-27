@@ -15,6 +15,7 @@ import {
   isInProgressWindow,
   isProgressWindowLocked,
   percentFromWindowStart,
+  PROGRESS_HERO_LOCALE,
   type ProgressPoint,
   type ProgressWindow,
 } from '@/domain/progress';
@@ -45,9 +46,9 @@ function bodyHeroSuffix(key: BodyMetricKey, units: 'kg' | 'lbs'): string {
 
 function bodyHeroFormat(key: BodyMetricKey): Intl.NumberFormatOptions | undefined {
   if (key === 'bodyweightKg') {
-    return { minimumFractionDigits: 0, maximumFractionDigits: 1 };
+    return { minimumFractionDigits: 0, maximumFractionDigits: 1, useGrouping: false };
   }
-  return { maximumFractionDigits: 0 };
+  return { maximumFractionDigits: 0, useGrouping: false };
 }
 
 export function ProgressBodyDetailScreen() {
@@ -127,11 +128,20 @@ export function ProgressBodyDetailScreen() {
         />
 
         <View style={{ paddingTop: 28, paddingBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
+          {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+              columnGap: 16,
+              rowGap: 4,
+            }}>
             <StaggerValue
               value={heroNumber}
               suffix={bodyHeroSuffix(metricKey, units)}
               format={bodyHeroFormat(metricKey)}
+              locales={PROGRESS_HERO_LOCALE}
               style={heroType}
             />
             {deltaRounded != null ? (

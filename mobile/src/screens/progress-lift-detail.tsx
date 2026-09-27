@@ -18,6 +18,7 @@ import {
   isSessionPR,
   liftSeriesFromHistory,
   percentFromWindowStart,
+  PROGRESS_HERO_LOCALE,
   type ProgressPoint,
   type ProgressWindow,
 } from '@/domain/progress';
@@ -114,8 +115,22 @@ export function ProgressLiftDetailScreen() {
         />
 
         <View style={{ paddingTop: 28, paddingBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
-            <StaggerValue value={heroRounded} suffix={` ${units}`} style={heroType} />
+          {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+              columnGap: 16,
+              rowGap: 4,
+            }}>
+            <StaggerValue
+              value={heroRounded}
+              suffix={` ${units}`}
+              format={{ maximumFractionDigits: 0, useGrouping: false }}
+              locales={PROGRESS_HERO_LOCALE}
+              style={heroType}
+            />
             {deltaRounded != null ? (
               <ProgressDelta percent={deltaRounded} color={deltaColor} />
             ) : null}

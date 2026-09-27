@@ -28,6 +28,13 @@ export function defaultProgressWindow(isPro: boolean): ProgressWindow {
   return isPro ? '6M' : '3M';
 }
 
+/**
+ * Progress heroes (`StaggerValue`) format with Intl, which follows the device region
+ * ("80,5"). The rows under them are plain strings ("80.5 kg"), so heroes pin this locale
+ * and turn grouping off to read the same.
+ */
+export const PROGRESS_HERO_LOCALE = 'en-US';
+
 export type ProgressPoint = {
   date: string;
   value: number;

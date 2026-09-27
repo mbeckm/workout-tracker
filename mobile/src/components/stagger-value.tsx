@@ -13,12 +13,15 @@ export function StaggerValue({
   value,
   suffix,
   format,
+  locales,
   style,
   animated = true,
 }: {
   value: number | null;
   suffix?: string;
   format?: Intl.NumberFormatOptions;
+  /** Defaults to the device region. */
+  locales?: Intl.LocalesArgument;
   style?: StyleProp<TextStyle>;
   animated?: boolean;
   /** @deprecated NumberFlow respects Reduce Motion via `respectMotionPreference`. */
@@ -37,6 +40,7 @@ export function StaggerValue({
       value={value}
       suffix={suffix}
       format={format}
+      locales={locales}
       style={textStyle}
       animated={animated}
       respectMotionPreference
