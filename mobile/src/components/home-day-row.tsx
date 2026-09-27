@@ -6,6 +6,12 @@ import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
 /**
+ * Third tier on Home: stops growing at 1.35× (title ~23pt, meta ~20pt) so it stays under the
+ * week amount (30pt max) and the day title (48pt max) at every Dynamic Type size.
+ */
+const OTHER_DAYS_MAX_SCALE = 1.35;
+
+/**
  * One of the plan's other days on Home: title 17 regular + a quiet meta row (`5 exercises
  * ~45 min`, or `Done Fri 25` once it's done this week). The third tier under Start: nothing
  * here is ink except an open day's title. A day done this week steps back (grey title, green
@@ -49,10 +55,16 @@ export function HomeDayRow({
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text
           style={[type.body, doneThisWeek ? { color: colors.tertiaryLabel } : null]}
-          numberOfLines={1}>
+          numberOfLines={1}
+          maxFontSizeMultiplier={OTHER_DAYS_MAX_SCALE}>
           {day.title}
         </Text>
-        <MetaRow items={meta} tone="quiet" accessibilityLabel="" />
+        <MetaRow
+          items={meta}
+          tone="quiet"
+          maxScale={OTHER_DAYS_MAX_SCALE}
+          accessibilityLabel=""
+        />
       </View>
       {doneThisWeek ? (
         <SymbolView name="checkmark" tintColor={colors.systemGreen} size={16} weight="semibold" />

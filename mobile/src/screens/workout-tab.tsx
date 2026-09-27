@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Stack, useIsFocused, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -59,6 +59,19 @@ const GAP_META_TO_LIST = 20;
 const GAP_LIST_TO_START = 12;
 const GAP_TO_WEEK = 64;
 const GAP_TO_OTHER_DAYS = 40;
+
+/**
+ * Dynamic Type caps, so the hierarchy holds at every text size (the hero grows least in
+ * ratio but always stays biggest in points):
+ * - day title 40 × 1.2 = 48 (hero)
+ * - exercise list 17 × 1.8 ≈ 31, prescriptions and the hero's meta row 15 × 1.8 = 27
+ * - week amount 20 × 1.5 = 30, `this week` 15 × 1.5 ≈ 23
+ * - Other days 17 × 1.35 ≈ 23 (meta ≈ 20), captions 15 × 1.4 = 21
+ * Below the caps everything follows Dynamic Type exactly.
+ */
+const LIST_MAX_SCALE = 1.8;
+const WEEK_MAX_SCALE = 1.5;
+const CAPTION_MAX_SCALE = 1.4;
 
 const factBase = {
   fontSize: 15,
@@ -145,7 +158,10 @@ export function WorkoutTab() {
           <View>
             <View style={{ gap: GAP_LABEL_TO_DAY }}>
               {/* A label, not a second title: the day name below is the hero (F2). */}
-              <Text style={fact} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+              <Text
+                style={fact}
+                maxFontSizeMultiplier={CAPTION_MAX_SCALE}
+                accessibilityRole="header">
                 Next workout
               </Text>
               {day ? (
@@ -248,7 +264,8 @@ export function WorkoutTab() {
                               color: expanded ? colors.tertiaryLabel : colors.label,
                             },
                           ]}
-                          numberOfLines={1}>
+                          numberOfLines={1}
+                          maxFontSizeMultiplier={LIST_MAX_SCALE}>
                           {expanded
                             ? 'Show less'
                             : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`}
@@ -310,7 +327,7 @@ export function WorkoutTab() {
                 <Text
                   style={[fact, { paddingBottom: 2 }]}
                   accessibilityRole="header"
-                  maxFontSizeMultiplier={1.4}>
+                  maxFontSizeMultiplier={CAPTION_MAX_SCALE}>
                   Other days
                 </Text>
                 {otherDays.map((item, index) => {
@@ -345,7 +362,10 @@ export function WorkoutTab() {
           // Same label + hero as a planned Home, so the tab doesn't change voice when empty.
           <View testID="home-empty">
             <View style={{ gap: GAP_LABEL_TO_DAY }}>
-              <Text style={fact} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+              <Text
+                style={fact}
+                maxFontSizeMultiplier={CAPTION_MAX_SCALE}
+                accessibilityRole="header">
                 Next workout
               </Text>
               <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
@@ -376,10 +396,15 @@ function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
   const fact = { ...factBase, color: colors.tertiaryLabel };
   return (
     <View style={{ gap: 2 }}>
-      <Text style={type.row} numberOfLines={1}>
+      {/* Two lines before truncating: at large text a long name wraps instead of `Dumbbell Ben…`. */}
+      <Text style={type.row} numberOfLines={2} maxFontSizeMultiplier={LIST_MAX_SCALE}>
         {exercise.name}
       </Text>
-      <Text style={[fact, { fontVariant: ['tabular-nums'] }]}>{metric}</Text>
+      <Text
+        style={[fact, { fontVariant: ['tabular-nums'] }]}
+        maxFontSizeMultiplier={LIST_MAX_SCALE}>
+        {metric}
+      </Text>
     </View>
   );
 }
@@ -402,8 +427,8 @@ const CELEBRATE_DELAY_MS = 320;
  * keeps showing the old amount; when Home is visible again the new dot fills with a small
  * celebration and the count rolls up, so finishing a workout lands on the goal it moved.
  *
- * One self-contained object so it can become a button later (F6: the week view) by passing
- * `onPress`; until then it's read-only and doesn't pretend to be tappable.
+ * The whole row is one button (F6): tap opens Weeks, the last 8 weeks against the goal.
+ * The trailing chevron is its affordance; without `onPress` it renders read-only, no chevron.
  */
 function WeekAmount({
   done,
@@ -415,8 +440,12 @@ function WeekAmount({
   onPress?: () => void;
 }) {
   const { colors } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const fact = { ...factBase, color: colors.tertiaryLabel };
   const isFocused = useIsFocused();
+  // NumberFlow's inner Text takes no maxFontSizeMultiplier, so pre-divide by the system
+  // scale: it then renders at 20 × min(scale, 1.5) instead of growing with every size.
+  const weekScale = fontScale > 0 ? Math.min(fontScale, WEEK_MAX_SCALE) / fontScale : 1;
   const seenDone = useRef<number | null>(null);
   const [shown, setShown] = useState(done);
   const [celebrate, setCelebrate] = useState<{ index: number; weekDone: boolean; key: number } | null>(
@@ -470,9 +499,20 @@ function WeekAmount({
           <StaggerValue
             value={shown}
             suffix={` of ${total}`}
-            style={[WEEK_COUNT, { color: colors.label }]}
+            style={[
+              WEEK_COUNT,
+              {
+                fontSize: WEEK_COUNT.fontSize * weekScale,
+                letterSpacing: WEEK_COUNT.letterSpacing * weekScale,
+                color: colors.label,
+              },
+            ]}
           />
-          <Text style={[fact, { lineHeight: 18, paddingBottom: 1 }]}>this week</Text>
+          <Text
+            style={[fact, { lineHeight: 18, paddingBottom: 1 }]}
+            maxFontSizeMultiplier={WEEK_MAX_SCALE}>
+            this week
+          </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           {Array.from({ length: total }, (_, index) => (

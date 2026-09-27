@@ -49,6 +49,7 @@ export function spokenMeta(item: MetaItem): string {
 export function MetaRow({
   items,
   tone = 'default',
+  maxScale = MAX_SCALE,
   accessibilityLabel,
   style,
   testID,
@@ -59,6 +60,8 @@ export function MetaRow({
    * ink numbers there would compete with the next workout's own meta row.
    */
   tone?: 'default' | 'quiet';
+  /** Dynamic Type cap; a lower tier passes a smaller one so it stays under its own title. */
+  maxScale?: number;
   /** Overrides the label built from the items (a parent that already reads them passes ''). */
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -70,7 +73,7 @@ export function MetaRow({
   if (kept.length === 0) {
     return null;
   }
-  const scale = Math.min(fontScale, MAX_SCALE);
+  const scale = Math.min(fontScale, maxScale);
   const line = Math.round(LINE_HEIGHT * scale);
 
   return (
@@ -106,7 +109,7 @@ export function MetaRow({
             </View>
           ) : null}
           <Text
-            maxFontSizeMultiplier={MAX_SCALE}
+            maxFontSizeMultiplier={maxScale}
             style={{
               flexShrink: 1,
               fontSize: FONT_SIZE,
