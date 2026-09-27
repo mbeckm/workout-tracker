@@ -75,6 +75,49 @@ Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalo
 - **Media** resolves from catalog identity only (`catalog/media.ts`), never from URLs saved on plans or history.
 - New exercises: add rows to `bundled.ts` (big lifts first: file order is search priority and Alternatives order). Search aliases are catalog-only and never persisted. Distance-based moves stay out until the log screen can record distance.
 
+## Working notes (learned the hard way)
+
+Read this before your first command. Each item cost real time once.
+
+### Git and parallel sessions
+- Several Claude sessions work in this repo at once and merge into `main` often. Before merging a PR, `git fetch` and merge `origin/main` into your branch; expect conflicts in `AGENTS.md` and `.claude/`.
+- Stage explicit paths. `.cursor/mcp.json` usually has local, uncommitted MCP entries with machine paths, so never `git add -A .cursor` or `git add .` blindly. `.claude/settings.local.json` is gitignored; keep it that way.
+- To compare against `main`, use a throwaway worktree (`git worktree add <tmp> main`), never `git stash`, which silently takes your whole change set with it.
+- Deleting old material is fine when asked; tag first (`archive/…`) so it's one command to restore. `archive/scratch-era` holds the Swift prototype.
+
+### Shell (zsh)
+- `grep -r --include=*.ts` fails with "no matches found" because zsh expands the glob. Quote it (`--include='*.ts'`) or drop `--include`.
+- If `git` or `python3` fail with an Xcode license message, the license was reset by an Xcode update: `sudo xcodebuild -license accept` (Marvin runs it). `DEVELOPER_DIR=/Library/Developer/CommandLineTools` works as a stopgap for `git`.
+
+### Expo and React Native
+- "Unimplemented component <RNSVG…>" or a crash on import means the installed dev build predates a native dependency. Rebuild (`npx expo prebuild --platform ios && npx expo run:ios`), don't debug the JS.
+- `expo run:ios` reuses `mobile/ios/`; it doesn't pick up `app.json` changes (icon, splash, plugins, name) until `npx expo prebuild` runs.
+- NumberFlow (`StaggerValue`, `ProgressDelta`) animates on the UI thread: its easing must be a Reanimated worklet (`EASE_OUT_FN` = `Easing.bezierFn`). A plain RN `Easing.bezier` throws "easing function is not a worklet" the first time a number changes.
+- RNScreens `formSheet` with a ScrollView accepts exactly one header (`collapsable={false}`) plus the ScrollView as children. Anything else lays out wrong (see `src/screens/check-in.tsx`).
+- Don't set `lineHeight` on a `TextInput`: iOS applies it to typed text but not the placeholder, so the first keystroke jumps. Use a fixed `height`.
+- Typed routes (`.expo/types/router.d.ts`) regenerate only while Metro runs; stale types show up as tsc errors on new routes.
+- Reload a dev build from the floating gear → Reload. Metro has no reload HTTP endpoint.
+- `npx expo lint` has 8 known errors on `main` (React Compiler "refs during render"). Don't count them as yours; don't add new ones.
+
+### iOS Simulator
+- If the Simulator panel's screenshots fail after an Xcode update, use `xcrun simctl io booted screenshot <file>` and read the PNG.
+- The Simulator tool can't send backspace, so it can't empty a text field; say what couldn't be checked.
+- iOS caches the launch screen per install. A new splash only shows after a fresh install (TestFlight, or deleting the app, which deletes its data). Verify the compiled images in `ios/Trim/Images.xcassets/SplashScreenLogo.imageset` instead.
+- Home-screen icon dark mode follows the Simulator's icon appearance setting, not the system appearance.
+- Test data you log to check a flow (e.g. the week celebration) must be deleted again in History.
+- `EXPO_PUBLIC_ANALYTICS_IN_DEV=1 npx expo start` sends dev events to PostHog for a check; restart Metro without it afterwards.
+
+### Dashboards (Marvin's Chrome is logged in; UI language is German)
+- **App Store Connect** (app 6805436799): the UI is German (Weiter = Next, Sichern = Save, Veröffentlichen = Publish, Abo = subscription). App Privacy edits publish immediately from the dialog. The age-rating dialog's Sichern also needs the page-level Sichern. New subscription prices take up to an hour to reach sandbox and TestFlight.
+- **RevenueCat:** project "Scratch" (`5a59d39e`), app `app80da402380`.
+- **PostHog:** EU cloud, project `285218`. Product analytics only; session replay and web analytics off; client IP discarded.
+- **Vercel:** `legal/` deploys to team `mbeckms-projects`, project `scratch-legal`. The Vercel MCP connector has no access to that team; use the CLI (`cd legal && vercel deploy --prod --yes`, needs `vercel login`).
+- **Paper:** app design in "Scratch workout new"; icon artwork in "Trim Logo". Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
+
+### Steps only Marvin can do
+- Apple ID sign-in and two-factor codes, `sudo` commands, creating accounts (sandbox testers), and `vercel login`.
+- Claude can read the terminal panel but can't type into it. When a command will prompt interactively (e.g. `eas build` credentials), give Marvin the exact answers up front. For EAS: log in with Apple, reuse the distribution certificate, generate a provisioning profile for **both** targets (Trim, ExpoWidgetsTarget), no push key, yes to the App Store Connect API key.
+
 ## Feedback sprints (Claude Code agents)
 
 Paste a list of dogfooding feedback into a new Claude Code session running **Opus 5.5 at medium effort** and run `/feedback-sprint`. The main session acts as orchestrator/PM (`.claude/skills/feedback-sprint/SKILL.md`): it triages every item, routes it to a worker, reviews the diff, sends it back with feedback, runs simulator QA, commits per item and opens a PR.
