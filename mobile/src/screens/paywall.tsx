@@ -49,6 +49,13 @@ const REASON_RESUME: Record<ProReason, string> = {
 
 const NOTE_FADE = FadeIn.duration(200).easing(EASE_OUT);
 
+/**
+ * Dynamic Type cap for the fixed chrome (Not now, the footer's CTA, notes and links). They
+ * never scroll, so uncapped at AX sizes they ate ~60% of the screen; the headline, features
+ * and terms keep scaling fully in the scroll view above.
+ */
+const CHROME_TEXT_SCALE = 1.4;
+
 export function PaywallScreen({ reason, session }: { reason: ProReason; session?: string }) {
   // Development only: `?mock=trial|notrial|unavailable|offline|loading` previews without
   // StoreKit (Subscribe and Restore then succeed locally); `?mock=success|success-notrial|restored`
@@ -238,7 +245,11 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
               justifyContent: 'center',
               opacity: busy ? 0.4 : pressed ? 0.55 : 1,
             })}>
-            <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
+            <Text
+              maxFontSizeMultiplier={CHROME_TEXT_SCALE}
+              style={[type.body, { color: colors.secondaryLabel }]}>
+              Not now
+            </Text>
           </Pressable>
         </Animated.View>
       )}
@@ -254,6 +265,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         }}>
         {paywall.message && !success ? (
           <Text
+            maxFontSizeMultiplier={CHROME_TEXT_SCALE}
             style={[type.kicker, { textAlign: 'center', paddingBottom: 12 }]}
             accessibilityLiveRegion="polite"
             testID="paywall-message">
@@ -266,6 +278,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         <Button
           title={ctaTitle}
           variant="black"
+          maxFontSizeMultiplier={CHROME_TEXT_SCALE}
           testID={success ? 'paywall-success-cta' : 'paywall-cta'}
           disabled={success ? false : failed ? load.status === 'loading' : !paywall.canPurchase}
           onPress={success ? paywall.proceed : failed ? paywall.retry : paywall.purchase}
@@ -274,6 +287,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           <Animated.Text
             key={success ? 'success-note' : 'offer-note'}
             entering={success ? NOTE_FADE : undefined}
+            maxFontSizeMultiplier={CHROME_TEXT_SCALE}
             style={[type.kicker, { textAlign: 'center', paddingTop: 8, fontVariant: ['tabular-nums'] }]}
             testID={success ? 'paywall-trial-note' : 'paywall-cta-note'}>
             {ctaNote}
@@ -283,6 +297,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           <Text
             accessible={false}
             importantForAccessibility="no"
+            maxFontSizeMultiplier={CHROME_TEXT_SCALE}
             style={[type.kicker, { paddingTop: 8 }]}>
             {' '}
           </Text>
@@ -324,7 +339,11 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
 function Dot() {
   const { type } = useTheme();
   return (
-    <Text style={type.caption} accessible={false} importantForAccessibility="no">
+    <Text
+      style={type.caption}
+      accessible={false}
+      importantForAccessibility="no"
+      maxFontSizeMultiplier={CHROME_TEXT_SCALE}>
       ·
     </Text>
   );
@@ -355,7 +374,9 @@ function FooterLink({
         justifyContent: 'center',
         opacity: disabled ? 0.4 : pressed ? 0.55 : 1,
       })}>
-      <Text style={type.caption}>{title}</Text>
+      <Text style={type.caption} maxFontSizeMultiplier={CHROME_TEXT_SCALE}>
+        {title}
+      </Text>
     </Pressable>
   );
 }

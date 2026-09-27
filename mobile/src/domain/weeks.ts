@@ -100,8 +100,12 @@ export function formatWeekLabel(week: WeekTally, now = new Date()): string {
   return `${startLabel} – ${monthShort(end)} ${end.getDate()}`;
 }
 
-function monthShort(date: Date): string {
-  return date.toLocaleDateString(undefined, { month: 'short' }).replace(/\.$/, '');
+/**
+ * `Sep`, `Oct`: the month alone in English (the app's copy is English), so callers can put it
+ * in the app's order (`Oct 4`) on any region or device language.
+ */
+export function monthShort(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short' });
 }
 
 /** `3.4`, `3`: one decimal at most, with a point like every other number in Trim. */

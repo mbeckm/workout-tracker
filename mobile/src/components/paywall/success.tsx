@@ -12,6 +12,7 @@ import Animated, {
 import Svg, { Path } from 'react-native-svg';
 
 import { FeatureRow } from '@/components/paywall/feature-row';
+import { monthShort } from '@/domain/weeks';
 import { EASE_OUT } from '@/motion';
 import type { ProFeature } from '@/purchases/pro-features';
 import type { PaywallSuccess } from '@/purchases/use-paywall-controller';
@@ -36,18 +37,18 @@ export function successHeadline(success: PaywallSuccess): string {
   return success.kind === 'restored' ? 'Welcome back.' : "You're in.";
 }
 
-/** "Free until Oct 4. Cancel anytime in Settings." The trial is the only money fact left. */
+/**
+ * "Free until Oct 4. Cancel anytime in Settings." The trial is the only money fact left.
+ * The date is built from parts in the copy's English order, like the week labels: a locale
+ * format reads `4. Oct.` on a German-region phone and its dot collides with the sentence's.
+ */
 export function trialLine(success: PaywallSuccess, now = new Date()): string | null {
   const end = success.trialEndsAt;
   if (!end) {
     return null;
   }
   const farOff = end.getTime() - now.getTime() > 180 * 24 * 60 * 60 * 1000;
-  const date = end.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    ...(farOff ? { year: 'numeric' as const } : null),
-  });
+  const date = `${monthShort(end)} ${end.getDate()}${farOff ? `, ${end.getFullYear()}` : ''}`;
   return `Free until ${date}. Cancel anytime in Settings.`;
 }
 

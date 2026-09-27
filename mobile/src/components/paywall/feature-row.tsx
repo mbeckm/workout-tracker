@@ -5,6 +5,8 @@ import { useTheme } from '@/theme/theme-context';
 
 /** Same lane as the plan radios and trial nodes, so every text edge on the paywall lines up. */
 export const FEATURE_TILE = 36;
+/** (title 22 + 1 + detail 20 − tile 36) / 2 at the default text size. */
+const TILE_INSET = 3.5;
 
 /**
  * Icon tile + title 17 + one 15 line. The tile gives each benefit a scannable anchor.
@@ -27,9 +29,12 @@ export function FeatureRow({
     <View
       accessible
       accessibilityLabel={`${title}. ${spokenDetail ?? detail}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+      style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+      {/* Top-aligned, so at large text sizes the tile stays with the title instead of floating
+          beside a tall block; the inset centres it on the default two-line row (43pt). */}
       <View
         style={{
+          marginTop: TILE_INSET,
           width: FEATURE_TILE,
           height: FEATURE_TILE,
           borderRadius: 10,
