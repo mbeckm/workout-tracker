@@ -252,6 +252,8 @@ export function LogWorkoutScreen() {
   );
   const startedAt = opened.startedAt;
   const [rest, setRest] = useState<RestWindow | null>(opened.rest);
+  // Rest ran out or was skipped: the Live Activity reads `Go` until the next rest starts.
+  const [restOver, setRestOver] = useState(false);
   const [exerciseIndex, setExerciseIndex] = useState(opened.exerciseIndex);
   // Pro targets (next-session targets). Computed for free users too: the quiet
   // `Target ›` offer only appears where a target would exist.
@@ -279,6 +281,11 @@ export function LogWorkoutScreen() {
   const weightInputRef = useRef<TextInput>(null);
   const keyboardOpen = useKeyboardState((state) => state.isVisible);
   const focusedWell: WellFocus = keyboardOpen ? wellFocus : null;
+  // A set logged from the keyboard (typically the first set of an exercise, where the weight
+  // gets typed) must not grow the docked footer: inserted there, rest pushes the footer up
+  // over `Set n of m`, then rides the keyboard down. It appears once the keyboard is down.
+  const [restHeldForKeyboard, setRestHeldForKeyboard] = useState(false);
+  const holdRest = restHeldForKeyboard && keyboardOpen;
   const openSheet = (next: 'day' | 'exercise') => {
     Keyboard.dismiss();
     setSheet(next);
@@ -376,6 +383,7 @@ export function LogWorkoutScreen() {
   const startRest = (seconds: number) => {
     const startedAtMs = Date.now();
     setRest({ startedAtMs, endsAtMs: startedAtMs + seconds * 1000 });
+    setRestOver(false);
   };
 
   const adjustRest = (seconds: number) => {
@@ -408,8 +416,9 @@ export function LogWorkoutScreen() {
       exerciseName: nextExerciseName,
       imageURL: nextImageURL,
       rest,
+      restOver,
     });
-  }, [dayId, nextExerciseId, nextExerciseName, nextImageURL, planId, rest]);
+  }, [dayId, nextExerciseId, nextExerciseName, nextImageURL, planId, rest, restOver]);
 
   useEffect(() => {
     return () => {
@@ -571,6 +580,7 @@ export function LogWorkoutScreen() {
 
   const focusWell = (well: Exclude<WellFocus, null>) => {
     setWellFocus(well);
+    setRestHeldForKeyboard(false);
     if (!edit && activeSetIndex < 0 && lastDoneSet) {
       beginEdit(lastDoneSet);
     }
@@ -606,6 +616,7 @@ export function LogWorkoutScreen() {
     setDrafts(nextDrafts);
 
     setLoggedPulseId(target.id);
+    setRestHeldForKeyboard(keyboardOpen && rest == null);
     setWellFocus(null);
     setWeightNudgeSetId(null);
     Keyboard.dismiss();
@@ -1144,13 +1155,17 @@ export function LogWorkoutScreen() {
             backgroundColor: colors.systemBackground,
             zIndex: 1,
           }}>
-          {rest != null ? (
+          {rest != null && !holdRest ? (
             <Animated.View entering={REST_IN} exiting={REST_OUT}>
               <LogRest
                 rest={rest}
-                onSkip={() => setRest(null)}
+                onSkip={() => {
+                  setRest(null);
+                  setRestOver(true);
+                }}
                 onAdjust={adjustRest}
                 onExpire={() => setRest(null)}
+                onGo={() => setRestOver(true)}
               />
             </Animated.View>
           ) : null}

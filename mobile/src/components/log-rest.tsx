@@ -24,21 +24,26 @@ export function LogRest({
   onSkip,
   onAdjust,
   onExpire,
+  onGo,
 }: {
   rest: RestWindow;
   onSkip: () => void;
   /** Seconds to add (negative shortens). */
   onAdjust: (seconds: number) => void;
   onExpire: () => void;
+  /** The clock hit 0:00 (the `Go` moment). */
+  onGo?: () => void;
 }) {
   const { colors, type } = useTheme();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const cuedFor = useRef<number | null>(null);
   const onExpireRef = useRef(onExpire);
+  const onGoRef = useRef(onGo);
 
   useEffect(() => {
     onExpireRef.current = onExpire;
-  }, [onExpire]);
+    onGoRef.current = onGo;
+  }, [onExpire, onGo]);
 
   useEffect(() => {
     const tick = setInterval(() => {
@@ -49,6 +54,7 @@ export function LogRest({
         if (process.env.EXPO_OS === 'ios') {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
+        onGoRef.current?.();
       }
       if (now >= rest.endsAtMs + REST_GO_MS) {
         onExpireRef.current();

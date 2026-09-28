@@ -103,6 +103,8 @@ function toProps(input: WorkoutLiveActivitySync, imageUri: string | undefined): 
     isResting: rest != null,
     restStartEpochMs: rest?.startedAtMs ?? 0,
     restEndEpochMs: rest?.endsAtMs ?? 0,
+    // A window that has already ended reads as over too: the app may sync after the fact.
+    restOver: rest == null && (Boolean(input.restOver) || input.rest != null),
   };
 }
 

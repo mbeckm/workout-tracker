@@ -59,7 +59,10 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
         ]}
       />
     ) : (
-      <Text modifiers={[font({ weight: 'semibold', size }), foregroundStyle(color)]}>Now</Text>
+      // After a rest the next set is up: `Go`, as the in-app rest reads at 0:00.
+      <Text modifiers={[font({ weight: 'semibold', size }), foregroundStyle(color)]}>
+        {props.restOver ? 'Go' : 'Now'}
+      </Text>
     );
 
   const RestBar = () =>
@@ -100,15 +103,17 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
                 countsDown
                 modifiers={[font({ weight: 'bold', size: 22 }), monospacedDigit(), foregroundStyle(WHITE)]}
               />
+            ) : props.restOver ? (
+              <Text modifiers={[font({ weight: 'bold', size: 22 }), foregroundStyle(WHITE)]}>Go</Text>
             ) : (
               <Text modifiers={[font({ weight: 'bold', size: 18 }), foregroundStyle(WHITE), lineLimit(1)]}>
                 {props.exerciseName}
               </Text>
             )}
             <Text modifiers={[font({ size: 13 }), foregroundStyle(MUTED)]}>
-              {props.isResting ? 'Up next' : 'Logging'}
+              {props.isResting || props.restOver ? 'Up next' : 'Logging'}
             </Text>
-            {props.isResting ? (
+            {props.isResting || props.restOver ? (
               <Text modifiers={[font({ weight: 'semibold', size: 16 }), foregroundStyle(WHITE), lineLimit(1)]}>
                 {props.exerciseName}
               </Text>
@@ -138,7 +143,7 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
     expandedBottom: (
       <VStack alignment="leading" spacing={8} modifiers={[padding({ top: 4, horizontal: 6 })]}>
         <Text modifiers={[font({ size: 13 }), foregroundStyle(MUTED)]}>
-          {props.isResting ? 'Up next' : 'Logging'}
+          {props.isResting || props.restOver ? 'Up next' : 'Logging'}
         </Text>
         <RestBar />
       </VStack>
