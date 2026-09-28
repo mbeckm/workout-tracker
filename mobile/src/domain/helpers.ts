@@ -116,7 +116,7 @@ export function formatPlanMetric(exercise: ExercisePrescription): string {
 }
 
 /**
- * `4 × 8 reps · 15 kg`: the prescription plus the working weight from the last session
+ * `4 × 8 reps at 15 kg`: the prescription plus the working weight from the last session
  * (its heaviest set). Plans store no weights, so the load comes from history; without
  * history, or for bodyweight and timed work, it's the prescription alone.
  */
@@ -132,7 +132,8 @@ export function formatPlanMetricWithLoad(
   if (loads.length === 0) {
     return base;
   }
-  return `${base} · ${formatLoadWithUnit(Math.max(...loads), unit)}`;
+  // Joined in words, not with a middle dot (trim-ui → Copy → Separating facts).
+  return `${base} at ${formatLoadWithUnit(Math.max(...loads), unit)}`;
 }
 
 export function exerciseSubtitle(exercise: ExercisePrescription): string {
@@ -380,8 +381,31 @@ export function formatHistoryWhenInMonth(iso: string, now = new Date()): string 
   return formatWeekdayDay(date);
 }
 
-export function formatHistoryMonthCount(label: string, count: number): string {
-  return count === 1 ? `${label} · 1 session` : `${label} · ${count} sessions`;
+/** Session detail's first fact: `Wed 13 September`, with the year outside this one. */
+export function formatSessionDate(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const label = `${formatWeekdayDay(date)} ${monthLong(date)}`;
+  return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
+}
+
+/** A History month's amount, in its caption's trailing lane: `4 sessions`. */
+export function formatSessionsCount(count: number): string {
+  return count === 1 ? '1 session' : `${count} sessions`;
+}
+
+const WORKOUT_MILESTONES = new Set([10, 50, 100]);
+
+/**
+ * Done's moment fact (trim-ui → Moments): `First workout`, `10th workout`. Counts the
+ * workouts up to and including this one, so reopening an older session never repeats it.
+ */
+export function workoutMilestone(workout: LoggedWorkout, history: LoggedWorkout[]): string | null {
+  const index = history.findIndex((item) => item.id === workout.id);
+  const count = index === -1 ? history.length + 1 : history.length - index;
+  if (count === 1) {
+    return 'First workout';
+  }
+  return WORKOUT_MILESTONES.has(count) ? `${ordinal(count)} workout` : null;
 }
 
 export function formatExercisesCount(count: number): string {
@@ -401,7 +425,7 @@ export function loggedExerciseCount(workout: LoggedWorkout): number {
   return workout.exerciseCount || workout.exercises.length;
 }
 
-/** History row meta: `Yesterday · 3 exercises · 8 min`. */
+/** History row, read aloud: `Yesterday, 52 min`. */
 export function formatHistorySessionMeta(
   workout: LoggedWorkout,
   now = new Date(),
@@ -410,20 +434,7 @@ export function formatHistorySessionMeta(
   const when = options?.inMonth
     ? formatHistoryWhenInMonth(workout.completedAt, now)
     : formatHistoryWhen(workout.completedAt, now);
-  return [
-    when,
-    formatExercisesCount(loggedExerciseCount(workout)),
-    formatPaperMinutes(workout.durationMinutes),
-  ].join(' · ');
-}
-
-/** Stripped exercise names for the newest session row. Stops at `max`, no overflow count. */
-export function formatSessionExerciseStrip(workout: LoggedWorkout, max = 4): string {
-  return workout.exercises
-    .slice(0, max)
-    .map((exercise) => stripLabel(exercise.exerciseName))
-    .filter((label) => label.length > 0)
-    .join(' · ');
+  return `${when}, ${formatPaperMinutes(workout.durationMinutes)}`;
 }
 
 const STRIP_SKIP = new Set([

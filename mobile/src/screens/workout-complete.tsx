@@ -5,19 +5,12 @@ import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { meta as metaItem, MetaRow } from '@/components/meta-row';
 import { RecapExercise } from '@/components/recap-exercise';
-import {
-  formatLoggedSetTotal,
-  formatPrCount,
-  loggedSetTotal,
-  recapFacts,
-  workoutPersonalBests,
-  workoutUsesLoad,
-} from '@/domain/set-lines';
+import { fontScaleCap, space } from '@/constants/theme';
+import { workoutPersonalBests, workoutUsesLoad } from '@/domain/set-lines';
 import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
-import { formatPaperMinutes } from '@/domain/helpers';
+import { formatPaperMinutes, workoutMilestone } from '@/domain/helpers';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -61,11 +54,11 @@ export function WorkoutCompleteScreen() {
           style={{
             flex: 1,
             backgroundColor: colors.systemBackground,
-            padding: 24,
+            padding: space.gutter,
             justifyContent: 'center',
-            gap: 16,
+            gap: space.inset,
           }}>
-          <Text style={[type.hero, { textAlign: 'left' }]} maxFontSizeMultiplier={1.2}>
+          <Text style={type.hero} maxFontSizeMultiplier={fontScaleCap.display}>
             Done
           </Text>
           <Button
@@ -79,17 +72,9 @@ export function WorkoutCompleteScreen() {
     );
   }
 
-  // Facts (D-1) as a meta row: day, duration, sets, PRs. Each set row carries its own unit.
-  const prCount = personalBests?.count ?? 0;
-  const facts = recapFacts(
-    [
-      workout.title,
-      formatPaperMinutes(workout.durationMinutes),
-      formatLoggedSetTotal(workout),
-      prCount > 0 && formatPrCount(prCount),
-    ],
-    null,
-  );
+  // One line in words (trim-ui → Done): the day and how long. The recap below shows the rest.
+  const facts = `${workout.title}, ${formatPaperMinutes(workout.durationMinutes)}`;
+  const milestone = workoutMilestone(workout, workoutHistory);
 
   return (
     <>
@@ -97,45 +82,52 @@ export function WorkoutCompleteScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + 24,
-          paddingHorizontal: 24,
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingTop: insets.top,
+          paddingBottom: Math.max(insets.bottom, space.inline),
         }}>
-        {/* Plain View owns layout so the entering animation can't collapse the header's height. */}
-        <View style={{ paddingBottom: 20 }}>
-          <Animated.View entering={enterUp(Boolean(reduceMotion))} style={{ gap: 6 }}>
-            <Text style={type.hero} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
-              Done
-            </Text>
-            <MetaRow
-              testID="done-facts"
-              accessibilityLabel={facts.accessibilityLabel}
-              items={[
-                metaItem.name(workout.title),
-                metaItem.minutes(workout.durationMinutes),
-                metaItem.sets(loggedSetTotal(workout)),
-                prCount > 0 && metaItem.prs(prCount),
-              ]}
-            />
-          </Animated.View>
-        </View>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 24 }}>
-          {workout.exercises.map((exercise) => (
-            <RecapExercise
-              key={exercise.id}
-              exercise={exercise}
-              unit={workoutUsesLoad(workout) ? units : null}
-              prSetIds={personalBests?.setIds}
-              testID={`done-recap-${exercise.id}`}
-            />
-          ))}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingTop: space.gutter,
+            paddingHorizontal: space.gutter,
+            paddingBottom: space.gutter,
+          }}>
+          {/* Plain View owns layout so the entering animation can't collapse the header's height. */}
+          <View style={{ paddingBottom: space.section }}>
+            <Animated.View entering={enterUp(Boolean(reduceMotion))} style={{ gap: space.related }}>
+              <Text
+                style={type.hero}
+                accessibilityRole="header"
+                maxFontSizeMultiplier={fontScaleCap.display}>
+                Done
+              </Text>
+              <View>
+                <Text style={type.caption} testID="done-facts">
+                  {facts}
+                </Text>
+                {milestone ? (
+                  <Text style={type.caption} testID="done-milestone">
+                    {milestone}
+                  </Text>
+                ) : null}
+              </View>
+            </Animated.View>
+          </View>
+          <View style={{ gap: space.section }}>
+            {workout.exercises.map((exercise) => (
+              <RecapExercise
+                key={exercise.id}
+                exercise={exercise}
+                unit={workoutUsesLoad(workout) ? units : null}
+                prSetIds={personalBests?.setIds}
+                testID={`done-recap-${exercise.id}`}
+              />
+            ))}
+          </View>
         </ScrollView>
-        <Button
-          title="Done"
-          variant="green"
-          testID="done-cta"
-          onPress={() => void done()}
-        />
+        <View style={{ paddingHorizontal: space.gutter }}>
+          <Button title="Done" variant="green" testID="done-cta" onPress={() => void done()} />
+        </View>
       </View>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, title: 'Done' }} />
     </>
