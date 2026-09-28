@@ -6,6 +6,7 @@ import type {
   WorkoutDay,
   WorkoutPlan,
 } from '@/domain/types';
+import { formatMonthDay, formatWeekdayDay, monthLong, weekdayLong } from '@/domain/dates';
 import { newId } from '@/domain/id';
 import { normalizedStatsKey } from '@/domain/types';
 
@@ -115,7 +116,7 @@ export function formatPlanMetric(exercise: ExercisePrescription): string {
 }
 
 /**
- * `4 × 8 reps · 15 kg`: the prescription plus the working weight from the last session
+ * `4 × 8 reps at 15 kg`: the prescription plus the working weight from the last session
  * (its heaviest set). Plans store no weights, so the load comes from history; without
  * history, or for bodyweight and timed work, it's the prescription alone.
  */
@@ -131,7 +132,8 @@ export function formatPlanMetricWithLoad(
   if (loads.length === 0) {
     return base;
   }
-  return `${base} · ${formatLoadWithUnit(Math.max(...loads), unit)}`;
+  // Joined in words, not with a middle dot (trim-ui → Copy → Separating facts).
+  return `${base} at ${formatLoadWithUnit(Math.max(...loads), unit)}`;
 }
 
 export function exerciseSubtitle(exercise: ExercisePrescription): string {
@@ -159,14 +161,6 @@ export function formatDuration(totalSeconds: number): string {
     return `${seconds}s`;
   }
   return `${minutes}min ${seconds}s`;
-}
-
-export function formatSessionDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }
 
 export function parsePositiveNumber(value: string): number | null {
@@ -338,16 +332,6 @@ export function personalBestCount(workout: LoggedWorkout, history: LoggedWorkout
   return personalBestSetIds(workout, history).size;
 }
 
-export function formatWorkoutWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
 export function formatPaperMinutes(minutes: number): string {
   const value = Math.max(1, Math.round(minutes));
   return `${value} min`;
@@ -360,9 +344,9 @@ export function formatDaysCount(count: number): string {
 export function formatHistoryMonth(iso: string, now = new Date()): string {
   const date = new Date(iso);
   if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'long' });
+    return monthLong(date);
   }
-  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return `${monthLong(date)} ${date.getFullYear()}`;
 }
 
 export function formatHistoryWhen(iso: string, now = new Date()): string {
@@ -377,12 +361,9 @@ export function formatHistoryWhen(iso: string, now = new Date()): string {
     return 'Yesterday';
   }
   if (diffDays > 1 && diffDays < 7) {
-    return date.toLocaleDateString(undefined, { weekday: 'long' });
+    return weekdayLong(date);
   }
-  if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatMonthDay(date, now);
 }
 
 /** When under a month caption — avoid repeating the month (`Wed 13` not `Jul 13`). */
@@ -397,12 +378,34 @@ export function formatHistoryWhenInMonth(iso: string, now = new Date()): string 
   if (diffDays === 1) {
     return 'Yesterday';
   }
-  const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
-  return `${weekday} ${date.getDate()}`;
+  return formatWeekdayDay(date);
 }
 
-export function formatHistoryMonthCount(label: string, count: number): string {
-  return count === 1 ? `${label} · 1 session` : `${label} · ${count} sessions`;
+/** Session detail's first fact: `Wed 13 September`, with the year outside this one. */
+export function formatSessionDate(iso: string, now = new Date()): string {
+  const date = new Date(iso);
+  const label = `${formatWeekdayDay(date)} ${monthLong(date)}`;
+  return date.getFullYear() === now.getFullYear() ? label : `${label} ${date.getFullYear()}`;
+}
+
+/** A History month's amount, in its caption's trailing lane: `4 sessions`. */
+export function formatSessionsCount(count: number): string {
+  return count === 1 ? '1 session' : `${count} sessions`;
+}
+
+const WORKOUT_MILESTONES = new Set([10, 50, 100]);
+
+/**
+ * Done's moment fact (trim-ui → Moments): `First workout`, `10th workout`. Counts the
+ * workouts up to and including this one, so reopening an older session never repeats it.
+ */
+export function workoutMilestone(workout: LoggedWorkout, history: LoggedWorkout[]): string | null {
+  const index = history.findIndex((item) => item.id === workout.id);
+  const count = index === -1 ? history.length + 1 : history.length - index;
+  if (count === 1) {
+    return 'First workout';
+  }
+  return WORKOUT_MILESTONES.has(count) ? `${ordinal(count)} workout` : null;
 }
 
 export function formatExercisesCount(count: number): string {
@@ -417,17 +420,12 @@ export function formatPersonalBests(count: number): string {
   return count === 1 ? '1 personal best' : `${count} personal bests`;
 }
 
-function loggedExerciseCount(workout: LoggedWorkout): number {
+/** Exercises in a logged workout, counting the list when `exerciseCount` is missing. */
+export function loggedExerciseCount(workout: LoggedWorkout): number {
   return workout.exerciseCount || workout.exercises.length;
 }
 
-function loggedSetCount(workout: LoggedWorkout): number {
-  return (
-    workout.setCount || workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
-  );
-}
-
-/** History row meta: `Yesterday · 3 exercises · 8 min`. */
+/** History row, read aloud: `Yesterday, 52 min`. */
 export function formatHistorySessionMeta(
   workout: LoggedWorkout,
   now = new Date(),
@@ -436,30 +434,7 @@ export function formatHistorySessionMeta(
   const when = options?.inMonth
     ? formatHistoryWhenInMonth(workout.completedAt, now)
     : formatHistoryWhen(workout.completedAt, now);
-  return [
-    when,
-    formatExercisesCount(loggedExerciseCount(workout)),
-    formatPaperMinutes(workout.durationMinutes),
-  ].join(' · ');
-}
-
-/** Session detail facts: `Yesterday · 8 min · 3 exercises · 12 sets`. */
-export function formatSessionFacts(workout: LoggedWorkout, now = new Date()): string {
-  return [
-    formatHistoryWhen(workout.completedAt, now),
-    formatPaperMinutes(workout.durationMinutes),
-    formatExercisesCount(loggedExerciseCount(workout)),
-    formatSetsCount(loggedSetCount(workout)),
-  ].join(' · ');
-}
-
-/** Stripped exercise names for the newest session row. Stops at `max`, no overflow count. */
-export function formatSessionExerciseStrip(workout: LoggedWorkout, max = 4): string {
-  return workout.exercises
-    .slice(0, max)
-    .map((exercise) => stripLabel(exercise.exerciseName))
-    .filter((label) => label.length > 0)
-    .join(' · ');
+  return `${when}, ${formatPaperMinutes(workout.durationMinutes)}`;
 }
 
 const STRIP_SKIP = new Set([

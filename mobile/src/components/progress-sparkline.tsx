@@ -25,12 +25,10 @@ export function ProgressSparkline({
   values,
   width = 52,
   height = 18,
-  emphasizeEnd = true,
 }: {
   values: number[];
   width?: number;
   height?: number;
-  emphasizeEnd?: boolean;
 }) {
   const { colors } = useTheme();
 
@@ -57,26 +55,14 @@ export function ProgressSparkline({
               top: prev.y,
               width: length,
               height: 1.5,
-              backgroundColor: colors.tertiaryLabel,
+              // Ink like the detail chart; no dots, hero or dates (trim-ui → Charts 8).
+              backgroundColor: colors.label,
               transform: [{ rotate: `${angle}deg` }],
               transformOrigin: 'left center',
             }}
           />
         );
       })}
-      {emphasizeEnd ? (
-        <View
-          style={{
-            position: 'absolute',
-            left: points[points.length - 1].x * width - 2.2,
-            top: points[points.length - 1].y - 2.2,
-            width: 4.4,
-            height: 4.4,
-            borderRadius: 999,
-            backgroundColor: colors.label,
-          }}
-        />
-      ) : null}
     </View>
   );
 }

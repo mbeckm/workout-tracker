@@ -32,10 +32,10 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   {
     id: 'progress',
     title: 'Your full progress',
-    detail: 'Every lift since day one, plus body trends.',
+    detail: 'Every lift and check-in since day one.',
     symbol: 'chart.line.uptrend.xyaxis',
     shipped: true,
-    reasons: ['progress_history', 'body_trends'],
+    reasons: ['progress_history'],
   },
   {
     id: 'targets',

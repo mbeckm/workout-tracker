@@ -1,20 +1,20 @@
 import * as Haptics from 'expo-haptics';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { useReducedMotion } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { paywallPreviewLoader } from '@/components/paywall/dev-preview';
+import { paywallPreview } from '@/components/paywall/dev-preview';
+import { FeatureRow } from '@/components/paywall/feature-row';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
 import { TrialTimeline } from '@/components/paywall/trial-timeline';
+import { ToastHost } from '@/components/toast';
+import { PRESSED_OPACITY, TOUCH_TARGET, fontScaleCap, space } from '@/constants/theme';
 import { billedPerPeriod } from '@/purchases/offers';
-import { proFeaturesFor, type ProFeature } from '@/purchases/pro-features';
+import { proFeaturesFor } from '@/purchases/pro-features';
 import type { ProReason } from '@/purchases/pro-gate';
 import { usePaywallController, type PaywallController } from '@/purchases/use-paywall-controller';
-import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 /**
@@ -27,25 +27,25 @@ const REASON_HEADLINE: Record<ProReason, string> = {
   second_plan: 'Add another plan with Pro.',
   switch_plan: 'Switch plans with Pro.',
   progress_history: 'See all of your progress.',
-  body_trends: 'See your body trends.',
   targets: 'Get a target for every set.',
   settings: 'Trim Pro',
 };
 
 export function PaywallScreen({ reason, session }: { reason: ProReason; session?: string }) {
-  // Development only: `?mock=trial|notrial|unavailable|offline|loading` previews without StoreKit.
+  // Development only: `?mock=trial|notrial|unavailable|offline|loading|none` previews without
+  // StoreKit (Subscribe and Restore then succeed locally; `none` restores nothing).
   const { mock } = useLocalSearchParams<{ mock?: string | string[] }>();
-  const paywall = usePaywallController(reason, session, { loadOffers: paywallPreviewLoader(mock) });
+  const paywall = usePaywallController(reason, session, { preview: paywallPreview(mock) });
   return <PaywallView paywall={paywall} />;
 }
 
 function PaywallView({ paywall }: { paywall: PaywallController }) {
   const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
-  const reduceMotion = useReducedMotion();
   // Hairline over the footer only while content continues beneath it.
   const [contentBelow, setContentBelow] = useState(false);
   const [contentAbove, setContentAbove] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(0);
   const scrollMetrics = useRef({ offset: 0, viewport: 0, content: 0 });
   const updateEdge = (next: Partial<typeof scrollMetrics.current>) => {
     const metrics = { ...scrollMetrics.current, ...next };
@@ -57,8 +57,10 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
   const headline = REASON_HEADLINE[paywall.reason];
   const features = proFeaturesFor(paywall.reason);
   const busy = paywall.busy !== null;
-  const { load, selected, trial } = paywall;
+  const { load, selected, trial, message } = paywall;
   const failed = paywall.loadError != null;
+  /** The bar `Not now` sits in: one touch target tall, under the status bar. */
+  const barHeight = insets.top + TOUCH_TARGET;
 
   const select = (offer: (typeof paywall.offers)[number]) => {
     if (offer.id === selected?.id) {
@@ -79,7 +81,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           ? 'Loading prices…'
           : paywall.ctaTitle;
 
-  // Next to the button: what happens to money when it is tapped.
+  // Under the button: what happens to money.
   const ctaNote = selected
     ? trial
       ? `No payment due now. Then ${billedPerPeriod(selected)}.`
@@ -87,7 +89,9 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
     : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
+    <View
+      style={{ flex: 1, backgroundColor: colors.systemBackground }}
+      onAccessibilityEscape={busy ? undefined : paywall.close}>
       <Stack.Screen options={{ headerShown: false, title: 'Trim Pro' }} />
       <ScrollView
         style={{ flex: 1 }}
@@ -97,60 +101,63 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         onContentSizeChange={(_, height) => updateEdge({ content: height })}
         onScroll={(event) => updateEdge({ offset: event.nativeEvent.contentOffset.y })}
         contentContainerStyle={{
-          paddingTop: insets.top + 44,
-          paddingHorizontal: 24,
-          paddingBottom: 24,
-          gap: 28,
+          paddingTop: barHeight,
+          paddingHorizontal: space.gutter,
+          paddingBottom: space.gutter,
+          gap: space.section,
         }}>
-        <Text style={type.largeTitle} accessibilityRole="header" testID="paywall-headline">
+        <Text
+          style={type.displayCompact}
+          maxFontSizeMultiplier={fontScaleCap.display}
+          accessibilityRole="header"
+          testID="paywall-headline">
           {headline}
         </Text>
 
-        <View style={{ gap: 18 }} testID="paywall-features">
-          {features.map((feature, index) => (
-            <Animated.View
-              key={feature.id}
-              entering={enterUp(Boolean(reduceMotion), 60 + index * 50)}>
-              <FeatureRow feature={feature} />
-            </Animated.View>
+        <View style={{ gap: space.inset }} testID="paywall-features">
+          {features.map((feature) => (
+            <FeatureRow key={feature.id} title={feature.title} detail={feature.detail} symbol={feature.symbol} />
           ))}
         </View>
 
-        {load.status === 'loading' ? (
-          <View
-            accessible
-            accessibilityLabel="Loading prices"
-            accessibilityRole="progressbar"
-            style={{ gap: 12 }}>
-            <PlanOptionPlaceholder tall />
-            <PlanOptionPlaceholder />
-          </View>
-        ) : null}
+        {/* The price block: options 8 apart, the selected option's trial timeline 16 under them. */}
+        <View style={{ gap: space.inset }}>
+          {load.status === 'loading' ? (
+            <View
+              accessible
+              accessibilityLabel="Loading prices"
+              accessibilityRole="progressbar"
+              style={{ gap: space.related }}>
+              <PlanOptionPlaceholder tall />
+              <PlanOptionPlaceholder />
+            </View>
+          ) : null}
 
-        {failed ? (
-          <Text style={[type.body, { color: colors.secondaryLabel }]} accessibilityLiveRegion="polite">
-            {paywall.loadError}
-          </Text>
-        ) : null}
+          {failed ? (
+            <Text style={[type.caption, { color: colors.systemRed }]} accessibilityLiveRegion="polite">
+              {paywall.loadError}
+            </Text>
+          ) : null}
 
-        {paywall.offers.length > 0 ? (
-          <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: 12 }}>
-            {paywall.offers.map((offer) => (
-              <PlanOption
-                key={offer.id}
-                offer={offer}
-                selected={offer.id === selected?.id}
-                disabled={busy}
-                onSelect={() => select(offer)}
-              />
-            ))}
-          </View>
-        ) : null}
+          {paywall.offers.length > 0 ? (
+            <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: space.related }}>
+              {paywall.offers.map((offer) => (
+                <PlanOption
+                  key={offer.id}
+                  offer={offer}
+                  selected={offer.id === selected?.id}
+                  disabled={busy}
+                  onSelect={() => select(offer)}
+                />
+              ))}
+            </View>
+          ) : null}
 
-        {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
+          {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
+        </View>
 
         {paywall.termsText ? (
-          <Text style={[type.footnote, { fontWeight: '400' }]} testID="paywall-terms">
+          <Text style={type.footnote} testID="paywall-terms">
             {paywall.termsText}
           </Text>
         ) : null}
@@ -165,124 +172,100 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           top: 0,
           left: 0,
           right: 0,
-          height: insets.top + 44,
+          height: barHeight,
           backgroundColor: colors.systemBackground,
-          borderBottomWidth: contentAbove ? 0.5 : 0,
+          borderBottomWidth: contentAbove ? StyleSheet.hairlineWidth : 0,
           borderBottomColor: colors.separator,
         }}
       />
 
       {/* Always reachable, never hidden or delayed: top right, where a close lives on iOS. */}
-      <Pressable
-        accessibilityRole="button"
-        testID="paywall-not-now"
-        disabled={busy}
-        onPress={paywall.close}
-        hitSlop={8}
-        style={({ pressed }) => ({
-          position: 'absolute',
-          top: insets.top,
-          right: 12,
-          minHeight: 44,
-          paddingHorizontal: 12,
-          justifyContent: 'center',
-          opacity: busy ? 0.4 : pressed ? 0.55 : 1,
-        })}>
-        <Text style={[type.body, { color: colors.secondaryLabel }]}>Not now</Text>
-      </Pressable>
+      <View style={{ position: 'absolute', top: insets.top, right: space.inline }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: busy }}
+          testID="paywall-not-now"
+          disabled={busy}
+          onPress={paywall.close}
+          style={({ pressed }) => ({
+            minHeight: TOUCH_TARGET,
+            paddingHorizontal: space.inline,
+            justifyContent: 'center',
+            opacity: pressed ? PRESSED_OPACITY : 1,
+          })}>
+          <Text
+            maxFontSizeMultiplier={fontScaleCap.text}
+            style={[type.body, { color: busy ? colors.tertiaryLabel : colors.secondaryLabel }]}>
+            Not now
+          </Text>
+        </Pressable>
+      </View>
 
       <View
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
         style={{
-          paddingTop: 12,
-          paddingHorizontal: 24,
-          paddingBottom: Math.max(insets.bottom, 8),
-          borderTopWidth: contentBelow ? 0.5 : 0,
+          paddingTop: space.inline,
+          paddingHorizontal: space.gutter,
+          paddingBottom: Math.max(insets.bottom, space.related),
+          borderTopWidth: contentBelow ? StyleSheet.hairlineWidth : 0,
           borderTopColor: colors.separator,
           backgroundColor: colors.systemBackground,
         }}>
-        {paywall.message ? (
+        {message ? (
           <Text
-            style={[type.kicker, { textAlign: 'center', paddingBottom: 12 }]}
+            maxFontSizeMultiplier={fontScaleCap.text}
+            style={[
+              type.caption,
+              { textAlign: 'center', paddingBottom: space.related },
+              message.error ? { color: colors.systemRed } : null,
+            ]}
             accessibilityLiveRegion="polite"
             testID="paywall-message">
-            {paywall.message}
+            {message.text}
           </Text>
         ) : null}
 
         <Button
           title={ctaTitle}
           variant="black"
+          maxFontSizeMultiplier={fontScaleCap.text}
           testID="paywall-cta"
           disabled={failed ? load.status === 'loading' : !paywall.canPurchase}
           onPress={failed ? paywall.retry : paywall.purchase}
         />
         {ctaNote ? (
           <Text
-            style={[type.kicker, { textAlign: 'center', paddingTop: 8, fontVariant: ['tabular-nums'] }]}
+            maxFontSizeMultiplier={fontScaleCap.text}
+            style={[type.footnote, { textAlign: 'center', paddingTop: space.related, fontVariant: ['tabular-nums'] }]}
             testID="paywall-cta-note">
             {ctaNote}
           </Text>
         ) : null}
-        <View style={{ height: 4 }} />
 
-
+        {/* Three quiet links separated by air, not dots (trim-ui §9). Each keeps a 44pt target. */}
         <View
           style={{
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'center',
             alignItems: 'center',
+            columnGap: space.related,
+            paddingTop: space.tight,
           }}>
           <FooterLink
             title={paywall.busy === 'restore' ? 'Restoring…' : 'Restore'}
-            accessibilityLabel="Restore Purchases"
+            accessibilityLabel="Restore purchases"
             onPress={paywall.restore}
             disabled={busy}
           />
-          <Dot />
-          <FooterLink title="Terms of Use" onPress={paywall.openTerms} />
-          <Dot />
-          <FooterLink title="Privacy Policy" onPress={paywall.openPrivacy} />
+          <FooterLink title="Terms" accessibilityLabel="Terms of Use" onPress={paywall.openTerms} />
+          <FooterLink title="Privacy" accessibilityLabel="Privacy Policy" onPress={paywall.openPrivacy} />
         </View>
       </View>
-    </View>
-  );
-}
 
-/** Icon tile + title + one line. The tile gives each benefit a scannable anchor. */
-function FeatureRow({ feature }: { feature: ProFeature }) {
-  const { colors, type } = useTheme();
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${feature.title}. ${feature.detail}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          borderCurve: 'continuous',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.secondarySystemBackground,
-        }}>
-        <SymbolView name={feature.symbol as SFSymbol} size={18} weight="semibold" tintColor={colors.label} />
-      </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-        <Text style={[type.row, { fontWeight: '600' }]}>{feature.title}</Text>
-        <Text style={type.kicker}>{feature.detail}</Text>
-      </View>
+      {/* The root toast sits under this full-screen modal; `No purchases to restore` lands here. */}
+      <ToastHost bottom={footerHeight + space.related} />
     </View>
-  );
-}
-
-function Dot() {
-  const { type } = useTheme();
-  return (
-    <Text style={type.footnote} accessible={false} importantForAccessibility="no">
-      ·
-    </Text>
   );
 }
 
@@ -306,12 +289,14 @@ function FooterLink({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 44,
-        paddingHorizontal: 8,
+        minHeight: TOUCH_TARGET,
+        paddingHorizontal: space.related,
         justifyContent: 'center',
-        opacity: disabled ? 0.4 : pressed ? 0.55 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <Text style={type.footnote}>{title}</Text>
+      <Text style={type.footnote} maxFontSizeMultiplier={fontScaleCap.text}>
+        {title}
+      </Text>
     </Pressable>
   );
 }

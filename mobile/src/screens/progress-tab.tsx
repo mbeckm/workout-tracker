@@ -1,14 +1,16 @@
 import { SymbolView } from 'expo-symbols';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { PaperScreen } from '@/components/paper';
+import { HeaderActions } from '@/components/button';
 import { ProgressSparkline } from '@/components/progress-sparkline';
+import { iconSize, PRESSED_OPACITY, space, TOUCH_TARGET } from '@/constants/theme';
 import { PROGRESS_INDEX_BODY_METRICS } from '@/domain/check-in';
 import {
   bodyMetricSeries,
   collectTrackedLifts,
+  filterPointsByWindow,
   FREE_PROGRESS_WINDOWS,
   formatProgressShortDate,
   formatProgressWeight,
@@ -18,19 +20,24 @@ import { useTheme } from '@/theme/theme-context';
 import { progressDemoMode } from '@/store/progress-demo';
 import { useWorkoutStore } from '@/store/workout-store';
 
-function SectionHeader({ title }: { title: string }) {
+function SectionCaption({ title }: { title: string }) {
   const { type } = useTheme();
   return (
-    <View style={{ paddingTop: 28, paddingBottom: 8 }}>
-      <Text style={type.title}>{title}</Text>
-    </View>
+    <Text style={[type.caption, { paddingBottom: space.related }]} accessibilityRole="header">
+      {title}
+    </Text>
   );
 }
 
+function Divider() {
+  const { colors } = useTheme();
+  return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />;
+}
+
+/** `row` name over `caption` latest; sparkline and chevron in the trailing lane. Rows grow and wrap. */
 function MetricRow({
   title,
   caption,
-  value,
   spokenValue,
   sparkline,
   onPress,
@@ -39,7 +46,6 @@ function MetricRow({
 }: {
   title: string;
   caption?: string;
-  value: string;
   spokenValue?: string;
   sparkline: number[];
   onPress: () => void;
@@ -51,37 +57,35 @@ function MetricRow({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={[title, caption, spokenValue ?? value].filter(Boolean).join(', ')}
+        accessibilityLabel={[title, caption, spokenValue].filter(Boolean).join(', ')}
         testID={testID}
         onPress={onPress}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          paddingVertical: 14,
-          opacity: pressed ? 0.7 : 1,
+          gap: space.inline,
+          paddingVertical: space.inset,
+          opacity: pressed ? PRESSED_OPACITY : 1,
         })}>
-        <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-          <Text style={type.row} numberOfLines={1}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+          <Text style={type.row} numberOfLines={2}>
             {title}
           </Text>
           {caption ? (
-            <Text
-              style={[type.kicker, { color: colors.tertiaryLabel, lineHeight: 18 }]}
-              numberOfLines={1}>
+            <Text style={type.caption} numberOfLines={2}>
               {caption}
             </Text>
           ) : null}
         </View>
-        <Text style={[type.subhead, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
-          {value}
-        </Text>
         <ProgressSparkline values={sparkline} />
-        <SymbolView name="chevron.right" tintColor={colors.tertiaryLabel} size={12} />
+        <SymbolView
+          name="chevron.right"
+          tintColor={colors.tertiaryLabel}
+          size={iconSize.caption}
+          weight="semibold"
+        />
       </Pressable>
-      {showDivider ? (
-        <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
-      ) : null}
+      {showDivider ? <Divider /> : null}
     </>
   );
 }
@@ -99,7 +103,7 @@ function MoreRow({
   const { colors, type } = useTheme();
   return (
     <>
-      <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
+      <Divider />
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -108,16 +112,17 @@ function MoreRow({
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
-          minHeight: 44,
-          paddingVertical: 14,
-          opacity: pressed ? 0.7 : 1,
+          gap: space.inline,
+          minHeight: TOUCH_TARGET,
+          paddingVertical: space.inset,
+          opacity: pressed ? PRESSED_OPACITY : 1,
         })}>
         <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>{title}</Text>
         <SymbolView
           name={expanded ? 'chevron.up' : 'chevron.down'}
           tintColor={colors.tertiaryLabel}
-          size={14}
+          size={iconSize.caption}
+          weight="semibold"
         />
       </Pressable>
     </>
@@ -141,12 +146,12 @@ export function ProgressTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- demo deep link, once on mount
   }, []);
 
-  // Free: each lift's sparkline stays inside the window lift detail opens (3M). Latest values
-  // stay, as on the log screen's last time.
+  // Free: each sparkline, lift or body, stays inside the window detail opens (3M). Latest
+  // values stay, as on the log screen's last time.
+  const sparklineWindow = isPro ? null : FREE_PROGRESS_WINDOWS[0];
   const lifts = useMemo(
-    () =>
-      collectTrackedLifts(workoutHistory, activePlan, units, isPro ? null : FREE_PROGRESS_WINDOWS[0]),
-    [activePlan, isPro, units, workoutHistory],
+    () => collectTrackedLifts(workoutHistory, activePlan, units, sparklineWindow),
+    [activePlan, sparklineWindow, units, workoutHistory],
   );
   const latest = useMemo(() => latestCheckIn(bodyCheckIns), [bodyCheckIns]);
 
@@ -155,23 +160,27 @@ export function ProgressTab() {
       PROGRESS_INDEX_BODY_METRICS.map((metric) => {
         const series = bodyMetricSeries(bodyCheckIns, metric.key, units);
         const latestPoint = series.length > 0 ? series[series.length - 1] : null;
-        const value =
+        const spokenValue =
           latestPoint == null
-            ? '—'
+            ? undefined
             : metric.key === 'bodyweightKg'
               ? formatProgressWeight(latestPoint.value, units)
               : `${latestPoint.value} cm`;
         return {
           ...metric,
-          // Body trends are Trim Pro: free rows keep the latest value and date, no line.
-          sparkline: isPro ? series.slice(-8).map((point) => point.value) : [],
-          value,
+          sparkline: (sparklineWindow == null
+            ? series
+            : filterPointsByWindow(series, sparklineWindow)
+          )
+            .slice(-8)
+            .map((point) => point.value),
+          spokenValue,
           caption: latestPoint
             ? `Last ${formatProgressShortDate(latestPoint.date)}`
             : undefined,
         };
       }),
-    [bodyCheckIns, isPro, units],
+    [bodyCheckIns, sparklineWindow, units],
   );
 
   // Plan order already puts the lifts you train first; the tail waits behind a peer row.
@@ -180,44 +189,29 @@ export function ProgressTab() {
 
   return (
     <>
-      <PaperScreen testID="progress-tab">
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 12,
-          }}>
-          <Text style={[type.planTitle, { flexShrink: 1, minWidth: 0 }]} numberOfLines={1}>
-            Progress
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Log check-in"
-            testID="progress-log-check-in"
-            onPress={openCheckIn}
-            style={({ pressed }) => ({
-              flexGrow: 0,
-              flexShrink: 0,
-              paddingTop: 6,
-              opacity: pressed ? 0.55 : 1,
-            })}>
-            <Text style={[type.headline, { color: colors.label, fontWeight: '500' }]}>
-              Log check-in
-            </Text>
-          </Pressable>
-        </View>
-
-        <SectionHeader title="Lifts" />
+      <ScrollView
+        testID="progress-tab"
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          paddingTop: space.related,
+          paddingHorizontal: space.gutter,
+          paddingBottom: space.section,
+        }}>
+        <SectionCaption title="Lifts" />
         {lifts.length === 0 ? (
-          <Text style={[type.kicker, { paddingTop: 8 }]}>Log a workout to track lifts here.</Text>
+          <Text style={[type.row, { color: colors.tertiaryLabel, paddingVertical: space.inset }]}>
+            No lifts yet
+          </Text>
         ) : (
           <>
             {visibleLifts.map((lift, index) => (
               <MetricRow
                 key={lift.name}
                 title={lift.name}
-                value={lift.indexValue}
+                caption={
+                  lift.latestDate ? `Last ${formatProgressShortDate(lift.latestDate)}` : undefined
+                }
                 spokenValue={lift.spokenValue}
                 sparkline={lift.sparkline}
                 showDivider={index < visibleLifts.length - 1}
@@ -241,7 +235,8 @@ export function ProgressTab() {
           </>
         )}
 
-        <SectionHeader title="Body" />
+        <View style={{ height: space.section }} />
+        <SectionCaption title="Body" />
         {bodyCheckIns.length === 0 ? (
           <Pressable
             accessibilityRole="button"
@@ -249,17 +244,12 @@ export function ProgressTab() {
             testID="progress-body-empty"
             onPress={openCheckIn}
             style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              minHeight: 44,
-              paddingVertical: 14,
-              opacity: pressed ? 0.7 : 1,
+              minHeight: TOUCH_TARGET,
+              paddingVertical: space.inset,
+              opacity: pressed ? PRESSED_OPACITY : 1,
             })}>
             {/* The header carries the visible action; this row is a larger target for it. */}
-            <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>
-              No check-ins yet
-            </Text>
+            <Text style={[type.row, { color: colors.tertiaryLabel }]}>No check-ins yet</Text>
           </Pressable>
         ) : (
           bodyRows.map((row, index) => (
@@ -267,7 +257,7 @@ export function ProgressTab() {
               key={row.key}
               title={row.label}
               caption={row.caption}
-              value={row.value}
+              spokenValue={row.spokenValue}
               sparkline={row.sparkline}
               showDivider={index < bodyRows.length - 1}
               testID={`progress-body-row-${row.key}`}
@@ -277,9 +267,9 @@ export function ProgressTab() {
             />
           ))
         )}
-      </PaperScreen>
+      </ScrollView>
 
-      <Stack.Screen options={{ headerShown: false, title: 'Progress' }} />
+      <HeaderActions right={{ title: 'Log check-in', variant: 'plain', onPress: openCheckIn }} />
     </>
   );
 }

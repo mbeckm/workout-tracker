@@ -1,11 +1,15 @@
-import { Text, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 
 import { PrCrown } from '@/components/pr-crown';
+import { iconSize, space } from '@/constants/theme';
 import { formatLoggedSetLine, type WeightUnit } from '@/domain/helpers';
 import type { LoggedExercise } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
 const SPOKEN_UNIT: Record<WeightUnit, string> = { kg: 'kilograms', lbs: 'pounds' };
+
+/** A tabular digit is at most this share of the font size wide in SF Pro. */
+const TABULAR_DIGIT_EM = 0.62;
 
 /** `60 kg × 8` → `60 kilograms for 8 reps`. */
 export function spokenSetLine(line: string, unit: WeightUnit | null): string {
@@ -17,9 +21,12 @@ export function spokenSetLine(line: string, unit: WeightUnit | null): string {
 }
 
 /**
- * One exercise in a finished-workout recap (Done, History detail): the name, then every
- * set on its own row with the set number in a narrow tabular lane, so a scan down the
+ * One exercise in a finished-workout recap (Done, History detail): the `row` name, then one
+ * `caption` line per set with the set number in a narrow tertiary lane, so a scan down the
  * column reads set by set. The set that beat a prior session carries the yellow crown.
+ *
+ * The lane is sized from the current text size and the widest set number, plus a fixed gap,
+ * so at large Dynamic Type the number never runs into the value. Lines wrap; they never clip.
  */
 export function RecapExercise({
   exercise,
@@ -35,12 +42,15 @@ export function RecapExercise({
   testID?: string;
 }) {
   const { colors, type } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const rows = exercise.sets.map((set, index) => ({
     id: set.id,
     number: index + 1,
     text: formatLoggedSetLine(set, { minutes, unit }),
     pr: prSetIds?.has(set.id) ?? false,
   }));
+  const digits = String(rows.length).length;
+  const laneWidth = Math.ceil(type.caption.fontSize * fontScale * TABULAR_DIGIT_EM * digits);
   const spoken = [
     exercise.exerciseName,
     ...rows.map(
@@ -49,23 +59,27 @@ export function RecapExercise({
   ].join('; ');
 
   return (
-    <View accessible accessibilityLabel={spoken} testID={testID} style={{ paddingVertical: 10 }}>
-      <Text style={[type.row, { paddingBottom: 4 }]}>{exercise.exerciseName}</Text>
+    <View accessible accessibilityLabel={spoken} testID={testID} style={{ gap: space.pair }}>
+      <Text style={type.row} numberOfLines={2}>
+        {exercise.exerciseName}
+      </Text>
       {rows.map((row) => (
-        <View key={row.id} style={{ flexDirection: 'row', alignItems: 'center', minHeight: 24 }}>
+        <View key={row.id} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.related }}>
           <Text
-            style={[
-              type.kicker,
-              { width: 24, color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
-            ]}>
+            style={[type.caption, { minWidth: laneWidth, fontVariant: ['tabular-nums'] }]}>
             {row.number}
           </Text>
-          <Text style={[type.kicker, { flexShrink: 1, fontVariant: ['tabular-nums'] }]}>{row.text}</Text>
-          {row.pr ? (
-            <View style={{ paddingLeft: 6 }}>
-              <PrCrown size={12} />
-            </View>
-          ) : null}
+          <View
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
+            <Text
+              style={[
+                type.caption,
+                { flexShrink: 1, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] },
+              ]}>
+              {row.text}
+            </Text>
+            {row.pr ? <PrCrown size={iconSize.caption} /> : null}
+          </View>
         </View>
       ))}
     </View>

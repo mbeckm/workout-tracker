@@ -21,6 +21,7 @@ export function Button({
   size = 'regular',
   style,
   testID,
+  maxFontSizeMultiplier,
 }: {
   title: string;
   onPress?: () => void;
@@ -29,6 +30,8 @@ export function Button({
   size?: 'regular' | 'compact';
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  /** Caps Dynamic Type on the label, for buttons in fixed chrome (a footer that doesn't scroll). */
+  maxFontSizeMultiplier?: number;
 }) {
   const { colors, type } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -95,6 +98,7 @@ export function Button({
           transitionTimingFunction: 'ease-out',
         }}>
         <Text
+          maxFontSizeMultiplier={maxFontSizeMultiplier}
           style={{
             ...type.headline,
             fontWeight: '700',

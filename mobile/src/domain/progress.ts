@@ -7,6 +7,7 @@ import {
 import { estimatedOneRM, formatLoggedSetLine } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
+import { formatMonthDay } from '@/domain/dates';
 
 export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
 
@@ -27,6 +28,13 @@ export function isProgressWindowLocked(window: ProgressWindow, isPro: boolean): 
 export function defaultProgressWindow(isPro: boolean): ProgressWindow {
   return isPro ? '6M' : '3M';
 }
+
+/**
+ * Progress heroes (`StaggerValue`) format with Intl, which follows the device region
+ * ("80,5"). The rows under them are plain strings ("80.5 kg"), so heroes pin this locale
+ * and turn grouping off to read the same.
+ */
+export const PROGRESS_HERO_LOCALE = 'en-US';
 
 export type ProgressPoint = {
   date: string;
@@ -49,6 +57,8 @@ export type TrackedLift = {
   indexValue: string;
   /** VoiceOver phrasing of `indexValue`. */
   spokenValue: string;
+  /** Latest session with a weighted set: the row's `Last Sep 25`, like body rows. */
+  latestDate: string | null;
 };
 
 function isAddedWeightLift(name: string): boolean {
@@ -78,8 +88,9 @@ function liftIndexPresentation(
   history: LoggedWorkout[],
   units: 'kg' | 'lbs',
   sparklineWindow: ProgressWindow | null,
-): { indexValue: string; spokenValue: string; sparkline: number[]; latestOneRM: number | null } {
+): Omit<TrackedLift, 'name'> {
   const series = liftSeriesFromHistory(name, history);
+  const latestDate = series.length > 0 ? series[series.length - 1].date : null;
   // The sparkline never reaches further back than the detail screen can open.
   const sparkSeries =
     sparklineWindow == null
@@ -98,6 +109,7 @@ function liftIndexPresentation(
         .filter((value) => value != null)
         .slice(-8),
       latestOneRM: null,
+      latestDate,
     };
   }
 
@@ -109,6 +121,7 @@ function liftIndexPresentation(
       : 'no sets yet',
     sparkline: sparkSeries.slice(-8).map((point) => point.oneRM),
     latestOneRM: latest?.oneRM ?? null,
+    latestDate,
   };
 }
 
@@ -350,12 +363,13 @@ export function collectTrackedLifts(
     return left.name.localeCompare(right.name);
   });
 
-  return lifts.map(({ name, latestOneRM, sparkline, indexValue, spokenValue }) => ({
+  return lifts.map(({ name, latestOneRM, sparkline, indexValue, spokenValue, latestDate }) => ({
     name,
     latestOneRM,
     sparkline,
     indexValue,
     spokenValue,
+    latestDate,
   }));
 }
 
@@ -382,19 +396,12 @@ export function latestCheckIn(checkIns: BodyCheckIn[]): BodyCheckIn | null {
   return [...checkIns].sort((left, right) => right.recordedAt.localeCompare(left.recordedAt))[0];
 }
 
-export function formatCheckInDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-export function formatProgressShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
+/**
+ * `Sep 25` (`Sep 25, 2025` outside this year), built from parts in the app's English order
+ * like Weeks: a locale format would read `25. Sep` on a German-region phone.
+ */
+export function formatProgressShortDate(iso: string, now: Date = new Date()): string {
+  return formatMonthDay(new Date(iso), now);
 }
 
 export function isSessionPR(
@@ -412,4 +419,34 @@ export function isSessionPR(
 
   const priorMax = Math.max(...series.slice(0, sessionIndex).map((point) => point.oneRM));
   return sessionOneRM > priorMax;
+}
+
+const WINDOW_LABELS: Record<ProgressWindow, string> = {
+  '3M': 'Last 3 months',
+  '6M': 'Last 6 months',
+  YTD: 'This year',
+  All: 'All time',
+};
+
+/** The range under a detail hero (`Last 3 months`); the scrubbed date takes its place. */
+export function formatProgressWindow(window: ProgressWindow): string {
+  return WINDOW_LABELS[window];
+}
+
+/** VoiceOver summary of a chart: `Estimated 1-rep max, 95 kg on Jun 3 to 102 kg on Sep 14`. */
+export function formatProgressChartSummary(
+  label: string,
+  points: ProgressPoint[],
+  formatValue: (value: number) => string,
+): string | undefined {
+  if (points.length === 0) {
+    return undefined;
+  }
+  const first = points[0];
+  const last = points[points.length - 1];
+  const start = `${formatValue(first.value)} on ${formatProgressShortDate(first.date)}`;
+  if (points.length === 1) {
+    return `${label}, ${start}`;
+  }
+  return `${label}, ${start} to ${formatValue(last.value)} on ${formatProgressShortDate(last.date)}`;
 }

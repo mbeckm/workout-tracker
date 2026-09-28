@@ -1,44 +1,38 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { iconSize, PRESSED_OPACITY, space, TOUCH_TARGET } from '@/constants/theme';
+import { formatExerciseNames } from '@/domain/day-facts';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
-/** `Bench Press · Incline Press · Fly`: what the day is, so two "Push" days read apart. */
-export function dayExerciseNames(day: Pick<WorkoutDay, 'exercises'>, limit = 3): string {
-  const names = day.exercises.slice(0, limit).map((exercise) => exercise.name.trim());
-  const more = day.exercises.length - names.length;
-  return more > 0 ? `${names.join(' · ')} · +${more}` : names.join(' · ');
-}
-
 /**
- * One of the plan's other days on Home: title 17 + its exercises 15. A green check marks a
- * day already done this week. Tap opens the preview, where it can be started.
+ * One of the plan's other days on Home (trim-ui → Per screen → Home): the day's name in `row`
+ * over its first exercises in words (`Bench Press, Incline Press and 2 more`), and a green
+ * check in the trailing lane once it's done this week. Tap opens the preview, where it can be
+ * started.
  */
 export function HomeDayRow({
   day,
   doneThisWeek,
-  doneLabel,
   showSeparator = false,
   onPress,
   testID,
 }: {
   day: WorkoutDay;
   doneThisWeek: boolean;
-  /** Spoken only: `Done today`. */
-  doneLabel?: string | null;
   showSeparator?: boolean;
   onPress: () => void;
   testID?: string;
 }) {
   const { colors, type } = useTheme();
-  const names = dayExerciseNames(day);
+  const names = formatExerciseNames(day.exercises.map((exercise) => exercise.name));
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={[day.title, names, doneThisWeek ? doneLabel ?? 'Done this week' : null]
+      accessibilityLabel={[day.title, names, doneThisWeek ? 'done this week' : null]
         .filter(Boolean)
         .join(', ')}
       accessibilityHint="Shows this day. Start it from there."
@@ -47,22 +41,31 @@ export function HomeDayRow({
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 14,
-        borderBottomWidth: showSeparator ? 0.5 : 0,
+        gap: space.inline,
+        minHeight: TOUCH_TARGET,
+        paddingVertical: space.inset,
+        borderBottomWidth: showSeparator ? StyleSheet.hairlineWidth : 0,
         borderBottomColor: colors.separator,
-        opacity: pressed ? 0.7 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={type.row} numberOfLines={1}>
+      <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+        <Text style={type.row} numberOfLines={2}>
           {day.title}
         </Text>
-        <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
-          {names}
-        </Text>
+        {names ? (
+          <Text style={type.caption} numberOfLines={2}>
+            {names}
+          </Text>
+        ) : null}
       </View>
       {doneThisWeek ? (
-        <SymbolView name="checkmark" tintColor={colors.systemGreen} size={16} weight="semibold" />
+        <SymbolView
+          name="checkmark"
+          tintColor={colors.systemGreen}
+          size={iconSize.row}
+          weight="semibold"
+          style={{ flexShrink: 0 }}
+        />
       ) : null}
     </Pressable>
   );

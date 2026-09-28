@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { PaperBack, PaperScreen } from '@/components/paper';
+import { iconSize, space } from '@/constants/theme';
 import { PrCrown } from '@/components/pr-crown';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressLineChart } from '@/components/progress-line-chart';
@@ -11,19 +12,24 @@ import { formatLoggedSetLine } from '@/domain/helpers';
 import {
   defaultProgressWindow,
   filterPointsByWindow,
+  formatProgressChartSummary,
   formatProgressOneRM,
+  formatProgressWindow,
   formatProgressShortDate,
   isInProgressWindow,
   isProgressWindowLocked,
   isSessionPR,
   liftSeriesFromHistory,
   percentFromWindowStart,
+  PROGRESS_HERO_LOCALE,
   type ProgressPoint,
   type ProgressWindow,
 } from '@/domain/progress';
 import { requirePro } from '@/purchases/pro-gate';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
+
+const CHART_HEIGHT = 180;
 
 export function ProgressLiftDetailScreen() {
   const { colors, type } = useTheme();
@@ -79,112 +85,113 @@ export function ProgressLiftDetailScreen() {
   const delta =
     heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
   const deltaRounded = delta == null ? null : Math.round(delta);
-  // Lifting more is completed work (green); flat or down stays in ink, never alarm red.
-  const deltaColor =
-    deltaRounded != null && deltaRounded > 0 ? colors.systemGreen : colors.label;
 
-  const heroType = {
-    fontSize: 52,
-    fontWeight: '700' as const,
-    letterSpacing: -0.03 * 52,
-    color: colors.label,
-  };
-
-  const chartLabel =
-    filtered.length >= 2
-      ? `Estimated 1-rep max, ${formatProgressOneRM(filtered[0].value, units)} on ${formatProgressShortDate(filtered[0].date)} to ${formatProgressOneRM(filtered[filtered.length - 1].value, units)} on ${formatProgressShortDate(filtered[filtered.length - 1].date)}`
-      : undefined;
+  const rangeLabel = `Estimated 1-rep max, ${formatProgressWindow(window).toLowerCase()}`;
+  const chartLabel = formatProgressChartSummary('Estimated 1-rep max', filtered, (value) =>
+    formatProgressOneRM(value, units),
+  );
+  const chartWidth = width - space.gutter * 2;
 
   return (
     <>
       <PaperScreen testID="progress-lift-detail">
         <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
-          style={[type.title, { marginBottom: 16 }]}
-          numberOfLines={1}
+          // Wraps, never truncates: long lift names at large text sizes need every word.
+          style={type.title}
           accessibilityRole="header">
           {exerciseName}
         </Text>
 
-        <WindowChips
-          value={window}
-          onChange={setPicked}
-          locked={isLocked}
-          onLockedPress={(candidate) => void unlockWindow(candidate)}
-        />
-
-        <View style={{ paddingTop: 28, paddingBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
-            <StaggerValue value={heroRounded} suffix={` ${units}`} style={heroType} />
-            {deltaRounded != null ? (
-              <ProgressDelta percent={deltaRounded} color={deltaColor} />
-            ) : null}
+        <View style={{ paddingTop: space.inset, paddingBottom: space.gutter, gap: space.tight }}>
+          {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+              columnGap: space.inline,
+              rowGap: space.tight,
+            }}>
+            <StaggerValue
+              value={heroRounded}
+              suffix={` ${units}`}
+              format={{ maximumFractionDigits: 0, useGrouping: false }}
+              locales={PROGRESS_HERO_LOCALE}
+              style={type.hero}
+            />
+            {deltaRounded != null ? <ProgressDelta percent={deltaRounded} /> : null}
           </View>
-          <Text style={[type.footnote, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
-            {scrubbing && scrubbed
-              ? formatProgressShortDate(scrubbed.date)
-              : 'Estimated 1-rep max'}
+          {/* The scrubbed date takes the range label's place (trim-ui → Charts 3). */}
+          <Text style={type.caption}>
+            {scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : rangeLabel}
           </Text>
         </View>
 
-        {filtered.length >= 2 ? (
+        {filtered.length > 0 ? (
           <ProgressLineChart
             points={filtered}
-            width={width - 48}
-            height={180}
+            width={chartWidth}
+            height={CHART_HEIGHT}
             onScrub={setScrubbed}
             accessibilityLabel={chartLabel}
           />
         ) : (
-          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingVertical: 12 }]}>
-            {filtered.length === 0
-              ? 'No sessions in this window.'
-              : 'Log this lift again to draw a line.'}
-          </Text>
+          // Same frame as the chart, so the chips below never move between ranges.
+          <View style={{ height: CHART_HEIGHT }}>
+            <Text style={type.caption}>No sessions in this range</Text>
+          </View>
         )}
 
-        <View style={{ height: 28 }} />
+        <View style={{ paddingTop: space.inset, paddingBottom: space.section }}>
+          <WindowChips
+            value={window}
+            onChange={setPicked}
+            locked={isLocked}
+            onLockedPress={(candidate) => void unlockWindow(candidate)}
+          />
+        </View>
 
-        {recent.length === 0 ? (
-          series.length === 0 ? (
-            <Text style={[type.kicker, { paddingTop: 4 }]}>No logged sets for this lift yet.</Text>
-          ) : null
-        ) : (
-          recent.map((session, index) => {
-            const pr = isSessionPR(exerciseName, session.oneRM, workoutHistory, session.workoutId);
-            return (
-              <View key={session.workoutId}>
-                {index > 0 ? (
-                  <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
-                ) : null}
+        {recent.map((session, index) => {
+          const pr = isSessionPR(exerciseName, session.oneRM, workoutHistory, session.workoutId);
+          return (
+            <View key={session.workoutId}>
+              {index > 0 ? (
                 <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 14,
-                    gap: 12,
-                  }}>
-                  <Text style={[type.subhead, { minWidth: 56, color: colors.label }]}>
-                    {formatProgressShortDate(session.date)}
-                  </Text>
-                  <Text
-                    style={[
-                      type.subhead,
-                      { flex: 1, color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
-                    ]}>
+                  style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }}
+                />
+              ) : null}
+              {/* Two lanes: when and how (tertiary) leading, the e1RM (ink) trailing. */}
+              <View
+                accessible
+                accessibilityLabel={[
+                  formatProgressShortDate(session.date),
+                  formatLoggedSetLine(session.bestSet, { unit: units }),
+                  formatProgressOneRM(session.oneRM, units),
+                  pr ? 'Personal best' : null,
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: space.inset,
+                  gap: space.inline,
+                }}>
+                <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+                  <Text style={type.caption}>{formatProgressShortDate(session.date)}</Text>
+                  <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>
                     {formatLoggedSetLine(session.bestSet, { unit: units })}
                   </Text>
-                  <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
-                    {formatProgressOneRM(session.oneRM, units)}
-                  </Text>
-                  <View style={{ width: 14, alignItems: 'center' }}>
-                    {pr ? <PrCrown size={14} /> : null}
-                  </View>
                 </View>
+                {pr ? <PrCrown size={iconSize.row} /> : null}
+                <Text style={[type.row, { fontVariant: ['tabular-nums'] }]}>
+                  {formatProgressOneRM(session.oneRM, units)}
+                </Text>
               </View>
-            );
-          })
-        )}
+            </View>
+          );
+        })}
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: exerciseName }} />
     </>

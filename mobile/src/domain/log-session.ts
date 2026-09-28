@@ -2,6 +2,7 @@
  * The in-progress log session: drafts, restore rules and the small pure helpers the
  * log screen and the store share. No React, no storage: safe to unit-test with tsx.
  */
+import { formatMonthDay } from '@/domain/dates';
 import {
   emptyLoggedSet,
   formatLoggedSetLine,
@@ -511,12 +512,7 @@ function compareScore(left: [number, number, number], right: [number, number, nu
 
 /** `Sep 22` (adds the year when it isn't this year). */
 export function formatShortDate(iso: string, now = new Date()): string {
-  const date = new Date(iso);
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
-  });
+  return formatMonthDay(new Date(iso), now);
 }
 
 // ---------------------------------------------------------------------------

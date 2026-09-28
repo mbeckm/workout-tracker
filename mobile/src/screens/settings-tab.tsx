@@ -6,15 +6,11 @@ import { useRef, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 
 import { PaperRow, PaperScreen } from '@/components/paper';
+import { showToast } from '@/components/toast';
 import { LEGAL_URLS } from '@/constants/legal';
 import { appearanceLabel, type AppearancePreference } from '@/constants/theme';
 import { openPaywall } from '@/purchases/pro-gate';
-import {
-  PURCHASE_COPY,
-  manageSubscription,
-  proPeriodLabel,
-  restorePurchases,
-} from '@/purchases/purchases';
+import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
@@ -44,6 +40,7 @@ export function SettingsTab() {
     clearWorkoutHistory,
   } = useWorkoutStore();
   const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const restoringRef = useRef(false);
 
   const restore = async () => {
@@ -52,17 +49,19 @@ export function SettingsTab() {
     }
     restoringRef.current = true;
     setRestoring(true);
+    setRestoreError(null);
     const result = await restorePurchases();
     restoringRef.current = false;
     setRestoring(false);
+    // Rule 19: restore finishes in place with a toast. A failure stays on the row.
     if (result.kind === 'restored') {
       applyEntitlement(result.entitlement);
-      Alert.alert(PURCHASE_COPY.restoredTitle, PURCHASE_COPY.restoredBody);
+      showToast({ title: PURCHASE_COPY.restored });
     } else if (result.kind === 'none') {
       applyEntitlement(result.entitlement);
-      Alert.alert(PURCHASE_COPY.noneTitle, PURCHASE_COPY.noneBody);
+      showToast({ title: PURCHASE_COPY.none });
     } else {
-      Alert.alert(PURCHASE_COPY.restoreFailedTitle, result.message);
+      setRestoreError(result.message);
     }
   };
 
@@ -123,7 +122,7 @@ export function SettingsTab() {
             testID="settings-pro"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
-                {isPro ? (proPeriod ? `On · ${proPeriodLabel(proPeriod)}` : 'On') : 'Off'}
+                {isPro ? 'On' : 'Off'}
               </Text>
             }
             onPress={
@@ -136,6 +135,7 @@ export function SettingsTab() {
           />
           <PaperRow
             title={restoring ? 'Restoring…' : 'Restore purchases'}
+            meta={restoreError ?? undefined}
             testID="settings-restore"
             onPress={restoring ? undefined : () => void restore()}
           />

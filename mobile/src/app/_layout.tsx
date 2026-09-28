@@ -335,6 +335,20 @@ function RootNav() {
         }}
       />
       <Stack.Screen
+        name="weeks"
+        options={{
+          // F6: Home's week amount over the last weeks. Read-only, so a medium detent that
+          // can grow for large text; the grouped background matches Check in.
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.7, 1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
+          title: 'Weeks',
+        }}
+      />
+      <Stack.Screen
         name="exercise-sheet"
         options={{
           presentation: 'formSheet',

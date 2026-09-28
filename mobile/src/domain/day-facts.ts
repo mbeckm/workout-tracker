@@ -1,13 +1,10 @@
+import { formatMonthDay, formatWeekdayDay } from '@/domain/dates';
 import { durationIsMinutes, setCount, usesDuration, usesReps } from '@/domain/helpers';
 import { restSecondsForExercise } from '@/domain/rest';
 import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 
 /** Seconds of work per strength set, before rest. */
 const WORK_SECONDS_PER_SET = 40;
-
-export function formatExerciseCount(count: number): string {
-  return count === 1 ? '1 exercise' : `${count} exercises`;
-}
 
 /** Completed sessions of this plan day, newest first. */
 function sessionsForDay(
@@ -72,6 +69,32 @@ export function estimateDayMinutes(
   return Math.max(5, Math.round(seconds / 60 / 5) * 5);
 }
 
+/** `~55 min`: an estimate, never a promise (trim-ui → Copy → Numbers). */
+export function formatEstimateMinutes(minutes: number): string {
+  return `~${Math.max(1, Math.round(minutes))} min`;
+}
+
+/** VoiceOver for `formatEstimateMinutes`: `About 55 minutes`. */
+export function spokenEstimateMinutes(minutes: number): string {
+  const value = Math.max(1, Math.round(minutes));
+  return value === 1 ? 'About 1 minute' : `About ${value} minutes`;
+}
+
+/**
+ * A day's first exercises in words, the way a person says it (trim-ui → Copy → Separating
+ * facts): `Bench Press`, `Bench Press and Rows`, `Bench Press, Rows and Dips`, then
+ * `Bench Press, Incline Press and 2 more`. Never `1 more`: a third name costs no more room.
+ */
+export function formatExerciseNames(names: readonly string[], shown = 2): string {
+  if (names.length <= shown + 1) {
+    if (names.length <= 1) {
+      return names[0] ?? '';
+    }
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+  return `${names.slice(0, shown).join(', ')} and ${names.length - shown} more`;
+}
+
 /** `Today`, `Yesterday`, `Thu 17` within four weeks, then `Aug 27` (plus year when needed). */
 export function formatDoneWhen(iso: string, now = new Date()): string {
   const date = new Date(iso);
@@ -85,22 +108,14 @@ export function formatDoneWhen(iso: string, now = new Date()): string {
     return 'Yesterday';
   }
   if (diffDays > 1 && diffDays < 28) {
-    const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
-    return `${weekday} ${date.getDate()}`;
+    return formatWeekdayDay(date);
   }
-  if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatMonthDay(date, now);
 }
 
 /** `18:02` or `6:02 PM`, following the device locale. */
 export function formatClockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-}
-
-export function formatLoggedSets(count: number): string {
-  return count === 1 ? '1 set logged' : `${count} sets logged`;
 }
 
 /** `Done today`, `Done yesterday`, `Done Thu 17`. */

@@ -1,14 +1,13 @@
 import { SymbolView } from 'expo-symbols';
 import { Stack, useIsFocused, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
-  FadeInDown,
   FadeOut,
-  FadeOutUp,
   interpolateColor,
   LinearTransition,
+  ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -17,22 +16,20 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { HomeDayRow } from '@/components/home-day-row';
 import { StaggerValue } from '@/components/stagger-value';
-import { PaperEmpty, PaperScreen } from '@/components/paper';
-import { radius, spacing } from '@/constants/theme';
-import { EASE_OUT } from '@/motion';
+import { iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
+import { DURATION, EASE_IN_OUT, EASE_OUT, SPRING } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import {
   estimateDayMinutes,
   formatClockTime,
   formatDoneLabel,
-  formatExerciseCount,
-  formatLoggedSets,
+  formatEstimateMinutes,
   lastDoneAt,
+  spokenEstimateMinutes,
 } from '@/domain/day-facts';
 import { emptyPlan, formatPlanMetricWithLoad } from '@/domain/helpers';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
@@ -40,24 +37,29 @@ import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/typ
 import { useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
-const VISIBLE_EXERCISES = 4;
-const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
+/**
+ * Rows shown before the list folds into a peer `n more exercises` row (trim-ui → Structure).
+ * A list only folds when it hides at least two rows: `1 more exercise` costs as much room as
+ * the row it hides.
+ */
+const COLLAPSED_ROWS = 4;
 
-const factBase = {
-  fontSize: 15,
-  fontWeight: '400' as const,
-  lineHeight: 20,
-};
+/** Expand / collapse in place (trim-ui → Motion → approved list): layout `enter`, ease-in-out. */
+const EXPAND_LAYOUT = LinearTransition.duration(DURATION.enter).easing(EASE_IN_OUT);
+/** Rows fade in and out; under Reduce Motion the fade stays and the movement goes. */
+const ROW_ENTER = FadeIn.duration(DURATION.enter).easing(EASE_IN_OUT).reduceMotion(ReduceMotion.Never);
+const ROW_EXIT = FadeOut.duration(DURATION.exit).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
 
+/**
+ * Home (trim-ui → Per screen → Home). The day name is the native large title; under it one
+ * fact, the estimated duration. Then the day's exercises as one object surface with Start
+ * right under it, the week, and the plan's other days.
+ */
 export function WorkoutTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const reduceMotion = useReducedMotion();
   const { activePlan, nextDayIndex, savePlan, workoutHistory, activeSession } = useWorkoutStore();
   const startDay = useStartDay();
-  const [expandedForDayId, setExpandedForDayId] = useState<string | null>(null);
-  const fact = { ...factBase, color: colors.tertiaryLabel };
 
   const createPlan = () => {
     const plan = emptyPlan();
@@ -72,47 +74,36 @@ export function WorkoutTab() {
   };
 
   const openPreview = (plan: WorkoutPlan, day: WorkoutDay) => {
-    if (day.exercises.length === 0) {
-      openPicker(plan, day);
-      return;
-    }
     router.push({ pathname: '/day-preview', params: { planId: plan.id, dayId: day.id } });
   };
 
   // H-8: a workout in progress on this plan takes the stage until it's finished.
   const session = activePlan && activeSession?.planId === activePlan.id ? activeSession : null;
   const sessionDay = session ? activePlan?.days.find((item) => item.id === session.dayId) : undefined;
-  const day = sessionDay ?? activePlan?.days[nextDayIndex];
+  // A stale index (a day was just removed) falls back to the first day instead of a blank Home.
+  const day = sessionDay ?? activePlan?.days[nextDayIndex] ?? activePlan?.days[0];
   const resuming = session != null && sessionDay != null;
   const hasExercises = day != null && day.exercises.length > 0;
-  const overflow = day ? Math.max(0, day.exercises.length - VISIBLE_EXERCISES) : 0;
-  const expanded = day != null && expandedForDayId === day.id;
-  const head = day ? day.exercises.slice(0, VISIBLE_EXERCISES) : [];
-  const tail = day ? day.exercises.slice(VISIBLE_EXERCISES) : [];
 
   const weekStart = startOfLocalWeek();
   const doneIds = completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
   const total = activePlan ? trainableDays(activePlan).length : 0;
   const done = Math.min(doneIds.length, total);
 
-  let meta = '';
+  // One fact under the title (trim-ui → Copy → Separating facts): how long the day takes, or,
+  // mid-workout, when it started.
+  let fact: { text: string; spoken?: string } | null = null;
   if (activePlan && day) {
     if (resuming && session) {
-      meta =
-        session.loggedSetCount > 0
-          ? `Started ${formatClockTime(session.startedAt)} · ${formatLoggedSets(session.loggedSetCount)}`
-          : `Started ${formatClockTime(session.startedAt)}`;
-    } else if (!hasExercises) {
-      meta = 'No exercises yet';
-    } else {
+      fact = { text: `Started ${formatClockTime(session.startedAt)}` };
+    } else if (hasExercises) {
       const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
-      meta = [
-        activePlan.name.trim(),
-        formatExerciseCount(day.exercises.length),
-        minutes != null ? `~${minutes} min` : '',
-      ]
-        .filter(Boolean)
-        .join(' · ');
+      fact =
+        minutes != null
+          ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
+          : null;
+    } else {
+      fact = { text: 'No exercises yet' };
     }
   }
 
@@ -124,210 +115,195 @@ export function WorkoutTab() {
   const onlyDayDoneAt =
     activePlan && total <= 1 && day ? lastDoneAt(activePlan, day.id, workoutHistory) : null;
 
+  // The native large title: the day's name, or the empty state's fact (trim-ui → Components).
+  const title = day?.title ?? (activePlan ? 'Workout' : 'No plan yet');
+
   return (
     <>
-      <PaperScreen contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        // Insets for the large title bar and the tab bar come from the system.
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.pause }}
+        testID="home-scroll">
         {activePlan ? (
-          <View>
-            <View style={{ gap: 12 }}>
-              <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
-                Next Workout
+          <View testID="home-next-day">
+            {fact ? (
+              <Text
+                style={[type.caption, { fontVariant: ['tabular-nums'] }]}
+                accessibilityLabel={fact.spoken}
+                testID="home-day-meta">
+                {fact.text}
               </Text>
-              {day ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${day.title}, ${meta}`}
-                  accessibilityHint={hasExercises ? 'Shows this day' : 'Adds exercises to this day'}
-                  testID="home-next-day"
-                  onPress={() => openPreview(activePlan, day)}
-                  style={({ pressed }) => ({ gap: 8, opacity: pressed ? 0.7 : 1 })}>
-                  <Text style={type.displayDay} numberOfLines={1} maxFontSizeMultiplier={1.2}>
-                    {day.title}
-                  </Text>
-                  <Text style={fact} numberOfLines={2} testID="home-day-meta">
-                    {meta}
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
+            ) : null}
 
             {day && hasExercises ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 28, gap: 20 }}>
-                <Animated.View
-                  layout={reduceMotion ? undefined : LIST_LAYOUT}
-                  style={{
-                    backgroundColor: colors.secondarySystemBackground,
-                    borderRadius: radius.md,
-                    borderCurve: 'continuous',
-                    padding: spacing.md,
-                    gap: spacing.s,
-                    overflow: 'hidden',
-                  }}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${day.title} exercises`}
-                    accessibilityHint="Shows this day"
-                    onPress={() => openPreview(activePlan, day)}
-                    style={({ pressed }) => ({ gap: spacing.s, opacity: pressed ? 0.7 : 1 })}>
-                    {head.map((exercise, index) => (
-                      <ExerciseRow key={`${exercise.id}-${index}`} exercise={exercise} />
-                    ))}
-                    {expanded
-                      ? tail.map((exercise, index) => (
-                          <Animated.View
-                            key={`${exercise.id}-overflow-${index}`}
-                            entering={
-                              reduceMotion
-                                ? FadeIn.duration(160)
-                                : FadeInDown.duration(200)
-                                    .delay(index * 28)
-                                    .easing(EASE_OUT)
-                                    .withInitialValues({
-                                      opacity: 0,
-                                      transform: [{ translateY: -8 }],
-                                    })
-                            }
-                            exiting={
-                              reduceMotion
-                                ? FadeOut.duration(140)
-                                : FadeOutUp.duration(180).easing(EASE_OUT)
-                            }
-                            layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                            <ExerciseRow exercise={exercise} />
-                          </Animated.View>
-                        ))
-                      : null}
-                  </Pressable>
-                  {overflow > 0 ? (
-                    <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ expanded }}
-                        accessibilityLabel={
-                          expanded
-                            ? 'Show less'
-                            : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`
-                        }
-                        testID="home-more"
-                        onPress={() => setExpandedForDayId(expanded ? null : day.id)}
-                        hitSlop={{ top: 6, bottom: 16 }}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: spacing.s,
-                          width: '100%',
-                          minHeight: 44,
-                          opacity: pressed ? 0.7 : 1,
-                        })}>
-                        <Text
-                          style={[
-                            type.row,
-                            {
-                              flexGrow: 1,
-                              flexShrink: 1,
-                              minWidth: 0,
-                              color: expanded ? colors.tertiaryLabel : colors.label,
-                            },
-                          ]}
-                          numberOfLines={1}>
-                          {expanded
-                            ? 'Show less'
-                            : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`}
-                        </Text>
-                        <SymbolView
-                          name={expanded ? 'chevron.up' : 'chevron.down'}
-                          tintColor={colors.tertiaryLabel}
-                          size={14}
-                          weight="medium"
-                          style={{ flexShrink: 0 }}
-                        />
-                      </Pressable>
-                    </Animated.View>
-                  ) : null}
-                </Animated.View>
-                <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
+              <View style={{ paddingTop: space.gutter }}>
+                <ExerciseList
+                  key={day.id}
+                  exercises={day.exercises}
+                  onOpen={() => openPreview(activePlan, day)}
+                />
+              </View>
+            ) : null}
+
+            {/* Everything under the list glides with it when it expands in place. */}
+            <Animated.View layout={EXPAND_LAYOUT}>
+              {day && hasExercises ? (
+                <View style={{ paddingTop: space.inset }}>
                   <Button
                     title={resuming ? 'Resume' : 'Start'}
                     variant="black"
                     testID={resuming ? 'home-resume' : 'home-start'}
                     onPress={() => startDay(activePlan, day)}
                   />
-                </Animated.View>
-              </Animated.View>
-            ) : null}
+                </View>
+              ) : null}
 
-            {day && !hasExercises ? (
-              // H-2: an empty next day gets a way forward instead of a dead end.
-              <View style={{ paddingTop: 28 }}>
-                <Button
-                  title="Add exercises"
-                  variant="black"
-                  testID="home-add-exercises"
-                  onPress={() => openPicker(activePlan, day)}
-                />
-              </View>
-            ) : null}
+              {day && !hasExercises ? (
+                // H-2: an empty next day gets a way forward instead of a dead end.
+                <View style={{ paddingTop: space.gutter }}>
+                  <Button
+                    title="Add exercises"
+                    variant="black"
+                    testID="home-add-exercises"
+                    onPress={() => openPicker(activePlan, day)}
+                  />
+                </View>
+              ) : null}
 
-            {total > 1 ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 40 }}>
-                <WeekAmount done={done} total={total} />
-              </Animated.View>
-            ) : onlyDayDoneAt ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 40 }}>
-                <Text style={fact}>{formatDoneLabel(onlyDayDoneAt)}</Text>
-              </Animated.View>
-            ) : null}
+              {total > 1 ? (
+                <View style={{ paddingTop: space.section }}>
+                  <WeekAmount done={done} total={total} onPress={() => router.push('/weeks')} />
+                </View>
+              ) : onlyDayDoneAt ? (
+                <View style={{ paddingTop: space.section }}>
+                  <Text style={type.caption}>{formatDoneLabel(onlyDayDoneAt)}</Text>
+                </View>
+              ) : null}
 
-            {otherDays.length > 0 ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: 36 }} testID="home-other-days">
-                {/* Names the list: without it the rows read as an unexplained table (H-1). */}
-                <Text style={[fact, { paddingBottom: 2 }]} accessibilityRole="header">
-                  Other days
-                </Text>
-                {otherDays.map((item, index) => {
-                  const doneThisWeek = doneIds.includes(item.id);
-                  const doneAt = doneThisWeek ? lastDoneAt(activePlan, item.id, workoutHistory) : null;
-                  return (
-                    <HomeDayRow
-                      key={item.id}
-                      day={item}
-                      doneThisWeek={doneThisWeek}
-                      doneLabel={doneAt ? formatDoneLabel(doneAt) : null}
-                      showSeparator={index < otherDays.length - 1}
-                      onPress={() => openPreview(activePlan, item)}
-                      testID={`home-day-row-${index}`}
-                    />
-                  );
-                })}
-              </Animated.View>
-            ) : null}
+              {otherDays.length > 0 ? (
+                <View style={{ paddingTop: space.section }} testID="home-other-days">
+                  <Text style={type.caption} accessibilityRole="header">
+                    Other days
+                  </Text>
+                  <View style={{ paddingTop: space.related }}>
+                    {otherDays.map((item, index) => (
+                      <HomeDayRow
+                        key={item.id}
+                        day={item}
+                        doneThisWeek={doneIds.includes(item.id)}
+                        showSeparator={index < otherDays.length - 1}
+                        onPress={() => openPreview(activePlan, item)}
+                        testID={`home-day-row-${index}`}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </Animated.View>
           </View>
         ) : (
-          <PaperEmpty
-            testID="home-empty"
-            title="Next Workout"
-            subject="No plan yet"
-            caption="Build your week once. Then just press Start."
-            action={{ title: 'Create plan', onPress: createPlan, testID: 'home-create-plan' }}
-          />
+          // Empty: the fact is the large title, and the one action sits under it.
+          <View testID="home-empty">
+            <Button
+              title="Create plan"
+              variant="black"
+              onPress={createPlan}
+              testID="home-create-plan"
+            />
+          </View>
         )}
-      </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: 'Workout' }} />
+      </ScrollView>
+      <Stack.Screen options={{ title }} />
     </>
   );
 }
 
-function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
+/**
+ * The day's exercises as one object surface. Tapping the list opens the day's preview sheet.
+ * A long day folds after `COLLAPSED_ROWS` into a peer row that expands in place and ends with
+ * `Show less`; never a sheet just to show the rest (trim-ui → Structure).
+ */
+function ExerciseList({
+  exercises,
+  onOpen,
+}: {
+  exercises: ExercisePrescription[];
+  onOpen: () => void;
+}) {
   const { colors, type } = useTheme();
+  const [expanded, setExpanded] = useState(false);
+  const foldable = exercises.length > COLLAPSED_ROWS + 1;
+  const visible = foldable && !expanded ? exercises.slice(0, COLLAPSED_ROWS) : exercises;
+  const hidden = exercises.length - COLLAPSED_ROWS;
+
+  return (
+    // The surface itself carries the layout transition, so its fill grows with the rows.
+    <Animated.View
+      layout={EXPAND_LAYOUT}
+      testID="home-exercise-list"
+      style={{
+        backgroundColor: colors.secondarySystemBackground,
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        padding: space.inset,
+        gap: space.inset,
+      }}>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityHint="Shows this day."
+        style={({ pressed }) => ({ gap: space.inset, opacity: pressed ? PRESSED_OPACITY : 1 })}>
+        {visible.map((exercise, index) => (
+          <Animated.View
+            key={`${exercise.id}-${index}`}
+            // Only rows the fold hid animate; nothing animates when Home appears.
+            entering={foldable && index >= COLLAPSED_ROWS ? ROW_ENTER : undefined}
+            exiting={foldable && index >= COLLAPSED_ROWS ? ROW_EXIT : undefined}>
+            <ExerciseRow exercise={exercise} />
+          </Animated.View>
+        ))}
+      </Pressable>
+      {foldable ? (
+        <Pressable
+          onPress={() => setExpanded((value) => !value)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          testID="home-exercise-list-more"
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.inline,
+            minHeight: TOUCH_TARGET,
+            opacity: pressed ? PRESSED_OPACITY : 1,
+          })}>
+          <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>
+            {expanded ? 'Show less' : `${hidden} more exercises`}
+          </Text>
+          <SymbolView
+            name={expanded ? 'chevron.up' : 'chevron.down'}
+            tintColor={colors.tertiaryLabel}
+            size={iconSize.caption}
+            weight="semibold"
+            style={{ flexShrink: 0 }}
+          />
+        </Pressable>
+      ) : null}
+    </Animated.View>
+  );
+}
+
+function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
+  const { type } = useTheme();
   const { previousLogForExercise, units } = useWorkoutStore();
   const metric = formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units);
-  const fact = { ...factBase, color: colors.tertiaryLabel };
   return (
-    <View style={{ gap: 2 }}>
-      <Text style={type.row} numberOfLines={1}>
+    <View style={{ gap: space.pair }}>
+      <Text style={type.row} numberOfLines={2}>
         {exercise.name}
       </Text>
-      <Text style={[fact, { fontVariant: ['tabular-nums'] }]}>{metric}</Text>
+      <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>{metric}</Text>
     </View>
   );
 }
@@ -336,13 +312,24 @@ function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
 const CELEBRATE_DELAY_MS = 320;
 
 /**
- * Week amount: `n of m this week` + dots. While Home is covered (log, Done, paywall) it
+ * Week amount: `n of m` + `this week` + dots. While Home is covered (log, Done, paywall) it
  * keeps showing the old amount; when Home is visible again the new dot fills with a small
  * celebration and the count rolls up, so finishing a workout lands on the goal it moved.
+ * A lower count (a deleted workout, a new week) fades its dots back to grey, no ceremony.
+ *
+ * The whole row is one button (F6): tap opens Weeks, the last 8 weeks against the goal.
+ * The trailing chevron is its affordance; without `onPress` it renders read-only, no chevron.
  */
-function WeekAmount({ done, total }: { done: number; total: number }) {
+function WeekAmount({
+  done,
+  total,
+  onPress,
+}: {
+  done: number;
+  total: number;
+  onPress?: () => void;
+}) {
   const { colors, type } = useTheme();
-  const fact = { ...factBase, color: colors.tertiaryLabel };
   const isFocused = useIsFocused();
   const seenDone = useRef<number | null>(null);
   const [shown, setShown] = useState(done);
@@ -357,7 +344,11 @@ function WeekAmount({ done, total }: { done: number; total: number }) {
       return;
     }
     if (done <= seenDone.current) {
-      // A deleted workout or a new week: no ceremony.
+      // A deleted workout or a new week: no ceremony. Drop the last celebration too: while a
+      // dot holds a celebrateKey it ignores `filled`, so it stayed green after a delete.
+      if (done < seenDone.current) {
+        setCelebrate(null);
+      }
       seenDone.current = done;
       setShown(done);
       return;
@@ -374,32 +365,61 @@ function WeekAmount({ done, total }: { done: number; total: number }) {
   }, [done, isFocused, total]);
 
   return (
-    <View
-      style={{ gap: spacing.s, alignItems: 'flex-start' }}
+    <Pressable
+      disabled={!onPress}
+      onPress={onPress}
+      testID="home-week"
+      hitSlop={{ top: space.related, bottom: space.related }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.inline,
+        minHeight: TOUCH_TARGET,
+        opacity: pressed && onPress ? PRESSED_OPACITY : 1,
+      })}
       accessible
-      accessibilityLabel={`${shown} of ${total} this week`}>
-      {/* NumberFlow has no text baseline to align to; bottom edges match within a point. */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
-        {/* One NumberFlow with a suffix: a sibling Text would sit on a different baseline. */}
-        <StaggerValue value={shown} suffix={` of ${total}`} style={type.title} />
-        <Text style={[fact, { lineHeight: 18, paddingBottom: 1 }]}>this week</Text>
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${shown} of ${total} this week`}
+      accessibilityHint={onPress ? 'Shows past weeks' : undefined}>
+      <View style={{ flex: 1, gap: space.related, alignItems: 'flex-start' }}>
+        {/* NumberFlow has no text baseline to align to; bottom edges match within a point. */}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.tight }}>
+          {/* One NumberFlow with a suffix: a sibling Text would sit on a different baseline. */}
+          <StaggerValue value={shown} suffix={` of ${total}`} style={type.title} />
+          <Text style={type.caption}>this week</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }}>
+          {Array.from({ length: total }, (_, index) => (
+            <WeekDot
+              key={index}
+              filled={index < shown}
+              celebrateKey={celebrate?.index === index ? celebrate.key : null}
+              waveKey={celebrate?.weekDone ? celebrate.key : null}
+              waveDelay={index * WAVE_STAGGER_MS}
+            />
+          ))}
+        </View>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        {Array.from({ length: total }, (_, index) => (
-          <WeekDot
-            key={index}
-            filled={index < shown}
-            celebrateKey={celebrate?.index === index ? celebrate.key : null}
-            waveKey={celebrate?.weekDone ? celebrate.key : null}
-            waveDelay={index * 70}
-          />
-        ))}
-      </View>
-    </View>
+      {onPress ? (
+        // The quiet affordance for F6: the week opens its past weeks.
+        <SymbolView
+          name="chevron.right"
+          tintColor={colors.tertiaryLabel}
+          size={iconSize.caption}
+          weight="semibold"
+          style={{ flexShrink: 0 }}
+        />
+      ) : null}
+    </Pressable>
   );
 }
 
 const DOT = 10;
+/** The rings leave 140ms apart (trim-ui → Motion → Week dot fills). */
+const RING_STAGGER_MS = 140;
+/** A full week: the bump starts once the new dot has popped, then crosses the dots. */
+const WAVE_START_MS = 420;
+const WAVE_STAGGER_MS = 70;
 
 /**
  * One week dot. `celebrateKey` fills it with a springy pop and two soft green rings;
@@ -427,23 +447,40 @@ function WeekDot({
     if (celebrateKey != null) {
       return;
     }
-    fill.set(filled ? 1 : 0);
+    if (filled) {
+      fill.set(1);
+      return;
+    }
+    // Going down (a deleted workout, a new week) just crossfades back to grey: no ceremony.
+    // It is a color fade, so it plays under Reduce Motion too.
+    fill.set(
+      withTiming(0, { duration: DURATION.change, easing: EASE_OUT, reduceMotion: ReduceMotion.Never }),
+    );
   }, [celebrateKey, fill, filled]);
 
   useEffect(() => {
     if (celebrateKey == null) {
       return;
     }
-    fill.set(withTiming(1, { duration: reduceMotion ? 220 : 160, easing: EASE_OUT }));
+    // A color crossfade is the reduced-motion celebration: it must still play (not jump).
+    fill.set(
+      withTiming(1, {
+        duration: reduceMotion ? DURATION.change : DURATION.fade,
+        easing: EASE_OUT,
+        reduceMotion: ReduceMotion.Never,
+      }),
+    );
     if (reduceMotion) {
       return;
     }
     scale.set(0.5);
-    scale.set(withSpring(1, { duration: 520, dampingRatio: 0.42 }));
+    scale.set(withSpring(1, SPRING.pop));
     ringA.set(0);
-    ringA.set(withTiming(1, { duration: 760, easing: EASE_OUT }));
+    ringA.set(withTiming(1, { duration: DURATION.celebrate, easing: EASE_OUT }));
     ringB.set(0);
-    ringB.set(withDelay(140, withTiming(1, { duration: 760, easing: EASE_OUT })));
+    ringB.set(
+      withDelay(RING_STAGGER_MS, withTiming(1, { duration: DURATION.celebrate, easing: EASE_OUT })),
+    );
   }, [celebrateKey, fill, reduceMotion, ringA, ringB, scale]);
 
   useEffect(() => {
@@ -452,10 +489,10 @@ function WeekDot({
     }
     scale.set(
       withDelay(
-        420 + waveDelay,
+        WAVE_START_MS + waveDelay,
         withSequence(
-          withTiming(1.35, { duration: 140, easing: EASE_OUT }),
-          withSpring(1, { duration: 360, dampingRatio: 0.5 }),
+          withTiming(1.35, { duration: DURATION.press, easing: EASE_OUT }),
+          withSpring(1, SPRING.settle),
         ),
       ),
     );
