@@ -13,7 +13,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { PaperGrabber } from '@/components/paper';
-import { radius } from '@/constants/theme';
+import { darkColors, lightColors, radius } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 function project(velocity: number, decelerationRate = 0.998) {
@@ -27,7 +27,7 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
 }
 
 /** Light dims the page; dark needs more, or the scrim vanishes on a black page. */
-const SCRIM = { light: '#00000047', dark: '#0000009E' } as const;
+const SCRIM = { light: lightColors.scrim, dark: darkColors.scrim } as const;
 
 const SPRING_SHEET = { duration: 300, dampingRatio: 0.8, reduceMotion: ReduceMotion.System } as const;
 const SPRING_DISMISS = {
