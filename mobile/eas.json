@@ -28,7 +28,12 @@
       },
       "ios": {
         "resourceClass": "m-medium"
-      }
+      },
+      "channel": "production"
+    },
+    "testflight-preview": {
+      "extends": "production",
+      "channel": "preview"
     },
     "preview": {
       "distribution": "internal",
@@ -51,6 +56,9 @@
         "metadataPath": "./store.config.json",
         "ascAppId": "6805436799"
       }
+    },
+    "testflight-preview": {
+      "extends": "production"
     }
   }
 }
