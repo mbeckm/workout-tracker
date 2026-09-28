@@ -10,6 +10,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -20,9 +21,8 @@ import { DURATION, EASE_IN_OUT } from '@/motion';
 
 type Plotted = { x: number; y: number; value: number; date: string };
 
-const SAMPLE_COUNT = 48;
-/** Keep the stroke clear of the axis and the top clip. */
-const Y_INSET = 14;
+/** The y-range fits the window's values with ~10% air above and below (trim-ui → Charts 5). */
+const Y_PADDING = 0.1;
 const MORPH_MS = DURATION.change;
 /** Fewer points than this and every point gets a dot (trim-ui → Charts 4). */
 const DOT_ALL_BELOW = 6;
@@ -30,6 +30,7 @@ const DOT_RADIUS = 4;
 const SCRUB_DOT = 10;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function plotPoints(
   values: ProgressPoint[],
@@ -43,82 +44,66 @@ function plotPoints(
     return [];
   }
 
-  const chartH = height - padTop - padBottom;
-  const plotH = Math.max(chartH - Y_INSET * 2, 1);
+  const plotH = Math.max(height - padTop - padBottom, 1);
 
   if (values.length === 1) {
-    return [
-      {
-        x: width - padX,
-        y: padTop + Y_INSET + plotH / 2,
-        value: values[0].value,
-        date: values[0].date,
-      },
-    ];
+    return [{ x: width - padX, y: padTop + plotH / 2, value: values[0].value, date: values[0].date }];
   }
 
   const min = Math.min(...values.map((point) => point.value));
   const max = Math.max(...values.map((point) => point.value));
-  const range = max - min || 1;
   const last = values.length - 1;
+  // A flat series sits in the middle; otherwise the range never starts at zero.
+  const pad = (max - min) * Y_PADDING;
+  const low = min - pad;
+  const span = max + pad - low;
 
   return values.map((point, index) => ({
     x: padX + (index / last) * (width - padX * 2),
-    y: padTop + Y_INSET + plotH - ((point.value - min) / range) * plotH,
+    y: span > 0 ? padTop + plotH - ((point.value - low) / span) * plotH : padTop + plotH / 2,
     value: point.value,
     date: point.date,
   }));
 }
 
-/** Evenly sample the series so every window morphs with the same point count. */
-function densify(values: ProgressPoint[], count: number): ProgressPoint[] {
-  if (values.length === 0) {
-    return [];
-  }
-  if (values.length === 1) {
-    return Array.from({ length: count }, () => values[0]);
-  }
-
-  const last = values.length - 1;
-  const out: ProgressPoint[] = [];
-  for (let index = 0; index < count; index += 1) {
-    const t = index / (count - 1);
-    const cursor = t * last;
-    const i0 = Math.floor(cursor);
-    const i1 = Math.min(i0 + 1, last);
-    const local = cursor - i0;
-    const a = values[i0];
-    const b = values[i1];
-    out.push({
-      date: local < 0.5 ? a.date : b.date,
-      value: a.value + (b.value - a.value) * local,
-    });
-  }
-  return out;
+/**
+ * `count` vertices along `items`, each item at least once and in order (vertex j sits on item
+ * floor(j·n/count)). Two lines with the same vertex count can morph vertex by vertex, and the
+ * repeated vertices are zero-length segments, so the line stays straight between sessions.
+ */
+function spread<T>(items: readonly T[], count: number): T[] {
+  const n = items.length;
+  return Array.from({ length: count }, (_, j) => items[Math.min(n - 1, Math.floor((j * n) / count))]);
 }
 
-function smoothPath(points: { x: number; y: number }[]): string {
+/** The first vertex that sits on item `index` of `n` in a `count`-vertex spread. */
+function vertexFor(index: number, n: number, count: number): number {
   'worklet';
-  if (points.length === 0) {
+  return Math.min(count - 1, Math.ceil((index * count) / n));
+}
+
+/** Straight segments between sessions (trim-ui → Charts 1): no smoothing that invents values. */
+function linePath(xs: readonly number[], ys: readonly number[]): string {
+  'worklet';
+  const len = Math.min(xs.length, ys.length);
+  if (len === 0) {
     return '';
   }
-  if (points.length === 1) {
-    return `M ${points[0].x} ${points[0].y}`;
-  }
-
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const p0 = points[index - 1] ?? points[index];
-    const p1 = points[index];
-    const p2 = points[index + 1];
-    const p3 = points[index + 2] ?? p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  let path = `M ${xs[0]} ${ys[0]}`;
+  for (let index = 1; index < len; index += 1) {
+    path += ` L ${xs[index]} ${ys[index]}`;
   }
   return path;
+}
+
+function lerp(from: readonly number[], to: readonly number[], t: number): number[] {
+  'worklet';
+  const out: number[] = [];
+  const len = Math.min(from.length, to.length);
+  for (let index = 0; index < len; index += 1) {
+    out.push(from[index] + (to[index] - from[index]) * t);
+  }
+  return out;
 }
 
 /** First and last date only (trim-ui → Charts 2); one date when every point is on one day. */
@@ -148,32 +133,6 @@ function nearestIndex(plotted: Plotted[], x: number): number {
     }
   }
   return best;
-}
-
-function sampleYs(
-  values: ProgressPoint[],
-  width: number,
-  height: number,
-  padX: number,
-  padTop: number,
-  padBottom: number,
-): { xs: number[]; ys: number[] } {
-  const dense = densify(values, SAMPLE_COUNT);
-  const plotted = plotPoints(dense, width, height, padX, padTop, padBottom);
-  return {
-    xs: plotted.map((point) => point.x),
-    ys: plotted.map((point) => point.y),
-  };
-}
-
-function lerpYs(from: number[], to: number[], t: number): number[] {
-  'worklet';
-  const out: number[] = [];
-  const len = Math.min(from.length, to.length);
-  for (let index = 0; index < len; index += 1) {
-    out.push(from[index] + (to[index] - from[index]) * t);
-  }
-  return out;
 }
 
 export function ProgressLineChart({
@@ -215,8 +174,10 @@ export function ProgressLineChart({
   const scrubIndex = useSharedValue(-1);
   const scrubVisible = useSharedValue(0);
   const plottedShared = useSharedValue(plotted);
-  const xs = useSharedValue<number[]>([]);
+  // The drawn line: from → to, vertex by vertex, as `progress` runs 0 → 1.
+  const fromXs = useSharedValue<number[]>([]);
   const fromYs = useSharedValue<number[]>([]);
+  const toXs = useSharedValue<number[]>([]);
   const toYs = useSharedValue<number[]>([]);
   const progress = useSharedValue(1);
   const primed = useRef(false);
@@ -229,33 +190,50 @@ export function ProgressLineChart({
     plottedShared.set(plotted);
   }, [plotted, plottedShared]);
 
+  // Vertex count of the drawn line: at least one per session, and never fewer than the line
+  // it morphs from, so both have the same count.
+  const vertexCount = useRef(0);
+
   useEffect(() => {
     if (width <= 0) {
       return;
     }
-    if (points.length < 2) {
+    if (plotted.length < 2) {
       // One session is a lone dot: no line, and the next line draws in place, not from here.
-      xs.set([]);
+      fromXs.set([]);
       fromYs.set([]);
+      toXs.set([]);
       toYs.set([]);
+      vertexCount.current = 0;
       primed.current = false;
       return;
     }
 
-    const next = sampleYs(points, width, totalHeight, padX, padTop, padBottom);
-    xs.set(next.xs);
+    const count = Math.max(plotted.length, primed.current && !reduceMotion ? vertexCount.current : 0);
+    const target = spread(plotted, count);
+    const nextXs = target.map((point) => point.x);
+    const nextYs = target.map((point) => point.y);
 
     if (!primed.current || reduceMotion) {
-      fromYs.set(next.ys);
-      toYs.set(next.ys);
+      fromXs.set(nextXs);
+      fromYs.set(nextYs);
+      toXs.set(nextXs);
+      toYs.set(nextYs);
       progress.set(1);
+      vertexCount.current = count;
       primed.current = true;
       return;
     }
 
-    const current = lerpYs(fromYs.get(), toYs.get(), progress.get());
-    fromYs.set(current.length === next.ys.length ? current : next.ys);
-    toYs.set(next.ys);
+    // Start from where the line is now (mid-morph included), stretched to the new count.
+    const t = progress.get();
+    const nowXs = lerp(fromXs.get(), toXs.get(), t);
+    const nowYs = lerp(fromYs.get(), toYs.get(), t);
+    fromXs.set(nowXs.length === count ? nowXs : spread(nowXs, count));
+    fromYs.set(nowYs.length === count ? nowYs : spread(nowYs, count));
+    toXs.set(nextXs);
+    toYs.set(nextYs);
+    vertexCount.current = count;
     progress.set(0);
     progress.set(
       withTiming(1, {
@@ -264,30 +242,11 @@ export function ProgressLineChart({
         reduceMotion: ReduceMotion.System,
       }),
     );
-  }, [
-    fromYs,
-    padBottom,
-    points,
-    progress,
-    reduceMotion,
-    toYs,
-    totalHeight,
-    width,
-    xs,
-  ]);
+  }, [fromXs, fromYs, plotted, progress, reduceMotion, toXs, toYs, width]);
 
   const pathProps = useAnimatedProps(() => {
-    const xCoords = xs.get();
-    const ys = lerpYs(fromYs.get(), toYs.get(), progress.get());
-    if (xCoords.length < 2 || ys.length < 2) {
-      return { d: '' };
-    }
-    const samples: { x: number; y: number }[] = [];
-    const len = Math.min(xCoords.length, ys.length);
-    for (let index = 0; index < len; index += 1) {
-      samples.push({ x: xCoords[index], y: ys[index] });
-    }
-    return { d: smoothPath(samples) };
+    const t = progress.get();
+    return { d: linePath(lerp(fromXs.get(), toXs.get(), t), lerp(fromYs.get(), toYs.get(), t)) };
   });
 
   const reportScrub = (index: number | null) => {
@@ -365,8 +324,9 @@ export function ProgressLineChart({
 
   // The latest value always gets a dot; a short series gets one on every point, because a
   // line through three sessions implies data that isn't there. One session is a lone dot.
-  const dots = plotted.length < DOT_ALL_BELOW ? plotted : [plotted[plotted.length - 1]];
-
+  // Dots ride their vertex, so they move with the line when the range changes.
+  const dotIndexes =
+    plotted.length < DOT_ALL_BELOW ? plotted.map((_, index) => index) : [plotted.length - 1];
   const [startLabel, endLabel] = axisLabels(points[0].date, points[points.length - 1].date);
 
   return (
@@ -385,9 +345,23 @@ export function ProgressLineChart({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {dots.map((dot) => (
-            <Circle key={dot.date} cx={dot.x} cy={dot.y} r={DOT_RADIUS} fill={colors.label} />
-          ))}
+          {plotted.length === 1 ? (
+            <Circle cx={plotted[0].x} cy={plotted[0].y} r={DOT_RADIUS} fill={colors.label} />
+          ) : (
+            dotIndexes.map((index) => (
+              <MorphDot
+                key={`${index}-${plotted.length}`}
+                index={index}
+                pointCount={plotted.length}
+                fromXs={fromXs}
+                fromYs={fromYs}
+                toXs={toXs}
+                toYs={toYs}
+                progress={progress}
+                color={colors.label}
+              />
+            ))
+          )}
         </Svg>
         <Animated.View
           pointerEvents="none"
@@ -430,4 +404,44 @@ export function ProgressLineChart({
       </View>
     </GestureDetector>
   );
+}
+
+function MorphDot({
+  index,
+  pointCount,
+  fromXs,
+  fromYs,
+  toXs,
+  toYs,
+  progress,
+  color,
+}: {
+  /** The session this dot marks, of `pointCount`; its vertex is found in the drawn line. */
+  index: number;
+  pointCount: number;
+  fromXs: SharedValue<number[]>;
+  fromYs: SharedValue<number[]>;
+  toXs: SharedValue<number[]>;
+  toYs: SharedValue<number[]>;
+  progress: SharedValue<number>;
+  color: string;
+}) {
+  const props = useAnimatedProps(() => {
+    const t = progress.get();
+    const count = toXs.get().length;
+    const vertex = index >= pointCount - 1 ? count - 1 : vertexFor(index, pointCount, count);
+    const x0 = fromXs.get()[vertex];
+    const x1 = toXs.get()[vertex];
+    const y0 = fromYs.get()[vertex];
+    const y1 = toYs.get()[vertex];
+    if (x1 == null || y1 == null) {
+      return { cx: 0, cy: 0, opacity: 0 };
+    }
+    return {
+      cx: (x0 ?? x1) + (x1 - (x0 ?? x1)) * t,
+      cy: (y0 ?? y1) + (y1 - (y0 ?? y1)) * t,
+      opacity: 1,
+    };
+  });
+  return <AnimatedCircle animatedProps={props} r={DOT_RADIUS} fill={color} />;
 }
