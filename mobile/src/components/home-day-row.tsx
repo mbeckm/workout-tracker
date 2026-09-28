@@ -12,10 +12,11 @@ import { useTheme } from '@/theme/theme-context';
 const OTHER_DAYS_MAX_SCALE = 1.35;
 
 /**
- * One of the plan's other days on Home: title 17 regular + a quiet meta row (`5 exercises
- * ~45 min`, or `Done Fri 25` once it's done this week). The third tier under Start: nothing
- * here is ink except an open day's title. A day done this week steps back (grey title, green
- * check), so the days still open carry the list. Tap opens the preview, where it can be started.
+ * One of the plan's other days on Home: title 17 regular + the meta row (`5 exercises · ~45 min`,
+ * or `Done Fri 25` once it's done this week), the same grey line as every other meta row. The
+ * third tier under Start: nothing here is ink except an open day's title. A day done this week
+ * steps back (grey title, green check), so the days still open carry the list. Tap opens the
+ * preview, where it can be started.
  */
 export function HomeDayRow({
   day,
@@ -59,12 +60,7 @@ export function HomeDayRow({
           maxFontSizeMultiplier={OTHER_DAYS_MAX_SCALE}>
           {day.title}
         </Text>
-        <MetaRow
-          items={meta}
-          tone="quiet"
-          maxScale={OTHER_DAYS_MAX_SCALE}
-          accessibilityLabel=""
-        />
+        <MetaRow items={meta} maxScale={OTHER_DAYS_MAX_SCALE} accessibilityLabel="" />
       </View>
       {doneThisWeek ? (
         <SymbolView name="checkmark" tintColor={colors.systemGreen} size={16} weight="semibold" />

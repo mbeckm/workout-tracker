@@ -57,12 +57,21 @@ export function DayPreviewBody({
         style={{ maxHeight: 420 }}
         contentContainerStyle={{ paddingBottom: 20 }}>
         {day.exercises.map((exercise) => (
-          // Read-only rows: the exercise sheet they used to open only held media.
+          // Read-only rows: the exercise sheet they used to open only held media. Same row as
+          // Home's list (name wraps to two lines, prescription in the meta grey, regular), so
+          // the drawer and Home read as one voice (G4).
           <View key={exercise.id} style={{ gap: 2, paddingVertical: 12 }}>
-            <Text style={type.row} numberOfLines={1}>
+            <Text style={type.row} numberOfLines={2}>
               {exercise.name}
             </Text>
-            <Text style={[type.kicker, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
+            <Text
+              style={{
+                fontSize: 15,
+                lineHeight: 20,
+                fontWeight: '400',
+                color: colors.tertiaryLabel,
+                fontVariant: ['tabular-nums'],
+              }}>
               {formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units)}
             </Text>
           </View>
@@ -81,7 +90,7 @@ export function DayPreviewBody({
   );
 }
 
-/** DP-2, as a meta row: `6 exercises  ~48 min  Done Thu 17`. */
+/** DP-2, as a meta row: `6 exercises · ~48 min · Done Thu 17`. */
 function previewMeta(plan: WorkoutPlan, day: WorkoutDay, history: LoggedWorkout[]): (MetaItem | null)[] {
   const minutes = estimateDayMinutes(plan, day, history);
   const doneAt = lastDoneAt(plan, day.id, history);

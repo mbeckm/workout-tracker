@@ -3,12 +3,7 @@ import { Stack, useIsFocused, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  FadeOutUp,
   interpolateColor,
-  LinearTransition,
   ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
@@ -40,21 +35,13 @@ import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/typ
 import { useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
-const VISIBLE_EXERCISES = 4;
-const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
 /**
- * Reduce Motion keeps opacity changes that explain a state. Reanimated's default would skip
- * them too (jump to the end), so the reduced-motion fades opt out explicitly.
+ * Home rhythm (F2, G6). One hero: the day name is the page's title, where every other tab has
+ * its title, with no label over it (an eyebrow on the biggest type in the app read as a second
+ * heading). The next workout is one object (title → meta → the whole list → Start, tight), then
+ * an unmistakable pause, then the week, then the other days under a real list header.
  */
-const FADE_IN_REDUCED = FadeIn.duration(160).reduceMotion(ReduceMotion.Never);
-const FADE_OUT_REDUCED = FadeOut.duration(140).reduceMotion(ReduceMotion.Never);
-
-/**
- * Home rhythm (F2). One hero: the day name, under a quiet `Next workout` label (the room title
- * no longer competes with it). The next workout is one object (label → title → meta → list →
- * Start, tight), then an unmistakable pause, then the week, then the other days.
- */
-const GAP_LABEL_TO_DAY = 2;
+const GAP_TITLE_TO_META = 6;
 const GAP_META_TO_LIST = 20;
 const GAP_LIST_TO_START = 12;
 const GAP_TO_WEEK = 64;
@@ -66,12 +53,12 @@ const GAP_TO_OTHER_DAYS = 40;
  * - day title 40 × 1.2 = 48 (hero)
  * - exercise list 17 × 1.8 ≈ 31, prescriptions and the hero's meta row 15 × 1.8 = 27
  * - week amount 20 × 1.5 = 30, `this week` 15 × 1.5 ≈ 23
- * - Other days 17 × 1.35 ≈ 23 (meta ≈ 20), captions 15 × 1.4 = 21
+ * - Other days header and rows 17 × 1.35 ≈ 23 (meta ≈ 20)
  * Below the caps everything follows Dynamic Type exactly.
  */
 const LIST_MAX_SCALE = 1.8;
 const WEEK_MAX_SCALE = 1.5;
-const CAPTION_MAX_SCALE = 1.4;
+const OTHER_DAYS_MAX_SCALE = 1.35;
 
 const factBase = {
   fontSize: 15,
@@ -83,11 +70,8 @@ export function WorkoutTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const reduceMotion = useReducedMotion();
-  const { activePlan, plans, nextDayIndex, savePlan, workoutHistory, activeSession } =
-    useWorkoutStore();
+  const { activePlan, nextDayIndex, savePlan, workoutHistory, activeSession } = useWorkoutStore();
   const startDay = useStartDay();
-  const [expandedForDayId, setExpandedForDayId] = useState<string | null>(null);
   const fact = { ...factBase, color: colors.tertiaryLabel };
 
   const createPlan = () => {
@@ -110,35 +94,35 @@ export function WorkoutTab() {
   // H-8: a workout in progress on this plan takes the stage until it's finished.
   const session = activePlan && activeSession?.planId === activePlan.id ? activeSession : null;
   const sessionDay = session ? activePlan?.days.find((item) => item.id === session.dayId) : undefined;
-  const day = sessionDay ?? activePlan?.days[nextDayIndex];
+  // A stale index (a day was just removed) falls back to the first day instead of a blank Home.
+  const day = sessionDay ?? activePlan?.days[nextDayIndex] ?? activePlan?.days[0];
   const resuming = session != null && sessionDay != null;
   const hasExercises = day != null && day.exercises.length > 0;
-  const overflow = day ? Math.max(0, day.exercises.length - VISIBLE_EXERCISES) : 0;
-  const expanded = day != null && expandedForDayId === day.id;
-  const head = day ? day.exercises.slice(0, VISIBLE_EXERCISES) : [];
-  const tail = day ? day.exercises.slice(VISIBLE_EXERCISES) : [];
 
   const weekStart = startOfLocalWeek();
   const doneIds = completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
   const total = activePlan ? trainableDays(activePlan).length : 0;
   const done = Math.min(doneIds.length, total);
 
-  // F8: the day's facts as a meta row. The plan name only rides along when there is more than
-  // one plan to tell apart; with one plan it's noise next to the numbers.
+  // F8/G2: the day's facts as a meta row, closed by the plan's name so Home always says which
+  // plan this is. Last and in plain grey: present, never louder than the counts.
   let dayMeta: (MetaItem | null)[] = [];
   if (activePlan && day) {
+    const planName = activePlan.name.trim();
+    const plan = planName ? meta.plan(planName) : null;
     if (resuming && session) {
       const plannedSets = day.exercises.reduce((sum, exercise) => sum + setCount(exercise), 0);
       dayMeta = [
         meta.started(formatClockTime(session.startedAt)),
         session.loggedSetCount > 0 ? meta.sets(session.loggedSetCount, plannedSets) : null,
+        plan,
       ];
     } else if (hasExercises) {
       const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
       dayMeta = [
         meta.exercises(day.exercises.length),
         minutes != null ? meta.minutes(minutes, { estimate: true }) : null,
-        plans.length > 1 && activePlan.name.trim() ? meta.plan(activePlan.name.trim()) : null,
+        plan,
       ];
     }
   }
@@ -156,43 +140,39 @@ export function WorkoutTab() {
       <PaperScreen contentContainerStyle={{ paddingBottom: insets.bottom + 88 }}>
         {activePlan ? (
           <View>
-            <View style={{ gap: GAP_LABEL_TO_DAY }}>
-              {/* A label, not a second title: the day name below is the hero (F2). */}
-              <Text
-                style={fact}
-                maxFontSizeMultiplier={CAPTION_MAX_SCALE}
-                accessibilityRole="header">
-                Next workout
-              </Text>
-              {day ? (
-                // F7: the day's identity is read-only. Its list is right below; Start is the action.
-                <View style={{ gap: 6 }} testID="home-next-day">
-                  <Text
-                    style={type.displayDay}
-                    accessibilityRole="header"
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
-                    maxFontSizeMultiplier={1.2}>
-                    {day.title}
+            {day ? (
+              // F7/G6: the day's identity is read-only and needs no label: it sits where every
+              // tab's title sits, its list is right below, and Start is the action. VoiceOver
+              // still hears what it is.
+              <View style={{ gap: GAP_TITLE_TO_META }} testID="home-next-day">
+                <Text
+                  style={type.displayDay}
+                  accessibilityRole="header"
+                  accessibilityLabel={`${resuming ? 'Workout in progress' : 'Next workout'}, ${day.title}`}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  maxFontSizeMultiplier={1.2}>
+                  {day.title}
+                </Text>
+                {hasExercises || resuming ? (
+                  <MetaRow items={dayMeta} testID="home-day-meta" />
+                ) : (
+                  <Text style={fact} testID="home-day-meta">
+                    No exercises yet
                   </Text>
-                  {hasExercises || resuming ? (
-                    <MetaRow items={dayMeta} testID="home-day-meta" />
-                  ) : (
-                    <Text style={fact} testID="home-day-meta">
-                      No exercises yet
-                    </Text>
-                  )}
-                </View>
-              ) : null}
-            </View>
+                )}
+              </View>
+            ) : null}
 
             {day && hasExercises ? (
-              <Animated.View
-                layout={reduceMotion ? undefined : LIST_LAYOUT}
-                style={{ paddingTop: GAP_META_TO_LIST, gap: GAP_LIST_TO_START }}>
-                <Animated.View
-                  layout={reduceMotion ? undefined : LIST_LAYOUT}
+              <View style={{ paddingTop: GAP_META_TO_LIST, gap: GAP_LIST_TO_START }}>
+                {/*
+                  G1: the whole day, always. A cut-off list read as an incomplete plan, and the
+                  count in the meta row now always matches the rows. Read-only (F7): tapping the
+                  list used to open a sheet that repeated it.
+                */}
+                <View
                   testID="home-exercise-list"
                   style={{
                     backgroundColor: colors.secondarySystemBackground,
@@ -200,96 +180,18 @@ export function WorkoutTab() {
                     borderCurve: 'continuous',
                     padding: spacing.md,
                     gap: spacing.s,
-                    overflow: 'hidden',
                   }}>
-                  {/* Read-only (F7): tapping the list used to open a sheet that repeated it. */}
-                  <View style={{ gap: spacing.s }}>
-                    {head.map((exercise, index) => (
-                      <ExerciseRow key={`${exercise.id}-${index}`} exercise={exercise} />
-                    ))}
-                    {expanded
-                      ? tail.map((exercise, index) => (
-                          <Animated.View
-                            key={`${exercise.id}-overflow-${index}`}
-                            entering={
-                              reduceMotion
-                                ? FADE_IN_REDUCED
-                                : FadeInDown.duration(200)
-                                    .delay(index * 28)
-                                    .easing(EASE_OUT)
-                                    .withInitialValues({
-                                      opacity: 0,
-                                      transform: [{ translateY: -8 }],
-                                    })
-                            }
-                            exiting={
-                              reduceMotion
-                                ? FADE_OUT_REDUCED
-                                : FadeOutUp.duration(180).easing(EASE_OUT)
-                            }
-                            layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                            <ExerciseRow exercise={exercise} />
-                          </Animated.View>
-                        ))
-                      : null}
-                  </View>
-                  {overflow > 0 ? (
-                    <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ expanded }}
-                        accessibilityLabel={
-                          expanded
-                            ? 'Show less'
-                            : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`
-                        }
-                        testID="home-more"
-                        onPress={() => setExpandedForDayId(expanded ? null : day.id)}
-                        hitSlop={{ top: 6, bottom: 16 }}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: spacing.s,
-                          width: '100%',
-                          minHeight: 44,
-                          opacity: pressed ? 0.7 : 1,
-                        })}>
-                        <Text
-                          style={[
-                            type.row,
-                            {
-                              flexGrow: 1,
-                              flexShrink: 1,
-                              minWidth: 0,
-                              color: expanded ? colors.tertiaryLabel : colors.label,
-                            },
-                          ]}
-                          numberOfLines={1}
-                          maxFontSizeMultiplier={LIST_MAX_SCALE}>
-                          {expanded
-                            ? 'Show less'
-                            : `${overflow} more ${overflow === 1 ? 'exercise' : 'exercises'}`}
-                        </Text>
-                        <SymbolView
-                          name={expanded ? 'chevron.up' : 'chevron.down'}
-                          tintColor={colors.tertiaryLabel}
-                          size={14}
-                          weight="medium"
-                          style={{ flexShrink: 0 }}
-                        />
-                      </Pressable>
-                    </Animated.View>
-                  ) : null}
-                </Animated.View>
-                <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                  <Button
-                    title={resuming ? 'Resume' : 'Start'}
-                    variant="black"
-                    testID={resuming ? 'home-resume' : 'home-start'}
-                    onPress={() => startDay(activePlan, day)}
-                  />
-                </Animated.View>
-              </Animated.View>
+                  {day.exercises.map((exercise, index) => (
+                    <ExerciseRow key={`${exercise.id}-${index}`} exercise={exercise} />
+                  ))}
+                </View>
+                <Button
+                  title={resuming ? 'Resume' : 'Start'}
+                  variant="black"
+                  testID={resuming ? 'home-resume' : 'home-start'}
+                  onPress={() => startDay(activePlan, day)}
+                />
+              </View>
             ) : null}
 
             {day && !hasExercises ? (
@@ -305,29 +207,26 @@ export function WorkoutTab() {
             ) : null}
 
             {total > 1 ? (
-              <Animated.View
-                layout={reduceMotion ? undefined : LIST_LAYOUT}
-                style={{ paddingTop: GAP_TO_WEEK }}>
+              <View style={{ paddingTop: GAP_TO_WEEK }}>
                 <WeekAmount done={done} total={total} onPress={() => router.push('/weeks')} />
-              </Animated.View>
+              </View>
             ) : onlyDayDoneAt ? (
-              <Animated.View
-                layout={reduceMotion ? undefined : LIST_LAYOUT}
-                style={{ paddingTop: GAP_TO_WEEK }}>
+              <View style={{ paddingTop: GAP_TO_WEEK }}>
                 <Text style={fact}>{formatDoneLabel(onlyDayDoneAt)}</Text>
-              </Animated.View>
+              </View>
             ) : null}
 
             {otherDays.length > 0 ? (
-              <Animated.View
-                layout={reduceMotion ? undefined : LIST_LAYOUT}
-                style={{ paddingTop: GAP_TO_OTHER_DAYS }}
-                testID="home-other-days">
-                {/* Names the list: without it the rows read as an unexplained table (H-1). */}
+              <View style={{ paddingTop: GAP_TO_OTHER_DAYS }} testID="home-other-days">
+                {/*
+                  Names the list (H-1: without it the rows read as an unexplained table). A list
+                  header in ink, 17 semibold over 17 regular rows, not a grey caption: it names
+                  a section, so it shouldn't look like a fact (G6).
+                */}
                 <Text
-                  style={[fact, { paddingBottom: 2 }]}
+                  style={[type.body, { fontWeight: '600', paddingBottom: 2 }]}
                   accessibilityRole="header"
-                  maxFontSizeMultiplier={CAPTION_MAX_SCALE}>
+                  maxFontSizeMultiplier={OTHER_DAYS_MAX_SCALE}>
                   Other days
                 </Text>
                 {otherDays.map((item, index) => {
@@ -355,24 +254,18 @@ export function WorkoutTab() {
                     />
                   );
                 })}
-              </Animated.View>
+              </View>
             ) : null}
           </View>
         ) : (
-          // Same label + hero as a planned Home, so the tab doesn't change voice when empty.
+          // Same hero as a planned Home, so the tab doesn't change voice when empty.
           <View testID="home-empty">
-            <View style={{ gap: GAP_LABEL_TO_DAY }}>
-              <Text
-                style={fact}
-                maxFontSizeMultiplier={CAPTION_MAX_SCALE}
-                accessibilityRole="header">
-                Next workout
-              </Text>
-              <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
-                No plan yet
-              </Text>
-            </View>
-            <Text style={[fact, { paddingTop: 6 }]}>Build your week once. Then just press Start.</Text>
+            <Text style={type.displayDay} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
+              No plan yet
+            </Text>
+            <Text style={[fact, { paddingTop: GAP_TITLE_TO_META }]}>
+              Build your week once. Then just press Start.
+            </Text>
             <View style={{ paddingTop: GAP_META_TO_LIST + 8 }}>
               <Button
                 title="Create plan"
