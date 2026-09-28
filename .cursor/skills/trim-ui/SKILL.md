@@ -60,7 +60,7 @@ Information lives on exactly one of four layers. Put it on the lowest layer that
 
 | Screen | Job | Winner | Primary action |
 | --- | --- | --- | --- |
-| Workout (Home) | What's next, and start it. How much of the week is done. | Day name (`display`) | Start (ink) |
+| Workout (Home) | What's next, and start it. How much of the week is done. | Day name (native large title) | Start (ink) |
 | Log | What this set needs right now. | Exercise name (`displayCompact`) | Log set (green) |
 | Done | What I just finished. | `Done` (`hero`) | Done (green) |
 | Plans | Which plan is active, which others exist. | Tab title | `+` (header) |
@@ -438,13 +438,49 @@ The Trade Republic part of Trim. A chart answers one question: is this going up?
 
 ---
 
-## 12. Per screen
+## 12. Money screens: onboarding, paywall, Pro gates
+
+These screens pay for Trim. They follow every rule above, plus these. The line we hold: **persuade with the truth, never with pressure.** A paywall that tricks someone earns one charge and loses a user, a review, and Apple's trust.
+
+### Onboarding
+
+1. **Every question changes the product.** Units, days a week, pick a plan: each answer shapes the plan they leave with. No questions for marketing, vanity or "personalization" that changes nothing (no "What's your goal?" unless the answer changes the plan). No "How did you hear about us?".
+2. **Value before asks.** It ends with a real, active plan the user picked, and Start is one tap away. No account, no notification or Health permission prompts during onboarding. Ask for a permission at the moment it's needed (Live Activity at the first rest timer), with the system prompt only.
+3. **Short.** Five screens or fewer, under a minute. One question per screen (`displayCompact`), choices as rows, ink Continue at the thumb. Back always works and keeps the answers.
+4. **Descriptions describe options, not the UI.** A plan choice may carry one `caption` line saying what it is (`Upper and lower body, twice each.`), because the name alone can't. Nothing explains how to use the screen.
+5. **The welcome is the one brand moment.** `hero` wordmark, one `lede` line, Continue. This is the rare tier, so it gets the delight budget. Every step after it is plain and fast.
+
+### Paywall
+
+6. **Only at the four moments** (`PRODUCT.md` → Trim Pro): the end of onboarding on the template path, once after the first completed workout, a Pro-locked tap, and Settings. Never during a workout, never on launch, never twice for the same moment. The post-workout paywall counts only once prices have rendered.
+7. **The headline matches why they're here.** A gate names its feature (`Unlimited plans` after tapping `+` on Plans), and the generic moments state the outcome. One headline, no subheading, no superlatives (`best`, `ultimate`), no exclamation marks.
+8. **Benefits are concrete outcomes of real features.** One row per Pro feature: symbol tile, `row` title, one `caption` line of 45 characters or fewer, written as what they get (`Weight and reps for every set.`), not as feature names. At most four rows.
+9. **Prices are the truth.** Every price comes from StoreKit through RevenueCat, is shown in full with its period (`$39.99 a year`), and is never replaced by a per-week or per-day number. A monthly equivalent may sit beside the annual price, never instead of it. No fake discounts, no strikethrough prices that were never charged.
+10. **The trial is explained by the timeline, not by copy.** Today (`lock.open.fill`, ink) → the charge day with its date and amount (`creditcard.fill`, grey). The CTA says what happens: `Start free trial` or `Subscribe`.
+11. **Leaving is always easy.** `Not now` is visible from the first frame, on glass, top right. No delayed close button, no second "are you sure" paywall, no guilt copy. Restore, Terms and Privacy sit under the CTA.
+12. **No pressure devices.** No countdowns, no "only today" offers, no fake scarcity, no invented social proof, no pre-selected add-ons, no animated or pulsing CTA. The annual plan may be preselected, with the monthly one a tap away.
+13. **Same system.** The same type ramp, ink CTA (never green: green means done or go in the gym), no gradients, no illustrations, no hero images. One visual device, the trial timeline, because it explains something.
+14. **Fits on one screen.** Everything, CTA and legal line included, fits above the fold on a 6.1" iPhone at default text size.
+
+### Pro gates
+
+15. **Locked, not hidden.** A Pro feature stays visible where it lives (a chip, a row, `+`) with a 13pt `lock.fill` where there's room. Tapping it opens the paywall for that reason. Never blur or grey out the user's own data.
+16. **Free stays whole.** Logging, history and the current plan are never gated, interrupted or nagged.
+17. **After purchase, the thing they paid for happens.** The paywall closes back to where they were and the gated action completes (a second plan starts being created, the range switches). No "Welcome to Pro" screen.
+
+### Changing a money screen
+
+18. **One change at a time, with a number.** Every change to onboarding or the paywall names the metric it should move (onboarding completion, `paywall_viewed` → `purchase_finished`, trial starts) and ships alone so its effect can be read in PostHog. Keep events free of workout contents.
+
+---
+
+## 13. Per screen
 
 Same system, different winner. Don't invent a type size for a screen.
 
 | Screen | Structure | Green |
 | --- | --- | --- |
-| **Home** | `tabTitle` `Next workout` → 8 → day `display` → 8 → meta `caption` (`plan · n exercises · ~Xm`). Exercise list as one object surface: `row` name + `caption` prescription (`4 × 8 reps · 60 kg`), no thumbnails. After ~4 rows, a peer row `n more exercises` + chevron.down that expands in place and ends with `Show less`. Ink Start sits 16 under the list. Week (`title` `n of m` + `caption` `this week` + dots) one `section` below. Then `Other days` caption + rows (title `row` + first exercise names `caption`; trailing green check if done this week). Tap day or list → preview sheet. | Completed dots + checks |
+| **Home** | The day name is the screen's native large title (`Push`), collapsing into the glass bar on scroll. Under it, one fact: the estimated duration (`~55 min`, the median of the last three sessions of this day, else the prescription estimate). No `Next workout` heading, no plan name (Plans owns it), no exercise count (the list shows it). Exercise list as one object surface: `row` name + `caption` prescription (`4 × 8 reps · 60 kg`), no thumbnails. After ~4 rows, a peer row `n more exercises` + chevron.down that expands in place and ends with `Show less`. Ink Start sits 16 under the list. Week (`title` `n of m` + `caption` `this week` + dots) one `section` below. Then `Other days` caption + rows (title `row` + first exercise names `caption`; trailing green check if done this week). Tap day or list → preview sheet. | Completed dots + checks |
 | **Day preview** (sheet) | Day `title`, rows `row` + `caption`, read-only. Ink Start at the thumb. | None |
 | **Log** | Header: Cancel (`body`, tertiary) · Finish (`button`). Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air), wells (labels `footnote`, numbers `displayCompact`), green `Log set`. The upper stage never moves (§12). | `Log set` + checks |
 | **Done** | `Done` `hero`, facts `caption`, then per exercise `row` name + one `caption` line per set (narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set; `RecapExercise`). Green Done at thumb. Scrolls, uncapped. | Done |
@@ -455,9 +491,9 @@ Same system, different winner. Don't invent a type size for a screen.
 | **History** | `tabTitle`. Month caption as an amount (`August · 4 sessions`). Session row: `row` title + `caption` (`Wed 13 · 5 exercises · 52 min`). Trailing PR pill (gray fill, yellow crown, count). Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, title `display`, facts `caption` (`when · duration · n exercises · n sets`), exercises as in Done. A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | `tabTitle`. `PaperRow` groups separated by `section` air: Weight, Appearance · Trim Pro, Restore purchases · Contact support ↗, Privacy Policy ↗, Terms of Use ↗ · Clear history (red). Values trail in `caption`. | None |
-| **Paywall** | `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, Restore · Terms · Privacy. All above the fold on a 6.3" phone. | None |
+| **Paywall** | Follows §12. `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, Restore · Terms · Privacy. All above the fold on a 6.3" phone. | None |
 | **Body check-in** | Native `formSheet`: Cancel · Check in · Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
-| **Onboarding** | One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
+| **Onboarding** | Follows §12. One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
 
 ### Home week details
 
@@ -466,7 +502,7 @@ Same system, different winner. Don't invent a type size for a screen.
 
 ---
 
-## 13. Log stage
+## 14. Log stage
 
 The hardest screen and the reference for all the others. Don't copy its layout onto other screens. Copy its rules.
 
@@ -478,13 +514,13 @@ The hardest screen and the reference for all the others. Don't copy its layout o
 
 ---
 
-## 14. Do not
+## 15. Do not
 
 Tables, status pills and badges (the History PR pill is the one exception), set-number circles, overlapping pills, heatmaps, achievement chrome, plan or exercise icons and thumbnails, decorative icons, hierarchy-only eyebrows, uppercase labels, motivational copy, helper text, gesture hints, gradients, shadows, bordered cards, chevrons on action rows, blue links, custom transitions, entrance animations, spinners for local data, sounds, confirmation dialogs for recoverable actions, gesture-only actions, custom gestures, opaque or recolored system bars, glass in content, chart gridlines and axis labels, lime green, Inter or any non-system font, off-ramp sizes and spacings, hex literals outside `theme.ts`.
 
 ---
 
-## 15. QA
+## 16. QA
 
 Before a screen ships, check it in light **and** dark, at default and at the largest capped Dynamic Type size, one-handed at arm's length, against this file and the Paper artboard. `npm run check` must pass.
 
@@ -496,13 +532,14 @@ Before a screen ships, check it in light **and** dark, at default and at the lar
 6. **Icons.** Each one encodes something. It has the right size for its neighbor and the right color for its meaning.
 7. **Motion.** Every animation is on the approved list. A tap shows a reaction within 100ms, its transition finishes within 200ms, and it degrades under reduced motion. Nothing animates on arrival.
 8. **Control.** Nothing happened that the user didn't ask for (`PRODUCT.md` → Control). Recoverable deletes offer Undo, irreversible ones confirm. Every gesture has a visible second path.
-9. **Gym.** Everything used mid-workout is in thumb reach. Leaving for another app and coming back lands on the same state with no animation. Nothing makes a sound.
-10. **Log only.** The upper stage doesn't move between set 1, rest, later sets and keyboard open. The keyboard never covers the wells or `Log set`.
-11. **Taste.** It reads as Trim, not as Hevy, Strong or Alpha Progression.
+9. **Money screens.** Onboarding, paywall and gates pass §12: honest price, visible exit, no pressure.
+10. **Gym.** Everything used mid-workout is in thumb reach. Leaving for another app and coming back lands on the same state with no animation. Nothing makes a sound.
+11. **Log only.** The upper stage doesn't move between set 1, rest, later sets and keyboard open. The keyboard never covers the wells or `Log set`.
+12. **Taste.** It reads as Trim, not as Hevy, Strong or Alpha Progression.
 
 ---
 
-## 16. Enforcement and migration debt
+## 17. Enforcement and migration debt
 
 **Enforced automatically.** `mobile/scripts/check-design-tokens.mjs` scans `mobile/src` for raw font sizes and weights, hex colors, off-scale and raw spacing, raw radii, durations, pressed opacities and icon sizes, and gesture-hint copy. It compares the counts with `mobile/design-tokens-baseline.json`, and it fails if any file gains a violation. Run `npm run check` (tsc + tokens) before every push. The GitHub Action `.github/workflows/checks.yml` runs it on every PR. When you clean a file up, run `node scripts/check-design-tokens.mjs --update` so the baseline ratchets down. Never raise the baseline to make a check pass.
 

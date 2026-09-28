@@ -68,3 +68,5 @@ Picked while porting Family loop into `mobile/`. Trim is usable; these are the c
     - **The gym setting** (artificial light, arm's length, short frequent visits, music, one hand) and the audience.
     - **Liquid Glass owned fully** for system chrome, never in content.
     - **Automatic token enforcement:** `npm run check` and a GitHub Action ratchet against `mobile/design-tokens-baseline.json`.
+35. **Home heading (Sep 2026).** Home drops `Next workout`. The day name becomes the native large title, with one fact under it: the estimated duration (`~55 min`), the most actionable fact for planning the day. The plan name moves a level down (Plans), and the exercise count goes because the list shows it.
+36. **Money screens (Sep 2026).** `trim-ui` §12 sets the rules for onboarding, the paywall and Pro gates: every onboarding question changes the product; paywalls only at the four moments, with a headline matching the reason; full StoreKit prices; the trial explained by the timeline; `Not now` always visible; no pressure devices; after purchase, the gated action completes; one measured change at a time.

@@ -23,7 +23,8 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 5. **The interface explains itself.** No info text, explainer subheadings, summaries, tips or tours. If something needs explaining, we fix the design.
 6. **Whitespace is confident.** We don't fill space for the sake of filling it. An empty-looking start is correct, and screens fill with the user's own work.
 7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Every touch gets a visible reaction within 100ms, and nothing waits on an animation.
-8. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments (a set landing, a week filling up), never from confetti or copy.
+8. **Earn the money honestly.** Trim Pro is sold with the truth: real prices from the App Store, a clear trial timeline, an exit that's always visible, and no pressure tricks. The paywall appears only at the four moments below, and free logging is never interrupted. See `trim-ui` → Money screens.
+9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments (a set landing, a week filling up), never from confetti or copy.
 
 ### Control
 
