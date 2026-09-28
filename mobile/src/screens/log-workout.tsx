@@ -867,10 +867,8 @@ export function LogWorkoutScreen() {
           justifyContent: 'center',
           gap: space.inset,
         }}>
-        <Text style={[type.planTitle, { textAlign: 'center' }]}>Start from a plan</Text>
-        <Text style={[type.kicker, { textAlign: 'center' }]}>
-          Open a training day from your plan.
-        </Text>
+        {/* A fact and one action (trim-ui §10 Empty); no helper line. */}
+        <Text style={[type.title, { textAlign: 'center' }]}>No workout open</Text>
         <Button title="Go to Workout" variant="black" onPress={() => router.replace('/')} />
       </View>
     );

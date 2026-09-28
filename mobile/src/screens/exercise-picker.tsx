@@ -33,7 +33,6 @@ import type {
   ExerciseJumpChipTitle,
 } from '@/catalog';
 import { Button } from '@/components/button';
-import { PaperBack } from '@/components/paper';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, withDay } from '@/domain/helpers';
 import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/types';
@@ -373,11 +372,9 @@ export function ExercisePickerScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + 16,
+          paddingTop: space.related,
           paddingHorizontal: space.gutter,
         }}>
-        <PaperBack onPress={() => router.back()} />
-        <Text style={[type.planTitle, { paddingBottom: space.inline }]}>Exercises</Text>
 
         <View
           style={{
@@ -597,7 +594,17 @@ export function ExercisePickerScreen() {
           />
         </View>
       </View>
-      <Stack.Screen options={{ headerShown: false, title: 'Exercises' }} />
+      {/* The system bar with its own back button and title: the search field sits right under
+          it, so the title stays inline instead of a large title over the list. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerShadowVisible: false,
+          headerTintColor: colors.label,
+          headerTitleStyle: { color: colors.label },
+          title: 'Exercises',
+        }}
+      />
     </>
   );
 }
