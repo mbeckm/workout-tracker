@@ -2,6 +2,7 @@ import { Link, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View, type AccessibilityActionEvent } from 'react-native';
 
+import { formatExerciseNames } from '@/domain/day-facts';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
@@ -91,7 +92,7 @@ export function PlanDetailDayRow({
             </Text>
             {count > 0 ? (
               <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={2}>
-                {names.join(' · ')}
+                {formatExerciseNames(names)}
               </Text>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

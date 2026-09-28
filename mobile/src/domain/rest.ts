@@ -42,7 +42,7 @@ function haystack(hints: SizeHints): string {
     ...(hints.secondaryMuscles ?? []),
   ]
     .map(normalized)
-    .join(' · ');
+    .join('\n');
 }
 
 const SMALL_NAME = [

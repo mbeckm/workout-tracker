@@ -180,12 +180,12 @@ export function groupExercisesForBrowse(input: {
   return sections;
 }
 
-/** Equipment · section meta line for picker rows. */
+/** Picker row meta in words: `Barbell, chest` (trim-ui → Copy → Separating facts). */
 export function exercisePickerMeta(exercise: ExercisePrescription): string {
   const equipment = exercise.equipments[0]?.trim() ?? '';
   const section = exerciseBrowseSection(exercise);
   if (equipment && section !== 'Other') {
-    return `${equipment} · ${section}`;
+    return `${equipment}, ${section.toLowerCase()}`;
   }
   if (equipment) {
     return equipment;

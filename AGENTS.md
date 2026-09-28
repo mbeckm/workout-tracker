@@ -76,7 +76,7 @@ Cloud sessions (claude.ai/code) can't run the iOS Simulator. Marvin tests on his
 
 ## Exercise catalog
 
-Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalog/bundled.ts`, ~200 exercises, no third-party data) plus user-created custom exercises. Search, browse and Alternatives never touch the network, and no exercise media ships. Rows lead with the name; the picker meta line (`Equipment · Section`) tells variants apart.
+Production is **local-only**: Trim's own first-party catalog (`mobile/src/catalog/bundled.ts`, ~200 exercises, no third-party data) plus user-created custom exercises. Search, browse and Alternatives never touch the network, and no exercise media ships. Rows lead with the name; the picker meta line (`Barbell, chest`) tells variants apart.
 
 - **One switch:** `mobile/src/catalog/config.ts` (`CATALOG.media`, `CATALOG.remote`). Both default off; `eas.json` pins them off for `production`. See `mobile/.env.example`.
 - **ExerciseDB is dev-only behind flags.** `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=oss` enables the non-commercial OSS host in `__DEV__` builds only. `rapidapi` needs a key plus a base URL (a proxy for store builds). Never hardcode an ExerciseDB host or media URL, and never ship ExerciseDB data or media in a paid build.

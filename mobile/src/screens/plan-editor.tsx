@@ -8,6 +8,7 @@ import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/componen
 import { PlanDetailDayRow } from '@/components/plan-detail-day-row';
 import { Button } from '@/components/button';
 import { PaperBack } from '@/components/paper';
+import { space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
@@ -172,19 +173,16 @@ export function PlanEditorScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
-            paddingTop: 4,
-            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            gap: space.inline,
+            paddingTop: space.tight,
           }}>
-          <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{dayMeta}</Text>
+          <Text style={[type.kicker, { color: colors.tertiaryLabel, flexShrink: 1 }]}>{dayMeta}</Text>
           {isActive ? (
-            <>
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>·</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={14} weight="medium" />
-                <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
-              </View>
-            </>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
+              <SymbolView name="checkmark" tintColor={colors.systemGreen} size={14} weight="medium" />
+              <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
+            </View>
           ) : null}
         </View>
         <ScrollView

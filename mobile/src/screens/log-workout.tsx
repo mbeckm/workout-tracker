@@ -47,10 +47,12 @@ import {
   durationIsMinutes,
   emptyLoggedSet,
   formatHistoryWhenInMonth,
+  exerciseDetail,
   formatLoggedSetLine,
   formatPlanMetric,
   formatSetsCount,
   parsePositiveNumber,
+  spokenWhen,
   usesDuration,
   usesReps,
   usesWeight,
@@ -1236,7 +1238,8 @@ export function LogWorkoutScreen() {
               <DaySheetRow
                 key={exercise.prescription.id}
                 name={exercise.prescription.name}
-                meta={index === exerciseIndex ? `Now · ${progress}` : progress}
+                meta={progress}
+                current={index === exerciseIndex}
                 complete={exerciseIsComplete(exercise)}
                 index={index}
                 count={drafts.length}
@@ -1702,6 +1705,7 @@ function LogWell({
 function DaySheetRow({
   name,
   meta,
+  current,
   complete,
   index,
   count,
@@ -1710,6 +1714,8 @@ function DaySheetRow({
 }: {
   name: string;
   meta: string;
+  /** The exercise on the stage: `Now` in the trailing lane (trim-ui → Separating facts → Lanes). */
+  current: boolean;
   complete: boolean;
   index: number;
   count: number;
@@ -1800,7 +1806,7 @@ function DaySheetRow({
       <Pressable
         onPress={onJump}
         accessibilityRole="button"
-        accessibilityLabel={`${name}, ${complete ? 'done' : meta}`}
+        accessibilityLabel={`${name}, ${complete ? 'done' : meta}${current ? ', now' : ''}`}
         accessibilityActions={actions}
         onAccessibilityAction={onAccessibilityAction}
         style={{ flex: 1, paddingLeft: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -1816,6 +1822,8 @@ function DaySheetRow({
             tintColor={colors.systemGreen}
             fallback={<Text style={{ fontSize: 17, fontWeight: '700', color: colors.systemGreen }}>✓</Text>}
           />
+        ) : current ? (
+          <Text style={type.kicker}>Now</Text>
         ) : null}
       </Pressable>
     </Animated.View>
@@ -1844,16 +1852,14 @@ function LogExerciseSheet({
   onSwap: (next: ExercisePrescription) => void;
 }) {
   const { type } = useTheme();
-  const muscle = exercise.targetMuscles[0];
-  const equipment = exercise.equipments[0];
-  const detail = [muscle, equipment].filter(Boolean).join(' · ');
+  const detail = exerciseDetail(exercise);
   const targetSets = targets?.every((target) => target != null) ? (targets as SetTarget[]) : null;
   const facts: { label: string; value: string; spoken?: string }[] = [
     { label: 'Plan', value: formatPlanMetric(exercise) },
     {
       label: 'Last time',
       value: previous
-        ? `${formatSetsCompact(previous.sets, { minutes })} · ${formatHistoryWhenInMonth(previous.completedAt)}`
+        ? `${formatSetsCompact(previous.sets, { minutes })} ${spokenWhen(formatHistoryWhenInMonth(previous.completedAt))}`
         : 'First time',
     },
     ...(targetSets
@@ -1872,7 +1878,7 @@ function LogExerciseSheet({
       ? [
           {
             label: 'Best',
-            value: `${formatLoggedSetLine(best.set, { minutes, unit: units })} · ${formatShortDate(best.completedAt)}`,
+            value: `${formatLoggedSetLine(best.set, { minutes, unit: units })} ${spokenWhen(formatShortDate(best.completedAt))}`,
           },
         ]
       : []),

@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { LastTimeLine } from '@/components/last-time-line';
+import { space } from '@/constants/theme';
 import { formatLoggedSetLine } from '@/domain/helpers';
 import { lastTimeSetFor } from '@/domain/log-session';
 import { spokenTargetLine, type SetTarget, type TargetUnits } from '@/domain/targets';
@@ -26,8 +27,8 @@ export type TargetLineProps = {
 };
 
 /**
- * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8 · Last time 85 kg × 8` on one
- * line, the target a notch stronger. Free: `Last time 85 kg × 8`, with a trailing
+ * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8` in label ink, with
+ * `Last time 85 kg × 8` in the trailing lane. Free: `Last time 85 kg × 8`, with a trailing
  * `Target ›` when a target exists. Always one line, so the upper stage never jumps.
  */
 export function TargetLine({
@@ -46,17 +47,20 @@ export function TargetLine({
   if (unlocked && onStage) {
     const last = lastTimeSetFor(previousSets, setIndex);
     return (
-      <Text
-        numberOfLines={1}
+      <View
         testID="log-target"
         accessible
         accessibilityLabel={spokenTargetLine(target, last, units)}
-        style={[caption, { color: colors.tertiaryLabel }]}>
-        <Text style={{ color: colors.secondaryLabel, fontWeight: '600' }}>
+        style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
+        <Text numberOfLines={1} style={[caption, { color: colors.label, flexShrink: 1 }]}>
           {`Target ${formatLoggedSetLine(target, { minutes, unit: units })}`}
         </Text>
-        {last ? ` · Last time ${formatLoggedSetLine(last, { minutes, unit: units })}` : null}
-      </Text>
+        {last ? (
+          <Text numberOfLines={1} style={[caption, { color: colors.tertiaryLabel, flexShrink: 1 }]}>
+            {`Last time ${formatLoggedSetLine(last, { minutes, unit: units })}`}
+          </Text>
+        ) : null}
+      </View>
     );
   }
 

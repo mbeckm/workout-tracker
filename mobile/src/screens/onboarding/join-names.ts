@@ -1,10 +1,13 @@
-const NBSP = ' ';
+const NBSP = ' ';
 
 /**
- * `A · B · C` for wrapping text. Lines break only between names: each name keeps its
- * words together, and each dot stays with the name before it, so a wrapped line never
- * splits "Lat Pulldown" or starts with a stray `·`.
+ * `Push, Pull and Legs` for wrapping text, every name shown (trim-ui → Copy → Separating
+ * facts). Each name keeps its words together, so a wrapped line never splits "Lat Pulldown".
  */
 export function joinNames(names: readonly string[]): string {
-  return names.map((name) => name.replace(/ /g, NBSP)).join(`${NBSP}· `);
+  const kept = names.map((name) => name.replace(/ /g, NBSP));
+  if (kept.length <= 1) {
+    return kept[0] ?? '';
+  }
+  return `${kept.slice(0, -1).join(', ')} and ${kept[kept.length - 1]}`;
 }

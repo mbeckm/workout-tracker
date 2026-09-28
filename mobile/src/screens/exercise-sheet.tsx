@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatPlanMetric } from '@/domain/helpers';
+import { exerciseDetail, formatPlanMetric } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -12,7 +12,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 /**
  * Not linked from anywhere in 1.0: day-preview rows are read-only (DP-1). Kept as a plain
- * fact sheet (name, muscle · equipment, plan) so re-linking it never shows a media placeholder.
+ * fact sheet (name, equipment and muscle, plan) so re-linking it never shows a media placeholder.
  */
 export function ExerciseSheetScreen() {
   const { colors, type } = useTheme();
@@ -38,9 +38,7 @@ export function ExerciseSheetScreen() {
     );
   }
 
-  const muscle = exercise.targetMuscles[0];
-  const equipment = exercise.equipments[0];
-  const detail = [muscle, equipment].filter(Boolean).join(' · ');
+  const detail = exerciseDetail(exercise);
 
   return (
     <>

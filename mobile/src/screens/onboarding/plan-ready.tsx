@@ -71,5 +71,5 @@ function planMeta(plan: WorkoutPlan): string {
   const count = plan.days.length;
   const average = plan.days.reduce((sum, day) => sum + dayMinutes(day), 0) / Math.max(count, 1);
   const minutes = Math.max(5, Math.round(average / 5) * 5);
-  return `${count} days · ~${minutes} min each`;
+  return `${count} days, ~${minutes} min each`;
 }

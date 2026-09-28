@@ -40,7 +40,7 @@ export function PrCrown({ size = 13 }: { size?: number }) {
   );
 }
 
-/** History row trailing: quiet grey pill with crown · n · PR / PRs. */
+/** History row trailing: quiet grey pill with the crown, the count and `PR` or `PRs`. */
 export function PrCrownCount({ count }: { count: number }) {
   const { colors, type } = useTheme();
   if (count <= 0) {

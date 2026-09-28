@@ -148,26 +148,6 @@ export function formatLoggedSetTotal(workout: Pick<LoggedWorkout, 'setCount' | '
   return formatSetsCount(loggedSetTotal(workout));
 }
 
-const SPOKEN_UNITS = { kg: 'weights in kilograms', lbs: 'weights in pounds' } as const;
-
-/**
- * One facts line with the weight unit stated once at the end (G-9):
- * `Push · 58 min · 19 sets · 3 PRs · kg`. Set lines below it stay unitless.
- */
-export function recapFacts(
-  parts: (string | null | false | undefined)[],
-  unit: 'kg' | 'lbs' | null,
-): { text: string; accessibilityLabel: string } {
-  const kept = parts.filter((part): part is string => Boolean(part));
-  return {
-    text: [...kept, unit].filter(Boolean).join(' · '),
-    accessibilityLabel: [...kept, unit ? SPOKEN_UNITS[unit] : null]
-      .filter(Boolean)
-      .join(', ')
-      .replace(/ · /g, ', '),
-  };
-}
-
 export function formatPrCount(count: number): string {
   return count === 1 ? '1 PR' : `${count} PRs`;
 }
