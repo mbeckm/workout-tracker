@@ -2,6 +2,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/theme-context';
+import { iconSize, PRESSED_OPACITY, space } from '@/constants/theme';
 
 /** Shared plan / day editor rhythm: list hangs 32 under the hero; destructive group at 48. */
 export const EDITOR_LIST_TOP = 32;
@@ -41,10 +42,10 @@ export function EditorActionRow({
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: space.inline,
         width: '100%',
-        paddingVertical: 14,
-        opacity: pressed ? 0.7 : 1,
+        paddingVertical: space.inset,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
       <View
         style={{
@@ -54,7 +55,7 @@ export function EditorActionRow({
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-        <SymbolView name={symbol} tintColor={color} size={18} weight="medium" />
+        <SymbolView name={symbol} tintColor={color} size={iconSize.row} weight="medium" />
       </View>
       <Text style={[type.row, { color, flexShrink: 1, minWidth: 0 }]} numberOfLines={1}>
         {title}

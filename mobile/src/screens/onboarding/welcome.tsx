@@ -8,6 +8,7 @@ import { useWorkoutStore } from '@/store/workout-store';
 
 import { OnboardingFrame } from './frame';
 import { localeUnits } from './locale-units';
+import { space } from '@/constants/theme';
 
 /** Step 1: what Trim is. No Skip: the only way out of onboarding is with a plan. */
 export function OnboardingWelcome() {
@@ -24,7 +25,7 @@ export function OnboardingWelcome() {
 
   return (
     <OnboardingFrame back={false} centered action={{ title: 'Continue', onPress: next }} testID="onboarding-welcome">
-      <Animated.View entering={enterUp(Boolean(reduceMotion))} style={{ gap: 10 }}>
+      <Animated.View entering={enterUp(Boolean(reduceMotion))} style={{ gap: space.related }}>
         <Text accessibilityRole="header" style={type.hero} maxFontSizeMultiplier={1.2}>
           Trim
         </Text>

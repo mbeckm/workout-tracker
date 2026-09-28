@@ -13,8 +13,9 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { PaperGrabber } from '@/components/paper';
-import { darkColors, lightColors, radius } from '@/constants/theme';
+import { darkColors, lightColors, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
+import { SPRING } from '@/motion';
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -29,10 +30,9 @@ function rubberband(overshoot: number, dimension: number, constant = 0.55) {
 /** Light dims the page; dark needs more, or the scrim vanishes on a black page. */
 const SCRIM = { light: lightColors.scrim, dark: darkColors.scrim } as const;
 
-const SPRING_SHEET = { duration: 300, dampingRatio: 0.8, reduceMotion: ReduceMotion.System } as const;
+const SPRING_SHEET = { ...SPRING.fling, reduceMotion: ReduceMotion.System } as const;
 const SPRING_DISMISS = {
-  duration: 280,
-  dampingRatio: 1,
+  ...SPRING.settle,
   overshootClamping: true,
   reduceMotion: ReduceMotion.System,
 } as const;
@@ -333,8 +333,8 @@ export function AnimatedSheet({
                 borderColor: colors.separator,
               }
             : null),
-          paddingHorizontal: 24,
-          paddingTop: 8,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
           overflow: 'hidden',
         },
         sheetStyle,

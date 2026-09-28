@@ -1,18 +1,20 @@
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, Alert, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
 import { PlanDetailDayRow } from '@/components/plan-detail-day-row';
 import { Button } from '@/components/button';
-import { PaperBack } from '@/components/paper';
+import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
+import { largeTitleOptions } from '@/navigation/large-title';
 import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
+import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 export function PlanEditorScreen() {
@@ -27,6 +29,7 @@ export function PlanEditorScreen() {
   const insets = useSafeAreaInsets();
   const { plans, activePlanId, updatePlan, activatePlan, deletePlan, isPro } =
     useWorkoutStore();
+  const { removePlan, removeDay: removeDayWithUndo } = useUndoableDeletes();
   const plan = plans.find((item) => item.id === id);
   const planRef = useRef(plan);
   const deletedRef = useRef(false);
@@ -54,6 +57,49 @@ export function PlanEditorScreen() {
       }
     });
   }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed]);
+
+  // The name is the native large title, so it's edited in the system text prompt.
+  const renamePlan = () => {
+    const current = planRef.current;
+    if (!current) {
+      return;
+    }
+    Alert.prompt(
+      current.name.trim() ? 'Rename plan' : 'Name this plan',
+      undefined,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          isPreferred: true,
+          onPress: (value?: string) => {
+            const latest = planRef.current;
+            if (latest) {
+              updatePlan({ ...latest, name: (value ?? '').trim() });
+            }
+          },
+        },
+      ],
+      'plain-text',
+      current.name,
+    );
+  };
+
+  // A new plan asks for its name once it has slid in, where the old editor focused the name.
+  useEffect(() => {
+    if (!openedUnnamed) {
+      return;
+    }
+    let asked = false;
+    return navigation.addListener('transitionEnd' as never, (event: { data?: { closing?: boolean } }) => {
+      if (!asked && !event.data?.closing) {
+        asked = true;
+        renamePlan();
+      }
+    });
+    // Once per visit: renamePlan reads the latest plan through planRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation, openedUnnamed]);
 
   if (!plan) {
     return <View style={{ flex: 1, backgroundColor: colors.systemBackground }} />;
@@ -109,23 +155,11 @@ export function PlanEditorScreen() {
       Alert.alert('Keep one day', 'A plan needs at least one training day.');
       return;
     }
-    const day = plan.days.find((item) => item.id === dayId);
-    Alert.alert('Remove day?', day?.title ?? 'This day', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () =>
-          updatePlan({
-            ...plan,
-            days: plan.days.filter((item) => item.id !== dayId),
-            daysPerWeek: plan.days.length - 1,
-          }),
-      },
-    ]);
+    removeDayWithUndo(plan, dayId);
   };
 
   const named = plan.name.trim().length > 0;
+
   const hasExercises = plan.days.some((day) => day.exercises.length > 0);
   const showDone = isNew && hasExercises;
 
@@ -145,53 +179,29 @@ export function PlanEditorScreen() {
 
   return (
     <>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + 16,
-          paddingHorizontal: 24,
-        }}>
-        <PaperBack onPress={() => router.back()} />
-        <TextInput
-          value={plan.name}
-          onChangeText={(name) => updatePlan({ ...plan, name })}
-          placeholder="Untitled"
-          placeholderTextColor={colors.tertiaryLabel}
-          accessibilityLabel="Plan name"
-          autoFocus={!named}
-          returnKeyType="done"
-          submitBehavior="blurAndSubmit"
-          scrollEnabled={false}
-          maxFontSizeMultiplier={1.2}
-          // No lineHeight on the input: iOS applies it to typed text but not the placeholder,
-          // so the first letter would shift the baseline. A fixed height holds the frame.
-          style={[type.displayDay, { lineHeight: undefined, height: 46, padding: 0, margin: 0 }]}
-        />
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            paddingTop: 4,
-            flexWrap: 'wrap',
+      <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            paddingHorizontal: space.gutter,
+            paddingBottom: showDone ? space.gutter : insets.bottom + space.gutter,
           }}>
-          <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{dayMeta}</Text>
-          {isActive ? (
-            <>
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>·</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={14} weight="medium" />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: space.inline,
+            }}>
+            <Text style={[type.kicker, { color: colors.tertiaryLabel, flexShrink: 1 }]}>{dayMeta}</Text>
+            {isActive ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
+                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
                 <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
               </View>
-            </>
-          ) : null}
-        </View>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={false}
-          contentContainerStyle={{ paddingBottom: showDone ? 24 : insets.bottom + 24 }}>
+            ) : null}
+          </View>
           <View style={{ paddingTop: EDITOR_LIST_TOP }}>
             {plan.days.map((day, index) => (
               <PlanDetailDayRow
@@ -212,6 +222,7 @@ export function PlanEditorScreen() {
             <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
           </View>
           <View style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+            <EditorActionRow title="Rename plan" symbol="pencil" onPress={renamePlan} testID="plan-rename" />
             {isActive ? null : (
               <EditorActionRow
                 title={isPro ? 'Use this plan' : 'Use this plan (Pro)'}
@@ -228,32 +239,33 @@ export function PlanEditorScreen() {
                 title="Delete plan"
                 symbol="trash"
                 tone="destructive"
-                onPress={() =>
-                  Alert.alert('Delete plan?', plan.name.trim() || 'Untitled plan', [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: () => {
-                        // Leaving by Delete must not confirm the plan it just removed.
-                        deletedRef.current = true;
-                        deletePlan(plan);
-                        router.back();
-                      },
-                    },
-                  ])
-                }
+                onPress={() => {
+                  // Leaving by Delete must not confirm the plan it just removed.
+                  deletedRef.current = true;
+                  removePlan(plan);
+                  router.back();
+                }}
               />
             ) : null}
           </View>
         </ScrollView>
         {showDone ? (
-          <View style={{ paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12) }}>
+          <View
+            style={{
+              paddingHorizontal: space.gutter,
+              paddingTop: space.related,
+              paddingBottom: Math.max(insets.bottom, space.inset),
+            }}>
             <Button title="Done" variant="black" testID="plan-done" onPress={finish} />
           </View>
         ) : null}
       </View>
-      <Stack.Screen options={{ headerShown: false, title: named ? 'Plan' : 'New plan', keyboardHandlingEnabled: false }} />
+      <Stack.Screen
+        options={{
+          ...largeTitleOptions(colors, named ? plan.name.trim() : 'New plan'),
+          headerBackTitle: 'Plans',
+        }}
+      />
     </>
   );
 }

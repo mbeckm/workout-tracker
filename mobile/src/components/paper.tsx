@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { radius, spacing } from '@/constants/theme';
+import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 export function PaperScreen({
@@ -30,9 +30,9 @@ export function PaperScreen({
         contentContainerStyle={[
           {
             flexGrow: 1,
-            paddingTop: insets.top + 28,
-            paddingHorizontal: 24,
-            paddingBottom: insets.bottom + 12,
+            paddingTop: insets.top + space.gutter,
+            paddingHorizontal: space.gutter,
+            paddingBottom: insets.bottom + space.inline,
           },
           contentContainerStyle,
         ]}>
@@ -58,67 +58,24 @@ export function PaperScreen({
 }
 
 /**
- * Stage empty: optional room title (28) + subject + optional fact caption + optional black CTA.
- * With a room title the subject is 40, like a Home day; without one it stays the 56 display.
+ * Empty state under the native large title: the fact in `title` (`No plans yet`) and one ink
+ * action if there is one. No caption (trim-ui §10).
  */
 export function PaperEmpty({
-  title,
   subject,
-  caption,
   action,
   testID,
 }: {
-  title?: string;
   subject: string;
-  caption?: string;
   action?: { title: string; onPress: () => void; testID?: string };
   testID?: string;
 }) {
-  const { colors, type } = useTheme();
-  if (title) {
-    return (
-      <View testID={testID} style={{ flex: 1 }}>
-        <View style={{ gap: spacing.s }}>
-          <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
-            {title}
-          </Text>
-          <View style={{ gap: spacing.sm }}>
-            <Text style={type.displayDay} maxFontSizeMultiplier={1.2}>
-              {subject}
-            </Text>
-            {caption ? (
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{caption}</Text>
-            ) : null}
-          </View>
-        </View>
-        {action ? (
-          <View style={{ paddingTop: 28 }}>
-            <Button
-              title={action.title}
-              variant="black"
-              onPress={action.onPress}
-              testID={action.testID}
-            />
-          </View>
-        ) : null}
-      </View>
-    );
-  }
+  const { type } = useTheme();
   return (
-    <View testID={testID} style={{ gap: spacing.s, flex: 1 }}>
-      <View style={{ gap: spacing.sm }}>
-        <Text style={type.display} maxFontSizeMultiplier={1.2}>
-          {subject}
-        </Text>
-        {caption ? <Text style={type.kicker}>{caption}</Text> : null}
-      </View>
+    <View testID={testID} style={{ flex: 1, gap: space.gutter }}>
+      <Text style={type.title}>{subject}</Text>
       {action ? (
-        <Button
-          title={action.title}
-          variant="black"
-          onPress={action.onPress}
-          testID={action.testID}
-        />
+        <Button title={action.title} variant="black" onPress={action.onPress} testID={action.testID} />
       ) : null}
     </View>
   );
@@ -137,14 +94,14 @@ export function PaperBack({ onPress, label }: { onPress: () => void; label?: str
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingTop: 4,
-        paddingBottom: 12,
-        opacity: pressed ? 0.55 : 1,
+        gap: space.tight,
+        paddingTop: space.tight,
+        paddingBottom: space.inline,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <SymbolView name="chevron.left" tintColor={colors.label} size={20} weight="medium" />
+      <SymbolView name="chevron.left" tintColor={colors.label} size={iconSize.control} weight="medium" />
       {label ? (
-        <Text style={[type.body, { color: colors.label, fontWeight: '400' }]}>{label}</Text>
+        <Text style={[type.body, { color: colors.label }]}>{label}</Text>
       ) : null}
     </Pressable>
   );
@@ -175,7 +132,7 @@ export function PaperRow({
     <SymbolView
       name="arrow.up.right"
       tintColor={colors.tertiaryLabel}
-      size={14}
+      size={iconSize.caption}
       weight="semibold"
       fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>↗</Text>}
     />
@@ -195,11 +152,11 @@ export function PaperRow({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        paddingVertical: 14,
-        gap: 12,
-        opacity: pressed && onPress ? 0.7 : 1,
+        paddingVertical: space.inset,
+        gap: space.inline,
+        opacity: pressed && onPress ? PRESSED_OPACITY : 1,
       })}>
-      <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+      <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
         <Text
           style={[type.row, destructive ? { color: colors.systemRed } : null]}
           numberOfLines={2}
@@ -232,7 +189,7 @@ export function PaperLink({
       accessibilityRole="button"
       onPress={onPress}
       testID={testID}
-      style={({ pressed }) => ({ paddingTop: 16, opacity: pressed ? 0.55 : 1 })}>
+      style={({ pressed }) => ({ paddingTop: space.inset, opacity: pressed ? PRESSED_OPACITY : 1 })}>
       <Text style={[type.kicker, { textAlign: 'center' }]}>{title}</Text>
     </Pressable>
   );
@@ -241,7 +198,7 @@ export function PaperLink({
 export function PaperGrabber() {
   const { colors } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 12 }}>
+    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: space.inline }}>
       <View
         style={{
           width: 36,
@@ -271,8 +228,8 @@ export function PaperSheetFrame({
           borderTopLeftRadius: radius.lg,
           borderTopRightRadius: radius.lg,
           borderCurve: 'continuous',
-          paddingHorizontal: 24,
-          paddingTop: 8,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
         }}>
         <PaperGrabber />
         {children}

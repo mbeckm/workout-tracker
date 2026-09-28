@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { LastTimeLine } from '@/components/last-time-line';
+import { PRESSED_OPACITY, space } from '@/constants/theme';
 import { formatLoggedSetLine } from '@/domain/helpers';
 import { lastTimeSetFor } from '@/domain/log-session';
 import { spokenTargetLine, type SetTarget, type TargetUnits } from '@/domain/targets';
@@ -26,8 +27,8 @@ export type TargetLineProps = {
 };
 
 /**
- * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8 · Last time 85 kg × 8` on one
- * line, the target a notch stronger. Free: `Last time 85 kg × 8`, with a trailing
+ * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8` in label ink, with
+ * `Last time 85 kg × 8` in the trailing lane. Free: `Last time 85 kg × 8`, with a trailing
  * `Target ›` when a target exists. Always one line, so the upper stage never jumps.
  */
 export function TargetLine({
@@ -40,29 +41,32 @@ export function TargetLine({
   onUnlock,
 }: TargetLineProps) {
   const { colors, type } = useTheme();
-  const caption = [type.kicker, { fontWeight: '400' as const, fontVariant: ['tabular-nums' as const] }];
+  const caption = [type.kicker, { fontVariant: ['tabular-nums' as const] }];
   const onStage = setIndex !== 'all' && target != null;
 
   if (unlocked && onStage) {
     const last = lastTimeSetFor(previousSets, setIndex);
     return (
-      <Text
-        numberOfLines={1}
+      <View
         testID="log-target"
         accessible
         accessibilityLabel={spokenTargetLine(target, last, units)}
-        style={[caption, { color: colors.tertiaryLabel }]}>
-        <Text style={{ color: colors.secondaryLabel, fontWeight: '600' }}>
+        style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
+        <Text numberOfLines={1} style={[caption, { color: colors.label, flexShrink: 1 }]}>
           {`Target ${formatLoggedSetLine(target, { minutes, unit: units })}`}
         </Text>
-        {last ? ` · Last time ${formatLoggedSetLine(last, { minutes, unit: units })}` : null}
-      </Text>
+        {last ? (
+          <Text numberOfLines={1} style={[caption, { color: colors.tertiaryLabel, flexShrink: 1 }]}>
+            {`Last time ${formatLoggedSetLine(last, { minutes, unit: units })}`}
+          </Text>
+        ) : null}
+      </View>
     );
   }
 
   if (!unlocked && onStage && onUnlock) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
         <View style={{ flexShrink: 1 }}>
           <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} units={units} />
         </View>
@@ -73,7 +77,7 @@ export function TargetLine({
           accessibilityLabel="Target"
           accessibilityHint="Trim Pro suggests the weight and reps for each set."
           hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+          style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
           <Text numberOfLines={1} style={[caption, { color: colors.secondaryLabel }]}>
             Target ›
           </Text>

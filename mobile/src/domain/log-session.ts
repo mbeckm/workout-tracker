@@ -403,7 +403,7 @@ export function lastTimeSetFor(
 }
 
 /**
- * `Last time 72.5 kg × 8` for the set on the stage (0-based), or `Last time 80 kg × 8 · 8 · 7`
+ * `Last time 72.5 kg × 8` for the set on the stage (0-based), or `Last time 4 sets, best 80 kg × 8`
  * for the whole last session (`'all'`, exercise done). Null when there is no history.
  */
 export function lastTimeText(
@@ -421,7 +421,7 @@ export function lastTimeText(
   return set ? `Last time ${formatLoggedSetLine(set, options)}` : null;
 }
 
-/** `80 kg × 8 · 8 · 7` when the load is constant, else `80 kg × 8 · 85 kg × 6`. */
+/** `80 kg × 8, 8, 7` when the load is constant, else `80 kg × 8, 85 kg × 6`. */
 export function formatSetsCompact(
   sets: readonly LoggedSet[],
   options?: SetLineOptions,
@@ -435,16 +435,16 @@ export function formatSetsCompact(
   if (allReps && firstLoad != null && loads.every((load) => load === firstLoad)) {
     const [first, ...rest] = sets;
     const head = formatLoggedSetLine({ weight: firstLoad, reps: first?.reps }, { unit: options?.unit });
-    return [head, ...rest.map((set) => String(set.reps))].join(' · ');
+    return [head, ...rest.map((set) => String(set.reps))].join(', ');
   }
   if (allReps && loads.every((load) => load == null)) {
-    return sets.map((set) => String(set.reps)).join(' · ');
+    return sets.map((set) => String(set.reps)).join(', ');
   }
-  return sets.map((set) => formatLoggedSetLine(set, options)).join(' · ');
+  return sets.map((set) => formatLoggedSetLine(set, options)).join(', ');
 }
 
 /**
- * One glanceable fact for a finished exercise: `Last time 4 sets · best 15 kg × 10`.
+ * One glanceable fact for a finished exercise: `Last time 4 sets, best 15 kg × 10`.
  * Best = heaviest load, then most reps. Sets without a load fall back to the compact list.
  */
 export function lastTimeSummary(
@@ -462,7 +462,7 @@ export function lastTimeSummary(
     const topLoad = top.weight ?? top.counterweight ?? 0;
     return load > topLoad || (load === topLoad && (set.reps ?? 0) > (top.reps ?? 0)) ? set : top;
   });
-  return `Last time ${sets} · best ${formatLoggedSetLine(best, options)}`;
+  return `Last time ${sets}, best ${formatLoggedSetLine(best, options)}`;
 }
 
 export type BestSet = { set: LoggedSet; completedAt: string };

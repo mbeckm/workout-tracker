@@ -4,64 +4,22 @@
     "raw-font-weight": 1,
     "raw-spacing": 3
   },
-  "catalog/sections.ts": {
-    "middle-dot-separator": 1
-  },
-  "components/animated-sheet.tsx": {
-    "raw-duration": 2,
-    "raw-spacing": 2
-  },
   "components/button.tsx": {
-    "raw-font-weight": 1,
-    "raw-pressed-opacity": 1
-  },
-  "components/editor-chrome.tsx": {
-    "off-scale-spacing": 2,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 2
-  },
-  "components/last-time-line.tsx": {
     "raw-font-weight": 1
   },
   "components/log-rest.tsx": {
-    "off-scale-spacing": 2,
-    "raw-font-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 1
+    "off-scale-spacing": 1
   },
   "components/paper.tsx": {
-    "off-scale-spacing": 3,
-    "raw-font-weight": 1,
-    "raw-icon-size": 2,
-    "raw-pressed-opacity": 3,
-    "raw-spacing": 12
-  },
-  "components/plan-detail-day-row.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 2,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 2
+    "off-scale-spacing": 1,
+    "raw-spacing": 1
   },
   "components/pr-crown.tsx": {
     "off-scale-spacing": 2,
-    "raw-spacing": 3
-  },
-  "components/residue-set-row.tsx": {
-    "off-scale-spacing": 1,
-    "raw-duration": 4,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-radius": 1,
     "raw-spacing": 2
   },
-  "components/target-line.tsx": {
-    "middle-dot-separator": 1,
-    "raw-font-weight": 2,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 1
+  "components/residue-set-row.tsx": {
+    "raw-radius": 1
   },
   "components/window-chips.tsx": {
     "off-scale-spacing": 3,
@@ -70,103 +28,15 @@
     "raw-icon-size": 1,
     "raw-pressed-opacity": 1,
     "raw-radius": 1,
-    "raw-spacing": 4
-  },
-  "domain/helpers.ts": {
-    "middle-dot-separator": 1
-  },
-  "domain/log-session.ts": {
-    "middle-dot-separator": 4
-  },
-  "domain/rest.ts": {
-    "middle-dot-separator": 1
-  },
-  "domain/set-lines.ts": {
-    "middle-dot-separator": 2
+    "raw-spacing": 3
   },
   "screens/check-in.tsx": {
     "off-scale-spacing": 1,
     "raw-font-weight": 1,
-    "raw-pressed-opacity": 1,
     "raw-radius": 1,
-    "raw-spacing": 7
-  },
-  "screens/day-editor.tsx": {
-    "off-scale-spacing": 3,
-    "raw-duration": 6,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-pressed-opacity": 2,
-    "raw-spacing": 8
-  },
-  "screens/exercise-picker.tsx": {
-    "off-scale-spacing": 3,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 4,
-    "raw-pressed-opacity": 5,
-    "raw-radius": 2,
-    "raw-spacing": 22
-  },
-  "screens/exercise-sheet.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 1,
-    "raw-spacing": 5
-  },
-  "screens/log-workout.tsx": {
-    "gesture-hint-copy": 2,
-    "middle-dot-separator": 4,
-    "off-scale-spacing": 10,
-    "raw-duration": 6,
-    "raw-font-size": 9,
-    "raw-font-weight": 6,
-    "raw-icon-size": 6,
-    "raw-pressed-opacity": 2,
-    "raw-spacing": 30
-  },
-  "screens/onboarding/choice.tsx": {
-    "raw-pressed-opacity": 1
-  },
-  "screens/onboarding/days.tsx": {
-    "off-scale-spacing": 2,
-    "raw-spacing": 2
-  },
-  "screens/onboarding/frame.tsx": {
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 4
-  },
-  "screens/onboarding/pick-plan.tsx": {
-    "off-scale-spacing": 2,
-    "raw-icon-size": 1,
-    "raw-spacing": 5
-  },
-  "screens/onboarding/plan-ready.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 2,
-    "raw-spacing": 4
-  },
-  "screens/onboarding/units.tsx": {
-    "off-scale-spacing": 2,
-    "raw-spacing": 3
-  },
-  "screens/onboarding/welcome.tsx": {
-    "off-scale-spacing": 1,
     "raw-spacing": 1
   },
-  "screens/plan-editor.tsx": {
-    "off-scale-spacing": 1,
-    "raw-icon-size": 1,
-    "raw-spacing": 5
-  },
-  "screens/plans-tab.tsx": {
-    "off-scale-spacing": 3,
-    "raw-icon-size": 2,
-    "raw-pressed-opacity": 2,
-    "raw-spacing": 7
-  },
-  "screens/settings-tab.tsx": {
-    "raw-font-weight": 1,
-    "raw-spacing": 2
+  "screens/log-workout.tsx": {
+    "off-scale-spacing": 1
   }
 }

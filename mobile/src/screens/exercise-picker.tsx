@@ -39,6 +39,7 @@ import { clonePrescription, withDay } from '@/domain/helpers';
 import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/types';
 import { newId } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
+import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 
 function addTitle(count: number): string {
   return count <= 0 ? 'Add' : `Add ${count}`;
@@ -328,12 +329,12 @@ export function ExercisePickerScreen() {
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: space.inline,
           minHeight: 44,
-          paddingVertical: 8,
-          opacity: inDay ? 1 : pressed ? 0.7 : 1,
+          paddingVertical: space.related,
+          opacity: inDay ? 1 : pressed ? PRESSED_OPACITY : 1,
         })}>
-        <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+        <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
           <Text
             style={[type.row, inDay ? { color: colors.secondaryLabel } : null]}
             numberOfLines={1}>
@@ -357,7 +358,7 @@ export function ExercisePickerScreen() {
             <SymbolView
               name={isOn ? 'checkmark.circle.fill' : 'circle'}
               tintColor={isOn ? colors.label : colors.systemGray4}
-              size={22}
+              size={iconSize.control}
               weight="regular"
             />
           )}
@@ -373,26 +374,26 @@ export function ExercisePickerScreen() {
           flex: 1,
           backgroundColor: colors.systemBackground,
           paddingTop: insets.top + 16,
-          paddingHorizontal: 24,
+          paddingHorizontal: space.gutter,
         }}>
         <PaperBack onPress={() => router.back()} />
-        <Text style={[type.planTitle, { paddingBottom: 12 }]}>Exercises</Text>
+        <Text style={[type.planTitle, { paddingBottom: space.inline }]}>Exercises</Text>
 
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: space.related,
             minHeight: 36,
-            paddingVertical: 7,
-            paddingHorizontal: 12,
-            borderRadius: 10,
+            paddingVertical: space.related,
+            paddingHorizontal: space.inline,
+            borderRadius: radius.md,
             backgroundColor: colors.secondarySystemBackground,
           }}>
           <SymbolView
             name="magnifyingglass"
             tintColor={colors.tertiaryLabel}
-            size={17}
+            size={iconSize.row}
             weight="regular"
           />
           <TextInput
@@ -410,10 +411,9 @@ export function ExercisePickerScreen() {
               flex: 1,
               padding: 0,
               margin: 0,
-              fontSize: 17,
-              fontWeight: '400',
-              lineHeight: 22,
-              color: colors.label,
+              ...type.body,
+              // No lineHeight on a TextInput: iOS applies it to typed text but not the placeholder.
+              lineHeight: undefined,
             }}
           />
           {query.length > 0 ? (
@@ -422,11 +422,11 @@ export function ExercisePickerScreen() {
               accessibilityLabel="Clear search"
               hitSlop={8}
               onPress={() => setQuery('')}
-              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}>
+              style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
               <SymbolView
                 name="xmark.circle.fill"
                 tintColor={colors.tertiaryLabel}
-                size={17}
+                size={iconSize.row}
                 weight="regular"
               />
             </Pressable>
@@ -434,7 +434,7 @@ export function ExercisePickerScreen() {
         </View>
 
         {notice && isSearching ? (
-          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 10 }]}>
+          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.related }]}>
             {EXERCISE_CATALOG_NOTICE_MESSAGE[notice]}
           </Text>
         ) : null}
@@ -444,8 +444,8 @@ export function ExercisePickerScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            style={{ flexGrow: 0, marginTop: 12 }}
-            contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
+            style={{ flexGrow: 0, marginTop: space.inline }}
+            contentContainerStyle={{ gap: space.related, paddingRight: space.related }}>
             {jumpChips.map((title) => {
               const isActive = shownChip === title;
               return (
@@ -457,14 +457,14 @@ export function ExercisePickerScreen() {
                   onPress={() => jumpToSection(title)}
                   style={({ pressed }) => ({
                     minHeight: 32,
-                    paddingHorizontal: 14,
-                    borderRadius: 16,
+                    paddingHorizontal: space.inline,
+                    borderRadius: radius.full,
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: isActive
                       ? colors.systemGray5
                       : colors.secondarySystemBackground,
-                    opacity: pressed ? 0.7 : 1,
+                    opacity: pressed ? PRESSED_OPACITY : 1,
                   })}>
                   <Text
                     style={[
@@ -484,8 +484,8 @@ export function ExercisePickerScreen() {
 
         <ScrollView
           ref={listRef}
-          style={{ flex: 1, marginTop: 16 }}
-          contentContainerStyle={{ paddingBottom: 12, flexGrow: 1, gap: 8 }}
+          style={{ flex: 1, marginTop: space.inset }}
+          contentContainerStyle={{ paddingBottom: space.inline, flexGrow: 1, gap: space.related }}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onScroll={onListScroll}
@@ -505,7 +505,7 @@ export function ExercisePickerScreen() {
                 }
                 sectionOffsets.current[section.title] = event.nativeEvent.layout.y;
               }}
-              style={{ gap: 8 }}>
+              style={{ gap: space.related }}>
               {section.title ? (
                 <Text
                   style={[
@@ -525,7 +525,7 @@ export function ExercisePickerScreen() {
 
           {isSearching && canCreateCustom ? (
             // EP-1: always the last peer row of the results, not only on zero matches.
-            <View style={{ gap: 8 }} testID="exercises-create-block">
+            <View style={{ gap: space.related }} testID="exercises-create-block">
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: choosingKind }}
@@ -536,12 +536,12 @@ export function ExercisePickerScreen() {
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: space.inline,
                   minHeight: 44,
-                  paddingVertical: 8,
-                  opacity: pressed ? 0.7 : 1,
+                  paddingVertical: space.related,
+                  opacity: pressed ? PRESSED_OPACITY : 1,
                 })}>
-                <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+                <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
                   <Text style={type.row} numberOfLines={1}>
                     Create “{exerciseCatalogDisplayText(trimmedQuery)}”
                   </Text>
@@ -557,7 +557,7 @@ export function ExercisePickerScreen() {
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}>
-                  <SymbolView name="plus" tintColor={colors.label} size={17} weight="semibold" />
+                  <SymbolView name="plus" tintColor={colors.label} size={iconSize.row} weight="semibold" />
                 </View>
               </Pressable>
               {choosingKind
@@ -570,9 +570,9 @@ export function ExercisePickerScreen() {
                       onPress={() => createCustom(kind)}
                       style={({ pressed }) => ({
                         minHeight: 44,
-                        paddingVertical: 8,
-                        gap: 2,
-                        opacity: pressed ? 0.7 : 1,
+                        paddingVertical: space.related,
+                        gap: space.pair,
+                        opacity: pressed ? PRESSED_OPACITY : 1,
                       })}>
                       <Text style={type.row} numberOfLines={1}>
                         {kind.title}
@@ -587,7 +587,7 @@ export function ExercisePickerScreen() {
           ) : null}
         </ScrollView>
 
-        <View style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: 8 }}>
+        <View style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: space.related }}>
           <Button
             title={addTitle(selected.length)}
             variant="black"

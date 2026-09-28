@@ -25,6 +25,7 @@ import { latestCheckIn } from '@/domain/progress';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 import { track } from '@/analytics/analytics';
+import { PRESSED_OPACITY, space } from '@/constants/theme';
 
 const ACCESSORY_ID = 'check-in-accessory';
 /** Lets the sheet finish closing before the toast rises over Progress. */
@@ -109,8 +110,8 @@ export function CheckInScreen() {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingTop: 20,
-          paddingHorizontal: 12,
-          paddingBottom: 8,
+          paddingHorizontal: space.inline,
+          paddingBottom: space.related,
           backgroundColor: colors.secondarySystemBackground,
         }}>
         <HeaderButton title="Cancel" onPress={() => router.back()} testID="check-in-cancel" />
@@ -130,7 +131,7 @@ export function CheckInScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         automaticallyAdjustKeyboardInsets
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: insets.bottom + 24 }}
         testID="check-in-sheet">
         {fields.map((field, index) => {
           const text = draft[field.key] ?? '';
@@ -149,7 +150,7 @@ export function CheckInScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 12,
+                gap: space.inline,
                 minHeight: 52,
                 borderBottomWidth: index < fields.length - 1 ? 0.5 : 0,
                 borderBottomColor: colors.separator,
@@ -206,7 +207,7 @@ export function CheckInScreen() {
               style={{
                 flexDirection: 'row',
                 justifyContent: 'flex-end',
-                paddingHorizontal: 12,
+                paddingHorizontal: space.inline,
                 borderTopWidth: 0.5,
                 borderTopColor: colors.separator,
               }}>
@@ -248,9 +249,9 @@ function HeaderButton({
       style={({ pressed }) => ({
         minHeight: 44,
         minWidth: 44,
-        paddingHorizontal: 12,
+        paddingHorizontal: space.inline,
         justifyContent: 'center',
-        opacity: pressed ? 0.55 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
       <Text
         style={[

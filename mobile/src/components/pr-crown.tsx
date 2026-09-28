@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Text, View } from 'react-native';
 
-import { radius } from '@/constants/theme';
+import { radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 /** SF Symbol crown; a glyph stands in where SF Symbols do not render (web QA). */
@@ -40,7 +40,7 @@ export function PrCrown({ size = 13 }: { size?: number }) {
   );
 }
 
-/** History row trailing: quiet grey pill with crown · n · PR / PRs. */
+/** History row trailing: quiet grey pill with the crown, the count and `PR` or `PRs`. */
 export function PrCrownCount({ count }: { count: number }) {
   const { colors, type } = useTheme();
   if (count <= 0) {
@@ -60,7 +60,7 @@ export function PrCrownCount({ count }: { count: number }) {
         borderRadius: radius.full,
         borderCurve: 'continuous',
         paddingHorizontal: 10,
-        paddingVertical: 4,
+        paddingVertical: space.tight,
       }}>
       <CrownGlyph size={12} />
       <Text

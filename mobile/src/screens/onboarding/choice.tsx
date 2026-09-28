@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/theme/theme-context';
+import { PRESSED_OPACITY } from '@/constants/theme';
 
 export function selectionTick() {
   if (process.env.EXPO_OS === 'ios') {
@@ -49,7 +50,7 @@ export function BigChoice({
           minHeight: 44,
           minWidth: 44,
           justifyContent: 'flex-end',
-          opacity: pressed && !selected ? 0.55 : 1,
+          opacity: pressed && !selected ? PRESSED_OPACITY : 1,
         },
         style,
       ]}>

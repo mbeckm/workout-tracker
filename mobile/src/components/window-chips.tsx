@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View } from 'react-native';
 
-import { radius } from '@/constants/theme';
+import { radius, space } from '@/constants/theme';
 import { PROGRESS_WINDOWS, type ProgressWindow } from '@/domain/progress';
 import { useTheme } from '@/theme/theme-context';
 
@@ -53,7 +53,7 @@ export function WindowChips({
   const { colors, type } = useTheme();
 
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.related }}>
       {PROGRESS_WINDOWS.map((window) => {
         const isLocked = locked?.(window) ?? false;
         const selected = !isLocked && window === value;

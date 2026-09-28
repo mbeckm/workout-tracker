@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { RestWindow } from '@/domain/log-session';
 import { useTheme } from '@/theme/theme-context';
+import { PRESSED_OPACITY, space } from '@/constants/theme';
 
 /** How long `Go` stays up after the clock hits 0:00. */
 export const REST_GO_MS = 2000;
@@ -58,7 +59,7 @@ export function LogRest({
 
   const done = nowMs >= rest.endsAtMs;
   const seconds = Math.max(0, Math.ceil((rest.endsAtMs - nowMs) / 1000));
-  const control = { fontSize: 15, lineHeight: 20, color: colors.tertiaryLabel } as const;
+  const control = type.caption;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -93,10 +94,10 @@ export function LogRest({
             style={({ pressed }) => ({
               minWidth: 44,
               minHeight: 44,
-              paddingHorizontal: 6,
+              paddingHorizontal: space.related,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.5 : 1,
+              opacity: pressed ? PRESSED_OPACITY : 1,
             })}>
             <Text style={[control, { fontVariant: ['tabular-nums'] }]}>{item.label}</Text>
           </Pressable>

@@ -1,7 +1,7 @@
-import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -11,14 +11,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { PaperEmpty, PaperScreen } from '@/components/paper';
-import { radius } from '@/constants/theme';
+import { HeaderActions } from '@/components/button';
+import { PaperEmpty } from '@/components/paper';
+import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
 import { requirePro } from '@/purchases/pro-gate';
+import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 function formatDaysCount(count: number): string {
@@ -37,9 +39,10 @@ const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
 export function PlansTab() {
-  const { colors, type } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, deletePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
+  const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
   const otherPlans = plans.filter((plan) => plan.id !== activePlan?.id);
@@ -78,53 +81,27 @@ export function PlansTab() {
     router.push(`/plan/${plan.id}?new=1`);
   };
 
-  const confirmDelete = (plan: WorkoutPlan) => {
-    Alert.alert('Delete plan?', plan.name.trim() || 'Untitled plan', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deletePlan(plan) },
-    ]);
-  };
+  const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
 
   return (
     <>
-      <PaperScreen>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
+          paddingBottom: space.section,
+        }}>
         {plans.length === 0 ? (
           <PaperEmpty
             testID="plans-empty"
-            title="Plans"
             subject="No plans yet"
-            caption="Days, exercises, sets and reps."
             action={{ title: 'Create plan', onPress: createPlan, testID: 'plans-create' }}
           />
         ) : (
           <>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                minHeight: 34,
-              }}>
-              <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
-                Plans
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create plan"
-                hitSlop={12}
-                onPress={createPlan}
-                testID="plans-create"
-                style={({ pressed }) => ({
-                  height: 34,
-                  width: 34,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  opacity: pressed ? 0.55 : 1,
-                })}>
-                <SymbolView name="plus" tintColor={colors.label} size={22} weight="medium" />
-              </Pressable>
-            </View>
             {activePlan ? (
               <PlanMenuRow
                 plan={activePlan}
@@ -134,7 +111,7 @@ export function PlansTab() {
               />
             ) : null}
             {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? 32 : 28 }}>
+              <View style={{ paddingTop: activePlan ? space.section : 0 }}>
                 {otherPlans.map((plan, index) => (
                   <PlanMenuRow
                     key={plan.id}
@@ -155,8 +132,10 @@ export function PlansTab() {
             ) : null}
           </>
         )}
-      </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: 'Plans' }} />
+      </ScrollView>
+      {plans.length > 0 ? (
+        <HeaderActions right={{ title: 'Create plan', icon: 'plus', variant: 'plain', onPress: createPlan }} />
+      ) : null}
     </>
   );
 }
@@ -191,35 +170,34 @@ function PlanMenuRow({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={isActive ? `${name}, ${days}, Active` : `${name}, ${days}`}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+          style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
           {isActive ? (
             <View
               style={{
-                marginTop: 28,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 12,
-                padding: 16,
+                gap: space.inline,
+                padding: space.inset,
                 borderRadius: radius.md,
                 borderCurve: 'continuous',
                 backgroundColor: colors.secondarySystemBackground,
               }}>
-              <View style={{ flex: 1, gap: 4, minWidth: 0 }}>
+              <View style={{ flex: 1, gap: space.tight, minWidth: 0 }}>
                 <Text style={type.title} numberOfLines={1}>
                   {name}
                 </Text>
                 <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{days}</Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={18} weight="medium" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
+                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
                 <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
               </View>
             </View>
           ) : (
             <View
               style={{
-                paddingVertical: 14,
-                gap: 2,
+                paddingVertical: space.inset,
+                gap: space.pair,
                 borderBottomWidth: showSeparator ? 0.5 : 0,
                 borderBottomColor: colors.separator,
               }}>

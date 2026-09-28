@@ -2,8 +2,10 @@ import { Link, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View, type AccessibilityActionEvent } from 'react-native';
 
+import { formatExerciseNames } from '@/domain/day-facts';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
+import { iconSize, PRESSED_OPACITY, space } from '@/constants/theme';
 
 export type PlanDayActions = {
   onRename: () => void;
@@ -83,19 +85,19 @@ export function PlanDetailDayRow({
           accessibilityActions={a11yActions}
           onAccessibilityAction={onAccessibilityAction}
           testID={`plan-detail-day-${index}`}
-          style={({ pressed }) => ({ width: '100%', opacity: pressed ? 0.7 : 1 })}>
+          style={({ pressed }) => ({ width: '100%', opacity: pressed ? PRESSED_OPACITY : 1 })}>
           {/* Padding lives on this View: Link asChild doesn't forward a style function on web. */}
-          <View style={{ paddingTop: isFirst ? 0 : 14, paddingBottom: 14, gap: 2 }}>
+          <View style={{ paddingTop: isFirst ? 0 : space.inset, paddingBottom: space.inset, gap: space.pair }}>
             <Text style={type.row} numberOfLines={1}>
               {day.title}
             </Text>
             {count > 0 ? (
               <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={2}>
-                {names.join(' · ')}
+                {formatExerciseNames(names)}
               </Text>
             ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <SymbolView name="plus" tintColor={colors.label} size={15} weight="semibold" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
+                <SymbolView name="plus" tintColor={colors.label} size={iconSize.caption} weight="semibold" />
                 <Text style={[type.kicker, { color: colors.label }]}>Add exercises</Text>
               </View>
             )}

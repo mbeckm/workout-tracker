@@ -136,9 +136,19 @@ export function formatPlanMetricWithLoad(
   return `${base} at ${formatLoadWithUnit(Math.max(...loads), unit)}`;
 }
 
-export function exerciseSubtitle(exercise: ExercisePrescription): string {
-  const equipment = exercise.equipments[0] ?? exercise.exerciseType ?? exercise.itemType;
-  return `${equipment} · ${formatPlanMetric(exercise)}`;
+/** An exercise's detail line in words: `Barbell, chest` (trim-ui → Copy → Separating facts). */
+export function exerciseDetail(exercise: Pick<ExercisePrescription, 'equipments' | 'targetMuscles'>): string {
+  const equipment = exercise.equipments[0]?.trim();
+  const muscle = exercise.targetMuscles[0]?.trim();
+  if (equipment && muscle) {
+    return `${equipment}, ${muscle.toLowerCase()}`;
+  }
+  return equipment || muscle || '';
+}
+
+/** A date as a person says it after a fact: `today`, `yesterday`, `on Wed 13`, `on 3 Jun`. */
+export function spokenWhen(when: string): string {
+  return when === 'Today' || when === 'Yesterday' ? when.toLowerCase() : `on ${when}`;
 }
 
 export function initials(name: string): string {

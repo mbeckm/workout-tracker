@@ -37,7 +37,7 @@ export function LastTimeLine({ previousSets, setIndex, minutes, units }: LastTim
       testID="log-last-time"
       style={[
         type.kicker,
-        { fontWeight: '400', color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
+        { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
       ]}>
       {text}
     </Text>

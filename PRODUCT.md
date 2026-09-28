@@ -73,10 +73,10 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 One exercise, one set at a time:
 
 - Exercise strip across the top; finished exercises get a green check.
-- Exercise name, then `Set n of m` and `Last time 60 kg × 8` (Pro: `Target 62.5 kg × 8 · Last time 60 kg × 8`).
+- Exercise name, then `Set n of m` and `Last time 60 kg × 8` (Pro: `Target 62.5 kg × 8`, with `Last time 60 kg × 8` in the trailing lane).
 - Two wells (weight, reps): tap the number to type, −/+ for small steps. Green `Log set` at the thumb.
 - Logged sets grow below as checked lines; a rest timer starts after each set.
-- Logging the last set of an exercise shows `Done` with `Last time 4 sets · best 60 kg × 10` and moves on with `Next exercise`.
+- Logging the last set of an exercise shows `Done` with `Last time 4 sets, best 60 kg × 10` and moves on with `Next exercise`.
 - Finish (or finish with sets left) leads to Done: facts line and every set as its own row, then Home.
 - A session in progress survives leaving or killing the app, and shows as a Live Activity.
 

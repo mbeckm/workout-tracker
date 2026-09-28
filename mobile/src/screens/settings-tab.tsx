@@ -1,21 +1,20 @@
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
-import { Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 
-import { PaperRow, PaperScreen } from '@/components/paper';
+import { PaperRow } from '@/components/paper';
 import { showToast } from '@/components/toast';
 import { LEGAL_URLS } from '@/constants/legal';
-import { appearanceLabel, type AppearancePreference } from '@/constants/theme';
+import { appearanceLabel, space, type AppearancePreference } from '@/constants/theme';
 import { openPaywall } from '@/purchases/pro-gate';
 import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases/purchases';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 /** Air between setting groups: preferences, Pro, links out, data. */
-const GROUP_GAP = 20;
+const GROUP_GAP = space.section;
 
 const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
 const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
@@ -97,9 +96,11 @@ export function SettingsTab() {
 
   return (
     <>
-      <PaperScreen>
-        <Text style={type.planTitle}>Settings</Text>
-        <View style={{ paddingTop: 32 }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.section }}>
+        <View>
           <PaperRow
             title="Weight"
             trailing={<Text style={[type.row, { color: colors.tertiaryLabel }]}>{units}</Text>}
@@ -167,13 +168,12 @@ export function SettingsTab() {
           />
         </View>
         <Text
-          style={[type.footnote, { color: colors.tertiaryLabel, fontWeight: '400', paddingTop: 24 }]}
+          style={[type.footnote, { color: colors.tertiaryLabel, paddingTop: space.gutter }]}
           selectable
           testID="settings-version">
           {versionLabel()}
         </Text>
-      </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: 'Settings' }} />
+      </ScrollView>
     </>
   );
 }

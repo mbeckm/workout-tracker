@@ -2,9 +2,10 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { formatPlanMetric } from '@/domain/helpers';
+import { exerciseDetail, formatPlanMetric } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
+import { space } from '@/constants/theme';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -12,7 +13,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 /**
  * Not linked from anywhere in 1.0: day-preview rows are read-only (DP-1). Kept as a plain
- * fact sheet (name, muscle · equipment, plan) so re-linking it never shows a media placeholder.
+ * fact sheet (name, equipment and muscle, plan) so re-linking it never shows a media placeholder.
  */
 export function ExerciseSheetScreen() {
   const { colors, type } = useTheme();
@@ -32,15 +33,13 @@ export function ExerciseSheetScreen() {
 
   if (!exercise) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: space.gutter }}>
         <Text style={type.body}>That exercise is gone.</Text>
       </View>
     );
   }
 
-  const muscle = exercise.targetMuscles[0];
-  const equipment = exercise.equipments[0];
-  const detail = [muscle, equipment].filter(Boolean).join(' · ');
+  const detail = exerciseDetail(exercise);
 
   return (
     <>
@@ -48,15 +47,15 @@ export function ExerciseSheetScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingHorizontal: 24,
-          paddingTop: 8,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
           paddingBottom: insets.bottom + 10,
         }}>
-        <View style={{ gap: 6, paddingBottom: 16 }}>
+        <View style={{ gap: space.tight, paddingBottom: space.inset }}>
           <Text style={type.title}>{exercise.name}</Text>
           {detail ? <Text style={type.kicker}>{detail}</Text> : null}
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.inline }}>
           <Text style={type.body}>Plan</Text>
           <Text style={[type.body, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
             {formatPlanMetric(exercise)}

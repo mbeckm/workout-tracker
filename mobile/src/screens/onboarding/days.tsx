@@ -9,6 +9,7 @@ import { useTheme } from '@/theme/theme-context';
 
 import { BigChoice } from './choice';
 import { OnboardingFrame } from './frame';
+import { space } from '@/constants/theme';
 
 /** What each weekly count gets you. Facts about the split, not encouragement. */
 const DAYS_FACT: Record<StarterDayCount, string> = {
@@ -37,7 +38,7 @@ export function OnboardingDays() {
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel="Days a week"
-        style={{ flexDirection: 'row', paddingTop: 28 }}>
+        style={{ flexDirection: 'row', paddingTop: space.section }}>
         {STARTER_DAY_COUNTS.map((count) => (
           <BigChoice
             key={count}
@@ -52,7 +53,7 @@ export function OnboardingDays() {
         ))}
       </View>
       {/* The invisible copy sizes the line; the visible one crossfades on top so nothing jumps. */}
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: space.gutter }}>
         <Text
           aria-hidden
           importantForAccessibility="no-hide-descendants"
