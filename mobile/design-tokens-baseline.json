@@ -22,13 +22,7 @@
     "raw-radius": 1
   },
   "components/window-chips.tsx": {
-    "off-scale-spacing": 3,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-radius": 1,
-    "raw-spacing": 3
+    "raw-radius": 1
   },
   "screens/check-in.tsx": {
     "off-scale-spacing": 1,

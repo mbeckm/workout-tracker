@@ -1,7 +1,10 @@
 import { SymbolView } from 'expo-symbols';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeOut } from 'react-native-reanimated';
 
-import { radius, space } from '@/constants/theme';
+import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
+import { DURATION, EASE_OUT } from '@/motion';
 import { PROGRESS_WINDOWS, type ProgressWindow } from '@/domain/progress';
 import { useTheme } from '@/theme/theme-context';
 
@@ -51,6 +54,7 @@ export function WindowChips({
   onLockedPress?: (window: ProgressWindow) => void;
 }) {
   const { colors, type } = useTheme();
+  const opening = useOpeningLocks(locked);
 
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.related }}>
@@ -72,29 +76,61 @@ export function WindowChips({
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 5,
+              gap: space.tight,
               minHeight: 34,
-              paddingHorizontal: 14,
-              paddingVertical: 7,
+              paddingHorizontal: space.inline,
+              paddingVertical: space.related,
               borderRadius: radius.full,
               borderCurve: 'continuous',
               backgroundColor: selected ? colors.label : colors.systemGray5,
-              opacity: pressed ? 0.75 : 1,
+              opacity: pressed ? PRESSED_OPACITY : 1,
             })}>
-            <Text style={[type.subhead, { fontSize: 15, fontWeight: '500', color: ink }]}>
-              {window}
-            </Text>
+            <Text style={[type.caption, { color: ink }]}>{window}</Text>
             {isLocked ? (
               <SymbolView
                 name="lock.fill"
-                size={11}
+                size={iconSize.caption}
                 tintColor={colors.tertiaryLabel}
                 fallback={<LockFallback color={colors.tertiaryLabel} />}
               />
+            ) : opening.includes(window) ? (
+              // The purchase moment (trim-ui §12): the lock they tapped opens, then fades.
+              <Animated.View exiting={FadeOut.duration(DURATION.exit).easing(EASE_OUT)}>
+                <SymbolView
+                  name="lock.open.fill"
+                  size={iconSize.caption}
+                  tintColor={selected ? colors.systemBackground : colors.tertiaryLabel}
+                  fallback={<LockFallback color={colors.tertiaryLabel} />}
+                />
+              </Animated.View>
             ) : null}
           </Pressable>
         );
       })}
     </View>
   );
+}
+
+/** How long an opened lock stays before it fades (the toast is rising meanwhile). */
+const OPEN_LOCK_HOLD_MS = 900;
+
+/** Chips that were locked on the previous render and aren't now: their lock opens once. */
+function useOpeningLocks(locked: ((window: ProgressWindow) => boolean) | undefined): ProgressWindow[] {
+  const lockedNow = PROGRESS_WINDOWS.filter((window) => locked?.(window) ?? false).join(',');
+  const previous = useRef(lockedNow);
+  const [opening, setOpening] = useState<ProgressWindow[]>([]);
+
+  useEffect(() => {
+    const before = previous.current.split(',').filter(Boolean) as ProgressWindow[];
+    previous.current = lockedNow;
+    const opened = before.filter((window) => !lockedNow.split(',').includes(window));
+    if (opened.length === 0) {
+      return;
+    }
+    setOpening(opened);
+    const timer = setTimeout(() => setOpening([]), OPEN_LOCK_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [lockedNow]);
+
+  return opening;
 }
