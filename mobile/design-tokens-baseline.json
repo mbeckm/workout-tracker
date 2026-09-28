@@ -96,14 +96,13 @@
     "raw-spacing": 5
   },
   "screens/log-workout.tsx": {
-    "gesture-hint-copy": 2,
     "off-scale-spacing": 10,
     "raw-duration": 6,
     "raw-font-size": 9,
     "raw-font-weight": 6,
     "raw-icon-size": 6,
     "raw-pressed-opacity": 2,
-    "raw-spacing": 30
+    "raw-spacing": 27
   },
   "screens/onboarding/choice.tsx": {
     "raw-pressed-opacity": 1

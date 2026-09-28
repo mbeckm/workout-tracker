@@ -41,7 +41,7 @@ import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
 import { TargetLine } from '@/components/target-line';
 import { exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
-import { radius } from '@/constants/theme';
+import { radius, space } from '@/constants/theme';
 import {
   clonePrescription,
   durationIsMinutes,
@@ -1220,15 +1220,8 @@ export function LogWorkoutScreen() {
         visible={sheet === 'day'}
         onClose={() => setSheet(null)}
         dragFrom="grabber">
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            paddingBottom: 12,
-          }}>
+        <View style={{ paddingBottom: space.inline }}>
           <Text style={type.title}>{day.title}</Text>
-          <Text style={type.kicker}>Drag to reorder</Text>
         </View>
         <ScrollView bounces={false} style={{ maxHeight: 480 }}>
           {drafts.map((exercise, index) => {
@@ -1897,15 +1890,8 @@ function LogExerciseSheet({
       </View>
       {alternatives.length > 0 ? (
         <>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingTop: 8,
-              paddingBottom: 4,
-            }}>
+          <View style={{ paddingTop: space.related, paddingBottom: space.tight }}>
             <Text style={type.kicker}>Alternatives</Text>
-            <Text style={type.kicker}>Tap to swap</Text>
           </View>
           {alternatives.map((item) => (
             <PaperRow
