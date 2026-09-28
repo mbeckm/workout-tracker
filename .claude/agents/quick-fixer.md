@@ -1,7 +1,7 @@
 ---
 name: quick-fixer
 description: Low-effort worker for trivial, fully specified fixes in mobile/ (copy changes, typos, a wrong color token, an obvious one-line bug). Spawned by the feedback-sprint orchestrator with an exact spec.
-model: sonnet
+model: claude-opus-5-5
 effort: low
 disallowedTools: Agent
 color: green

@@ -27,5 +27,5 @@ Report back in this shape, per item, in under ~200 words each (the orchestrator 
 1. **Status**: done / partial / blocked, in one line
 2. **Root cause** (bugs only), in one or two sentences
 3. **Files changed**, each with a short note
-4. **QA script**: the exact steps to reproduce the before/after in the simulator, including the states to check (empty, long text, dark mode, large Dynamic Type) where relevant
+4. **QA script**: the shortest path in the simulator to reach the change, and what to see or tap to confirm it works
 5. **Risks / follow-ups**

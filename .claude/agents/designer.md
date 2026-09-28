@@ -39,5 +39,6 @@ Report back in this shape, in under ~300 words (the orchestrator reads the diff 
 2. **Research**: the apps and screens you looked at and your takeaways, or for polish, the trim-ui rule / artboard / screen you matched
 3. **Decision**: the direction you chose, what you rejected, and why. Tie it back to the research
 4. **Files changed**
-5. **QA script**: the exact screens, states and interactions to check, and what "right" looks like (spacing, motion timing, haptic)
-6. **Open taste questions** for the orchestrator or Marvin, if any
+5. **QA script**: the shortest path in the simulator to reach the change, and what to see or tap to confirm it's there and works
+6. **For Marvin to check**: one or two lines on what to look at on device (the feel, timing, haptic, dark mode or large text where it matters)
+7. **Open taste questions** for the orchestrator or Marvin, if any
