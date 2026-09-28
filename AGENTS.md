@@ -72,6 +72,7 @@ Cloud sessions (claude.ai/code) can't run the iOS Simulator. Marvin tests on his
 - **Native changes** (new native module, `app.json` plugins, icon, splash, Expo SDK) change the runtime fingerprint, and old builds ignore the update. Build a new preview binary: `npx eas-cli build --platform ios --profile testflight-preview --auto-submit`.
 - **Agent QA on a real iOS Simulator** (optional, paid, limited access): EAS Simulator runs one on Expo's servers; see `.agents/skills/eas-simulator/SKILL.md`. Check `simulator:availability` first, and always stop the session.
 - **Channels:** `testflight-preview` builds listen on `preview`; `production` builds (App Store) listen on `production`. Never publish to `production` unless Marvin asks for a hotfix.
+- **Env vars:** `EXPO_PUBLIC_REVENUECAT_API_KEY` and `EXPO_PUBLIC_POSTHOG_KEY` live in the EAS `production` environment (also `development`; `preview` is empty). Both build profiles pin `"environment": "production"`, and every `eas update` passes `--environment production`, or the update ships without purchases and analytics.
 
 ## Exercise catalog
 
