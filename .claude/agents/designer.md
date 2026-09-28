@@ -29,7 +29,7 @@ Decide, then build:
 - Build real states and interactions, not a static look. Cover empty, loading, long text, dark mode, large Dynamic Type and reduced motion.
 - No custom screen transitions (AGENTS.md: do not ship). Keep motion purposeful and interruptible.
 - Touch only the files in your brief, plus any that are clearly part of the same change. List them all.
-- Do not commit, switch branches, stash, or reset. Do not drive the iOS Simulator. A QA agent verifies on screen and sends you screenshots if something's off.
+- Do not commit, switch branches, stash, or reset. Do not drive the iOS Simulator. A QA agent checks that the change is there and works; if not, you get its repro steps.
 - If the change sets a new design rule, update `.cursor/skills/trim-ui/SKILL.md` in the same change.
 
 Before reporting, run `cd mobile && npx tsc --noEmit && npm run lint`.

@@ -29,8 +29,8 @@ Effort and model come from each agent's definition. You choose them by choosing 
 
 | Agent | Model / effort | Use for |
 |---|---|---|
-| *(you, inline)* | — | Trivia: copy, typos, a token swap, an obvious one-liner. Batch them into one commit per item at the end of triage |
-| `quick-fixer` | Opus, low | Several small, fully specified fixes in one brief, when doing them inline would bloat your context (more than ~5 files) |
+| *(you, inline)* | — | Trivia: copy, typos, a token swap, an obvious one-liner. Do them right after triage, one commit per item |
+| `quick-fixer` | Opus, low | Several small, fully specified fixes in one brief, when together they'd bloat your context (roughly 5+ files to read) |
 | `builder` | Opus, medium | **Default.** Bugs, logic, persistence, UX changes with a clear spec |
 | `designer` | Opus, high | Taste: hierarchy, layout, motion, feel, "this feels off", new UI patterns |
 | `product-thinker` | Opus, high (read-only) | Ambiguous asks that need research before a product call. Rare |
@@ -89,7 +89,7 @@ Then:
 1. `cd mobile && npx tsc --noEmit && npm run lint` on the whole branch (8 known lint errors on `main` aren't yours).
 2. Only if two or more items touched the same screen: one functional QA pass over that screen. No full re-QA of everything.
 3. If a design decision changed, check that `.cursor/skills/trim-ui/SKILL.md` or `PRODUCT-DECISIONS.md` were updated.
-4. Push and open a PR. The body lists items by status and the key screenshot paths.
+4. Push and open a PR. The body lists items by status with QA's pass/fail per criterion (screenshot paths are local, so don't link them).
 5. Report to Marvin: ✅ done (with evidence), ⏸ deferred (why), ❓ waiting on him (the exact question), a short **look-and-feel list** for him to check on device (per UI item: the screen, the state to reach, and what changed; include dark mode / large text only where the layout changed), and anything QA flagged as plainly broken outside scope. Don't claim anything that wasn't verified.
 
 ## Ledger template
