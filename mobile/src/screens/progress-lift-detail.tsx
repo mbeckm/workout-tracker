@@ -29,7 +29,13 @@ import { useWorkoutStore } from '@/store/workout-store';
 export function ProgressLiftDetailScreen() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
+  // Same threshold as the Progress rows: XXXL and the accessibility sizes stack.
+  const stacked = fontScale >= 1.35;
+  const setLineStyle = [
+    type.subhead,
+    { color: colors.tertiaryLabel, fontVariant: ['tabular-nums' as const] },
+  ];
   const { name } = useLocalSearchParams<{ name: string }>();
   const exerciseName = decodeURIComponent(name ?? '');
   const { units, workoutHistory, isPro } = useWorkoutStore();
@@ -98,8 +104,8 @@ export function ProgressLiftDetailScreen() {
       <PaperScreen testID="progress-lift-detail">
         <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
+          // Wraps, never truncates: long lift names at large text sizes need every word.
           style={[type.title, { marginBottom: 16 }]}
-          numberOfLines={1}
           accessibilityRole="header">
           {exerciseName}
         </Text>
@@ -166,35 +172,58 @@ export function ProgressLiftDetailScreen() {
         ) : (
           recent.map((session, index) => {
             const pr = isSessionPR(exerciseName, session.oneRM, workoutHistory, session.workoutId);
+            // Dates are grey on both detail lists, like the Progress captions; the e1RM is the ink.
+            const dateText = (
+              <Text style={[type.subhead, { color: colors.tertiaryLabel }]}>
+                {formatProgressShortDate(session.date)}
+              </Text>
+            );
+            const setLine = formatLoggedSetLine(session.bestSet, { unit: units });
+            // The crown slot sits before the value so the value ends on the margin, like body.
+            const oneRMCell = (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <View style={{ width: 14, alignItems: 'center' }}>
+                  {pr ? <PrCrown size={14} /> : null}
+                </View>
+                <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
+                  {formatProgressOneRM(session.oneRM, units)}
+                </Text>
+              </View>
+            );
             return (
               <View key={session.workoutId}>
                 {index > 0 ? (
                   <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
                 ) : null}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 14,
-                    gap: 12,
-                  }}>
-                  <Text style={[type.subhead, { minWidth: 56, color: colors.label }]}>
-                    {formatProgressShortDate(session.date)}
-                  </Text>
-                  <Text
-                    style={[
-                      type.subhead,
-                      { flex: 1, color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] },
-                    ]}>
-                    {formatLoggedSetLine(session.bestSet, { unit: units })}
-                  </Text>
-                  <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
-                    {formatProgressOneRM(session.oneRM, units)}
-                  </Text>
-                  <View style={{ width: 14, alignItems: 'center' }}>
-                    {pr ? <PrCrown size={14} /> : null}
+                {stacked ? (
+                  // Accessibility sizes: the date gets its own line so the set never wraps
+                  // word by word between two fixed columns.
+                  <View style={{ paddingVertical: 14, gap: 2 }}>
+                    {dateText}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}>
+                      <Text style={[setLineStyle, { flexShrink: 1 }]}>{setLine}</Text>
+                      {oneRMCell}
+                    </View>
                   </View>
-                </View>
+                ) : (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 14,
+                      gap: 12,
+                    }}>
+                    <View style={{ minWidth: 56 }}>{dateText}</View>
+                    <Text style={[setLineStyle, { flex: 1 }]}>{setLine}</Text>
+                    {oneRMCell}
+                  </View>
+                )}
               </View>
             );
           })

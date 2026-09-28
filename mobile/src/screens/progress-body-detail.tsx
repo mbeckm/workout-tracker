@@ -114,8 +114,8 @@ export function ProgressBodyDetailScreen() {
       <PaperScreen testID="progress-body-detail">
         <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
+          // Wraps, never truncates: long lift names at large text sizes need every word.
           style={[type.title, { marginBottom: 16 }]}
-          numberOfLines={1}
           accessibilityRole="header">
           {metricMeta.label}
         </Text>
@@ -199,7 +199,9 @@ export function ProgressBodyDetailScreen() {
                   justifyContent: 'space-between',
                   paddingVertical: 14,
                 }}>
-                <Text style={type.subhead}>{formatProgressShortDate(point.date)}</Text>
+                <Text style={[type.subhead, { color: colors.tertiaryLabel }]}>
+                  {formatProgressShortDate(point.date)}
+                </Text>
                 <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
                   {formatBodyValue(point.value, metricKey, units)}
                 </Text>
