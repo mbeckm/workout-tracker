@@ -69,6 +69,32 @@ export function estimateDayMinutes(
   return Math.max(5, Math.round(seconds / 60 / 5) * 5);
 }
 
+/** `~55 min`: an estimate, never a promise (trim-ui → Copy → Numbers). */
+export function formatEstimateMinutes(minutes: number): string {
+  return `~${Math.max(1, Math.round(minutes))} min`;
+}
+
+/** VoiceOver for `formatEstimateMinutes`: `About 55 minutes`. */
+export function spokenEstimateMinutes(minutes: number): string {
+  const value = Math.max(1, Math.round(minutes));
+  return value === 1 ? 'About 1 minute' : `About ${value} minutes`;
+}
+
+/**
+ * A day's first exercises in words, the way a person says it (trim-ui → Copy → Separating
+ * facts): `Bench Press`, `Bench Press and Rows`, `Bench Press, Rows and Dips`, then
+ * `Bench Press, Incline Press and 2 more`. Never `1 more`: a third name costs no more room.
+ */
+export function formatExerciseNames(names: readonly string[], shown = 2): string {
+  if (names.length <= shown + 1) {
+    if (names.length <= 1) {
+      return names[0] ?? '';
+    }
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }
+  return `${names.slice(0, shown).join(', ')} and ${names.length - shown} more`;
+}
+
 /** `Today`, `Yesterday`, `Thu 17` within four weeks, then `Aug 27` (plus year when needed). */
 export function formatDoneWhen(iso: string, now = new Date()): string {
   const date = new Date(iso);

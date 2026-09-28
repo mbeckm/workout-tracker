@@ -1,17 +1,26 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { meta, MetaRow } from '@/components/meta-row';
-import { radius } from '@/constants/theme';
-import { formatWeekLabel, recentWeeks, spokenWeek, type WeekTally } from '@/domain/weeks';
+import { radius, space, TOUCH_TARGET } from '@/constants/theme';
+import {
+  formatWeekLabel,
+  formatWeeklyAverage,
+  recentWeeks,
+  spokenWeek,
+  type WeekTally,
+} from '@/domain/weeks';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 const DOT = 10;
-const DOT_GAP = 10;
-const HEADER_MAX_SCALE = 1.3;
+
+/** `Goal 5 a week, average 3.1`: the two facts joined in words (trim-ui → Copy). */
+function formatWeeksSummary(goal: number, average: number | null): string {
+  const goalText = `Goal ${goal} a week`;
+  return average != null ? `${goalText}, average ${formatWeeklyAverage(average)}` : goalText;
+}
 
 /**
  * Weeks (F6): Home's week amount, repeated back in time. Newest first, one row per Monday-based
@@ -19,11 +28,11 @@ const HEADER_MAX_SCALE = 1.3;
  * the goal is a full green row. No streaks, no badges, no drill-down: it answers "how often
  * was I in the gym lately", nothing more.
  *
- * A native form sheet: one non-collapsable header plus one ScrollView (RNScreens formSheet).
+ * A native form sheet (trim-ui → Components → Sheets): grabber, `title`, content. It closes by
+ * drag, so there's no Done. One non-collapsable header plus one ScrollView (RNScreens formSheet).
  */
 export function WeeksScreen() {
   const { colors, type } = useTheme();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { activePlan, workoutHistory } = useWorkoutStore();
   const now = useMemo(() => new Date(), []);
@@ -38,50 +47,26 @@ export function WeeksScreen() {
       <View
         collapsable={false}
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingTop: 20,
-          paddingHorizontal: 12,
-          paddingBottom: 4,
+          gap: space.tight,
+          paddingTop: space.gutter,
+          paddingHorizontal: space.gutter,
+          paddingBottom: space.related,
           backgroundColor: colors.secondarySystemBackground,
         }}>
-        {/* Balances Done so the title sits centered. */}
-        <View style={{ minWidth: 64 }} />
-        {/* Header text stops growing like a native nav bar, so the title stays centered. */}
-        <Text
-          style={[type.body, { fontWeight: '600' }]}
-          accessibilityRole="header"
-          maxFontSizeMultiplier={HEADER_MAX_SCALE}>
+        <Text style={type.title} accessibilityRole="header">
           Weeks
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          hitSlop={8}
-          testID="weeks-done"
-          style={({ pressed }) => ({
-            minHeight: 44,
-            minWidth: 64,
-            paddingHorizontal: 12,
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            opacity: pressed ? 0.55 : 1,
-          })}>
-          <Text style={[type.body, { fontWeight: '600' }]} maxFontSizeMultiplier={HEADER_MAX_SCALE}>
-            Done
-          </Text>
-        </Pressable>
+        <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]} testID="weeks-summary">
+          {formatWeeksSummary(goal, average)}
+        </Text>
       </View>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{
+          paddingHorizontal: space.gutter,
+          paddingBottom: insets.bottom + space.gutter,
+        }}
         testID="weeks-sheet">
-        <MetaRow
-          style={{ paddingTop: 8, paddingBottom: 12 }}
-          items={[meta.goal(goal), average != null ? meta.average(average) : null]}
-          testID="weeks-summary"
-        />
         {weeks.map((week, index) => (
           <WeekRow
             key={week.start.toISOString()}
@@ -116,14 +101,14 @@ function WeekRow({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        minHeight: 52,
-        paddingVertical: 14,
+        gap: space.inset,
+        minHeight: TOUCH_TARGET,
+        paddingVertical: space.inset,
         borderBottomWidth: showSeparator ? StyleSheet.hairlineWidth : 0,
         borderBottomColor: colors.separator,
       }}>
-      <Text style={[type.body, { flex: 1 }]}>{formatWeekLabel(week, now)}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: DOT_GAP, flexShrink: 0 }}>
+      <Text style={[type.row, { flex: 1 }]}>{formatWeekLabel(week, now)}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related, flexShrink: 0 }}>
         {Array.from({ length: goal }, (_, index) => (
           <View
             key={index}

@@ -1,69 +1,71 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { MetaRow, spokenMeta, type MetaItem } from '@/components/meta-row';
+import { iconSize, PRESSED_OPACITY, space, TOUCH_TARGET } from '@/constants/theme';
+import { formatExerciseNames } from '@/domain/day-facts';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
 /**
- * Third tier on Home: stops growing at 1.35× (title ~23pt, meta ~20pt) so it stays under the
- * week amount (30pt max) and the day title (48pt max) at every Dynamic Type size.
- */
-const OTHER_DAYS_MAX_SCALE = 1.35;
-
-/**
- * One of the plan's other days on Home: title 17 regular + the meta row (`5 exercises · ~45 min`,
- * or `Done Fri 25` once it's done this week), the same grey line as every other meta row. The
- * third tier under Start: nothing here is ink except an open day's title. A day done this week
- * steps back (grey title, green check), so the days still open carry the list. Tap opens the
- * preview, where it can be started.
+ * One of the plan's other days on Home (trim-ui → Per screen → Home): the day's name in `row`
+ * over its first exercises in words (`Bench Press, Incline Press and 2 more`), and a green
+ * check in the trailing lane once it's done this week. Tap opens the preview, where it can be
+ * started.
  */
 export function HomeDayRow({
   day,
-  meta,
   doneThisWeek,
   showSeparator = false,
   onPress,
   testID,
 }: {
   day: WorkoutDay;
-  meta: (MetaItem | null)[];
   doneThisWeek: boolean;
   showSeparator?: boolean;
   onPress: () => void;
   testID?: string;
 }) {
   const { colors, type } = useTheme();
-  const spoken = meta.filter((item): item is MetaItem => item != null).map(spokenMeta);
+  const names = formatExerciseNames(day.exercises.map((exercise) => exercise.name));
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={[day.title, ...spoken].join(', ')}
+      accessibilityLabel={[day.title, names, doneThisWeek ? 'done this week' : null]
+        .filter(Boolean)
+        .join(', ')}
       accessibilityHint="Shows this day. Start it from there."
       testID={testID}
       style={({ pressed }) => ({
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 14,
-        borderBottomWidth: showSeparator ? 0.5 : 0,
+        gap: space.inline,
+        minHeight: TOUCH_TARGET,
+        paddingVertical: space.inset,
+        borderBottomWidth: showSeparator ? StyleSheet.hairlineWidth : 0,
         borderBottomColor: colors.separator,
-        opacity: pressed ? 0.7 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-        <Text
-          style={[type.body, doneThisWeek ? { color: colors.tertiaryLabel } : null]}
-          numberOfLines={1}
-          maxFontSizeMultiplier={OTHER_DAYS_MAX_SCALE}>
+      <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+        <Text style={type.row} numberOfLines={2}>
           {day.title}
         </Text>
-        <MetaRow items={meta} maxScale={OTHER_DAYS_MAX_SCALE} accessibilityLabel="" />
+        {names ? (
+          <Text style={type.caption} numberOfLines={2}>
+            {names}
+          </Text>
+        ) : null}
       </View>
       {doneThisWeek ? (
-        <SymbolView name="checkmark" tintColor={colors.systemGreen} size={16} weight="semibold" />
+        <SymbolView
+          name="checkmark"
+          tintColor={colors.systemGreen}
+          size={iconSize.row}
+          weight="semibold"
+          style={{ flexShrink: 0 }}
+        />
       ) : null}
     </Pressable>
   );

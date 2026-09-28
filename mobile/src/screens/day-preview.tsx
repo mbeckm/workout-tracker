@@ -4,83 +4,73 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
-import { meta as metaItem, MetaRow, type MetaItem } from '@/components/meta-row';
+import { space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
-import { estimateDayMinutes, lastDoneAt } from '@/domain/day-facts';
+import { estimateDayMinutes, formatEstimateMinutes, spokenEstimateMinutes } from '@/domain/day-facts';
 import { formatPlanMetricWithLoad } from '@/domain/helpers';
-import type { LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
+import type { WorkoutDay } from '@/domain/types';
 import { sessionIsFor, useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
-
-/**
- * One Dynamic Type cap for the whole drawer, the same as Home's exercise list (1.8): the title
- * stays the largest text at every size (22 → 40, names 17 → 31, prescription and meta 15 → 27).
- * Sharing Home's cap also keeps RN's text measure cache honest: it ignores the cap, so the same
- * exercise line under two caps would reuse the wrong measurement.
- */
-const PREVIEW_MAX_SCALE = 1.8;
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
 /**
- * "What is this day": name + prescription per row, then Start (or Resume). Opens from Home's
- * Other days only; the next day's list is already on Home, so it gets no preview (F7).
+ * "What is this day" (trim-ui → Per screen → Day preview): the day's name in `title`, one fact
+ * under it (the estimated duration), then name + prescription per row, and Start (or Resume)
+ * at the thumb. Opens from Home's list and its other days.
  * Rows stay read-only (DP-1): the prescription is already on the row, and last time / best
- * belong in the log where they're actionable. A tap target per row would be a hidden
- * affordance on a sheet whose one job is Start.
+ * belong in the log where they're actionable.
  */
 export function DayPreviewBody({
   day,
-  meta,
+  fact,
   actionTitle = 'Start',
   onStart,
 }: {
   day: WorkoutDay;
-  meta: (MetaItem | null)[];
+  /** At most one fact under the title, or none. */
+  fact?: { text: string; spoken?: string } | null;
   actionTitle?: string;
   onStart: () => void;
 }) {
-  const { colors, type } = useTheme();
+  const { type } = useTheme();
   const { previousLogForExercise, units } = useWorkoutStore();
   const insets = useSafeAreaInsets();
   const count = day.exercises.length;
 
   return (
     <>
-      <View style={{ gap: 6, paddingBottom: 12 }}>
-        <Text
-          style={type.title}
-          accessibilityRole="header"
-          numberOfLines={2}
-          maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
+      <View style={{ gap: space.tight }}>
+        <Text style={type.title} accessibilityRole="header" numberOfLines={2}>
           {day.title}
         </Text>
-        <MetaRow items={meta} maxScale={PREVIEW_MAX_SCALE} testID="preview-meta" />
+        {fact ? (
+          <Text
+            style={[type.caption, { fontVariant: ['tabular-nums'] }]}
+            accessibilityLabel={fact.spoken}
+            testID="preview-meta">
+            {fact.text}
+          </Text>
+        ) : null}
       </View>
       <ScrollView
         bounces={false}
         showsVerticalScrollIndicator={false}
         style={{ maxHeight: 420 }}
-        contentContainerStyle={{ paddingBottom: 20 }}>
+        contentContainerStyle={{
+          gap: space.inset,
+          paddingTop: space.gutter,
+          paddingBottom: space.gutter,
+        }}>
         {day.exercises.map((exercise) => (
-          // Read-only rows: the exercise sheet they used to open only held media. Same row as
-          // Home's list (name wraps to two lines, prescription in the meta grey, regular), so
-          // the drawer and Home read as one voice (G4).
-          <View key={exercise.id} style={{ gap: 2, paddingVertical: 12 }}>
-            <Text style={type.row} numberOfLines={2} maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
+          // Same row as Home's list, so the sheet and Home read as one voice.
+          <View key={exercise.id} style={{ gap: space.pair }}>
+            <Text style={type.row} numberOfLines={2}>
               {exercise.name}
             </Text>
-            <Text
-              style={{
-                fontSize: 15,
-                lineHeight: 20,
-                fontWeight: '400',
-                color: colors.tertiaryLabel,
-                fontVariant: ['tabular-nums'],
-              }}
-              maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
+            <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>
               {formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units)}
             </Text>
           </View>
@@ -94,20 +84,10 @@ export function DayPreviewBody({
           onPress={onStart}
         />
       ) : null}
-      <View style={{ height: Math.max(insets.bottom, 10) }} />
+      {/* The thumb CTA sits 16 above the safe area (trim-ui → Layout → Thumb zone). */}
+      <View style={{ height: insets.bottom + space.inset }} />
     </>
   );
-}
-
-/** DP-2, as a meta row: `6 exercises · ~48 min · Done Thu 17`. */
-function previewMeta(plan: WorkoutPlan, day: WorkoutDay, history: LoggedWorkout[]): (MetaItem | null)[] {
-  const minutes = estimateDayMinutes(plan, day, history);
-  const doneAt = lastDoneAt(plan, day.id, history);
-  return [
-    metaItem.exercises(day.exercises.length),
-    minutes != null ? metaItem.minutes(minutes, { estimate: true }) : null,
-    doneAt ? metaItem.lastDone(doneAt) : null,
-  ];
 }
 
 export function DayPreviewScreen() {
@@ -123,18 +103,24 @@ export function DayPreviewScreen() {
 
   if (!plan || !day) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: space.gutter }}>
         <Text style={type.body}>That day is gone.</Text>
       </View>
     );
   }
+
+  const minutes = estimateDayMinutes(plan, day, workoutHistory);
 
   return (
     <>
       <AnimatedSheet hosted visible onClose={() => router.back()} dragFrom="sheet">
         <DayPreviewBody
           day={day}
-          meta={previewMeta(plan, day, workoutHistory)}
+          fact={
+            minutes != null
+              ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
+              : null
+          }
           actionTitle={sessionIsFor(activeSession, plan.id, day.id) ? 'Resume' : 'Start'}
           onStart={() => startDay(plan, day, { replace: true })}
         />
