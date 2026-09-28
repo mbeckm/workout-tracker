@@ -88,11 +88,35 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           headerTransparent: true,
           headerShadowVisible: false,
           headerTitle: '',
+          headerBackVisible: false,
           headerTintColor: colors.label,
           title: 'Trim Pro',
+          // Toolbar items are iOS-only; elsewhere the plain button below is the way out.
+          headerRight:
+            process.env.EXPO_OS === 'ios'
+              ? undefined
+              : () => (
+                  <Pressable
+                    accessibilityRole="button"
+                    testID="paywall-not-now"
+                    disabled={busy}
+                    onPress={paywall.close}
+                    style={({ pressed }) => ({
+                      minHeight: TOUCH_TARGET,
+                      paddingHorizontal: space.inline,
+                      justifyContent: 'center',
+                      opacity: pressed ? PRESSED_OPACITY : 1,
+                    })}>
+                    <Text style={[type.body, { color: busy ? colors.tertiaryLabel : colors.secondaryLabel }]}>
+                      Not now
+                    </Text>
+                  </Pressable>
+                ),
         }}
       />
-      <HeaderActions right={{ title: 'Not now', variant: 'plain', disabled: busy, onPress: paywall.close }} />
+      {process.env.EXPO_OS === 'ios' ? (
+        <HeaderActions right={{ title: 'Not now', variant: 'plain', disabled: busy, onPress: paywall.close }} />
+      ) : null}
       <ScrollView
         style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="automatic"
