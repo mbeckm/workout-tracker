@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
@@ -114,7 +114,10 @@ export function Button({
 }
 
 export type HeaderAction = {
+  /** The label, or with `icon` the VoiceOver label only. */
   title: string;
+  /** SF Symbol shown instead of the label (`plus` for Create plan). */
+  icon?: Extract<ComponentProps<typeof Stack.Toolbar.Button>['icon'], string>;
   onPress: () => void;
   variant?: 'plain' | 'done' | 'prominent';
   disabled?: boolean;
@@ -130,6 +133,8 @@ export function HeaderActions({ left, right }: { left?: HeaderAction; right?: He
       {left ? (
         <Stack.Toolbar placement="left">
           <Stack.Toolbar.Button
+            icon={left.icon}
+            accessibilityLabel={left.icon ? left.title : undefined}
             variant={left.variant ?? 'plain'}
             disabled={left.disabled}
             onPress={left.onPress}>
@@ -140,6 +145,8 @@ export function HeaderActions({ left, right }: { left?: HeaderAction; right?: He
       {right ? (
         <Stack.Toolbar placement="right">
           <Stack.Toolbar.Button
+            icon={right.icon}
+            accessibilityLabel={right.icon ? right.title : undefined}
             variant={right.variant ?? 'prominent'}
             disabled={right.disabled}
             onPress={right.onPress}>

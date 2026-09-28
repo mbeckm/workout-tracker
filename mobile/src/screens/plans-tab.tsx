@@ -1,7 +1,7 @@
-import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -11,8 +11,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { PaperEmpty, PaperScreen } from '@/components/paper';
-import { radius } from '@/constants/theme';
+import { HeaderActions } from '@/components/button';
+import { PaperEmpty } from '@/components/paper';
+import { radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
 import { useTheme } from '@/theme/theme-context';
@@ -38,7 +39,7 @@ const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
 export function PlansTab() {
-  const { colors, type } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
   const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
@@ -84,44 +85,23 @@ export function PlansTab() {
 
   return (
     <>
-      <PaperScreen>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
+          paddingBottom: space.section,
+        }}>
         {plans.length === 0 ? (
           <PaperEmpty
             testID="plans-empty"
-            title="Plans"
             subject="No plans yet"
-            caption="Days, exercises, sets and reps."
             action={{ title: 'Create plan', onPress: createPlan, testID: 'plans-create' }}
           />
         ) : (
           <>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                minHeight: 34,
-              }}>
-              <Text style={type.planTitle} maxFontSizeMultiplier={1.2} accessibilityRole="header">
-                Plans
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create plan"
-                hitSlop={12}
-                onPress={createPlan}
-                testID="plans-create"
-                style={({ pressed }) => ({
-                  height: 34,
-                  width: 34,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  opacity: pressed ? 0.55 : 1,
-                })}>
-                <SymbolView name="plus" tintColor={colors.label} size={22} weight="medium" />
-              </Pressable>
-            </View>
             {activePlan ? (
               <PlanMenuRow
                 plan={activePlan}
@@ -131,7 +111,7 @@ export function PlansTab() {
               />
             ) : null}
             {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? 32 : 28 }}>
+              <View style={{ paddingTop: activePlan ? space.section : 0 }}>
                 {otherPlans.map((plan, index) => (
                   <PlanMenuRow
                     key={plan.id}
@@ -152,8 +132,10 @@ export function PlansTab() {
             ) : null}
           </>
         )}
-      </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: 'Plans' }} />
+      </ScrollView>
+      {plans.length > 0 ? (
+        <HeaderActions right={{ title: 'Create plan', icon: 'plus', variant: 'plain', onPress: createPlan }} />
+      ) : null}
     </>
   );
 }
@@ -192,7 +174,6 @@ function PlanMenuRow({
           {isActive ? (
             <View
               style={{
-                marginTop: 28,
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,

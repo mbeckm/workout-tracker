@@ -28,11 +28,11 @@
     "raw-spacing": 1
   },
   "components/paper.tsx": {
-    "off-scale-spacing": 3,
+    "off-scale-spacing": 1,
     "raw-font-weight": 1,
     "raw-icon-size": 2,
-    "raw-pressed-opacity": 3,
-    "raw-spacing": 12
+    "raw-pressed-opacity": 2,
+    "raw-spacing": 7
   },
   "components/plan-detail-day-row.tsx": {
     "off-scale-spacing": 2,
@@ -134,17 +134,12 @@
     "raw-spacing": 1
   },
   "screens/plan-editor.tsx": {
-    "raw-icon-size": 1,
-    "raw-spacing": 2
+    "raw-icon-size": 1
   },
   "screens/plans-tab.tsx": {
-    "off-scale-spacing": 3,
-    "raw-icon-size": 2,
-    "raw-pressed-opacity": 2,
-    "raw-spacing": 7
-  },
-  "screens/settings-tab.tsx": {
-    "raw-font-weight": 1,
-    "raw-spacing": 2
+    "off-scale-spacing": 2,
+    "raw-icon-size": 1,
+    "raw-pressed-opacity": 1,
+    "raw-spacing": 6
   }
 }
