@@ -28,6 +28,11 @@ export type WorkoutSnapshot = {
   isPro: boolean;
   /** The workout open in the log, so a killed app resumes it. Null when none. */
   activeSession: LogSession | null;
+  /**
+   * Done's moment facts already shown (`First workout`, `10th workout`), each with the workout
+   * that earned it. A moment fires once (trim-ui §12): deleting workouts never re-earns it.
+   */
+  milestonesShown: Record<string, string>;
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -45,6 +50,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   postWorkoutPaywallShownAt: null,
   isPro: false,
   activeSession: null,
+  milestonesShown: {},
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -52,6 +58,17 @@ function normalizeAppearance(value: unknown): AppearancePreference {
     return value;
   }
   return defaultSnapshot.appearance;
+}
+
+function normalizeMilestones(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
+    ),
+  );
 }
 
 function normalizeSystemScheme(value: unknown): ColorScheme {
@@ -132,5 +149,6 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     isPro: data.isPro === true,
     // Only live plans: a session for a deleted or archived plan/day is dropped.
     activeSession: normalizeLogSession(data.activeSession, plans),
+    milestonesShown: normalizeMilestones(data.milestonesShown),
   };
 }

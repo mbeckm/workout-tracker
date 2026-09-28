@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { withLoggedTenRM } from '../domain/helpers';
+import { withLoggedTenRM, workoutMilestone } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
 import {
   clearedSession,
@@ -126,6 +126,10 @@ type WorkoutStoreState = {
   markPaywallShown: (reason: ProReason) => void;
   /** Ignores `unknown`, so offline or an SDK error never downgrades a cached Pro user. */
   applyEntitlement: (entitlement: Entitlement) => void;
+  /** Done's moment fact for this workout, shown once ever: null once another workout had it. */
+  milestoneFor: (workout: LoggedWorkout) => string | null;
+  /** Records that `milestone` was shown for `workoutId` (first claim wins). */
+  claimMilestone: (milestone: string, workoutId: string) => void;
 };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
@@ -513,6 +517,26 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const milestoneFor = useCallback(
+    (workout: LoggedWorkout) => {
+      const milestone = workoutMilestone(workout, snapshot.workoutHistory);
+      if (!milestone) {
+        return null;
+      }
+      const owner = snapshot.milestonesShown[milestone];
+      return owner == null || owner === workout.id ? milestone : null;
+    },
+    [snapshot.milestonesShown, snapshot.workoutHistory],
+  );
+
+  const claimMilestone = useCallback((milestone: string, workoutId: string) => {
+    setSnapshot((current) =>
+      current.milestonesShown[milestone] != null
+        ? current
+        : { ...current, milestonesShown: { ...current.milestonesShown, [milestone]: workoutId } },
+    );
+  }, []);
+
   const applyEntitlement = useCallback((entitlement: Entitlement) => {
     if (entitlement.status === 'unknown') {
       return;
@@ -596,6 +620,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       markPaywallShown,
       applyEntitlement,
+      milestoneFor,
+      claimMilestone,
     };
   }, [
     snapshot,
@@ -625,6 +651,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     completeOnboarding,
     markPaywallShown,
     applyEntitlement,
+    milestoneFor,
+    claimMilestone,
     saveLogSession,
     clearLogSession,
   ]);

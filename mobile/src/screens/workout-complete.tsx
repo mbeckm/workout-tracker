@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { fontScaleCap, space } from '@/constants/theme';
 import { workoutPersonalBests, workoutUsesLoad } from '@/domain/set-lines';
 import { enterUp } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
-import { formatPaperMinutes, workoutMilestone } from '@/domain/helpers';
+import { formatPaperMinutes } from '@/domain/helpers';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -28,7 +28,16 @@ export function WorkoutCompleteScreen() {
   const workout =
     workoutHistory.find((item) => item.id === id) ??
     (lastCompletedWorkout?.id === id ? lastCompletedWorkout : null);
-  const { units } = useWorkoutStore();
+  const { units, milestoneFor, claimMilestone } = useWorkoutStore();
+  const milestone = workout ? milestoneFor(workout) : null;
+  const workoutId = workout?.id;
+
+  // Shown once ever (trim-ui §12 Moments): the first Done that shows it claims it.
+  useEffect(() => {
+    if (milestone && workoutId) {
+      claimMilestone(milestone, workoutId);
+    }
+  }, [claimMilestone, milestone, workoutId]);
   const personalBests = useMemo(
     () => (workout ? workoutPersonalBests(workout, workoutHistory) : null),
     [workout, workoutHistory],
@@ -74,7 +83,6 @@ export function WorkoutCompleteScreen() {
 
   // One line in words (trim-ui → Done): the day and how long. The recap below shows the rest.
   const facts = `${workout.title}, ${formatPaperMinutes(workout.durationMinutes)}`;
-  const milestone = workoutMilestone(workout, workoutHistory);
 
   return (
     <>
