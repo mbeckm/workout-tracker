@@ -75,7 +75,10 @@ export function ResidueSetRow({
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX([-10, 10])
+        // Leftward only: a set swipes left to undo; a rightward swipe belongs to the stage
+        // (previous exercise), so it isn't swallowed by the row it started on.
+        .activeOffsetX(-10)
+        .failOffsetX(10)
         .failOffsetY([-12, 12])
         .enabled(!reduceMotion)
         .onStart(() => {

@@ -15,9 +15,9 @@ export function sessionIsFor(
   return session != null && session.planId === planId && session.dayId === dayId;
 }
 
-/** `/log` for a fresh start: focus the first exercise. */
+/** `/log` for a fresh start: focus the first exercise, and play the start moment. */
 export function startDayHref(planId: string, day: WorkoutDay) {
-  return workoutLogHref({ planId, dayId: day.id, exerciseId: day.exercises[0]?.id });
+  return workoutLogHref({ planId, dayId: day.id, exerciseId: day.exercises[0]?.id, start: true });
 }
 
 /** `/log` for the session in progress: no exercise, so the log restores its own focus. */

@@ -1,15 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
+  AccessibilityInfo,
   AppState,
   Keyboard,
   Pressable,
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
   type AccessibilityActionEvent,
 } from 'react-native';
@@ -20,20 +22,25 @@ import {
 } from 'react-native-gesture-handler';
 import { KeyboardStickyView, useKeyboardState } from '@/keyboard';
 import Animated, {
+  Extrapolation,
   FadeIn,
+  FadeInLeft,
+  FadeInRight,
   FadeInUp,
   FadeOut,
+  interpolate,
   ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedSheet } from '@/components/animated-sheet';
+import { AnimatedSheet, SheetMorph } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { confirmAction } from '@/components/confirm-action';
 import { LogRest } from '@/components/log-rest';
@@ -80,7 +87,7 @@ import {
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { spokenTargets, targetsFromHistory, type SetTarget } from '@/domain/targets';
-import { DURATION, EASE_OUT, ENTER_OFFSET, SPRING } from '@/motion';
+import { DURATION, EASE_OUT, ENTER_OFFSET, exitFade, SPRING } from '@/motion';
 import {
   newId,
   type ExercisePrescription,
@@ -110,12 +117,21 @@ type SetEdit = {
 
 const WEIGHT_STEP = { kg: 2.5, lbs: 5 } as const;
 const SWIPE_DISTANCE = 56;
+/** Horizontal travel before the stage takes the pan (subtracted, so pages never jump). */
+const STAGE_PAN_SLOP = 14;
+/** Past the first or last exercise the page follows at this fraction (rubber band). */
+const STAGE_EDGE_RESISTANCE = 0.22;
+/** A neighbour one page away; it brightens as it arrives. */
+const STAGE_NEIGHBOUR_OPACITY = 0.5;
+const NOOP = () => {};
 const CHIP_PAD_X = 12;
 // Rest arrives with the set it follows: every-set tier, 150ms at most (trim-ui §8).
 const REST_IN = FadeIn.duration(DURATION.exit).easing(EASE_OUT);
 const REST_OUT = FadeOut.duration(DURATION.press).easing(EASE_OUT);
 /** Typing in a well settles before it is written; set logs land within this too. */
 const SESSION_WRITE_DEBOUNCE_MS = 400;
+/** Start moment: if the modal's `transitionEnd` never comes (web), light up anyway. */
+const START_LAND_FALLBACK_MS = 700;
 /** Display text (34pt name) and well numerals stop growing here (Dynamic Type). */
 const DISPLAY_TEXT_MAX_SCALE = 1.2;
 const WELL_TEXT_MAX_SCALE = 1.3;
@@ -217,11 +233,17 @@ function hapticSuccess() {
 
 export function LogWorkoutScreen() {
   const { colors, type } = useTheme();
-  const params = useLocalSearchParams<{ planId?: string; dayId?: string; exerciseId?: string }>();
+  const params = useLocalSearchParams<{
+    planId?: string;
+    dayId?: string;
+    exerciseId?: string;
+    start?: string;
+  }>();
   const planId = firstParam(params.planId);
   const dayId = firstParam(params.dayId);
   const exerciseIdParam = firstParam(params.exerciseId);
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const {
@@ -251,6 +273,44 @@ export function LogWorkoutScreen() {
     !opened.restored && day && logSession && loggedSetCount(logSession.drafts) > 0 ? logSession : null,
   );
   const startedAt = opened.startedAt;
+
+  // --- Start moment (trim-ui §8 Workout starts) ----------------------------
+  // Only a fresh Start: `Log set` rides up with the modal in the quiet gray and lights green
+  // on the frame the modal lands, with one medium impact. Resume, a Live Activity reopen or
+  // a restored session open lit. Log set is tappable throughout; nothing waits on this.
+  const [startMoment] = useState(
+    () => firstParam(params.start) === '1' && !opened.restored && conflict == null,
+  );
+  const [ctaLit, setCtaLit] = useState(!startMoment);
+  useEffect(() => {
+    if (!startMoment) {
+      return;
+    }
+    let lit = false;
+    const light = () => {
+      if (lit) {
+        return;
+      }
+      lit = true;
+      setCtaLit(true);
+      if (process.env.EXPO_OS === 'ios') {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    };
+    const timer = setTimeout(light, START_LAND_FALLBACK_MS);
+    const unsubscribe = navigation.addListener(
+      'transitionEnd' as never,
+      (event: { data?: { closing?: boolean } }) => {
+        if (!event.data?.closing) {
+          light();
+        }
+      },
+    );
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [navigation, startMoment]);
   const [rest, setRest] = useState<RestWindow | null>(opened.rest);
   // Rest ran out or was skipped: the Live Activity reads `Go` until the next rest starts.
   const [restOver, setRestOver] = useState(false);
@@ -291,10 +351,25 @@ export function LogWorkoutScreen() {
     setSheet(next);
   };
   /** Every exercise change drops a pending edit / weight nudge; they belong to one set. */
-  const goToExercise = (next: number | ((index: number) => number)) => {
+  const selectExercise = (next: number) => {
     setEditing(null);
     setWeightNudgeSetId(null);
     setExerciseIndex(next);
+  };
+  const { width: stageWidth } = useWindowDimensions();
+  // Name and stage page together; a swipe commits on release (the pager already settles there).
+  const pager = useExercisePager({
+    index: exerciseIndex,
+    count: drafts.length,
+    contentKey: drafts[exerciseIndex]?.prescription.name ?? '',
+    width: stageWidth,
+    reduceMotion: Boolean(reduceMotion),
+    onCommit: selectExercise,
+  });
+  /** A tap (strip, Next exercise, auto-advance): the stage moves on the same frame. */
+  const goToExercise = (next: number) => {
+    pager.jumpTo(next);
+    selectExercise(next);
   };
 
   // --- Session persistence -------------------------------------------------
@@ -995,38 +1070,21 @@ export function LogWorkoutScreen() {
         <View style={{ flex: 1, minHeight: 0 }}>
           {current ? (
             <>
-              <View style={{ paddingHorizontal: space.gutter, paddingTop: space.related, flexShrink: 0 }}>
-                <Pressable
-                  testID="log-exercise-name"
-                  onPress={() => openSheet('exercise')}
-                  onLongPress={() => openSheet('day')}
-                  delayLongPress={350}
-                  accessibilityRole="button"
-                  accessibilityLabel={current.prescription.name}
-                  accessibilityHint="Shows exercise details and alternatives."
-                  accessibilityActions={[{ name: 'activate' }, { name: 'openDay', label: 'Show the day' }]}
-                  onAccessibilityAction={(event: AccessibilityActionEvent) =>
-                    openSheet(event.nativeEvent.actionName === 'openDay' ? 'day' : 'exercise')
-                  }
-                  style={{ alignSelf: 'flex-start' }}>
-                  {/* Chevron rides inline after the last word (iOS title-menu convention). */}
-                  <Text
-                    style={type.largeTitle}
-                    numberOfLines={2}
-                    maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
-                    {current.prescription.name}
-                    {' '}
-                    <View style={{ width: 17, height: 17, transform: [{ translateY: -3 }] }}>
-                      <SymbolView
-                        name="chevron.down"
-                        size={iconSize.row}
-                        weight="semibold"
-                        tintColor={colors.tertiaryLabel}
-                        fallback={<ChevronFallback color={colors.tertiaryLabel} />}
-                      />
-                    </View>
-                  </Text>
-                </Pressable>
+              {/* Names page with the stage (same position), so the neighbour's name is already there. */}
+              <View style={{ flexShrink: 0, overflow: 'hidden' }}>
+                {drafts.map((draft, index) => (
+                  <PagerPage
+                    key={draft.prescription.id}
+                    index={index}
+                    current={index === exerciseIndex}
+                    layout="flow"
+                    pager={pager}>
+                    <ExerciseName
+                      name={draft.prescription.name}
+                      onOpen={index === exerciseIndex ? openSheet : undefined}
+                    />
+                  </PagerPage>
+                ))}
               </View>
               <View style={{ flexShrink: 0, paddingTop: space.gutter }}>
                 <DayStrip
@@ -1037,110 +1095,75 @@ export function LogWorkoutScreen() {
                 />
               </View>
 
-              <ExerciseStage
-                exerciseKey={current.prescription.id}
-                exerciseIndex={exerciseIndex}
-                canGoPrev={exerciseIndex > 0}
-                canGoNext={exerciseIndex < drafts.length - 1}
-                onPrev={() => goToExercise((value) => Math.max(0, value - 1))}
-                onNext={() =>
-                  goToExercise((value) => Math.min(drafts.length - 1, value + 1))
-                }
-                reduceMotion={Boolean(reduceMotion)}>
-                <StageScroll>
-                  <View style={{ paddingHorizontal: space.gutter, paddingTop: space.section, gap: space.tight, flexShrink: 0 }}>
-                    <View
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, minHeight: 28 }}
-                      accessible
-                      accessibilityRole="header"
-                      accessibilityLabel={
-                        exerciseComplete && !edit ? `${current.prescription.name} done` : setHint
-                      }>
-                      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} testID="log-set-status">
-                        {exerciseComplete && !edit ? 'Done' : (setHint ?? 'Set')}
-                      </Text>
-                      {exerciseComplete && !edit ? (
-                        <SymbolView
-                          name="checkmark"
-                          size={iconSize.row}
-                          weight="bold"
-                          tintColor={colors.systemGreen}
-                          fallback={
-                            <Text style={[type.button, { color: colors.systemGreen }]}>✓</Text>
-                          }
-                        />
-                      ) : null}
-                    </View>
-                    <TargetLine
-                      previousSets={previous?.sets}
-                      setIndex={exerciseComplete && !edit ? 'all' : Math.max(0, stageSetIndex)}
-                      minutes={minutes}
-                      units={units}
-                      target={stageTarget}
-                      unlocked={showTargets}
-                      onUnlock={offerTargets ? unlockTargets : undefined}
-                    />
-                  </View>
+              <GestureDetector gesture={pager.gesture}>
+                <View style={{ flex: 1, minHeight: 0 }}>
+                  {drafts.map((draft, index) =>
+                    index === exerciseIndex ? (
+                      <PagerPage key={draft.prescription.id} index={index} current layout="fill" pager={pager}>
+                        <StageScroll>
+                          <View style={STAGE_HEAD}>
+                            <SetStatus
+                              label={exerciseComplete && !edit ? 'Done' : (setHint ?? 'Set')}
+                              complete={exerciseComplete && !edit}
+                              accessibilityLabel={
+                                exerciseComplete && !edit ? `${current.prescription.name} done` : setHint
+                              }
+                              testID="log-set-status"
+                            />
+                            <TargetLine
+                              previousSets={previous?.sets}
+                              setIndex={exerciseComplete && !edit ? 'all' : Math.max(0, stageSetIndex)}
+                              minutes={minutes}
+                              units={units}
+                              target={stageTarget}
+                              unlocked={showTargets}
+                              onUnlock={offerTargets ? unlockTargets : undefined}
+                            />
+                          </View>
 
-                  <View style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter, paddingBottom: space.gutter, gap: space.related }}>
-                    {residueSets.map((set) => (
-                      <ResidueSetRow
-                        key={set.id}
-                        label={formatLoggedSetLine(set, { minutes, unit: units })}
-                        reduceMotion={Boolean(reduceMotion)}
-                        resetKey={residueResetKeys[set.id] ?? 0}
-                        editing={edit?.setId === set.id}
-                        entering={
-                          set.id === loggedPulseId
-                            ? reduceMotion
-                              ? FadeIn.duration(DURATION.fade)
-                              : // Rises from the wells, where the value came from (nothing teleports).
-                                // Every-set tier: 150ms at most.
-                                FadeInUp.duration(DURATION.exit).easing(EASE_OUT).withInitialValues({
-                                  opacity: 0,
-                                  transform: [{ translateY: ENTER_OFFSET }],
-                                })
-                            : undefined
-                        }
-                        onPress={() => (edit?.setId === set.id ? cancelEdit() : beginEdit(set))}
-                        onRequestDelete={() => confirmUndoSet(set)}
-                      />
-                    ))}
-                    {exerciseComplete && !edit ? (
-                      <Pressable
-                        onPress={addSet}
-                        testID="log-add-set"
-                        accessibilityRole="button"
-                        accessibilityLabel="Add set"
-                        accessibilityHint="Adds one more set to this exercise for today only."
-                        hitSlop={8}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: space.inline,
-                          minHeight: 28,
-                          alignSelf: 'flex-start',
-                          paddingRight: space.gutter,
-                          opacity: pressed ? PRESSED_OPACITY : 1,
-                        })}>
-                        <SymbolView
-                          name="plus"
-                          size={iconSize.row}
-                          weight="semibold"
-                          tintColor={colors.tertiaryLabel}
-                          fallback={
-                            <Text
-                              style={[type.body, { width: iconSize.row, textAlign: 'center', color: colors.tertiaryLabel }]}>
-                              +
-                            </Text>
-                          }
+                          <View style={STAGE_SETS}>
+                            {residueSets.map((set) => (
+                              <ResidueSetRow
+                                key={set.id}
+                                label={formatLoggedSetLine(set, { minutes, unit: units })}
+                                reduceMotion={Boolean(reduceMotion)}
+                                resetKey={residueResetKeys[set.id] ?? 0}
+                                editing={edit?.setId === set.id}
+                                entering={
+                                  set.id === loggedPulseId
+                                    ? reduceMotion
+                                      ? FadeIn.duration(DURATION.fade)
+                                      : // Rises from the wells, where the value came from (nothing teleports).
+                                        // Every-set tier: 150ms at most.
+                                        FadeInUp.duration(DURATION.exit).easing(EASE_OUT).withInitialValues({
+                                          opacity: 0,
+                                          transform: [{ translateY: ENTER_OFFSET }],
+                                        })
+                                    : undefined
+                                }
+                                onPress={() => (edit?.setId === set.id ? cancelEdit() : beginEdit(set))}
+                                onRequestDelete={() => confirmUndoSet(set)}
+                              />
+                            ))}
+                            {exerciseComplete && !edit ? <AddSetRow onPress={addSet} /> : null}
+                          </View>
+                        </StageScroll>
+                      </PagerPage>
+                    ) : (
+                      <PagerPage key={draft.prescription.id} index={index} current={false} layout="fill" pager={pager}>
+                        <StagePreview
+                          draft={draft}
+                          previousSets={previousLogForExercise(draft.prescription.name)?.sets ?? null}
+                          targetsFor={showTargets || !targetOfferDismissed ? targetsFor : null}
+                          showTargets={showTargets}
+                          offerTarget={!showTargets && !targetOfferDismissed && rest == null}
+                          units={units}
                         />
-                        <Text style={[type.body, { color: colors.tertiaryLabel }]}>Add set</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                </StageScroll>
-              </ExerciseStage>
+                      </PagerPage>
+                    ),
+                  )}
+                </View>
+              </GestureDetector>
             </>
           ) : null}
         </View>
@@ -1174,7 +1197,7 @@ export function LogWorkoutScreen() {
             <View style={{ flexDirection: 'row', gap: space.inline }}>
               {showWeight ? (
                 <LogWell
-                  label={units.toUpperCase()}
+                  label={units}
                   a11yName={units === 'kg' ? 'Weight, kilograms' : 'Weight, pounds'}
                   a11yHint={setHint}
                   stepName="weight"
@@ -1191,7 +1214,7 @@ export function LogWorkoutScreen() {
               ) : null}
               {showReps ? (
                 <LogWell
-                  label="REPS"
+                  label="reps"
                   a11yName="Reps"
                   a11yHint={setHint}
                   stepName="reps"
@@ -1207,7 +1230,7 @@ export function LogWorkoutScreen() {
               ) : null}
               {showDuration ? (
                 <LogWell
-                  label={minutes ? 'MIN' : 'SEC'}
+                  label={minutes ? 'min' : 'sec'}
                   a11yName={minutes ? 'Minutes' : 'Seconds'}
                   a11yHint={setHint}
                   stepName={minutes ? 'minutes' : 'seconds'}
@@ -1249,6 +1272,7 @@ export function LogWorkoutScreen() {
               variant="green"
               testID="log-set"
               onPress={cta.onPress}
+              unlit={!ctaLit}
               style={{ flex: 1 }}
             />
           </View>
@@ -1298,8 +1322,9 @@ export function LogWorkoutScreen() {
             best={bestSetForExercise(workoutHistory, current.prescription.name)}
             targets={showTargets ? currentTargets : null}
             units={units}
-            minutes={minutes}
             alternatives={alternativesFor(current.prescription, catalog)}
+            previousFor={previousLogForExercise}
+            bestFor={(name) => bestSetForExercise(workoutHistory, name)}
             onSwap={(next) => swapExercise(current.prescription.id, next)}
             onChooseAnother={chooseAnotherExercise}
           />
@@ -1467,130 +1492,397 @@ function DayStrip({
   );
 }
 
-function ExerciseStage({
-  children,
-  exerciseKey,
-  exerciseIndex,
-  canGoPrev,
-  canGoNext,
-  onPrev,
-  onNext,
+type ExercisePager = {
+  /** The stage position in exercises (fractional while a page is between). */
+  pos: SharedValue<number>;
+  /** A tap's 8pt arrival from the side you moved toward (px). */
+  nudge: SharedValue<number>;
+  width: number;
+  gesture: ReturnType<typeof Gesture.Pan>;
+  /** Move the stage to `next` now (a tap), arriving from the side it lies on. */
+  jumpTo: (next: number) => void;
+};
+
+/**
+ * One position drives the exercise name and the stage, so every page, neighbours included,
+ * sits where the finger puts it (trim-ui §8 Log stage swaps exercise). The pan tracks 1:1
+ * from its first frame, commits on distance or a flick (projected ≥ `SWIPE_DISTANCE`), and
+ * the release hands its velocity to `SPRING.fling`. React learns the new index on release,
+ * so the wells switch while the page is still settling; nothing re-renders mid-drag.
+ */
+function useExercisePager({
+  index,
+  count,
+  contentKey,
+  width,
   reduceMotion,
+  onCommit,
 }: {
-  children: ReactNode;
-  exerciseKey: string;
-  exerciseIndex: number;
-  canGoPrev: boolean;
-  canGoNext: boolean;
-  onPrev: () => void;
-  onNext: () => void;
+  index: number;
+  count: number;
+  /** The current exercise's name: a swap in place re-enters like a tap. */
+  contentKey: string;
+  width: number;
   reduceMotion: boolean;
-}) {
-  const translateX = useSharedValue(0);
-  const dragX = useSharedValue(0);
-  const contextX = useSharedValue(0);
-  const canGoPrevShared = useSharedValue(canGoPrev);
-  const canGoNextShared = useSharedValue(canGoNext);
-  const onPrevRef = useRef(onPrev);
-  const onNextRef = useRef(onNext);
+  onCommit: (next: number) => void;
+}): ExercisePager {
+  const pos = useSharedValue(index);
+  const nudge = useSharedValue(0);
+  const indexShared = useSharedValue(index);
+  const countShared = useSharedValue(count);
+  const startPos = useSharedValue(index);
+  const startX = useSharedValue(0);
+  // Where the pages were last sent (tap or swipe), so an index change from elsewhere
+  // (Live Activity focus, reordering) still lands, and a swipe's own commit doesn't re-jump.
+  const shownIndex = useRef(index);
+  const shownKey = useRef(contentKey);
+  const onCommitRef = useRef(onCommit);
 
   useEffect(() => {
-    onPrevRef.current = onPrev;
-    onNextRef.current = onNext;
-  }, [onNext, onPrev]);
+    onCommitRef.current = onCommit;
+  }, [onCommit]);
 
-  useEffect(() => {
-    canGoPrevShared.set(canGoPrev);
-    canGoNextShared.set(canGoNext);
-  }, [canGoNext, canGoNextShared, canGoPrev, canGoPrevShared]);
+  const arrive = useCallback(
+    (direction: number) => {
+      if (reduceMotion) {
+        nudge.set(0);
+        return;
+      }
+      nudge.set(ENTER_OFFSET * direction);
+      nudge.set(withTiming(0, { duration: DURATION.press, easing: EASE_OUT }));
+    },
+    [nudge, reduceMotion],
+  );
 
-  // The new exercise arrives from the side you moved toward (nothing teleports): forward
-  // comes in from the right, back from the left, matching the swipe and the strip order.
-  const previousIndexRef = useRef(exerciseIndex);
+  const jumpTo = useCallback(
+    (next: number) => {
+      const from = shownIndex.current;
+      shownIndex.current = next;
+      pos.set(next);
+      if (next !== from) {
+        arrive(next < from ? -1 : 1);
+      }
+    },
+    [arrive, pos],
+  );
+
+  const lastIndex = useRef(index);
   useEffect(() => {
-    const direction = exerciseIndex < previousIndexRef.current ? -1 : 1;
-    previousIndexRef.current = exerciseIndex;
-    dragX.set(0);
-    if (reduceMotion) {
-      translateX.set(0);
-      return;
+    indexShared.set(index);
+    countShared.set(count);
+    const indexChanged = lastIndex.current !== index;
+    lastIndex.current = index;
+    if (shownIndex.current !== index) {
+      jumpTo(index);
+    } else if (!indexChanged && shownKey.current !== contentKey) {
+      // Same slot, another exercise (Alternatives, Choose another): it arrives in place.
+      arrive(1);
     }
-    translateX.set(ENTER_OFFSET * direction);
-    translateX.set(withTiming(0, { duration: DURATION.press, easing: EASE_OUT }));
-    // exerciseKey: a swap on the same index (Alternatives) also re-enters.
-  }, [dragX, exerciseIndex, exerciseKey, reduceMotion, translateX]);
+    shownKey.current = contentKey;
+  }, [arrive, contentKey, count, countShared, index, indexShared, jumpTo]);
 
-  const commitPrev = () => {
-    dragX.set(0);
+  const commit = useCallback((next: number) => {
+    shownIndex.current = next;
     if (process.env.EXPO_OS === 'ios') {
       void Haptics.selectionAsync();
     }
-    onPrevRef.current();
-  };
+    onCommitRef.current(next);
+  }, []);
 
-  const commitNext = () => {
-    dragX.set(0);
-    if (process.env.EXPO_OS === 'ios') {
-      void Haptics.selectionAsync();
-    }
-    onNextRef.current();
-  };
-
-  const pan = useMemo(
+  const gesture = useMemo(
     () =>
       Gesture.Pan()
-        // Higher than ResidueSetRow so a set swipe wins before exercise change.
-        .activeOffsetX([-28, 28])
+        // Above ResidueSetRow's 10pt so a set's own swipe wins on its row.
+        .activeOffsetX([-STAGE_PAN_SLOP, STAGE_PAN_SLOP])
         .failOffsetY([-12, 12])
-        .onStart(() => {
-          contextX.set(dragX.get());
+        .onStart((event) => {
+          // Grabbing a settling page takes it from where it is; the slop isn't a jump.
+          startPos.set(pos.get());
+          startX.set(event.translationX);
+          nudge.set(0);
         })
         .onUpdate((event) => {
-          const next = contextX.get() + event.translationX;
-          if (next > 0 && !canGoPrevShared.get()) {
-            dragX.set(next * 0.22);
-            return;
+          const last = countShared.get() - 1;
+          const next = startPos.get() - (event.translationX - startX.get()) / width;
+          if (next < 0) {
+            pos.set(next * STAGE_EDGE_RESISTANCE);
+          } else if (next > last) {
+            pos.set(last + (next - last) * STAGE_EDGE_RESISTANCE);
+          } else {
+            pos.set(next);
           }
-          if (next < 0 && !canGoNextShared.get()) {
-            dragX.set(next * 0.22);
-            return;
-          }
-          dragX.set(next);
         })
         .onEnd((event) => {
-          const projected = dragX.get() + project(event.velocityX);
-          if (projected < -SWIPE_DISTANCE && canGoNextShared.get()) {
-            scheduleOnRN(commitNext);
-            return;
+          const from = indexShared.get();
+          const last = countShared.get() - 1;
+          // Positive: the pages travelled right, toward the previous exercise.
+          const travel = (from - pos.get()) * width + project(event.velocityX);
+          let target = from;
+          if (travel < -SWIPE_DISTANCE && from < last) {
+            target = from + 1;
+          } else if (travel > SWIPE_DISTANCE && from > 0) {
+            target = from - 1;
           }
-          if (projected > SWIPE_DISTANCE && canGoPrevShared.get()) {
-            scheduleOnRN(commitPrev);
-            return;
-          }
-          dragX.set(
-            withSpring(0, {
+          pos.set(
+            withSpring(target, {
               ...SPRING.fling,
-              velocity: event.velocityX,
+              velocity: -event.velocityX / width,
               reduceMotion: ReduceMotion.System,
             }),
           );
+          if (target !== from) {
+            scheduleOnRN(commit, target);
+          }
         }),
-    [canGoNextShared, canGoPrevShared, contextX, dragX],
+    [commit, countShared, indexShared, nudge, pos, startPos, startX, width],
   );
 
-  const stageStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: dragX.get() + translateX.get() }],
-    opacity: reduceMotion
-      ? 1
-      : Math.max(0.62, 1 - Math.min(1, Math.abs(dragX.get()) / 240)),
-  }));
+  return { pos, nudge, width, gesture, jumpTo };
+}
 
+/**
+ * One exercise's page. `flow`: the current page sizes its container (the name) and
+ * neighbours overlay it; `fill`: every page fills the stage. Neighbours are inert and
+ * hidden from VoiceOver, and dim with distance so the page you're on leads.
+ */
+function PagerPage({
+  index,
+  current,
+  layout,
+  pager,
+  children,
+}: {
+  index: number;
+  current: boolean;
+  layout: 'flow' | 'fill';
+  pager: ExercisePager;
+  children: ReactNode;
+}) {
+  const { pos, nudge, width } = pager;
+  const style = useAnimatedStyle(() => {
+    const offset = index - pos.get();
+    return {
+      transform: [{ translateX: offset * width + nudge.get() }],
+      opacity: interpolate(Math.abs(offset), [0, 1], [1, STAGE_NEIGHBOUR_OPACITY], Extrapolation.CLAMP),
+    };
+  });
+  const place =
+    layout === 'fill'
+      ? { position: 'absolute' as const, top: 0, right: 0, bottom: 0, left: 0 }
+      : current
+        ? null
+        : { position: 'absolute' as const, top: 0, right: 0, left: 0 };
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={[{ flex: 1, minHeight: 0 }, stageStyle]}>{children}</Animated.View>
-    </GestureDetector>
+    <Animated.View
+      pointerEvents={current ? 'auto' : 'none'}
+      accessibilityElementsHidden={!current}
+      importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
+      style={[place, style]}>
+      {children}
+    </Animated.View>
   );
 }
+
+/** The exercise name: tap for the exercise sheet, hold for the day. Inert on a neighbour page. */
+function ExerciseName({
+  name,
+  onOpen,
+}: {
+  name: string;
+  onOpen?: (sheet: 'day' | 'exercise') => void;
+}) {
+  const { colors, type } = useTheme();
+  return (
+    <View style={{ paddingHorizontal: space.gutter, paddingTop: space.related }}>
+      <Pressable
+        testID={onOpen ? 'log-exercise-name' : undefined}
+        disabled={!onOpen}
+        onPress={() => onOpen?.('exercise')}
+        onLongPress={() => onOpen?.('day')}
+        delayLongPress={350}
+        accessibilityRole="button"
+        accessibilityLabel={name}
+        accessibilityHint="Shows exercise details and alternatives."
+        accessibilityActions={[{ name: 'activate' }, { name: 'openDay', label: 'Show the day' }]}
+        onAccessibilityAction={(event: AccessibilityActionEvent) =>
+          onOpen?.(event.nativeEvent.actionName === 'openDay' ? 'day' : 'exercise')
+        }
+        style={{ alignSelf: 'flex-start' }}>
+        {/* Chevron rides inline after the last word (iOS title-menu convention). */}
+        <Text style={type.largeTitle} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
+          {name}
+          {' '}
+          <View style={{ width: 17, height: 17, transform: [{ translateY: -3 }] }}>
+            <SymbolView
+              name="chevron.down"
+              size={iconSize.row}
+              weight="semibold"
+              tintColor={colors.tertiaryLabel}
+              fallback={<ChevronFallback color={colors.tertiaryLabel} />}
+            />
+          </View>
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const STAGE_HEAD = {
+  paddingHorizontal: space.gutter,
+  paddingTop: space.section,
+  gap: space.tight,
+  flexShrink: 0,
+} as const;
+const STAGE_SETS = {
+  paddingHorizontal: space.gutter,
+  paddingTop: space.gutter,
+  paddingBottom: space.gutter,
+  gap: space.related,
+} as const;
+
+/** `Set 2 of 4`, or `Done` with the green check. */
+function SetStatus({
+  label,
+  complete,
+  accessibilityLabel,
+  testID,
+}: {
+  label: string;
+  complete: boolean;
+  accessibilityLabel?: string;
+  testID?: string;
+}) {
+  const { colors, type } = useTheme();
+  return (
+    <View
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, minHeight: 28 }}
+      accessible
+      accessibilityRole="header"
+      accessibilityLabel={accessibilityLabel}>
+      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} testID={testID}>
+        {label}
+      </Text>
+      {complete ? (
+        <SymbolView
+          name="checkmark"
+          size={iconSize.row}
+          weight="bold"
+          tintColor={colors.systemGreen}
+          fallback={<Text style={[type.button, { color: colors.systemGreen }]}>✓</Text>}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function AddSetRow({ onPress }: { onPress?: () => void }) {
+  const { colors, type } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      testID={onPress ? 'log-add-set' : undefined}
+      accessibilityRole="button"
+      accessibilityLabel="Add set"
+      accessibilityHint="Adds one more set to this exercise for today only."
+      hitSlop={8}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.inline,
+        minHeight: 28,
+        alignSelf: 'flex-start',
+        paddingRight: space.gutter,
+        opacity: pressed ? PRESSED_OPACITY : 1,
+      })}>
+      <SymbolView
+        name="plus"
+        size={iconSize.row}
+        weight="semibold"
+        tintColor={colors.tertiaryLabel}
+        fallback={
+          <Text style={[type.body, { width: iconSize.row, textAlign: 'center', color: colors.tertiaryLabel }]}>
+            +
+          </Text>
+        }
+      />
+      <Text style={[type.body, { color: colors.tertiaryLabel }]}>Add set</Text>
+    </Pressable>
+  );
+}
+
+/**
+ * A neighbour's stage as it will look on arrival (set status, last time or target, logged
+ * sets), drawn from its own draft so a swipe never reveals an empty page. Static: no
+ * gestures, no edit state. Memoized, so typing in the wells doesn't redraw it.
+ */
+const StagePreview = memo(function StagePreview({
+  draft,
+  previousSets,
+  targetsFor,
+  showTargets,
+  offerTarget,
+  units,
+}: {
+  draft: DraftExercise;
+  previousSets: readonly LoggedSet[] | null;
+  /** Null when neither targets nor the target offer can show. */
+  targetsFor: ((exercise: DraftExercise) => (SetTarget | null)[] | null) | null;
+  showTargets: boolean;
+  offerTarget: boolean;
+  units: 'kg' | 'lbs';
+}) {
+  const { colors, type } = useTheme();
+  const minutes = durationIsMinutes(draft.prescription);
+  const complete = exerciseIsComplete(draft);
+  const setIndex = draft.sets.findIndex((set) => !set.done);
+  const targets = useMemo(() => (targetsFor ? targetsFor(draft) : null), [draft, targetsFor]);
+  const target = !complete && setIndex >= 0 ? (targets?.[setIndex] ?? null) : null;
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={STAGE_HEAD}>
+        <SetStatus
+          label={complete ? 'Done' : `Set ${Math.max(0, setIndex) + 1} of ${draft.sets.length}`}
+          complete={complete}
+        />
+        <TargetLine
+          previousSets={previousSets}
+          setIndex={complete ? 'all' : Math.max(0, setIndex)}
+          minutes={minutes}
+          units={units}
+          target={target}
+          unlocked={showTargets}
+          onUnlock={offerTarget ? NOOP : undefined}
+        />
+      </View>
+      <View style={STAGE_SETS}>
+        {draft.sets
+          .filter((set) => set.done)
+          .map((set) => (
+            <View
+              key={set.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space.inline, minHeight: 28 }}>
+              <SymbolView
+                name="checkmark"
+                size={iconSize.row}
+                weight="bold"
+                tintColor={colors.systemGreen}
+                fallback={
+                  <Text style={[type.body, { width: iconSize.row, color: colors.systemGreen, textAlign: 'center' }]}>
+                    ✓
+                  </Text>
+                }
+              />
+              <Text style={[type.body, { fontVariant: ['tabular-nums'] }]} numberOfLines={1}>
+                {formatLoggedSetLine(set, { minutes, unit: units })}
+              </Text>
+            </View>
+          ))}
+        {complete ? <AddSetRow /> : null}
+      </View>
+    </View>
+  );
+});
 
 function LogWell({
   label,
@@ -1853,34 +2145,25 @@ function DaySheetRow({
   );
 }
 
-/** Exercise fact sheet (no media): plan, last time, best — then Alternatives, or any exercise, to swap. */
-function LogExerciseSheet({
+type SheetFact = { label: string; value: string; spoken?: string };
+
+function exerciseFacts({
   exercise,
   previous,
   best,
   targets,
   units,
   minutes,
-  alternatives,
-  onSwap,
-  onChooseAnother,
 }: {
   exercise: ExercisePrescription;
   previous: PreviousExerciseLog | null;
   best: BestSet | null;
-  /** Pro only: today's target for every set. */
   targets: (SetTarget | null)[] | null;
   units: 'kg' | 'lbs';
   minutes: boolean;
-  alternatives: ExercisePrescription[];
-  onSwap: (next: ExercisePrescription) => void;
-  /** Any exercise from the picker, for when no alternative fits. */
-  onChooseAnother: () => void;
-}) {
-  const { colors, type } = useTheme();
-  const detail = exerciseDetail(exercise);
+}): SheetFact[] {
   const targetSets = targets?.every((target) => target != null) ? (targets as SetTarget[]) : null;
-  const facts: { label: string; value: string; spoken?: string }[] = [
+  return [
     { label: 'Plan', value: formatPlanMetric(exercise) },
     {
       label: 'Last time',
@@ -1909,10 +2192,162 @@ function LogExerciseSheet({
         ]
       : []),
   ];
+}
+
+/** The page you moved toward arrives from that side, 8pt (nothing teleports). */
+const SHEET_PAGE_FORWARD = FadeInRight.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
+  opacity: 0,
+  transform: [{ translateX: ENTER_OFFSET }],
+});
+const SHEET_PAGE_BACK = FadeInLeft.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
+  opacity: 0,
+  transform: [{ translateX: -ENTER_OFFSET }],
+});
+
+/** VoiceOver lands on the new page's title when the sheet morphs. */
+function useAccessibilityFocus(ref: RefObject<View | null>, enabled: boolean) {
+  useEffect(() => {
+    // iOS only: react-native-web has no sendAccessibilityEvent, and calling it crashes the log.
+    if (!enabled || !ref.current || process.env.EXPO_OS !== 'ios') {
+      return;
+    }
+    AccessibilityInfo.sendAccessibilityEvent(ref.current, 'focus');
+  }, [enabled, ref]);
+}
+
+/**
+ * Exercise fact sheet (no media): plan, last time, best, then Alternatives, or any exercise.
+ * An alternative never swaps on tap: its row opens its own facts in place (the sheet morphs,
+ * trim-ui §8), and only `Use this exercise` swaps. Back returns to this exercise.
+ */
+function LogExerciseSheet({
+  exercise,
+  previous,
+  best,
+  targets,
+  units,
+  alternatives,
+  previousFor,
+  bestFor,
+  onSwap,
+  onChooseAnother,
+}: {
+  exercise: ExercisePrescription;
+  previous: PreviousExerciseLog | null;
+  best: BestSet | null;
+  /** Pro only: today's target for every set. */
+  targets: (SetTarget | null)[] | null;
+  units: 'kg' | 'lbs';
+  alternatives: ExercisePrescription[];
+  /** Last session and best set of an alternative, by name. */
+  previousFor: (name: string) => PreviousExerciseLog | null;
+  bestFor: (name: string) => BestSet | null;
+  onSwap: (next: ExercisePrescription) => void;
+  /** Any exercise from the picker, for when no alternative fits. */
+  onChooseAnother: () => void;
+}) {
+  const reduceMotion = Boolean(useReducedMotion());
+  const [preview, setPreview] = useState<ExercisePrescription | null>(null);
+  // Null until the first move: the sheet's own entrance is the sheet sliding up, not a page.
+  const [moved, setMoved] = useState<'forward' | 'back' | null>(null);
+  const entering = moved == null
+    ? undefined
+    : reduceMotion
+      ? FadeIn.duration(DURATION.fade)
+      : moved === 'forward'
+        ? SHEET_PAGE_FORWARD
+        : SHEET_PAGE_BACK;
+  const exiting = moved == null ? undefined : exitFade(reduceMotion);
+
+  const open = (item: ExercisePrescription) => {
+    setMoved('forward');
+    setPreview(item);
+  };
+  const back = () => {
+    setMoved('back');
+    setPreview(null);
+  };
+
+  return (
+    <SheetMorph>
+      {preview ? (
+        <Animated.View key={`preview-${preview.id}`} entering={entering} exiting={exiting}>
+          <AlternativePreview
+            // Same slot, same sets and reps: the plan line shows what the swap keeps.
+            exercise={{
+              ...preview,
+              sets: exercise.sets,
+              reps: exercise.reps,
+              repScheme: exercise.repScheme ?? null,
+            }}
+            previous={previousFor(preview.name)}
+            best={bestFor(preview.name)}
+            units={units}
+            focus={moved != null}
+            onBack={back}
+            onUse={() => onSwap(preview)}
+          />
+        </Animated.View>
+      ) : (
+        <Animated.View key="facts" entering={entering} exiting={exiting}>
+          <ExerciseFactsPage
+            exercise={exercise}
+            facts={exerciseFacts({
+              exercise,
+              previous,
+              best,
+              targets,
+              units,
+              minutes: durationIsMinutes(exercise),
+            })}
+            alternatives={alternatives}
+            focus={moved != null}
+            onOpenAlternative={open}
+            onChooseAnother={onChooseAnother}
+          />
+        </Animated.View>
+      )}
+    </SheetMorph>
+  );
+}
+
+function ExerciseFactsPage({
+  exercise,
+  facts,
+  alternatives,
+  focus,
+  onOpenAlternative,
+  onChooseAnother,
+}: {
+  exercise: ExercisePrescription;
+  facts: SheetFact[];
+  alternatives: ExercisePrescription[];
+  focus: boolean;
+  onOpenAlternative: (item: ExercisePrescription) => void;
+  onChooseAnother: () => void;
+}) {
+  const { colors, type } = useTheme();
+  const detail = exerciseDetail(exercise);
+  const titleRef = useRef<View>(null);
+  useAccessibilityFocus(titleRef, focus);
+  const chevron = (
+    <SymbolView
+      name="chevron.right"
+      tintColor={colors.tertiaryLabel}
+      size={iconSize.caption}
+      weight="semibold"
+      fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>›</Text>}
+    />
+  );
 
   return (
     <View>
-      <View style={{ gap: space.tight, paddingBottom: space.inline }}>
+      <View
+        ref={titleRef}
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel={detail ? `${exercise.name}, ${detail}` : exercise.name}
+        style={{ gap: space.tight, paddingBottom: space.inline }}>
         <Text style={type.title}>{exercise.name}</Text>
         {detail ? <Text style={type.kicker}>{detail}</Text> : null}
       </View>
@@ -1926,12 +2361,15 @@ function LogExerciseSheet({
           <View style={{ paddingTop: space.related, paddingBottom: space.tight }}>
             <Text style={type.kicker}>Alternatives</Text>
           </View>
-          {alternatives.map((item) => (
+          {/* A row opens the alternative's facts (chevron: opens in-app detail, §7). */}
+          {alternatives.map((item, index) => (
             <PaperRow
               key={item.id}
               title={item.name}
               meta={item.equipments[0] ?? item.targetMuscles[0]}
-              onPress={() => onSwap(item)}
+              testID={`log-alternative-${index}`}
+              onPress={() => onOpenAlternative(item)}
+              trailing={chevron}
             />
           ))}
         </>
@@ -1940,16 +2378,87 @@ function LogExerciseSheet({
         title="Choose another exercise"
         testID="log-choose-exercise"
         onPress={onChooseAnother}
-        trailing={
-          <SymbolView
-            name="chevron.right"
-            tintColor={colors.tertiaryLabel}
-            size={iconSize.caption}
-            weight="semibold"
-            fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>›</Text>}
-          />
-        }
+        trailing={chevron}
       />
+    </View>
+  );
+}
+
+/** One alternative's facts, in the sheet it was opened from: Back, or Use this exercise. */
+function AlternativePreview({
+  exercise,
+  previous,
+  best,
+  units,
+  focus,
+  onBack,
+  onUse,
+}: {
+  exercise: ExercisePrescription;
+  previous: PreviousExerciseLog | null;
+  best: BestSet | null;
+  units: 'kg' | 'lbs';
+  focus: boolean;
+  onBack: () => void;
+  onUse: () => void;
+}) {
+  const { colors, type } = useTheme();
+  const detail = exerciseDetail(exercise);
+  const titleRef = useRef<View>(null);
+  useAccessibilityFocus(titleRef, focus);
+  const facts = exerciseFacts({
+    exercise,
+    previous,
+    best,
+    targets: null,
+    units,
+    minutes: durationIsMinutes(exercise),
+  });
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingBottom: space.inline }}>
+        <Pressable
+          onPress={onBack}
+          testID="log-alternative-back"
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={4}
+          style={({ pressed }) => ({
+            width: TOUCH_TARGET,
+            height: TOUCH_TARGET,
+            // The glyph, not its touch target, lines up with the gutter; the target
+            // centers on the title's first line.
+            marginLeft: -(TOUCH_TARGET - iconSize.control) / 2,
+            marginTop: -space.inline,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? PRESSED_OPACITY : 1,
+          })}>
+          <SymbolView
+            name="chevron.left"
+            size={iconSize.control}
+            weight="medium"
+            tintColor={colors.label}
+            fallback={<Text style={[type.title, { color: colors.label }]}>‹</Text>}
+          />
+        </Pressable>
+        <View
+          ref={titleRef}
+          accessible
+          accessibilityRole="header"
+          accessibilityLabel={detail ? `${exercise.name}, ${detail}` : exercise.name}
+          style={{ flex: 1, gap: space.tight }}>
+          <Text style={type.title}>{exercise.name}</Text>
+          {detail ? <Text style={type.kicker}>{detail}</Text> : null}
+        </View>
+      </View>
+      <View style={{ paddingBottom: space.inset }}>
+        {facts.map((fact) => (
+          <FactRow key={fact.label} label={fact.label} value={fact.value} spoken={fact.spoken} />
+        ))}
+      </View>
+      <Button title="Use this exercise" variant="black" testID="log-alternative-use" onPress={onUse} />
     </View>
   );
 }
