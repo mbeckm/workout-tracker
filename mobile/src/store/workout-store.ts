@@ -88,6 +88,8 @@ type WorkoutStoreState = {
   isPro: boolean;
   /** Known after the first entitlement sync this launch; null when not Pro or not known yet. */
   proPeriod: ProPeriod | null;
+  /** When the current Pro period ends, and whether it renews then. Null when not known. */
+  proRenewal: { expiresAt: string; willRenew: boolean } | null;
   isHydrated: boolean;
   shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
@@ -133,6 +135,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<LoggedWorkout | null>(null);
   const [proPeriod, setProPeriod] = useState<ProPeriod | null>(null);
+  const [proRenewal, setProRenewal] = useState<WorkoutStoreState['proRenewal']>(null);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef(snapshot);
   const hydratedRef = useRef(false);
@@ -516,6 +519,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     }
     const isPro = entitlement.status === 'pro';
     setProPeriod(isPro ? entitlement.period : null);
+    setProRenewal(
+      isPro && entitlement.expiresAt
+        ? { expiresAt: entitlement.expiresAt, willRenew: entitlement.willRenew !== false }
+        : null,
+    );
     setSnapshot((current) => (current.isPro === isPro ? current : { ...current, isPro }));
   }, []);
 
@@ -560,6 +568,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       postWorkoutPaywallShownAt: snapshot.postWorkoutPaywallShownAt,
       isPro: snapshot.isPro,
       proPeriod: snapshot.isPro ? proPeriod : null,
+      proRenewal: snapshot.isPro ? proRenewal : null,
       isHydrated,
       shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
@@ -592,6 +601,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     snapshot,
     activePlan,
     proPeriod,
+    proRenewal,
     isHydrated,
     shouldOfferPostWorkoutPaywall,
     lastCompletedWorkout,
