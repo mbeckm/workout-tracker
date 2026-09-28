@@ -41,11 +41,17 @@ export const DURATION = {
   celebrate: 760,
 } as const;
 
-/** Springs for anything a finger drives or that settles into place. No bounce outside `pop`. */
+/**
+ * Springs. No bounce unless a finger threw it (trim-ui → Motion): `settle` by default,
+ * `fling` only after a gesture that carried momentum (pass its velocity), `pop` only for
+ * rare rewards.
+ */
 export const SPRING = {
-  /** Sheets, drags, swipes, rows settling. Pass the gesture's velocity. */
-  settle: { duration: 300, dampingRatio: 0.85 },
-  /** A mark filling as a reward (week dot). The only bouncy spring. */
+  /** Default: rows, repositioning, snap-back without velocity. Critically damped. */
+  settle: { duration: 300, dampingRatio: 1 },
+  /** After a flick, swipe release or thrown sheet. Hand it the gesture's velocity. */
+  fling: { duration: 300, dampingRatio: 0.8 },
+  /** A mark filling as a reward (week dot). The only real overshoot. */
   pop: { duration: 520, dampingRatio: 0.42 },
 } as const;
 

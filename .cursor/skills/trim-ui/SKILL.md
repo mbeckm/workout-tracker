@@ -22,8 +22,21 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 5. **Layout carries hierarchy.** Size, weight, position and space say what matters. Labels that only restate hierarchy (`YOUR PLANS`, `ACTIVE PLAN`) are banned.
 6. **Color is a signal, not decoration.** The screen is ink on paper. Each signal color has exactly one meaning (§5).
 7. **Motion earns its place.** An animation must make Trim feel faster, more fluid or more loveable. If it can't name which, cut it (§8).
-8. **Native and timeless.** System font, SF Symbols, iOS semantic colors, native navigation, sheets, menus and alerts. No trends (gradients, glass cards, neumorphism, custom transitions). Nothing that will look dated in five years.
-9. **The user is in control.** The UI never implies intent the user didn't express (see `PRODUCT.md` → Principles → Control).
+8. **Native and timeless.** System font, SF Symbols, iOS semantic colors, native navigation, sheets, menus and alerts. Trim owns Liquid Glass fully: all system chrome is the system's glass (§5). No trends of our own (gradients, glass imitations in content, neumorphism, custom transitions). Nothing that will look dated in five years.
+9. **The user is in control.** The UI never implies intent the user didn't express (see `PRODUCT.md` → Principles → Control). Slips are forgiven with Undo, not prevented with dialogs.
+10. **Built for the gym.** Every rule is checked against the setting below.
+
+### The setting
+
+Trim is used by people who train seriously, in a gym, between sets. Design for that moment, not for a desk:
+
+| Fact | So |
+| --- | --- |
+| **Artificial light, arm's length.** Indoor gym light, not sunlight. The phone is held out, on a bench, or in a hand that's shaking. | Contrast stays AA or better (§5). On the Log stage nothing is smaller than 15, and the numbers you act on are 22 or larger. No hairline-thin strokes or low-contrast greys for anything you need to read. |
+| **Short, frequent visits.** Open, log, leave for music or messages, come back 90 seconds later, dozens of times a workout. | Resume exactly where they left off, on the first frame: no launch or foreground animation, no splash, no re-entrance of content. The answer to "what now?" (current set, rest left) reads in one glance. The Live Activity carries the workout while they're away. |
+| **Music and headphones.** Something is always playing. | Trim never makes a sound or takes the audio session. Confirmation is visual plus haptic. Anything that must reach them outside the app (rest over) goes through the Live Activity. |
+| **One hand.** The other hand holds a bar, a bottle, or a towel. | Everything done during a workout is in the bottom half and reachable by thumb. Sheets over pushes for detail. Actions that end or discard a workout (Finish, Cancel) sit out of thumb reach on purpose. |
+| **Audience.** Serious lifters, mostly young. Not a senior or accessibility-first product. | It must still work for people who don't see well: Dynamic Type up to the caps (§3), AA contrast, VoiceOver labels on everything. No special layouts for accessibility text sizes. |
 
 ---
 
@@ -82,6 +95,8 @@ System font (SF Pro) only. **Eight sizes, three weights, twelve roles.** Use a r
 | `button` | 17 / 22 | Bold | 0 | per variant | Pill labels, Finish | Anything not tappable |
 | `caption` | 15 / 20 | Regular | 0 | tertiary | Meta under a name, fact captions, section captions, stepper ± glyph labels | Anything the user must act on |
 | `footnote` | 13 / 18 | Regular | 0 | tertiary | Legal lines, chart axes, the paywall price note | Meta under a row (that's `caption`) |
+
+> **Direction under review (Sep 2026):** meta under a name moves to the airy treatment: 17 Regular tertiary, 4 under the name, rows padded 20, so meta is the same size as the name and quieter by weight and color only. Section captions and fact labels need a separate treatment so they don't read as rows. This lands together with the Home top layout (design system page → Home top). Until then the table above is the rule.
 
 ### Rules
 
@@ -171,6 +186,16 @@ Captions are always tertiary. Secondary is never a caption color. It's for settl
 
 No gradients, no shadows, no borders on surfaces. The only outline is the focused well's 2px `label` ring. Dark mode is black ground (#000) with elevated grays. Check every screen in both.
 
+### Liquid Glass
+
+Trim owns Liquid Glass fully, and only where the system draws it.
+
+- **System chrome is glass:** tab bar, navigation and toolbar items, native sheets, context menus, alerts, the keyboard. Use the native components (`NativeTabs`, `Stack.Toolbar`, `formSheet`) with their default materials. Never force them opaque, never recolor them, never draw a custom background behind them.
+- **Content scrolls under chrome.** The system's scroll-edge effect separates them. No hairlines, opaque strips or custom blur under bars.
+- **Content is never glass.** Surfaces, wells, cards and pills in content stay solid (`secondarySystemBackground`, ink, green). No `BlurView` in content, no translucent panels.
+- **Prefer native sheets** (`formSheet` with detents) over the custom `AnimatedSheet`, so sheets get the system glass and gestures for free.
+- **Primary actions on glass** use the toolbar's prominent style, never a custom pill in a header.
+
 ---
 
 ## 6. Shape
@@ -227,10 +252,21 @@ Motion exists to make Trim feel **faster** (instant acknowledgement, no waiting)
 | `DURATION.enter` | 200 | Something arriving: a set line, a toast, swapped content |
 | `DURATION.change` | 280 | A change you don't wait on: number roll, theme crossfade. Never between a tap and what it opens. |
 | `DURATION.celebrate` | ≤ 760 | Earned moments only, after the action has landed |
-| `SPRING.settle` | 300, damping 0.85 | Sheets, drags, swipes, rows settling. Carry the gesture's velocity. |
-| `SPRING.pop` | 520, damping 0.42 | The one bouncy spring: a reward mark filling |
+| `SPRING.settle` | 300, damping 1 | Default for anything that settles without a flick: rows, snap-back with no velocity, repositioning. No overshoot. |
+| `SPRING.fling` | 300, damping 0.8 | Only after a gesture that carried momentum (a flick, a swipe release, a thrown sheet). Pass the finger's velocity. |
+| `SPRING.pop` | 520, damping 0.42 | The one bouncy spring: a reward mark filling (rare tier only) |
 
 Easing: `EASE_OUT` for enter, exit and press. `EASE_IN_OUT` for on-screen moves. Springs for anything a finger drives. Linear only for time itself (the rest clock).
+
+### How often decides how much
+
+The more often a moment happens, the less it may animate. Delight is spent where it's rare (Benji Taylor's delight curve; Emil Kowalski's frequency gate).
+
+| Tier | Examples | Motion budget |
+| --- | --- | --- |
+| **Every set** (hundreds a week) | Log set, well −/+, switching exercises, rest ticking, tab switches | ≤ 150ms, or none. No timers, no waits, no delight. Tabs never animate. |
+| **Every workout** (a few a week) | Start, sheets, Finish, Done, toasts, expand/collapse | Standard: `enter` / `exit`, springs for gestures. |
+| **Rare** (a few a month) | Week complete, first workout, a new PR, onboarding | The delight budget. `SPRING.pop`, `celebrate`. Still never blocks input. |
 
 ### Rules
 
@@ -238,10 +274,17 @@ Easing: `EASE_OUT` for enter, exit and press. `EASE_IN_OUT` for on-screen moves.
 2. **Tap transitions finish within 200ms.** 280ms (`DURATION.change`) is only for changes you don't wait on: a number rolling, the theme crossfading. Input is never blocked by an animation, and every animation is interruptible.
 3. **Animate changes, not arrivals.** No entrance animations when a screen or tab appears, no staggered list reveals, no skeletons or spinners for local data (it's instant). Only what *changed* moves.
 4. **Small distances.** Enter from 8pt (`ENTER_OFFSET`) with a fade. Never from off-screen, never from `scale(0)`. Press scale is 0.97.
-5. **No bounce on tools.** Functional springs are critically damped (≥ 0.8). Overshoot is reserved for `SPRING.pop`.
-6. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
-7. **No idle motion.** Nothing loops, pulses or breathes while the user isn't doing anything. The rest clock ticking is information, not decoration.
-8. **Reduced motion:** movement becomes an opacity fade (`DURATION.fade`), celebrations become a color crossfade, and haptics stay.
+5. **No bounce unless a finger threw it.** Springs are critically damped (`SPRING.settle`) by default. A little overshoot (`SPRING.fling`, 0.8) only when the gesture carried momentum, with the finger's velocity handed to the spring. Real overshoot (`SPRING.pop`) only in the rare tier.
+6. **Nothing teleports.** Things arrive from where they came from and leave the way they came.
+   - A logged set rises from the wells (+8 → 0), because that's where the value came from.
+   - Moving to the next exercise comes in from the right, going back from the left, matching the swipe and the strip order. A swipe follows the finger 1:1 and settles with its velocity.
+   - A control that changes meaning morphs in place (`Log set` → `Next exercise` → `Finish workout`: the label crossfades, the pill stays).
+   - Numbers that change roll (`StaggerValue`): `Set 2 of 4`, the week count, the 1RM while scrubbing.
+   - A sheet dismisses downward because it came from below. A toast leaves the way it entered.
+7. **Haptic and visual on the same frame.** A haptic fires at the causal moment (the set lands, the detent catches), never when an animation finishes.
+8. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
+9. **No idle motion.** Nothing loops, pulses or breathes while the user isn't doing anything. The rest clock ticking is information, not decoration.
+10. **Reduced motion:** movement becomes an opacity fade (`DURATION.fade`), celebrations become a color crossfade, and haptics stay.
 
 ### Approved motions
 
@@ -249,12 +292,14 @@ Easing: `EASE_OUT` for enter, exit and press. `EASE_IN_OUT` for on-screen moves.
 | --- | --- | --- |
 | Pill press | scale 0.97, `press`, ease-out, on touch-down | Faster |
 | Row / text / glyph press | opacity `PRESSED_OPACITY`, immediate | Faster |
-| Set logged | new line opacity 0→1 + translateY −8→0, `enter` | Fluid |
+| Set logged | new line opacity 0→1 + translateY +8→0 (rises from the wells), ≤ 150ms | Fluid |
 | Number changes in place | NumberFlow roll (`StaggerValue`), `change`, `EASE_OUT_FN` | Fluid |
-| Log stage swaps exercise | crossfade, exit 150 / enter 200. The frame doesn't move. | Fluid |
+| Log stage swaps exercise | Same frame as the tap. Enters from the side you moved toward (8pt, `press`). A swipe tracks 1:1 and settles with `SPRING.fling`. | Fluid |
+| CTA changes meaning | label crossfade in place, `press` | Fluid |
 | Expand / collapse in place | layout `enter` (200), ease-in-out | Fluid |
-| Sheets | native, or `SPRING.settle` with gesture velocity | Fluid |
-| Toast | rise 8pt, `enter`; leave `exit` | Fluid |
+| Sheets | native (preferred), or `SPRING.fling` with gesture velocity | Fluid |
+| Toast | rise 8pt, `enter`; leave `exit` the same way | Fluid |
+| Chart range change | the line morphs to the new range, `change`, never blocks scrubbing | Fluid |
 | Appearance change | full-screen crossfade, `change` | Fluid |
 | Week dot fills | `SPRING.pop` 0.5→1 + two green rings (×3.4, 0.45→0, 760ms, 140ms apart). A full week adds a staggered bump across all dots. Starts ~320ms after Home is visible again. | Loveable |
 
@@ -270,6 +315,7 @@ A haptic confirms something the body did. It's never decoration.
 | Rest reaches 0:00, Finish | success |
 | Well −/+, swiping between exercises, picking a paywall option | selection |
 | A sheet snapping to a detent | light impact |
+| Scrubbing a chart across a data point | selection |
 
 Nothing else buzzes. No haptic on navigation, toggles, errors or celebrations.
 
@@ -311,8 +357,8 @@ Keep a caption only if it carries a **fact** the layout doesn't already show: `T
 - **Buttons are verbs:** one or two words, three at most. The label says what happens, so `Delete plan`, not `OK`.
 - **Numbers:** a unit on every load (`60 kg × 8`). Prescriptions name the reps (`4 × 8 reps`). `×` joins load and reps or sets and reps. ` · ` (spaced middle dot) separates facts. `—` marks an empty value. `−` (minus sign) is used in steppers. Times are `1:32` and `52 min`. Estimates are `~45 min`.
 - **Dates:** `Today`, `Yesterday`, `Wed 13`, `August`. No year unless it isn't this year.
-- **Alerts:** the title names the action and the object (`Delete “Push”?`). Add a message only when the consequence isn't obvious (`This deletes every completed workout on this iPhone.`). The buttons are `Cancel` + the verb (`Delete`).
-- **Toasts** confirm a result that isn't on screen yet (`Check-in saved`). Never errors, never things already visible.
+- **Alerts** are only for actions that can't be undone (§10 → Forgiveness). The title names the action and the object (`Delete “Push”?`). Add a message only when the consequence isn't obvious (`This deletes every completed workout on this iPhone.`). The buttons are `Cancel` + the verb (`Delete`).
+- **Toasts** confirm a result that isn't on screen yet (`Check-in saved`), or offer Undo for something that just happened (`Plan deleted · Undo`). Never errors, never things already visible.
 
 ---
 
@@ -332,9 +378,33 @@ Use these. Don't rebuild them per screen.
 | Well | `screens/log-workout.tsx` | `secondarySystemBackground`, `radius.md`. Tap number → system keypad. −/+ for small steps. Focused: page fill + 2px `label` ring. |
 | Sheets | native `formSheet`, `components/animated-sheet.tsx` | Grabber, title (`title`), content. Dismiss by drag. No Close link unless there's no drag (forms get Cancel/Save in the header). |
 | Context menu | native | Secondary object actions. The destructive item is last and red. |
-| Alert | native | Destructive confirms only (§9). |
-| `Toast` | `components/toast.tsx` | Inverted ink pill + green check, above the tab bar, ~2s, one at a time. |
+| Alert | native | Only for irreversible actions (see Forgiveness). |
+| `Toast` | `components/toast.tsx` | Inverted ink pill above the tab bar, one at a time. Confirm: green check + result, ~2s. Undo: result + `Undo` (bold), ~5s, swipe down to dismiss. |
 | Chips | `components/window-chips.tsx` | Segmented choice of a range (3M, 6M, YTD, All). Selected: ink fill. |
+
+### Forgiveness: Undo over "Are you sure?"
+
+A confirmation dialog slows down everyone to protect the few who slipped, and people learn to tap through it. So:
+
+| The action | Treatment |
+| --- | --- |
+| **Recoverable** (the data can come back): delete a plan (it's archived), delete a day, remove an exercise from a day, delete a logged set, discard an edit | Happens immediately. An Undo toast offers it back for ~5s. |
+| **Irreversible**: delete a completed workout, Clear history, discard a workout that has logged sets | Native alert that names the thing, `Cancel` + the red verb. |
+
+### Standard gestures, always paired
+
+"No gesture hints" only works because every hidden action has the standard iOS path people already know. Every action reachable by a gesture has at least two ways in:
+
+| Action | Paths |
+| --- | --- |
+| Delete a row | Swipe left (full swipe commits) + context menu |
+| Secondary actions on an object | Long-press context menu + a visible row or button on the object's own detail screen |
+| Reorder | A visible drag handle (`line.3.horizontal`) in the list where reordering happens |
+| Go back | Edge swipe + back button |
+| Close a sheet | Drag down + a header action on forms |
+| Move between exercises | Swipe the stage + tap a strip chip |
+
+No custom gestures (double-tap, two-finger, shake) for anything.
 
 ### States
 
@@ -351,7 +421,24 @@ Use these. Don't rebuild them per screen.
 
 ---
 
-## 11. Per screen
+## 11. Charts
+
+The Trade Republic part of Trim. A chart answers one question: is this going up?
+
+1. **One line, no chrome.** One line in `label` ink, 2.75pt, round caps and joins. No gridlines, no y-axis labels, no legend, no fill, no markers on every point. Straight segments between sessions. No smoothing that invents values between them.
+2. **The number is the axis.** The `hero` above the chart states the value. The delta beside it is green if up and ink if flat or down (never red). The x-axis shows only the first and last date (`footnote`).
+3. **Scrub to read.** Touching the chart shows a vertical hairline and a dot on the line. The hero rolls to that point's value, the delta becomes change since the start of the range, and the date appears where the range label was. A selection haptic ticks at each data point. Releasing rolls everything back to now.
+4. **Endpoints.** The latest value gets a small dot. With fewer than 6 points, every point gets a dot, because a line through three sessions implies data that isn't there.
+5. **Y-range fits the data** in the selected window with ~10% padding, and never starts at zero. A line is about change, and zero flattens it.
+6. **Ranges below the chart.** Range chips (`3M 6M YTD All`) sit under the chart, in thumb reach. Pro ranges show a 13pt lock and open the paywall. The chart itself is never blurred or hidden.
+7. **Changing range** morphs the line (`change`, 280). Scrubbing stays possible during the morph.
+8. **Sparklines** in Progress rows follow the same rules without dots, hero or dates: 1.5pt ink line in the trailing lane.
+9. **One session** shows the value as the hero and a single dot. No sentence explaining that more data is needed.
+10. **VoiceOver** gets a summary label (`Estimated 1-rep max, 95 kg on 3 Jun to 102.5 kg on 14 Sep`).
+
+---
+
+## 12. Per screen
 
 Same system, different winner. Don't invent a type size for a screen.
 
@@ -361,25 +448,25 @@ Same system, different winner. Don't invent a type size for a screen.
 | **Day preview** (sheet) | Day `title`, rows `row` + `caption`, read-only. Ink Start at the thumb. | None |
 | **Log** | Header: Cancel (`body`, tertiary) · Finish (`button`). Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air), wells (labels `footnote`, numbers `displayCompact`), green `Log set`. The upper stage never moves (§12). | `Log set` + checks |
 | **Done** | `Done` `hero`, facts `caption`, then per exercise `row` name + one `caption` line per set (narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set; `RecapExercise`). Green Done at thumb. Scrolls, uncapped. | Done |
-| **Plans** | `tabTitle` + header `+`. Active plan first, as a `title` row with a green `Active` caption and `n days`. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Delete. No icons, no permanent edit chrome. | `Active` |
+| **Plans** | `tabTitle` + header `+`. Active plan first, as a `title` row with a green `Active` caption and `n days`. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Delete (immediate, with Undo). Swipe left to delete. No icons, no permanent edit chrome. | `Active` |
 | **Plan detail** | Plan name `display`, `n days` (+ green `Active`). Days as `row` title + `caption` exercise names (2 lines max). `Add day` as a quiet row. `Use this plan` ink if not active. `Delete plan` red, last. | `Active` |
 | **Progress** | `tabTitle`. Lift rows: `row` name + `caption` latest, sparkline and chevron in the trailing lane. Body row the same. | Up-delta only |
-| **Lift / body detail** | Lift name `title`, 1RM `hero` with unit, delta (green if up, ink otherwise), chips (3M free, rest Pro-locked), chart, sessions list. | Up-delta only |
-| **History** | `tabTitle`. Month caption as an amount (`August · 4 sessions`). Session row: `row` title + `caption` (`Wed 13 · 5 exercises · 52 min`). Trailing PR pill (gray fill, yellow crown, count). Hairlines within a month, `section` air between months. Long-press → Delete. | None (yellow crown) |
+| **Lift / body detail** | Lift name `title`, 1RM `hero` with unit, delta (green if up, ink otherwise), chart, range chips below it (3M free, rest Pro-locked), sessions list. Charts follow §11. | Up-delta only |
+| **History** | `tabTitle`. Month caption as an amount (`August · 4 sessions`). Session row: `row` title + `caption` (`Wed 13 · 5 exercises · 52 min`). Trailing PR pill (gray fill, yellow crown, count). Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, title `display`, facts `caption` (`when · duration · n exercises · n sets`), exercises as in Done. A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | `tabTitle`. `PaperRow` groups separated by `section` air: Weight, Appearance · Trim Pro, Restore purchases · Contact support ↗, Privacy Policy ↗, Terms of Use ↗ · Clear history (red). Values trail in `caption`. | None |
-| **Paywall** | `Not now` top right (`body`, secondary) on a solid band, with a hairline once content scrolls under. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, Restore · Terms · Privacy. All above the fold on a 6.3" phone. | None |
+| **Paywall** | `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, Restore · Terms · Privacy. All above the fold on a 6.3" phone. | None |
 | **Body check-in** | Native `formSheet`: Cancel · Check in · Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
 | **Onboarding** | One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
 
 ### Home week details
 
-- While Home is covered (log, Done, paywall), the week amount keeps its old value. The celebration runs once Home is visible again (§8).
+- While Home is covered (log, Done, paywall), the week amount keeps its old value. The celebration runs once Home is visible again (§8, rare tier).
 - Week progress is an **amount**, not a sequence. `n of m` + dots, never a day-name checklist, and one progress language per section.
 
 ---
 
-## 12. Log stage
+## 13. Log stage
 
 The hardest screen and the reference for all the others. Don't copy its layout onto other screens. Copy its rules.
 
@@ -391,15 +478,15 @@ The hardest screen and the reference for all the others. Don't copy its layout o
 
 ---
 
-## 13. Do not
+## 14. Do not
 
-Tables, status pills and badges (the History PR pill is the one exception), set-number circles, overlapping pills, heatmaps, achievement chrome, plan or exercise icons and thumbnails, decorative icons, hierarchy-only eyebrows, uppercase labels, motivational copy, helper text, gesture hints, gradients, shadows, bordered cards, chevrons on action rows, blue links, custom transitions, entrance animations, spinners for local data, lime green, Inter or any non-system font, off-ramp sizes and spacings, hex literals outside `theme.ts`.
+Tables, status pills and badges (the History PR pill is the one exception), set-number circles, overlapping pills, heatmaps, achievement chrome, plan or exercise icons and thumbnails, decorative icons, hierarchy-only eyebrows, uppercase labels, motivational copy, helper text, gesture hints, gradients, shadows, bordered cards, chevrons on action rows, blue links, custom transitions, entrance animations, spinners for local data, sounds, confirmation dialogs for recoverable actions, gesture-only actions, custom gestures, opaque or recolored system bars, glass in content, chart gridlines and axis labels, lime green, Inter or any non-system font, off-ramp sizes and spacings, hex literals outside `theme.ts`.
 
 ---
 
-## 14. QA
+## 15. QA
 
-Before a screen ships, check it in light **and** dark, at default and at the largest capped Dynamic Type size, against this file and the Paper artboard.
+Before a screen ships, check it in light **and** dark, at default and at the largest capped Dynamic Type size, one-handed at arm's length, against this file and the Paper artboard. `npm run check` must pass.
 
 1. **Job.** Say the screen's job in one sentence. Point to the one winner and the one primary action.
 2. **Type.** Every text uses a role from §3 without size or weight overrides. There's one stage size. Numbers use tabular figures.
@@ -408,15 +495,18 @@ Before a screen ships, check it in light **and** dark, at default and at the lar
 5. **Copy.** No helper text, instructions or summaries. Every caption passes the eyebrow test. Sentence case.
 6. **Icons.** Each one encodes something. It has the right size for its neighbor and the right color for its meaning.
 7. **Motion.** Every animation is on the approved list. A tap shows a reaction within 100ms, its transition finishes within 200ms, and it degrades under reduced motion. Nothing animates on arrival.
-8. **Control.** Nothing happened that the user didn't ask for (`PRODUCT.md` → Control).
-9. **Log only.** The upper stage doesn't move between set 1, rest, later sets and keyboard open. The keyboard never covers the wells or `Log set`.
-10. **Taste.** It reads as Trim, not as Hevy, Strong or Alpha Progression.
+8. **Control.** Nothing happened that the user didn't ask for (`PRODUCT.md` → Control). Recoverable deletes offer Undo, irreversible ones confirm. Every gesture has a visible second path.
+9. **Gym.** Everything used mid-workout is in thumb reach. Leaving for another app and coming back lands on the same state with no animation. Nothing makes a sound.
+10. **Log only.** The upper stage doesn't move between set 1, rest, later sets and keyboard open. The keyboard never covers the wells or `Log set`.
+11. **Taste.** It reads as Trim, not as Hevy, Strong or Alpha Progression.
 
 ---
 
-## 15. Migration debt (code vs. this file)
+## 16. Enforcement and migration debt
 
-Tokens are in place (`theme.ts`, `motion.ts`). Screens still carry these violations. Fix them when touching a screen, or in a dedicated pass with simulator QA:
+**Enforced automatically.** `mobile/scripts/check-design-tokens.mjs` scans `mobile/src` for raw font sizes and weights, hex colors, off-scale and raw spacing, raw radii, durations, pressed opacities and icon sizes, and gesture-hint copy. It compares the counts with `mobile/design-tokens-baseline.json`, and it fails if any file gains a violation. Run `npm run check` (tsc + tokens) before every push. The GitHub Action `.github/workflows/checks.yml` runs it on every PR. When you clean a file up, run `node scripts/check-design-tokens.mjs --update` so the baseline ratchets down. Never raise the baseline to make a check pass.
+
+Screens still carry these violations (488 at the baseline). Fix them when touching a screen, or in a dedicated pass with simulator QA:
 
 - **Off-ramp sizes:** 52 (progress lift and body hero → `hero`), 20 (log well ± → `caption`-sized glyph or `title`), 16 (fallback glyphs), and inline `fontSize` / `fontWeight` overrides (e.g. `factBase` in `workout-tab.tsx` → `caption`; paywall benefit title `600` → `row`).
 - **Raw spacing:** about 250 raw padding, margin and gap numbers. Off-scale values: 3, 5, 6, 7, 10, 11, 14 (`PaperRow` padding → 16), 18, 20, 28 (`PaperScreen` top → 24), 36.
@@ -425,4 +515,7 @@ Tokens are in place (`theme.ts`, `motion.ts`). Screens still carry these violati
 - **Icon sizes:** 11–22 in all weights → `iconSize`.
 - **Motion:** raw durations 140, 180, 220, 240, 360 and 400, plus springs with 400ms / 0.8 → `DURATION` / `SPRING`.
 - **Copy:** `Drag to reorder` and `Tap to swap` (log sheets), `Build your week once. Then just press Start.` (Home empty), `Finished workouts land here.` (History empty), `Log a workout to track lifts here.` (Progress empty), `Log a check-in to start tracking.` (body detail), `Next Workout` → `Next workout`.
+- **Liquid Glass:** `NativeTabs` forces an opaque bar (`blurEffect="none"`, `backgroundColor`, `disableTransparentOnScrollEdge`). `PaperScreen` paints an opaque strip under the status bar. The paywall draws its own band and hairline. Custom `AnimatedSheet`s where a native `formSheet` would do.
+- **Forgiveness and gestures:** plan, day and exercise deletes use alerts instead of Undo toasts. History has long-press delete only (needs swipe). `Toast` has no Undo variant yet.
+- **Charts:** range chips sit above the chart. No selection haptic while scrubbing. No dots when there are few points. The one-session state shows a sentence.
 - **Paper:** update the artboards to this ramp (caption 15 Regular tertiary, footnote 13) so Paper and code agree again.

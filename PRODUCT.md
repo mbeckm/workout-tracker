@@ -8,6 +8,10 @@ Help someone follow a training plan and log a workout without losing focus betwe
 
 There is no ad-hoc or empty workout. You make a plan, then start a day from it.
 
+## Who and where
+
+Serious lifters, mostly young, training in a gym. They use Trim between sets, under artificial light, at arm's length, often one-handed, with music in their headphones. They open and close it dozens of times a workout and switch to music or messages in between. Trim is built for that moment: instant resume, big numbers, thumb-reach controls, no sound. It must work for people who don't see well (Dynamic Type, contrast, VoiceOver), but it isn't an accessibility-first product.
+
 ## Principles
 
 These decide product calls. When a feature, screen or behavior conflicts with one, the principle wins or the principle gets changed here on purpose. Visual rules that follow from them are in `trim-ui`.
@@ -30,7 +34,7 @@ The test: **could the user have predicted this before they tapped?** If not, Tri
 - **Prefill proposes, the user commits.** Last time's weights and reps prefill the wells, and targets are suggestions. Nothing is logged, finished or skipped until the user taps.
 - **Carry-forward is limited to the obvious next step.** After Log set, Trim may move to the next set, or to the next unfinished exercise when this one is complete, because that's the visible, expected result of the tap and one tap undoes it. It never leaves the screen, finishes a workout or changes stored data by itself.
 - **Timers inform, they don't act.** Rest reaching 0:00 signals (haptic, `Go`). It doesn't log, advance or start anything.
-- **Destructive actions confirm.** Delete, Remove and Clear history ask first, naming the thing.
+- **Forgive, don't interrogate.** Anything that can come back (a plan, a day, an exercise in a plan, a logged set) is removed immediately with Undo. Only what can't come back (a completed workout, Clear history, a workout with logged sets) asks first, naming the thing.
 - **No surprise interruptions.** The paywall appears only at the moments listed under Trim Pro and never during a workout. No notifications or prompts the user didn't opt into.
 
 ## Data model

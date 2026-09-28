@@ -21,7 +21,7 @@ import {
 import { KeyboardStickyView, useKeyboardState } from '@/keyboard';
 import Animated, {
   FadeIn,
-  FadeInDown,
+  FadeInUp,
   FadeOut,
   ReduceMotion,
   useAnimatedStyle,
@@ -78,7 +78,7 @@ import {
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { spokenTargets, targetsFromHistory, type SetTarget } from '@/domain/targets';
-import { EASE_OUT } from '@/motion';
+import { DURATION, EASE_OUT, ENTER_OFFSET } from '@/motion';
 import {
   newId,
   type ExercisePrescription,
@@ -618,7 +618,9 @@ export function LogWorkoutScreen() {
     if (exerciseIsComplete(nextDrafts[exerciseIndex])) {
       const advanceTo = nextIncompleteIndex(nextDrafts, exerciseIndex, { wrap: false });
       if (advanceTo >= 0) {
-        setTimeout(() => goToExercise(advanceTo), 220);
+        // Same frame as the tap: every set is the highest-frequency moment in the app, so
+        // nothing waits between Log set and the next exercise (trim-ui → Motion).
+        goToExercise(advanceTo);
       }
     }
   };
@@ -998,6 +1000,7 @@ export function LogWorkoutScreen() {
 
               <ExerciseStage
                 exerciseKey={current.prescription.id}
+                exerciseIndex={exerciseIndex}
                 canGoPrev={exerciseIndex > 0}
                 canGoNext={exerciseIndex < drafts.length - 1}
                 onPrev={() => goToExercise((value) => Math.max(0, value - 1))}
@@ -1053,10 +1056,12 @@ export function LogWorkoutScreen() {
                         entering={
                           set.id === loggedPulseId
                             ? reduceMotion
-                              ? FadeIn.duration(200)
-                              : FadeInDown.duration(200).easing(EASE_OUT).withInitialValues({
+                              ? FadeIn.duration(DURATION.fade)
+                              : // Rises from the wells, where the value came from (nothing teleports).
+                                // Every-set tier: 150ms at most.
+                                FadeInUp.duration(DURATION.exit).easing(EASE_OUT).withInitialValues({
                                   opacity: 0,
-                                  transform: [{ translateY: -8 }],
+                                  transform: [{ translateY: ENTER_OFFSET }],
                                 })
                             : undefined
                         }
@@ -1431,6 +1436,7 @@ function DayStrip({
 function ExerciseStage({
   children,
   exerciseKey,
+  exerciseIndex,
   canGoPrev,
   canGoNext,
   onPrev,
@@ -1439,6 +1445,7 @@ function ExerciseStage({
 }: {
   children: ReactNode;
   exerciseKey: string;
+  exerciseIndex: number;
   canGoPrev: boolean;
   canGoNext: boolean;
   onPrev: () => void;
@@ -1463,15 +1470,21 @@ function ExerciseStage({
     canGoNextShared.set(canGoNext);
   }, [canGoNext, canGoNextShared, canGoPrev, canGoPrevShared]);
 
+  // The new exercise arrives from the side you moved toward (nothing teleports): forward
+  // comes in from the right, back from the left, matching the swipe and the strip order.
+  const previousIndexRef = useRef(exerciseIndex);
   useEffect(() => {
+    const direction = exerciseIndex < previousIndexRef.current ? -1 : 1;
+    previousIndexRef.current = exerciseIndex;
     dragX.set(0);
     if (reduceMotion) {
       translateX.set(0);
       return;
     }
-    translateX.set(12);
-    translateX.set(withTiming(0, { duration: 140, easing: EASE_OUT }));
-  }, [dragX, exerciseKey, reduceMotion, translateX]);
+    translateX.set(ENTER_OFFSET * direction);
+    translateX.set(withTiming(0, { duration: DURATION.press, easing: EASE_OUT }));
+    // exerciseKey: a swap on the same index (Alternatives) also re-enters.
+  }, [dragX, exerciseIndex, exerciseKey, reduceMotion, translateX]);
 
   const commitPrev = () => {
     dragX.set(0);
