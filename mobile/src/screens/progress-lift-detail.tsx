@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { PaperBack, PaperScreen } from '@/components/paper';
+import { PaperScreen } from '@/components/paper';
 import { iconSize, space } from '@/constants/theme';
 import { PrCrown } from '@/components/pr-crown';
 import { ProgressDelta } from '@/components/progress-delta';
@@ -33,7 +33,6 @@ const CHART_HEIGHT = 180;
 
 export function ProgressLiftDetailScreen() {
   const { colors, type } = useTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const { name } = useLocalSearchParams<{ name: string }>();
   const exerciseName = decodeURIComponent(name ?? '');
@@ -95,7 +94,6 @@ export function ProgressLiftDetailScreen() {
   return (
     <>
       <PaperScreen testID="progress-lift-detail">
-        <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
           // Wraps, never truncates: long lift names at large text sizes need every word.
           style={type.title}
@@ -193,7 +191,18 @@ export function ProgressLiftDetailScreen() {
           );
         })}
       </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: exerciseName }} />
+      <Stack.Screen
+        options={{
+          // The system bar: back button and scroll-edge glass; the name stays the `title` below.
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTintColor: colors.label,
+          headerBackTitle: 'Progress',
+          headerTitle: '',
+          title: exerciseName,
+        }}
+      />
     </>
   );
 }

@@ -1,7 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
@@ -19,40 +18,26 @@ export function PaperScreen({
   testID?: string;
 }) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
       <ScrollView
         testID={testID}
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-        contentInsetAdjustmentBehavior="never"
+        // Under the native bar (transparent, with the system scroll-edge effect): content
+        // scrolls under chrome, never under a painted strip (trim-ui §5 Liquid Glass).
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           {
             flexGrow: 1,
-            paddingTop: insets.top + space.gutter,
+            paddingTop: space.related,
             paddingHorizontal: space.gutter,
-            paddingBottom: insets.bottom + space.inline,
+            paddingBottom: space.gutter,
           },
           contentContainerStyle,
         ]}>
         {children}
       </ScrollView>
-      {insets.top > 0 ? (
-        // Long lists scroll under the clock and Dynamic Island; keep that strip quiet.
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: insets.top,
-            backgroundColor: colors.systemBackground,
-            opacity: 0.94,
-          }}
-        />
-      ) : null}
     </View>
   );
 }
