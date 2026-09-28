@@ -1,23 +1,42 @@
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInUp, FadeOut, useReducedMotion, withTiming } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  FadeOut,
+  ReduceMotion,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TOUCH_TARGET, iconSize, radius, space } from '@/constants/theme';
-import { DURATION, EASE_OUT, ENTER_OFFSET } from '@/motion';
+import { PRESSED_OPACITY, TOUCH_TARGET, iconSize, radius, space } from '@/constants/theme';
+import { DURATION, EASE_OUT, ENTER_OFFSET, SPRING } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 /**
- * Confirmation for an action whose result isn't on screen yet (a sheet that just closed).
- * One toast at a time; a new one replaces the old. Not for errors: those stay in an alert
- * or next to the control that failed.
+ * Confirm: a result that isn't on screen yet (a sheet that just closed), green check, ~2s.
+ * Undo: something that just happened and can come back (`Plan deleted` + `Undo`), ~5s,
+ * swipe down to dismiss (trim-ui §10 Toast, Forgiveness). One toast at a time; a new one
+ * replaces the old. Not for errors: those stay in an alert or next to the control that failed.
  */
-export type ToastInput = { title: string };
+export type ToastInput = { title: string; onUndo?: () => void };
 
 type ToastState = ToastInput & { id: number };
 
 const VISIBLE_MS = 2200;
+const UNDO_VISIBLE_MS = 5000;
+/** VoiceOver needs time to reach `Undo`. */
+const UNDO_VISIBLE_SCREEN_READER_MS = 10000;
+/** A downward drag past this, or a flick, dismisses. */
+const DISMISS_DISTANCE = 24;
+const DISMISS_VELOCITY = 500;
 
 let current: ToastState | null = null;
 let nextId = 1;
@@ -30,7 +49,7 @@ function emit() {
 export function showToast(input: ToastInput) {
   current = { ...input, id: nextId++ };
   emit();
-  AccessibilityInfo.announceForAccessibility(input.title);
+  AccessibilityInfo.announceForAccessibility(input.onUndo ? `${input.title}. Undo available.` : input.title);
 }
 
 function hideToast(id: number) {
@@ -81,8 +100,24 @@ export function ToastHost({ bottom }: { bottom?: number } = {}) {
     if (!toast) {
       return;
     }
-    const timer = setTimeout(() => hideToast(toast.id), VISIBLE_MS);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = (ms: number) => {
+      if (!cancelled) {
+        timer = setTimeout(() => hideToast(toast.id), ms);
+      }
+    };
+    if (toast.onUndo) {
+      AccessibilityInfo.isScreenReaderEnabled()
+        .then((on) => schedule(on ? UNDO_VISIBLE_SCREEN_READER_MS : UNDO_VISIBLE_MS))
+        .catch(() => schedule(UNDO_VISIBLE_MS));
+    } else {
+      schedule(VISIBLE_MS);
+    }
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [toast]);
 
   return (
@@ -112,33 +147,102 @@ export function ToastHost({ bottom }: { bottom?: number } = {}) {
 
 function ToastPill({ toast }: { toast: ToastState }) {
   const { colors, type } = useTheme();
-  // Keep the title while the exit animation runs after `current` is cleared.
-  const [title] = useState(toast.title);
-  const id = useRef(toast.id).current;
+  // Keep the toast's content while the exit animation runs after `current` is cleared.
+  const [{ title, onUndo, id }] = useState(toast);
+  const dragY = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  const undo = () => {
+    hideToast(id);
+    onUndo?.();
+  };
+
+  // Swipe down to dismiss: follows the finger 1:1 (never upward), then leaves downward with
+  // the flick's velocity, or settles back.
+  const swipe = Gesture.Pan()
+    .enabled(onUndo != null)
+    .activeOffsetY(8)
+    .failOffsetY(-8)
+    .onUpdate((event) => {
+      dragY.set(Math.max(0, event.translationY));
+    })
+    .onEnd((event) => {
+      if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
+        dragY.set(
+          withSpring(dragY.get() + ENTER_OFFSET * 3, {
+            ...SPRING.fling,
+            velocity: event.velocityY,
+            reduceMotion: ReduceMotion.System,
+          }),
+        );
+        opacity.set(
+          withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }, (finished) => {
+            if (finished) {
+              scheduleOnRN(hideToast, id);
+            }
+          }),
+        );
+      } else {
+        dragY.set(withSpring(0, { ...SPRING.settle, reduceMotion: ReduceMotion.System }));
+      }
+    });
+
+  const dragStyle = useAnimatedStyle(() => ({
+    opacity: opacity.get(),
+    transform: [{ translateY: dragY.get() }],
+  }));
+
   return (
-    <Pressable
-      accessibilityRole="alert"
-      accessibilityLabel={title}
-      onPress={() => hideToast(id)}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: space.related,
-        minHeight: TOUCH_TARGET,
-        paddingHorizontal: space.inset,
-        paddingVertical: space.related,
-        borderRadius: radius.full,
-        borderCurve: 'continuous',
-        backgroundColor: colors.label,
-      }}>
-      <SymbolView
-        name="checkmark"
-        size={iconSize.row}
-        weight="semibold"
-        tintColor={colors.systemGreen}
-        fallback={<Text style={[type.body, { color: colors.systemGreen }]}>✓</Text>}
-      />
-      <Text style={[type.body, { color: colors.onLabel, flexShrink: 1 }]}>{title}</Text>
-    </Pressable>
+    <GestureDetector gesture={swipe}>
+      <Animated.View
+        accessible={onUndo == null}
+        accessibilityRole={onUndo == null ? 'alert' : undefined}
+        accessibilityLabel={onUndo == null ? title : undefined}
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.inline,
+            minHeight: TOUCH_TARGET,
+            paddingLeft: space.inset,
+            paddingRight: onUndo ? space.related : space.inset,
+            borderRadius: radius.full,
+            borderCurve: 'continuous',
+            backgroundColor: colors.label,
+          },
+          dragStyle,
+        ]}>
+        <Pressable
+          onPress={() => hideToast(id)}
+          accessibilityLabel={title}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: space.related, flexShrink: 1, paddingVertical: space.related }}>
+          {onUndo == null ? (
+            <SymbolView
+              name="checkmark"
+              size={iconSize.row}
+              weight="semibold"
+              tintColor={colors.systemGreen}
+              fallback={<Text style={[type.body, { color: colors.systemGreen }]}>✓</Text>}
+            />
+          ) : null}
+          <Text style={[type.body, { color: colors.onLabel, flexShrink: 1 }]}>{title}</Text>
+        </Pressable>
+        {onUndo ? (
+          <Pressable
+            onPress={undo}
+            accessibilityRole="button"
+            accessibilityLabel="Undo"
+            testID="toast-undo"
+            style={({ pressed }) => ({
+              minHeight: TOUCH_TARGET,
+              justifyContent: 'center',
+              paddingHorizontal: space.related,
+              opacity: pressed ? PRESSED_OPACITY : 1,
+            })}>
+            <Text style={[type.button, { color: colors.onLabel }]}>Undo</Text>
+          </Pressable>
+        ) : null}
+      </Animated.View>
+    </GestureDetector>
   );
 }

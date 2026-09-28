@@ -1,7 +1,7 @@
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -19,6 +19,7 @@ import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
 import { requirePro } from '@/purchases/pro-gate';
+import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 function formatDaysCount(count: number): string {
@@ -39,7 +40,8 @@ const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL
 export function PlansTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, deletePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
+  const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
   const otherPlans = plans.filter((plan) => plan.id !== activePlan?.id);
@@ -78,12 +80,7 @@ export function PlansTab() {
     router.push(`/plan/${plan.id}?new=1`);
   };
 
-  const confirmDelete = (plan: WorkoutPlan) => {
-    Alert.alert('Delete plan?', plan.name.trim() || 'Untitled plan', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deletePlan(plan) },
-    ]);
-  };
+  const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
 
   return (
     <>

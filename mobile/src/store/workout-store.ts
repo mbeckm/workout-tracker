@@ -67,6 +67,8 @@ type CompleteWorkoutInput = {
   dayId?: string;
 };
 
+export type RemovedPlan = { plan: WorkoutPlan; index: number; wasActive: boolean };
+
 type WorkoutStoreState = {
   plans: WorkoutPlan[];
   archivedPlans: WorkoutPlan[];
@@ -100,6 +102,12 @@ type WorkoutStoreState = {
   savePlan: (plan: WorkoutPlan, options?: { activate?: boolean }) => void;
   updatePlan: (plan: WorkoutPlan) => void;
   deletePlan: (plan: WorkoutPlan, options?: { archive?: boolean }) => void;
+  /** Applies `update` to the plan as it is now (Undo runs later, after other edits). */
+  editPlan: (planId: string, update: (plan: WorkoutPlan) => WorkoutPlan) => void;
+  /** Undo for `deletePlan`: back at its old place in the list, active again if it was. */
+  restorePlan: (removed: RemovedPlan) => void;
+  /** Undo for a delete that dropped the running workout. Never replaces a newer one. */
+  restoreSession: (session: LogSession) => void;
   activatePlan: (plan: WorkoutPlan) => void;
   saveCustomExercise: (exercise: CustomExerciseDefinition) => void;
   previousSetsForExercise: (name: string) => LoggedSet[];
@@ -248,6 +256,43 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         activePlanId,
         activeSession: sessionStillValid(current.activeSession, plans),
       };
+    });
+  }, []);
+
+  const editPlan = useCallback((planId: string, update: (plan: WorkoutPlan) => WorkoutPlan) => {
+    setSnapshot((current) => {
+      const index = current.plans.findIndex((item) => item.id === planId);
+      const existing = current.plans[index];
+      if (!existing) {
+        return current;
+      }
+      const plans = [...current.plans];
+      plans[index] = update(existing);
+      return { ...current, plans, activeSession: sessionStillValid(current.activeSession, plans) };
+    });
+  }, []);
+
+  const restorePlan = useCallback(({ plan, index, wasActive }: RemovedPlan) => {
+    setSnapshot((current) => {
+      const others = current.plans.filter((item) => item.id !== plan.id);
+      const at = Math.min(Math.max(0, index), others.length);
+      const plans = [...others.slice(0, at), plan, ...others.slice(at)];
+      return {
+        ...current,
+        plans,
+        archivedPlans: current.archivedPlans.filter((item) => item.id !== plan.id),
+        activePlanId: wasActive || current.activePlanId == null ? plan.id : current.activePlanId,
+      };
+    });
+  }, []);
+
+  const restoreSession = useCallback((session: LogSession) => {
+    setSnapshot((current) => {
+      if (current.activeSession != null) {
+        return current;
+      }
+      const restored = sessionStillValid(session, current.plans);
+      return restored ? { ...current, activeSession: restored } : current;
     });
   }, []);
 
@@ -525,6 +570,9 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       savePlan,
       updatePlan,
       deletePlan,
+      editPlan,
+      restorePlan,
+      restoreSession,
       activatePlan,
       saveCustomExercise,
       previousSetsForExercise,
@@ -550,6 +598,9 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     savePlan,
     updatePlan,
     deletePlan,
+    editPlan,
+    restorePlan,
+    restoreSession,
     activatePlan,
     saveCustomExercise,
     previousSetsForExercise,

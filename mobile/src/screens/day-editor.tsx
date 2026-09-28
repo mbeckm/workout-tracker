@@ -19,6 +19,7 @@ import { useTheme } from '@/theme/theme-context';
 import { formatPlanMetric, withDay } from '@/domain/helpers';
 import { prescriptionFields, type PrescriptionField } from '@/domain/prescription-fields';
 import type { ExercisePrescription } from '@/domain/types';
+import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
@@ -34,6 +35,7 @@ export function DayEditorScreen() {
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const { plans, updatePlan } = useWorkoutStore();
+  const { removeDay: removeDayWithUndo, removeExercise: removeExerciseWithUndo } = useUndoableDeletes();
   const plan = plans.find((item) => item.id === planId);
   const day = plan?.days.find((item) => item.id === dayId);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -95,12 +97,7 @@ export function DayEditorScreen() {
 
   const removeExercise = (exerciseId: string) => {
     setEditingId((current) => (current === exerciseId ? null : current));
-    updatePlan(
-      withDay(plan, day.id, (current) => ({
-        ...current,
-        exercises: current.exercises.filter((item) => item.id !== exerciseId),
-      })),
-    );
+    removeExerciseWithUndo(plan, day.id, exerciseId);
   };
 
   const removeDay = () => {
@@ -108,21 +105,8 @@ export function DayEditorScreen() {
       Alert.alert('Keep one day', 'A plan needs at least one training day.');
       return;
     }
-    Alert.alert('Remove day?', day.title || 'This day', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          updatePlan({
-            ...plan,
-            days: plan.days.filter((item) => item.id !== day.id),
-            daysPerWeek: plan.days.length - 1,
-          });
-          router.back();
-        },
-      },
-    ]);
+    removeDayWithUndo(plan, day.id);
+    router.back();
   };
 
   const openExercisePicker = () => {

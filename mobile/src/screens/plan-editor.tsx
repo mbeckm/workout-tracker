@@ -14,6 +14,7 @@ import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
 import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
+import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 export function PlanEditorScreen() {
@@ -28,6 +29,7 @@ export function PlanEditorScreen() {
   const insets = useSafeAreaInsets();
   const { plans, activePlanId, updatePlan, activatePlan, deletePlan, isPro } =
     useWorkoutStore();
+  const { removePlan, removeDay: removeDayWithUndo } = useUndoableDeletes();
   const plan = plans.find((item) => item.id === id);
   const planRef = useRef(plan);
   const deletedRef = useRef(false);
@@ -110,20 +112,7 @@ export function PlanEditorScreen() {
       Alert.alert('Keep one day', 'A plan needs at least one training day.');
       return;
     }
-    const day = plan.days.find((item) => item.id === dayId);
-    Alert.alert('Remove day?', day?.title ?? 'This day', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () =>
-          updatePlan({
-            ...plan,
-            days: plan.days.filter((item) => item.id !== dayId),
-            daysPerWeek: plan.days.length - 1,
-          }),
-      },
-    ]);
+    removeDayWithUndo(plan, dayId);
   };
 
   const named = plan.name.trim().length > 0;
@@ -226,21 +215,12 @@ export function PlanEditorScreen() {
                 title="Delete plan"
                 symbol="trash"
                 tone="destructive"
-                onPress={() =>
-                  Alert.alert('Delete plan?', plan.name.trim() || 'Untitled plan', [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete',
-                      style: 'destructive',
-                      onPress: () => {
-                        // Leaving by Delete must not confirm the plan it just removed.
-                        deletedRef.current = true;
-                        deletePlan(plan);
-                        router.back();
-                      },
-                    },
-                  ])
-                }
+                onPress={() => {
+                  // Leaving by Delete must not confirm the plan it just removed.
+                  deletedRef.current = true;
+                  removePlan(plan);
+                  router.back();
+                }}
               />
             ) : null}
           </View>
