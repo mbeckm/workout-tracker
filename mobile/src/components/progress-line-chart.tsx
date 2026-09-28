@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   ReduceMotion,
@@ -116,10 +116,39 @@ function smoothPath(points: { x: number; y: number }[]): string {
   return path;
 }
 
-/** English month (`Sep`), like the dates beside the chart, on any device region. */
-function axisLabel(dateIso: string): string {
-  return monthShort(new Date(dateIso));
+/**
+ * The two axis ends in English order, on any device region: months (`Jun … Sep`), days when
+ * both ends fall in one month (`Sep 1 … Sep 28`), and the year when only it differs
+ * (`Sep 2025 … Sep 2026`). Never the same label twice for different dates.
+ */
+function axisLabels(firstIso: string, lastIso: string): [string, string] {
+  const first = new Date(firstIso);
+  const last = new Date(lastIso);
+  const sameMonth = first.getMonth() === last.getMonth();
+  if (sameMonth && first.getFullYear() === last.getFullYear()) {
+    // Every point on one day: one date, not `Sep 25 … Sep 25`.
+    if (first.getDate() === last.getDate()) {
+      return [`${monthShort(first)} ${first.getDate()}`, ''];
+    }
+    return [
+      `${monthShort(first)} ${first.getDate()}`,
+      `${monthShort(last)} ${last.getDate()}`,
+    ];
+  }
+  if (sameMonth) {
+    return [
+      `${monthShort(first)} ${first.getFullYear()}`,
+      `${monthShort(last)} ${last.getFullYear()}`,
+    ];
+  }
+  return [monthShort(first), monthShort(last)];
 }
+
+/** Axis labels scale with Dynamic Type up to here; the chart makes room below for them. */
+const AXIS_MAX_SCALE = 1.5;
+const AXIS_LINE_HEIGHT = 18;
+/** Default space under the axis: the label line plus 10pt air. */
+const PAD_BOTTOM = 28;
 
 function nearestIndex(plotted: Plotted[], x: number): number {
   'worklet';
@@ -181,14 +210,21 @@ export function ProgressLineChart({
 }) {
   const { colors, type } = useTheme();
   const reduceMotion = useReducedMotion();
+  const { fontScale } = useWindowDimensions();
   const padX = 4;
   const padTop = 8;
-  const padBottom = 28;
-  const plotted = useMemo(
-    () => plotPoints(points, width, height, padX, padTop, padBottom),
-    [height, points, width],
+  // Large text grows the space under the axis by the labels' extra height, so the baseline
+  // never runs through them; the plot keeps its size and the chart gets taller instead.
+  const labelGrowth = Math.ceil(
+    AXIS_LINE_HEIGHT * (Math.min(Math.max(fontScale, 1), AXIS_MAX_SCALE) - 1),
   );
-  const chartHeight = height - padBottom;
+  const padBottom = PAD_BOTTOM + labelGrowth;
+  const totalHeight = height + labelGrowth;
+  const plotted = useMemo(
+    () => plotPoints(points, width, totalHeight, padX, padTop, padBottom),
+    [padBottom, points, totalHeight, width],
+  );
+  const chartHeight = totalHeight - padBottom;
   const axisY = chartHeight - 0.5;
 
   const scrubX = useSharedValue(0);
@@ -213,7 +249,7 @@ export function ProgressLineChart({
       return;
     }
 
-    const next = sampleYs(points, width, height, padX, padTop, padBottom);
+    const next = sampleYs(points, width, totalHeight, padX, padTop, padBottom);
     xs.set(next.xs);
 
     if (!primed.current || reduceMotion) {
@@ -237,11 +273,12 @@ export function ProgressLineChart({
     );
   }, [
     fromYs,
-    height,
+    padBottom,
     points,
     progress,
     reduceMotion,
     toYs,
+    totalHeight,
     width,
     xs,
   ]);
@@ -310,13 +347,15 @@ export function ProgressLineChart({
   }));
 
   if (plotted.length < 2) {
-    return <View style={{ width, height }} />;
+    return <View style={{ width, height: totalHeight }} />;
   }
+
+  const [startLabel, endLabel] = axisLabels(points[0].date, points[points.length - 1].date);
 
   return (
     <GestureDetector gesture={pan}>
       <View
-        style={{ width, height }}
+        style={{ width, height: totalHeight }}
         accessible={accessibilityLabel != null}
         accessibilityRole={accessibilityLabel != null ? 'image' : undefined}
         accessibilityLabel={accessibilityLabel}>
@@ -362,10 +401,12 @@ export function ProgressLineChart({
               bottom: 0,
               color: colors.tertiaryLabel,
               fontSize: 13,
+              lineHeight: AXIS_LINE_HEIGHT,
               fontWeight: '400',
             },
-          ]}>
-          {axisLabel(points[0].date)}
+          ]}
+          maxFontSizeMultiplier={AXIS_MAX_SCALE}>
+          {startLabel}
         </Text>
         <Text
           style={[
@@ -376,10 +417,12 @@ export function ProgressLineChart({
               bottom: 0,
               color: colors.tertiaryLabel,
               fontSize: 13,
+              lineHeight: AXIS_LINE_HEIGHT,
               fontWeight: '400',
             },
-          ]}>
-          {axisLabel(points[points.length - 1].date)}
+          ]}
+          maxFontSizeMultiplier={AXIS_MAX_SCALE}>
+          {endLabel}
         </Text>
       </View>
     </GestureDetector>

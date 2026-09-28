@@ -80,9 +80,6 @@ export function ProgressLiftDetailScreen() {
   const delta =
     heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
   const deltaRounded = delta == null ? null : Math.round(delta);
-  // Lifting more is completed work (green); flat or down stays in ink, never alarm red.
-  const deltaColor =
-    deltaRounded != null && deltaRounded > 0 ? colors.systemGreen : colors.label;
 
   const heroType = {
     fontSize: 52,
@@ -132,7 +129,9 @@ export function ProgressLiftDetailScreen() {
               style={heroType}
             />
             {deltaRounded != null ? (
-              <ProgressDelta percent={deltaRounded} color={deltaColor} />
+              // Grey like body detail: ▲/▼ carries direction. Progress has no green (it is for
+              // completed work), and ink would compete with the hero.
+              <ProgressDelta percent={deltaRounded} color={colors.tertiaryLabel} />
             ) : null}
           </View>
           <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>

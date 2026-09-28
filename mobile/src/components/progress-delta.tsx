@@ -9,6 +9,7 @@ const SPIN = {
 
 /**
  * ▲/▼ + rolling % as one NumberFlow run so the mark and digits share a baseline.
+ * No change reads `0%` without an arrow: an arrow on zero claims a direction that isn't there.
  */
 export function ProgressDelta({
   percent,
@@ -17,11 +18,11 @@ export function ProgressDelta({
   percent: number;
   color: string;
 }) {
-  const negative = percent < 0;
+  const rounded = Math.round(percent);
   return (
     <NumberFlow
-      value={Math.abs(Math.round(percent))}
-      prefix={negative ? '▼ ' : '▲ '}
+      value={Math.abs(rounded)}
+      prefix={rounded < 0 ? '▼ ' : rounded > 0 ? '▲ ' : ''}
       suffix="%"
       style={{
         fontSize: 22,

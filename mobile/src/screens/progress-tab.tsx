@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { PaperScreen } from '@/components/paper';
 import { ProgressSparkline } from '@/components/progress-sparkline';
@@ -28,6 +28,9 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+/** At and above this Dynamic Type scale (XXXL and the accessibility sizes) rows stack. */
+const STACKED_ROW_SCALE = 1.35;
+
 function MetricRow({
   title,
   caption,
@@ -48,6 +51,15 @@ function MetricRow({
   testID?: string;
 }) {
   const { colors, type } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  // Accessibility sizes stack the row instead of truncating it (Apple's own pattern): name and
+  // caption wrap on the full width, the value gets its own line.
+  const stacked = fontScale >= STACKED_ROW_SCALE;
+  const valueText = (
+    <Text style={[type.subhead, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
+      {value}
+    </Text>
+  );
   return (
     <>
       <Pressable
@@ -63,21 +75,37 @@ function MetricRow({
           opacity: pressed ? 0.7 : 1,
         })}>
         <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-          <Text style={type.row} numberOfLines={1}>
+          <Text style={type.row} numberOfLines={stacked ? undefined : 1}>
             {title}
           </Text>
           {caption ? (
             <Text
               style={[type.kicker, { color: colors.tertiaryLabel, lineHeight: 18 }]}
-              numberOfLines={1}>
+              numberOfLines={stacked ? undefined : 1}>
               {caption}
             </Text>
           ) : null}
+          {stacked ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                columnGap: 12,
+                rowGap: 6,
+                paddingTop: 4,
+              }}>
+              {valueText}
+              <ProgressSparkline values={sparkline} />
+            </View>
+          ) : null}
         </View>
-        <Text style={[type.subhead, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
-          {value}
-        </Text>
-        <ProgressSparkline values={sparkline} />
+        {stacked ? null : (
+          <>
+            {valueText}
+            <ProgressSparkline values={sparkline} />
+          </>
+        )}
         <SymbolView name="chevron.right" tintColor={colors.tertiaryLabel} size={12} />
       </Pressable>
       {showDivider ? (
@@ -186,14 +214,21 @@ export function ProgressTab() {
   return (
     <>
       <PaperScreen testID="progress-tab">
+        {/* Wraps instead of truncating: at accessibility sizes `Log check-in` drops under the
+            title, which never shrinks. */}
         <View
           style={{
             flexDirection: 'row',
+            flexWrap: 'wrap',
             alignItems: 'flex-start',
             justifyContent: 'space-between',
-            gap: 12,
+            columnGap: 12,
           }}>
-          <Text style={[type.planTitle, { flexShrink: 1, minWidth: 0 }]} numberOfLines={1}>
+          <Text
+            style={[type.planTitle, { flexShrink: 0 }]}
+            // Stays above `Lifts` through AX XL but always fits one line (never breaks mid-word).
+            maxFontSizeMultiplier={2}
+            accessibilityRole="header">
             Progress
           </Text>
           <Pressable

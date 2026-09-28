@@ -146,15 +146,21 @@ export function ProgressBodyDetailScreen() {
             />
             {deltaRounded != null ? (
               // Down is often the goal for weight and waist: body deltas are never judged
-              // by color. ▲/▼ carries direction; ink stays neutral.
-              <ProgressDelta percent={deltaRounded} color={colors.label} />
+              // by color. ▲/▼ carries direction; the grey stays neutral.
+              <ProgressDelta percent={deltaRounded} color={colors.tertiaryLabel} />
             ) : null}
           </View>
-          {scrubbing && scrubbed ? (
-            <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
-              {formatProgressShortDate(scrubbed.date)}
-            </Text>
-          ) : null}
+          {/* Always one line, like lift detail's `Estimated 1-rep max`, so the chart doesn't jump
+              when scrubbing starts. At rest it holds the place; the title already names the metric. */}
+          <Text
+            style={[
+              type.caption,
+              { color: colors.tertiaryLabel, fontWeight: '400', opacity: scrubbing ? 1 : 0 },
+            ]}
+            accessibilityElementsHidden={!scrubbing}
+            importantForAccessibility={scrubbing ? 'auto' : 'no-hide-descendants'}>
+            {scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : ' '}
+          </Text>
         </View>
 
         {filtered.length >= 2 ? (
