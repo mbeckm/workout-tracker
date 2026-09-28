@@ -1,16 +1,11 @@
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  FadeOutDown,
-  useReducedMotion,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp, FadeOut, useReducedMotion, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EASE_OUT } from '@/motion';
+import { TOUCH_TARGET, iconSize, radius, space } from '@/constants/theme';
+import { DURATION, EASE_OUT, ENTER_OFFSET } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 /**
@@ -52,14 +47,32 @@ function subscribe(listener: () => void) {
   };
 }
 
-const ENTER = FadeInDown.duration(240).easing(EASE_OUT).withInitialValues({
+/** Rises 8pt (trim-ui §8 Toast). */
+const ENTER = FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
   opacity: 0,
-  transform: [{ translateY: 12 }],
+  transform: [{ translateY: ENTER_OFFSET }],
 });
-const EXIT = FadeOutDown.duration(160).easing(EASE_OUT);
 
-/** Mount once near the root. Sits above the tab bar, clear of the home indicator. */
-export function ToastHost() {
+/** Leaves the way it came: sinks 8pt as it fades. */
+function exitDown() {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
+    animations: {
+      opacity: withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }),
+      transform: [{ translateY: withTiming(ENTER_OFFSET, { duration: DURATION.exit, easing: EASE_OUT }) }],
+    },
+  };
+}
+
+/** Clears the tab bar and the home indicator. */
+const TAB_BAR_CLEARANCE = 84;
+
+/**
+ * Mount once near the root; it sits above the tab bar. A full-screen modal that needs toasts
+ * (the paywall) mounts its own with `bottom`, because the root one is drawn underneath it.
+ */
+export function ToastHost({ bottom }: { bottom?: number } = {}) {
   const toast = useSyncExternalStore(subscribe, () => current, () => null);
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -79,17 +92,17 @@ export function ToastHost() {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: insets.bottom + 84,
+        bottom: bottom ?? insets.bottom + TAB_BAR_CLEARANCE,
         // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
-        paddingHorizontal: 24,
+        paddingHorizontal: space.gutter,
         alignItems: 'center',
       }}>
       {toast ? (
         <Animated.View
           key={toast.id}
           style={{ maxWidth: '100%' }}
-          entering={reduceMotion ? FadeIn.duration(160) : ENTER}
-          exiting={reduceMotion ? FadeOut.duration(120) : EXIT}>
+          entering={reduceMotion ? FadeIn.duration(DURATION.fade) : ENTER}
+          exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : exitDown}>
           <ToastPill toast={toast} />
         </Animated.View>
       ) : null}
@@ -110,25 +123,22 @@ function ToastPill({ toast }: { toast: ToastState }) {
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        minHeight: 44,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 22,
+        gap: space.related,
+        minHeight: TOUCH_TARGET,
+        paddingHorizontal: space.inset,
+        paddingVertical: space.related,
+        borderRadius: radius.full,
         borderCurve: 'continuous',
         backgroundColor: colors.label,
-        shadowColor: '#000',
-        shadowOpacity: 0.16,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 6 },
       }}>
       <SymbolView
-        name="checkmark.circle.fill"
-        size={18}
+        name="checkmark"
+        size={iconSize.row}
+        weight="semibold"
         tintColor={colors.systemGreen}
-        fallback={<Text style={{ color: colors.systemGreen, fontSize: 16 }}>✓</Text>}
+        fallback={<Text style={[type.body, { color: colors.systemGreen }]}>✓</Text>}
       />
-      <Text style={[type.body, { color: colors.onLabel, fontWeight: '600', flexShrink: 1 }]}>{title}</Text>
+      <Text style={[type.body, { color: colors.onLabel, flexShrink: 1 }]}>{title}</Text>
     </Pressable>
   );
 }

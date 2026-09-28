@@ -317,6 +317,7 @@ A haptic confirms something the body did. It's never decoration.
 | --- | --- |
 | Set logged | light impact |
 | Rest reaches 0:00, Finish | success |
+| A Pro purchase lands (the `Trim Pro is on` toast) | success |
 | Well −/+, swiping between exercises, picking a paywall option | selection |
 | A sheet snapping to a detent | light impact |
 | Scrubbing a chart across a data point | selection |
@@ -549,7 +550,7 @@ Same system, different winner. Don't invent a type size for a screen.
 | **History** | Native large title. Month as a section caption with its amount in the trailing lane (`August` … `4 sessions`). Session row: `row` title over `caption` when (`Wed 13`), duration trailing (`52 min`), and the PR pill (gray fill, yellow crown, count) beside the duration when there is one. Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, workout title as the native large title, facts on two lines in `caption` (`Wed 13 September, 18:02` / `52 min, 14 sets`), exercises as in Done. A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | Native large title. `PaperRow` groups separated by `section` air: (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews 3 Oct`). | None |
-| **Paywall** | Follows §12. `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, Restore · Terms · Privacy. All above the fold on a 6.3" phone. | None |
+| **Paywall** | Follows §12. `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, then Restore, Terms and Privacy as three quiet `footnote` links separated by air (no dots). All above the fold on a 6.3" phone. | None |
 | **Body check-in** | Native `formSheet`: Cancel, title and Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
 | **Onboarding** | Follows §12. One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
 
@@ -615,5 +616,5 @@ Screens still carry these violations (488 at the baseline). Fix them when touchi
 - **Charts:** range chips sit above the chart. No selection haptic while scrubbing. No dots when there are few points. The one-session state shows a sentence.
 - **Words native:** tab roots and detail pages still draw custom `tabTitle` 28 / `display` 40 titles instead of native large titles.
 - **Separators:** about 45 ` · ` joins (helpers, recap lines, History, Settings, onboarding) → one fact, lanes, lines or language (§9).
-- **Moments:** unpacking, first plan, first workout fact, purchase unlock and milestones aren't built. Paywall has no savings fact or real-rating proof yet.
+- **Moments:** unpacking, first plan, first workout fact and milestones aren't built. The purchase moment has its toast and haptic, but the Progress range chip's `lock.fill` → `lock.open.fill` opening isn't built yet. Paywall has no savings fact or real-rating proof yet.
 - **Paper:** update the artboards to this ramp (caption 15 Regular tertiary, footnote 13) so Paper and code agree again.

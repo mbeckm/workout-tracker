@@ -11,8 +11,8 @@ import type { OffersResult, PurchaseOutcome, RestoreOutcome } from '@/purchases/
  * Prices here are sample data for the preview; the real screen only shows store prices.
  *
  * In a preview, Subscribe and Restore resolve locally after a short beat (no StoreKit, and
- * the real entitlement is never touched), so the whole purchase → success moment can be
- * watched. `success`, `success-notrial` and `restored` open straight on the success state.
+ * the real entitlement is never touched), so the paywall closing and the `Trim Pro is on`
+ * toast can be watched. `none` makes Restore find nothing (the in-place toast).
  */
 export const PAYWALL_MOCKS = [
   'trial',
@@ -20,9 +20,7 @@ export const PAYWALL_MOCKS = [
   'unavailable',
   'offline',
   'loading',
-  'success',
-  'success-notrial',
-  'restored',
+  'none',
 ] as const;
 export type PaywallMock = (typeof PAYWALL_MOCKS)[number];
 
@@ -96,10 +94,8 @@ export type PaywallPreview = {
   loadOffers: (reason: ProReason) => Promise<OffersResult>;
   /** Stands in for StoreKit: a completed purchase after a short beat. */
   purchase: (offer: ProOffer) => Promise<PurchaseOutcome>;
-  /** Stands in for a restore that finds Trim Pro. */
+  /** Stands in for a restore (finds Trim Pro, or nothing for `none`). */
   restore: () => Promise<RestoreOutcome>;
-  /** Open straight on the success state, as if this had just happened. */
-  opensOn: 'purchased' | 'restored' | null;
 };
 
 /** Long enough to read "Purchasing…", short enough not to bore. */
@@ -129,13 +125,17 @@ const load = {
 
 function preview(
   loadOffers: (reason: ProReason) => Promise<OffersResult>,
-  opensOn: PaywallPreview['opensOn'] = null,
+  restoreFinds = true,
 ): PaywallPreview {
   return {
     loadOffers,
     purchase: (offer) => afterBeat({ kind: 'success', entitlement: previewEntitlement(offer) }),
-    restore: () => afterBeat({ kind: 'restored', entitlement: previewEntitlement(null) }),
-    opensOn,
+    restore: () =>
+      afterBeat(
+        restoreFinds
+          ? { kind: 'restored', entitlement: previewEntitlement(null) }
+          : { kind: 'none', entitlement: { ...previewEntitlement(null), status: 'free' } },
+      ),
   };
 }
 
@@ -146,9 +146,7 @@ const PREVIEWS: Record<PaywallMock, PaywallPreview> = {
   unavailable: preview(load.unavailable),
   offline: preview(load.offline),
   loading: preview(load.loading),
-  success: preview(load.trial, 'purchased'),
-  'success-notrial': preview(load.notrial, 'purchased'),
-  restored: preview(load.trial, 'restored'),
+  none: preview(load.trial, false),
 };
 
 /** The preview for `?mock=`, or undefined. Always undefined outside development builds. */

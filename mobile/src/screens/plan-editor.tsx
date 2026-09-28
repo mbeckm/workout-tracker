@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
@@ -131,9 +130,8 @@ export function PlanEditorScreen() {
   const showDone = isNew && hasExercises;
 
   const finish = () => {
-    // The commit of a rare, long flow: one success tap with the press. The toast (and the
-    // Plans row) follow from `beforeRemove` once the editor leaves.
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // No haptic (trim-ui §8 Haptics): the toast (and the Plans row) follow from
+    // `beforeRemove` once the editor leaves.
     // The plan Home shows: land there, ready to press Start. Another plan: back to Plans.
     if (plan.id === activePlanId) {
       router.dismissTo('/');

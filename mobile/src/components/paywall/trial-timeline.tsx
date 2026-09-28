@@ -2,6 +2,7 @@ import { SymbolView } from 'expo-symbols';
 import { Text, View } from 'react-native';
 
 import { billedPerPeriod, type FreeTrial, type ProOffer } from '@/purchases/offers';
+import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 type Step = { when: string; what: string; now: boolean };
@@ -39,7 +40,7 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
             key={step.when}
             accessible
             accessibilityLabel={`${step.when}: ${step.what}`}
-            style={{ flexDirection: 'row', gap: 14 }}>
+            style={{ flexDirection: 'row', gap: space.inline }}>
             <View style={{ width: LANE, alignItems: 'center' }}>
               <View
                 style={{
@@ -52,18 +53,26 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
                 }}>
                 <SymbolView
                   name={step.now ? 'lock.open.fill' : 'creditcard.fill'}
-                  size={13}
+                  size={iconSize.caption}
                   weight="semibold"
                   tintColor={step.now ? colors.onLabel : colors.secondaryLabel}
                 />
               </View>
               {last ? null : (
-                <View style={{ flex: 1, width: 2, marginVertical: 3, backgroundColor: colors.systemGray5 }} />
+                <View style={{ flex: 1, width: 2, marginVertical: space.tight, backgroundColor: colors.systemGray5 }} />
               )}
             </View>
-            <View style={{ flex: 1, minWidth: 0, gap: 1, paddingTop: 4, paddingBottom: last ? 0 : 16 }}>
-              <Text style={[type.kicker, { color: colors.label, fontWeight: '600' }]}>{step.when}</Text>
-              <Text style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>{step.what}</Text>
+            {/* `tight` centres the first 20pt line on the 28pt node. */}
+            <View
+              style={{
+                flex: 1,
+                minWidth: 0,
+                gap: space.pair,
+                paddingTop: space.tight,
+                paddingBottom: last ? 0 : space.inset,
+              }}>
+              <Text style={[type.caption, { color: colors.label }]}>{step.when}</Text>
+              <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>{step.what}</Text>
             </View>
           </View>
         );

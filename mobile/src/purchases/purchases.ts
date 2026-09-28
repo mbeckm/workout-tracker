@@ -134,16 +134,13 @@ export function startEntitlementSync(onChange: (entitlement: Entitlement) => voi
 
 export const PURCHASE_COPY = {
   unavailable: "Purchases aren't available right now. Please try again later.",
-  notActiveYet:
-    "Your purchase went through. If Trim Pro doesn't turn on in a moment, tap Restore Purchases.",
+  notActiveYet: "Your purchase went through. If Trim Pro doesn't turn on in a moment, tap Restore.",
   pendingTitle: 'Waiting for approval',
   pendingBody: "Trim Pro turns on as soon as the purchase is approved.",
-  restoredTitle: 'Trim Pro restored',
-  restoredBody: 'Welcome back. Pro is on.',
-  noneTitle: 'No purchases found',
-  noneBody:
-    "We couldn't find Trim Pro on this Apple Account. If you subscribed with a different Apple Account, sign in with it and try again.",
-  restoreFailedTitle: "Couldn't restore purchases",
+  /** Toasts (trim-ui §12 Moments and rule 19). */
+  proOn: 'Trim Pro is on',
+  restored: 'Trim Pro restored',
+  none: 'No purchases to restore',
   restoreFailed: "Couldn't restore purchases. Check your connection and try again.",
 } as const;
 
@@ -188,7 +185,7 @@ function purchaseErrorMessage(error: unknown): string {
     case ERROR.notAllowed:
       return "This Apple Account can't make purchases. Check Screen Time settings.";
     case ERROR.alreadyPurchased:
-      return 'You already own Trim Pro. Tap Restore Purchases.';
+      return 'You already own Trim Pro. Tap Restore.';
     default:
       return "The purchase didn't go through. Please try again.";
   }

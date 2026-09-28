@@ -8,13 +8,6 @@ export type ProFeature = {
   title: string;
   /** One short line under it, 15. Reads in one glance: no more than ~45 characters. */
   detail: string;
-  /**
-   * Where the feature lives, for the paywall's success state. Same 15 line, same budget: one
-   * line on a 6.3" iPhone. A path the buyer can follow, in on-screen words: `Plans › +`.
-   */
-  where: string;
-  /** `where` for VoiceOver: no glyphs, button names instead of symbols. */
-  whereSpoken: string;
   /** SF Symbol in the row's icon tile. */
   symbol: string;
   /**
@@ -32,8 +25,6 @@ export const PRO_FEATURES: readonly ProFeature[] = [
     id: 'plans',
     title: 'Unlimited plans',
     detail: 'Build as many as you like. Switch anytime.',
-    where: 'Plans › + to add. Hold a plan to switch.',
-    whereSpoken: 'In Plans, Create plan adds one. Touch and hold a plan to switch to it.',
     symbol: 'rectangle.stack',
     shipped: true,
     reasons: ['second_plan', 'switch_plan'],
@@ -42,8 +33,6 @@ export const PRO_FEATURES: readonly ProFeature[] = [
     id: 'progress',
     title: 'Your full progress',
     detail: 'Every lift and check-in since day one.',
-    where: 'Progress › a lift or check-in › 6M, YTD, All.',
-    whereSpoken: 'In Progress, open any lift or check-in, then choose 6 months, year to date, or all.',
     symbol: 'chart.line.uptrend.xyaxis',
     shipped: true,
     reasons: ['progress_history'],
@@ -52,8 +41,6 @@ export const PRO_FEATURES: readonly ProFeature[] = [
     id: 'targets',
     title: 'Next-session targets',
     detail: 'Weight and reps for every set.',
-    where: 'While you log, next to Last time.',
-    whereSpoken: 'While you log, next to Last time.',
     symbol: 'scope',
     shipped: true,
     reasons: ['targets'],
