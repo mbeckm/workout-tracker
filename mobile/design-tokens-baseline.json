@@ -21,13 +21,6 @@
     "raw-pressed-opacity": 1,
     "raw-spacing": 2
   },
-  "components/home-day-row.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 1,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 3
-  },
   "components/last-time-line.tsx": {
     "raw-font-weight": 1
   },
@@ -44,20 +37,6 @@
     "raw-pressed-opacity": 3,
     "raw-spacing": 12
   },
-  "components/paywall/plan-option.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 1,
-    "raw-font-weight": 2,
-    "raw-pressed-opacity": 1,
-    "raw-radius": 2,
-    "raw-spacing": 5
-  },
-  "components/paywall/trial-timeline.tsx": {
-    "off-scale-spacing": 3,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-spacing": 3
-  },
   "components/plan-detail-day-row.tsx": {
     "middle-dot-separator": 1,
     "off-scale-spacing": 2,
@@ -66,24 +45,6 @@
     "raw-spacing": 2
   },
   "components/pr-crown.tsx": {
-    "off-scale-spacing": 2,
-    "raw-spacing": 3
-  },
-  "components/progress-delta.tsx": {
-    "raw-duration": 2,
-    "raw-font-size": 1,
-    "raw-font-weight": 1
-  },
-  "components/progress-line-chart.tsx": {
-    "off-scale-spacing": 1,
-    "raw-duration": 2,
-    "raw-font-size": 2,
-    "raw-font-weight": 2
-  },
-  "components/progress-sparkline.tsx": {
-    "raw-radius": 1
-  },
-  "components/recap-exercise.tsx": {
     "off-scale-spacing": 2,
     "raw-spacing": 3
   },
@@ -96,24 +57,11 @@
     "raw-radius": 1,
     "raw-spacing": 2
   },
-  "components/stagger-value.tsx": {
-    "raw-duration": 2
-  },
   "components/target-line.tsx": {
     "middle-dot-separator": 1,
     "raw-font-weight": 2,
     "raw-pressed-opacity": 1,
     "raw-spacing": 1
-  },
-  "components/toast.tsx": {
-    "off-scale-spacing": 1,
-    "raw-color": 1,
-    "raw-duration": 4,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-radius": 1,
-    "raw-spacing": 3
   },
   "components/window-chips.tsx": {
     "off-scale-spacing": 3,
@@ -125,7 +73,7 @@
     "raw-spacing": 4
   },
   "domain/helpers.ts": {
-    "middle-dot-separator": 6
+    "middle-dot-separator": 1
   },
   "domain/log-session.ts": {
     "middle-dot-separator": 4
@@ -151,11 +99,6 @@
     "raw-pressed-opacity": 2,
     "raw-spacing": 8
   },
-  "screens/day-preview.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 1,
-    "raw-spacing": 4
-  },
   "screens/exercise-picker.tsx": {
     "off-scale-spacing": 3,
     "raw-font-size": 1,
@@ -169,16 +112,6 @@
     "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-spacing": 5
-  },
-  "screens/history-session.tsx": {
-    "middle-dot-separator": 1,
-    "off-scale-spacing": 1,
-    "raw-spacing": 5
-  },
-  "screens/history-tab.tsx": {
-    "off-scale-spacing": 5,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 7
   },
   "screens/log-workout.tsx": {
     "gesture-hint-copy": 2,
@@ -221,14 +154,6 @@
     "off-scale-spacing": 1,
     "raw-spacing": 1
   },
-  "screens/paywall.tsx": {
-    "off-scale-spacing": 4,
-    "raw-font-weight": 2,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 2,
-    "raw-radius": 1,
-    "raw-spacing": 14
-  },
   "screens/plan-editor.tsx": {
     "off-scale-spacing": 1,
     "raw-icon-size": 1,
@@ -240,44 +165,8 @@
     "raw-pressed-opacity": 2,
     "raw-spacing": 7
   },
-  "screens/progress-body-detail.tsx": {
-    "off-scale-spacing": 2,
-    "raw-font-size": 1,
-    "raw-font-weight": 3,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-spacing": 9
-  },
-  "screens/progress-lift-detail.tsx": {
-    "off-scale-spacing": 2,
-    "raw-font-size": 1,
-    "raw-font-weight": 3,
-    "raw-spacing": 7
-  },
-  "screens/progress-tab.tsx": {
-    "off-scale-spacing": 6,
-    "raw-font-weight": 1,
-    "raw-icon-size": 2,
-    "raw-pressed-opacity": 4,
-    "raw-spacing": 11
-  },
   "screens/settings-tab.tsx": {
-    "middle-dot-separator": 1,
     "raw-font-weight": 1,
     "raw-spacing": 2
-  },
-  "screens/workout-complete.tsx": {
-    "off-scale-spacing": 2,
-    "raw-spacing": 6
-  },
-  "screens/workout-tab.tsx": {
-    "middle-dot-separator": 2,
-    "off-scale-spacing": 7,
-    "raw-duration": 10,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 3,
-    "raw-spacing": 11
   }
 }

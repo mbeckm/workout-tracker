@@ -1,10 +1,10 @@
 import { NumberFlow } from 'number-flow-react-native';
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 
-import { EASE_OUT_FN } from '@/motion';
+import { DURATION, EASE_OUT_FN } from '@/motion';
 
 const SPIN = {
-  duration: 280,
+  duration: DURATION.change,
   easing: EASE_OUT_FN,
 } as const;
 
@@ -48,7 +48,7 @@ export function StaggerValue({
       mask={false}
       spinTiming={SPIN}
       transformTiming={SPIN}
-      opacityTiming={{ duration: 180, easing: EASE_OUT_FN }}
+      opacityTiming={{ duration: DURATION.enter, easing: EASE_OUT_FN }}
     />
   );
 }

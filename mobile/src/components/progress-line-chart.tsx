@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -10,19 +11,23 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Line, Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme/theme-context';
-import type { ProgressPoint } from '@/domain/progress';
-import { monthShort } from '@/domain/dates';
-import { EASE_IN_OUT } from '@/motion';
+import { fontScaleCap, radius } from '@/constants/theme';
+import { formatProgressShortDate, type ProgressPoint } from '@/domain/progress';
+import { DURATION, EASE_IN_OUT } from '@/motion';
 
 type Plotted = { x: number; y: number; value: number; date: string };
 
 const SAMPLE_COUNT = 48;
 /** Keep the stroke clear of the axis and the top clip. */
 const Y_INSET = 14;
-const MORPH_MS = 280;
+const MORPH_MS = DURATION.change;
+/** Fewer points than this and every point gets a dot (trim-ui → Charts 4). */
+const DOT_ALL_BELOW = 6;
+const DOT_RADIUS = 4;
+const SCRUB_DOT = 10;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -116,37 +121,15 @@ function smoothPath(points: { x: number; y: number }[]): string {
   return path;
 }
 
-/**
- * The two axis ends in English order, on any device region: months (`Jun … Sep`), days when
- * both ends fall in one month (`Sep 1 … Sep 28`), and the year when only it differs
- * (`Sep 2025 … Sep 2026`). Never the same label twice for different dates.
- */
+/** First and last date only (trim-ui → Charts 2); one date when every point is on one day. */
 function axisLabels(firstIso: string, lastIso: string): [string, string] {
-  const first = new Date(firstIso);
-  const last = new Date(lastIso);
-  const sameMonth = first.getMonth() === last.getMonth();
-  if (sameMonth && first.getFullYear() === last.getFullYear()) {
-    // Every point on one day: one date, not `Sep 25 … Sep 25`.
-    if (first.getDate() === last.getDate()) {
-      return [`${monthShort(first)} ${first.getDate()}`, ''];
-    }
-    return [
-      `${monthShort(first)} ${first.getDate()}`,
-      `${monthShort(last)} ${last.getDate()}`,
-    ];
-  }
-  if (sameMonth) {
-    return [
-      `${monthShort(first)} ${first.getFullYear()}`,
-      `${monthShort(last)} ${last.getFullYear()}`,
-    ];
-  }
-  return [monthShort(first), monthShort(last)];
+  const first = formatProgressShortDate(firstIso);
+  const last = formatProgressShortDate(lastIso);
+  return first === last ? ['', last] : [first, last];
 }
 
 /** Axis labels scale with Dynamic Type up to here; the chart makes room below for them. */
-const AXIS_MAX_SCALE = 1.5;
-const AXIS_LINE_HEIGHT = 18;
+const AXIS_MAX_SCALE = fontScaleCap.title;
 /** Default space under the axis: the label line plus 10pt air. */
 const PAD_BOTTOM = 28;
 
@@ -216,7 +199,7 @@ export function ProgressLineChart({
   // Large text grows the space under the axis by the labels' extra height, so the baseline
   // never runs through them; the plot keeps its size and the chart gets taller instead.
   const labelGrowth = Math.ceil(
-    AXIS_LINE_HEIGHT * (Math.min(Math.max(fontScale, 1), AXIS_MAX_SCALE) - 1),
+    type.footnote.lineHeight * (Math.min(Math.max(fontScale, 1), AXIS_MAX_SCALE) - 1),
   );
   const padBottom = PAD_BOTTOM + labelGrowth;
   const totalHeight = height + labelGrowth;
@@ -228,6 +211,8 @@ export function ProgressLineChart({
   const axisY = chartHeight - 0.5;
 
   const scrubX = useSharedValue(0);
+  const scrubY = useSharedValue(0);
+  const scrubIndex = useSharedValue(-1);
   const scrubVisible = useSharedValue(0);
   const plottedShared = useSharedValue(plotted);
   const xs = useSharedValue<number[]>([]);
@@ -245,7 +230,15 @@ export function ProgressLineChart({
   }, [plotted, plottedShared]);
 
   useEffect(() => {
-    if (points.length < 2 || width <= 0) {
+    if (width <= 0) {
+      return;
+    }
+    if (points.length < 2) {
+      // One session is a lone dot: no line, and the next line draws in place, not from here.
+      xs.set([]);
+      fromYs.set([]);
+      toYs.set([]);
+      primed.current = false;
       return;
     }
 
@@ -298,6 +291,10 @@ export function ProgressLineChart({
   });
 
   const reportScrub = (index: number | null) => {
+    if (index != null) {
+      // A selection tick at each data point (trim-ui → Haptics).
+      void Haptics.selectionAsync();
+    }
     const callback = onScrubRef.current;
     if (!callback) {
       return;
@@ -322,7 +319,9 @@ export function ProgressLineChart({
             return;
           }
           scrubX.set(point.x);
-          scrubVisible.set(withTiming(1, { duration: 120 }));
+          scrubY.set(point.y);
+          scrubIndex.set(index);
+          scrubVisible.set(withTiming(1, { duration: DURATION.press }));
           runOnJS(reportScrub)(index);
         })
         .onUpdate((event) => {
@@ -331,24 +330,42 @@ export function ProgressLineChart({
           if (!point) {
             return;
           }
+          if (index === scrubIndex.get()) {
+            return;
+          }
           scrubX.set(point.x);
+          scrubY.set(point.y);
+          scrubIndex.set(index);
           runOnJS(reportScrub)(index);
         })
         .onFinalize(() => {
-          scrubVisible.set(withTiming(0, { duration: 160 }));
+          scrubIndex.set(-1);
+          scrubVisible.set(withTiming(0, { duration: DURATION.exit }));
           runOnJS(reportScrub)(null);
         }),
-    [plottedShared, scrubVisible, scrubX],
+    [plottedShared, scrubIndex, scrubVisible, scrubX, scrubY],
   );
 
   const guideStyle = useAnimatedStyle(() => ({
     opacity: scrubVisible.get(),
-    transform: [{ translateX: scrubX.get() }],
+    // Centre the 1pt guide on the point.
+    transform: [{ translateX: scrubX.get() - 0.5 }],
+  }));
+  const scrubDotStyle = useAnimatedStyle(() => ({
+    opacity: scrubVisible.get(),
+    transform: [
+      { translateX: scrubX.get() - SCRUB_DOT / 2 },
+      { translateY: scrubY.get() - SCRUB_DOT / 2 },
+    ],
   }));
 
-  if (plotted.length < 2) {
+  if (plotted.length === 0) {
     return <View style={{ width, height: totalHeight }} />;
   }
+
+  // The latest value always gets a dot; a short series gets one on every point, because a
+  // line through three sessions implies data that isn't there. One session is a lone dot.
+  const dots = plotted.length < DOT_ALL_BELOW ? plotted : [plotted[plotted.length - 1]];
 
   const [startLabel, endLabel] = axisLabels(points[0].date, points[points.length - 1].date);
 
@@ -360,15 +377,6 @@ export function ProgressLineChart({
         accessibilityRole={accessibilityLabel != null ? 'image' : undefined}
         accessibilityLabel={accessibilityLabel}>
         <Svg width={width} height={chartHeight}>
-          <Line
-            x1={padX}
-            y1={axisY}
-            x2={width - padX}
-            y2={axisY}
-            stroke={colors.separator}
-            strokeWidth={1}
-            strokeOpacity={0.55}
-          />
           <AnimatedPath
             animatedProps={pathProps}
             stroke={colors.label}
@@ -377,6 +385,9 @@ export function ProgressLineChart({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          {dots.map((dot) => (
+            <Circle key={dot.date} cx={dot.x} cy={dot.y} r={DOT_RADIUS} fill={colors.label} />
+          ))}
         </Svg>
         <Animated.View
           pointerEvents="none"
@@ -385,42 +396,34 @@ export function ProgressLineChart({
               position: 'absolute',
               top: padTop,
               bottom: padBottom,
-              width: 1.5,
-              marginLeft: -0.75,
+              width: 1,
               backgroundColor: colors.label,
             },
             guideStyle,
           ]}
         />
-        <Text
+        <Animated.View
+          pointerEvents="none"
           style={[
-            type.footnote,
             {
               position: 'absolute',
+              top: 0,
               left: 0,
-              bottom: 0,
-              color: colors.tertiaryLabel,
-              fontSize: 13,
-              lineHeight: AXIS_LINE_HEIGHT,
-              fontWeight: '400',
+              width: SCRUB_DOT,
+              height: SCRUB_DOT,
+              borderRadius: radius.full,
+              backgroundColor: colors.label,
             },
+            scrubDotStyle,
           ]}
+        />
+        <Text
+          style={[type.footnote, { position: 'absolute', left: 0, bottom: 0 }]}
           maxFontSizeMultiplier={AXIS_MAX_SCALE}>
           {startLabel}
         </Text>
         <Text
-          style={[
-            type.footnote,
-            {
-              position: 'absolute',
-              right: 0,
-              bottom: 0,
-              color: colors.tertiaryLabel,
-              fontSize: 13,
-              lineHeight: AXIS_LINE_HEIGHT,
-              fontWeight: '400',
-            },
-          ]}
+          style={[type.footnote, { position: 'absolute', right: 0, bottom: 0 }]}
           maxFontSizeMultiplier={AXIS_MAX_SCALE}>
           {endLabel}
         </Text>

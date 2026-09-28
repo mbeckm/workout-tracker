@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { PaperBack, PaperScreen } from '@/components/paper';
+import { space } from '@/constants/theme';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressLineChart } from '@/components/progress-line-chart';
 import { StaggerValue } from '@/components/stagger-value';
@@ -11,7 +12,9 @@ import {
   bodyMetricSeries,
   defaultProgressWindow,
   filterPointsByWindow,
+  formatProgressChartSummary,
   formatProgressShortDate,
+  formatProgressWindow,
   isInProgressWindow,
   isProgressWindowLocked,
   percentFromWindowStart,
@@ -51,6 +54,8 @@ function bodyHeroFormat(key: BodyMetricKey): Intl.NumberFormatOptions | undefine
   return { maximumFractionDigits: 0, useGrouping: false };
 }
 
+const CHART_HEIGHT = 180;
+
 export function ProgressBodyDetailScreen() {
   const { colors, type } = useTheme();
   const router = useRouter();
@@ -87,13 +92,6 @@ export function ProgressBodyDetailScreen() {
   const delta = heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
   const deltaRounded = delta == null ? null : Math.round(delta);
 
-  const heroType = {
-    fontSize: 52,
-    fontWeight: '700' as const,
-    letterSpacing: -0.03 * 52,
-    color: colors.label,
-  };
-
   // The list follows the window, newest first, like lift detail.
   const recent = useMemo(
     () =>
@@ -104,111 +102,97 @@ export function ProgressBodyDetailScreen() {
     [series, window],
   );
 
-  const chartLabel =
-    filtered.length >= 2
-      ? `${metricMeta.label}, ${formatBodyValue(filtered[0].value, metricKey, units)} on ${formatProgressShortDate(filtered[0].date)} to ${formatBodyValue(filtered[filtered.length - 1].value, metricKey, units)} on ${formatProgressShortDate(filtered[filtered.length - 1].date)}`
-      : undefined;
+  const chartLabel = formatProgressChartSummary(metricMeta.label, filtered, (value) =>
+    formatBodyValue(value, metricKey, units),
+  );
+  const chartWidth = width - space.gutter * 2;
 
   return (
     <>
       <PaperScreen testID="progress-body-detail">
         <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
-          // Wraps, never truncates: long lift names at large text sizes need every word.
-          style={[type.title, { marginBottom: 16 }]}
+          // Wraps, never truncates.
+          style={type.title}
           accessibilityRole="header">
           {metricMeta.label}
         </Text>
 
-        <WindowChips
-          value={window}
-          onChange={setPicked}
-          locked={isLocked}
-          onLockedPress={(candidate) => void unlockWindow(candidate)}
-        />
-
-        <View style={{ paddingTop: 28, paddingBottom: 20 }}>
+        <View style={{ paddingTop: space.inset, paddingBottom: space.gutter, gap: space.tight }}>
           {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
           <View
             style={{
               flexDirection: 'row',
               flexWrap: 'wrap',
               alignItems: 'flex-end',
-              columnGap: 16,
-              rowGap: 4,
+              columnGap: space.inline,
+              rowGap: space.tight,
             }}>
             <StaggerValue
               value={heroNumber}
               suffix={bodyHeroSuffix(metricKey, units)}
               format={bodyHeroFormat(metricKey)}
               locales={PROGRESS_HERO_LOCALE}
-              style={heroType}
+              style={type.hero}
             />
-            {deltaRounded != null ? (
-              // Down is often the goal for weight and waist: body deltas are never judged
-              // by color. ▲/▼ carries direction; the grey stays neutral.
-              <ProgressDelta percent={deltaRounded} color={colors.tertiaryLabel} />
-            ) : null}
+            {deltaRounded != null ? <ProgressDelta percent={deltaRounded} /> : null}
           </View>
-          {/* Always one line, like lift detail's `Estimated 1-rep max`, so the chart doesn't jump
-              when scrubbing starts. At rest it holds the place; the title already names the metric. */}
-          <Text
-            style={[
-              type.footnote,
-              { color: colors.tertiaryLabel, fontWeight: '400', opacity: scrubbing ? 1 : 0 },
-            ]}
-            accessibilityElementsHidden={!scrubbing}
-            importantForAccessibility={scrubbing ? 'auto' : 'no-hide-descendants'}>
-            {scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : ' '}
+          {/* The scrubbed date takes the range label's place, so nothing jumps (trim-ui → Charts 3). */}
+          <Text style={type.caption}>
+            {scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : formatProgressWindow(window)}
           </Text>
         </View>
 
-        {filtered.length >= 2 ? (
+        {filtered.length > 0 ? (
           <ProgressLineChart
             points={filtered}
-            width={width - 48}
-            height={180}
+            width={chartWidth}
+            height={CHART_HEIGHT}
             onScrub={setScrubbed}
             accessibilityLabel={chartLabel}
           />
-        ) : series.length === 0 ? null : (
-          // Never recorded: the line below says how to start; no window message above it.
-          <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingVertical: 12 }]}>
-            {filtered.length === 0
-              ? 'No check-ins in this window.'
-              : 'Check in again to draw a line.'}
-          </Text>
-        )}
-
-        <View style={{ height: 28 }} />
-
-        {recent.length === 0 ? (
-          series.length === 0 ? (
-            <Text style={[type.kicker, { paddingTop: 4 }]}>Log a check-in to start tracking.</Text>
-          ) : null
         ) : (
-          recent.map((point, index) => (
-            <View key={point.date}>
-              {index > 0 ? (
-                <View style={{ height: 1, backgroundColor: colors.separator, opacity: 0.6 }} />
-              ) : null}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingVertical: 14,
-                }}>
-                <Text style={[type.subhead, { color: colors.tertiaryLabel }]}>
-                  {formatProgressShortDate(point.date)}
-                </Text>
-                <Text style={[type.row, { fontWeight: '600', fontVariant: ['tabular-nums'] }]}>
-                  {formatBodyValue(point.value, metricKey, units)}
-                </Text>
-              </View>
-            </View>
-          ))
+          // Same frame as the chart, so the chips below never move between ranges.
+          <View style={{ height: CHART_HEIGHT }}>
+            <Text style={type.caption}>
+              {series.length === 0 ? 'No check-ins yet' : 'No check-ins in this range'}
+            </Text>
+          </View>
         )}
+
+        <View style={{ paddingTop: space.inset, paddingBottom: space.section }}>
+          <WindowChips
+            value={window}
+            onChange={setPicked}
+            locked={isLocked}
+            onLockedPress={(candidate) => void unlockWindow(candidate)}
+          />
+        </View>
+
+        {recent.map((point, index) => (
+          <View key={point.date}>
+            {index > 0 ? (
+              <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />
+            ) : null}
+            {/* Two lanes: the date (tertiary) leading, the value (ink) trailing. */}
+            <View
+              accessible
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: space.inline,
+                paddingVertical: space.inset,
+              }}>
+              <Text style={[type.caption, { flexShrink: 1 }]}>
+                {formatProgressShortDate(point.date)}
+              </Text>
+              <Text style={[type.row, { fontVariant: ['tabular-nums'] }]}>
+                {formatBodyValue(point.value, metricKey, units)}
+              </Text>
+            </View>
+          </View>
+        ))}
       </PaperScreen>
       <Stack.Screen options={{ headerShown: false, title: metricMeta.label }} />
     </>

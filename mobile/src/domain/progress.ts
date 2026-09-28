@@ -420,3 +420,33 @@ export function isSessionPR(
   const priorMax = Math.max(...series.slice(0, sessionIndex).map((point) => point.oneRM));
   return sessionOneRM > priorMax;
 }
+
+const WINDOW_LABELS: Record<ProgressWindow, string> = {
+  '3M': 'Last 3 months',
+  '6M': 'Last 6 months',
+  YTD: 'This year',
+  All: 'All time',
+};
+
+/** The range under a detail hero (`Last 3 months`); the scrubbed date takes its place. */
+export function formatProgressWindow(window: ProgressWindow): string {
+  return WINDOW_LABELS[window];
+}
+
+/** VoiceOver summary of a chart: `Estimated 1-rep max, 95 kg on Jun 3 to 102 kg on Sep 14`. */
+export function formatProgressChartSummary(
+  label: string,
+  points: ProgressPoint[],
+  formatValue: (value: number) => string,
+): string | undefined {
+  if (points.length === 0) {
+    return undefined;
+  }
+  const first = points[0];
+  const last = points[points.length - 1];
+  const start = `${formatValue(first.value)} on ${formatProgressShortDate(first.date)}`;
+  if (points.length === 1) {
+    return `${label}, ${start}`;
+  }
+  return `${label}, ${start} to ${formatValue(last.value)} on ${formatProgressShortDate(last.date)}`;
+}
