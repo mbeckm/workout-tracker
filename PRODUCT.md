@@ -18,7 +18,7 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 4. **The user is in control.** Trim does what the user tells it, and nothing on their behalf. Nobody should ever think "why did it do that?" (see Control below).
 5. **The interface explains itself.** No info text, explainer subheadings, summaries, tips or tours. If something needs explaining, we fix the design.
 6. **Whitespace is confident.** We don't fill space for the sake of filling it. An empty-looking start is correct, and screens fill with the user's own work.
-7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Nothing waits on an animation.
+7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Every touch gets a visible reaction within 100ms, and nothing waits on an animation.
 8. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments (a set landing, a week filling up), never from confetti or copy.
 
 ### Control

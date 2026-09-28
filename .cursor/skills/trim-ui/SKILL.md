@@ -86,7 +86,7 @@ System font (SF Pro) only. **Eight sizes, three weights, twelve roles.** Use a r
 ### Rules
 
 1. **Weights mean something.** Bold = it names or commands (titles, CTAs). Medium = it's the thing in a list, or a quiet number. Regular = it supports something else. No semibold, no light, no italics.
-2. **One stage size per screen.** A screen uses at most one of `hero` / `display` / `displayCompact`. The tab title plus one stage size is the normal page. Two display sizes competing is always wrong.
+2. **One stage size per screen.** A screen uses at most one of `hero` / `display` / `displayCompact`. The tab title plus one stage size is the normal page. Two display sizes competing is always wrong. Other numbers on a stage (rest clock, logged sets) use `value`: large enough to read at arm's length, never louder than the winner. Well numbers are the exception, because they're input, not hierarchy.
 3. **Step, don't nudge.** Adjacent levels differ by at least one step on the ramp. Never 16 next to 17, or 20 next to 22. Off-ramp sizes (16, 20, 52, 56) are migration debt.
 4. **Name → meta pairs.** `row` over `caption` (gap 2). `display` over `caption` (gap 8). `title` over `caption` (gap 4). Never `row` over `footnote`.
 5. **Tabular numbers** (`fontVariant: ['tabular-nums']`) on every number that changes in place, lines up in a column, or is typed: wells, timers, set lines, week count, charts, prices.
@@ -225,7 +225,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement, no waiting)
 | `DURATION.exit` | 150 | Anything leaving. Exits are faster than enters. |
 | `DURATION.fade` | 160 | Reduced-motion replacements |
 | `DURATION.enter` | 200 | Something arriving: a set line, a toast, swapped content |
-| `DURATION.change` | 280 | A value or layout changing in place: number roll, expand/collapse, theme crossfade |
+| `DURATION.change` | 280 | A change you don't wait on: number roll, theme crossfade. Never between a tap and what it opens. |
 | `DURATION.celebrate` | ≤ 760 | Earned moments only, after the action has landed |
 | `SPRING.settle` | 300, damping 0.85 | Sheets, drags, swipes, rows settling. Carry the gesture's velocity. |
 | `SPRING.pop` | 520, damping 0.42 | The one bouncy spring: a reward mark filling |
@@ -234,13 +234,14 @@ Easing: `EASE_OUT` for enter, exit and press. `EASE_IN_OUT` for on-screen moves.
 
 ### Rules
 
-1. **Never make the user wait.** Anything a tap triggers finishes within 280ms. Input is never blocked by an animation, and every animation is interruptible.
-2. **Animate changes, not arrivals.** No entrance animations when a screen or tab appears, no staggered list reveals, no skeletons or spinners for local data (it's instant). Only what *changed* moves.
-3. **Small distances.** Enter from 8pt (`ENTER_OFFSET`) with a fade. Never from off-screen, never from `scale(0)`. Press scale is 0.97.
-4. **No bounce on tools.** Functional springs are critically damped (≥ 0.8). Overshoot is reserved for `SPRING.pop`.
-5. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
-6. **No idle motion.** Nothing loops, pulses or breathes while the user isn't doing anything. The rest clock ticking is information, not decoration.
-7. **Reduced motion:** movement becomes an opacity fade (`DURATION.fade`), celebrations become a color crossfade, and haptics stay.
+1. **Respond within 100ms.** The first visible reaction to a touch lands within 100ms, in practice on the next frame. Press feedback starts on touch-down, never on release. Around 150ms people start to feel the delay, so no artificial timers, debounces or waits sit between a tap and its visible effect.
+2. **Tap transitions finish within 200ms.** 280ms (`DURATION.change`) is only for changes you don't wait on: a number rolling, the theme crossfading. Input is never blocked by an animation, and every animation is interruptible.
+3. **Animate changes, not arrivals.** No entrance animations when a screen or tab appears, no staggered list reveals, no skeletons or spinners for local data (it's instant). Only what *changed* moves.
+4. **Small distances.** Enter from 8pt (`ENTER_OFFSET`) with a fade. Never from off-screen, never from `scale(0)`. Press scale is 0.97.
+5. **No bounce on tools.** Functional springs are critically damped (≥ 0.8). Overshoot is reserved for `SPRING.pop`.
+6. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
+7. **No idle motion.** Nothing loops, pulses or breathes while the user isn't doing anything. The rest clock ticking is information, not decoration.
+8. **Reduced motion:** movement becomes an opacity fade (`DURATION.fade`), celebrations become a color crossfade, and haptics stay.
 
 ### Approved motions
 
@@ -251,7 +252,7 @@ Easing: `EASE_OUT` for enter, exit and press. `EASE_IN_OUT` for on-screen moves.
 | Set logged | new line opacity 0→1 + translateY −8→0, `enter` | Fluid |
 | Number changes in place | NumberFlow roll (`StaggerValue`), `change`, `EASE_OUT_FN` | Fluid |
 | Log stage swaps exercise | crossfade, exit 150 / enter 200. The frame doesn't move. | Fluid |
-| Expand / collapse in place | layout `change`, ease-in-out | Fluid |
+| Expand / collapse in place | layout `enter` (200), ease-in-out | Fluid |
 | Sheets | native, or `SPRING.settle` with gesture velocity | Fluid |
 | Toast | rise 8pt, `enter`; leave `exit` | Fluid |
 | Appearance change | full-screen crossfade, `change` | Fluid |
@@ -358,7 +359,7 @@ Same system, different winner. Don't invent a type size for a screen.
 | --- | --- | --- |
 | **Home** | `tabTitle` `Next workout` → 8 → day `display` → 8 → meta `caption` (`plan · n exercises · ~Xm`). Exercise list as one object surface: `row` name + `caption` prescription (`4 × 8 reps · 60 kg`), no thumbnails. After ~4 rows, a peer row `n more exercises` + chevron.down that expands in place and ends with `Show less`. Ink Start sits 16 under the list. Week (`title` `n of m` + `caption` `this week` + dots) one `section` below. Then `Other days` caption + rows (title `row` + first exercise names `caption`; trailing green check if done this week). Tap day or list → preview sheet. | Completed dots + checks |
 | **Day preview** (sheet) | Day `title`, rows `row` + `caption`, read-only. Ink Start at the thumb. | None |
-| **Log** | Header: Cancel (`body`, tertiary) · Finish (`button`). Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (above wells, eats air), wells, green `Log set`. The upper stage never moves (§12). | `Log set` + checks |
+| **Log** | Header: Cancel (`body`, tertiary) · Finish (`button`). Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air), wells (labels `footnote`, numbers `displayCompact`), green `Log set`. The upper stage never moves (§12). | `Log set` + checks |
 | **Done** | `Done` `hero`, facts `caption`, then per exercise `row` name + one `caption` line per set (narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set; `RecapExercise`). Green Done at thumb. Scrolls, uncapped. | Done |
 | **Plans** | `tabTitle` + header `+`. Active plan first, as a `title` row with a green `Active` caption and `n days`. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Delete. No icons, no permanent edit chrome. | `Active` |
 | **Plan detail** | Plan name `display`, `n days` (+ green `Active`). Days as `row` title + `caption` exercise names (2 lines max). `Add day` as a quiet row. `Use this plan` ink if not active. `Delete plan` red, last. | `Active` |
@@ -406,7 +407,7 @@ Before a screen ships, check it in light **and** dark, at default and at the lar
 4. **Color.** Captions are tertiary. There's at most one filled control, and green only means done or go. No blue in content, and no opacity used as color.
 5. **Copy.** No helper text, instructions or summaries. Every caption passes the eyebrow test. Sentence case.
 6. **Icons.** Each one encodes something. It has the right size for its neighbor and the right color for its meaning.
-7. **Motion.** Every animation is on the approved list, finishes within 280ms of a tap, and degrades under reduced motion. Nothing animates on arrival.
+7. **Motion.** Every animation is on the approved list. A tap shows a reaction within 100ms, its transition finishes within 200ms, and it degrades under reduced motion. Nothing animates on arrival.
 8. **Control.** Nothing happened that the user didn't ask for (`PRODUCT.md` → Control).
 9. **Log only.** The upper stage doesn't move between set 1, rest, later sets and keyboard open. The keyboard never covers the wells or `Log set`.
 10. **Taste.** It reads as Trim, not as Hevy, Strong or Alpha Progression.

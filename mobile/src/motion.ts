@@ -22,8 +22,9 @@ export const EASE_OUT_CSS = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
 /**
  * Durations (ms). Motion exists to make Trim feel faster, more fluid or more loveable
- * (trim-ui → Motion). Anything a tap triggers finishes within `change`; only a celebration
- * may run longer, and it runs after the action has already landed.
+ * (trim-ui → Motion). A tap shows a reaction within 100ms (press feedback starts on
+ * touch-down), and a tap transition finishes within `enter`. `change` is only for changes
+ * you don't wait on; a celebration runs after the action has already landed.
  */
 export const DURATION = {
   /** Press feedback. Starts on touch-down. */
@@ -34,7 +35,7 @@ export const DURATION = {
   fade: 160,
   /** Arriving: a new set line, a toast, content swapped in place. */
   enter: 200,
-  /** A value or layout changing in place: number roll, expand/collapse, theme crossfade. */
+  /** A change you don't wait on: number roll, theme crossfade. Never between a tap and what it opens. */
   change: 280,
   /** Ceiling for earned moments (week dot rings). Never on the path of a tap. */
   celebrate: 760,
