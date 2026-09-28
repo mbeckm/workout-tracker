@@ -139,11 +139,7 @@ export function WorkoutTab() {
 
             {day && hasExercises ? (
               <View style={{ paddingTop: space.gutter }}>
-                <ExerciseList
-                  key={day.id}
-                  exercises={day.exercises}
-                  onOpen={() => openPreview(activePlan, day)}
-                />
+                <ExerciseList key={day.id} exercises={day.exercises} />
               </View>
             ) : null}
 
@@ -221,17 +217,11 @@ export function WorkoutTab() {
 }
 
 /**
- * The day's exercises as one object surface. Tapping the list opens the day's preview sheet.
- * A long day folds after `COLLAPSED_ROWS` into a peer row that expands in place and ends with
+ * The day's exercises as one object surface, read-only: the preview sheet would only repeat
+ * it (feedback F7, PRODUCT-DECISIONS 42). A long day folds after `COLLAPSED_ROWS` into a peer row that expands in place and ends with
  * `Show less`; never a sheet just to show the rest (trim-ui → Structure).
  */
-function ExerciseList({
-  exercises,
-  onOpen,
-}: {
-  exercises: ExercisePrescription[];
-  onOpen: () => void;
-}) {
+function ExerciseList({ exercises }: { exercises: ExercisePrescription[] }) {
   const { colors, type } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const foldable = exercises.length > COLLAPSED_ROWS + 1;
@@ -250,11 +240,7 @@ function ExerciseList({
         padding: space.inset,
         gap: space.inset,
       }}>
-      <Pressable
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityHint="Shows this day."
-        style={({ pressed }) => ({ gap: space.inset, opacity: pressed ? PRESSED_OPACITY : 1 })}>
+      <View style={{ gap: space.inset }}>
         {visible.map((exercise, index) => (
           <Animated.View
             key={`${exercise.id}-${index}`}
@@ -264,7 +250,7 @@ function ExerciseList({
             <ExerciseRow exercise={exercise} />
           </Animated.View>
         ))}
-      </Pressable>
+      </View>
       {foldable ? (
         <Pressable
           onPress={() => setExpanded((value) => !value)}
