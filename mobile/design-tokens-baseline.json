@@ -4,6 +4,9 @@
     "raw-font-weight": 1,
     "raw-spacing": 3
   },
+  "catalog/sections.ts": {
+    "middle-dot-separator": 1
+  },
   "components/animated-sheet.tsx": {
     "raw-duration": 2,
     "raw-spacing": 2
@@ -19,6 +22,7 @@
     "raw-spacing": 2
   },
   "components/home-day-row.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-icon-size": 1,
     "raw-pressed-opacity": 1,
@@ -41,6 +45,7 @@
     "raw-spacing": 12
   },
   "components/paywall/plan-option.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-font-weight": 2,
     "raw-pressed-opacity": 1,
@@ -54,6 +59,7 @@
     "raw-spacing": 3
   },
   "components/plan-detail-day-row.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 2,
     "raw-icon-size": 1,
     "raw-pressed-opacity": 1,
@@ -94,6 +100,7 @@
     "raw-duration": 2
   },
   "components/target-line.tsx": {
+    "middle-dot-separator": 1,
     "raw-font-weight": 2,
     "raw-pressed-opacity": 1,
     "raw-spacing": 1
@@ -117,6 +124,18 @@
     "raw-radius": 1,
     "raw-spacing": 4
   },
+  "domain/helpers.ts": {
+    "middle-dot-separator": 6
+  },
+  "domain/log-session.ts": {
+    "middle-dot-separator": 4
+  },
+  "domain/rest.ts": {
+    "middle-dot-separator": 1
+  },
+  "domain/set-lines.ts": {
+    "middle-dot-separator": 2
+  },
   "screens/check-in.tsx": {
     "off-scale-spacing": 1,
     "raw-font-weight": 1,
@@ -133,6 +152,7 @@
     "raw-spacing": 8
   },
   "screens/day-preview.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-spacing": 4
   },
@@ -146,10 +166,12 @@
     "raw-spacing": 22
   },
   "screens/exercise-sheet.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-spacing": 5
   },
   "screens/history-session.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 1,
     "raw-spacing": 5
   },
@@ -160,6 +182,7 @@
   },
   "screens/log-workout.tsx": {
     "gesture-hint-copy": 2,
+    "middle-dot-separator": 4,
     "off-scale-spacing": 10,
     "raw-duration": 6,
     "raw-font-size": 9,
@@ -186,6 +209,7 @@
     "raw-spacing": 5
   },
   "screens/onboarding/plan-ready.tsx": {
+    "middle-dot-separator": 1,
     "off-scale-spacing": 2,
     "raw-spacing": 4
   },
@@ -238,6 +262,7 @@
     "raw-spacing": 11
   },
   "screens/settings-tab.tsx": {
+    "middle-dot-separator": 1,
     "raw-font-weight": 1,
     "raw-spacing": 2
   },
@@ -246,6 +271,7 @@
     "raw-spacing": 6
   },
   "screens/workout-tab.tsx": {
+    "middle-dot-separator": 2,
     "off-scale-spacing": 7,
     "raw-duration": 10,
     "raw-font-size": 1,

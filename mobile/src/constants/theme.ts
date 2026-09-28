@@ -234,11 +234,11 @@ export function makeType(themeColors: ThemeColors) {
   return {
     /** The one result on a moment screen: `Done`, the 1RM on a lift, the onboarding choice. */
     hero,
-    /** The subject of a page: Home day, plan name, session title, empty-state fact. */
+    /** @deprecated Page titles are the native large title (trim-ui → Typography). Migrating screens only. */
     display,
     /** A subject that can run long on a fixed stage: log exercise name, onboarding and paywall headlines. */
     displayCompact,
-    /** Room name at the top of a tab: `Plans`, `History`. */
+    /** @deprecated Tab roots use the native large title (trim-ui → Typography). Migrating screens only. */
     tabTitle,
     /** Quiet large numbers: logged set lines, onboarding counts. */
     value,

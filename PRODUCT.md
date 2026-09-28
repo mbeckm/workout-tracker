@@ -23,8 +23,8 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 5. **The interface explains itself.** No info text, explainer subheadings, summaries, tips or tours. If something needs explaining, we fix the design.
 6. **Whitespace is confident.** We don't fill space for the sake of filling it. An empty-looking start is correct, and screens fill with the user's own work.
 7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Every touch gets a visible reaction within 100ms, and nothing waits on an animation.
-8. **Earn the money honestly.** Trim Pro is sold with the truth: real prices from the App Store, a clear trial timeline, an exit that's always visible, and no pressure tricks. The paywall appears only at the four moments below, and free logging is never interrupted. See `trim-ui` → Money screens.
-9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments (a set landing, a week filling up), never from confetti or copy.
+8. **Everything is a sale.** Making money isn't evil, and helping someone decide isn't either. The sale starts at the first tap, not at the paywall, and every interaction is the store clerk. So the product is the salesperson: every detail gets the same care as the paywall, without plastering CTAs anywhere. We borrow the principles of the best-converting apps and never their dark patterns: real prices, a clear trial timeline, an exit that's always visible, no pressure tricks, and always Trim's own look. Buying Pro is itself a rewarding moment. See `trim-ui` → Selling.
+9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments that feel special: the first open, the first plan, the first workout, the first purchase, a new record, a full week. Never from confetti or copy.
 
 ### Control
 
@@ -62,7 +62,7 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 
 **Workout, Plans, Progress, History, Settings.**
 
-- **Workout (Home):** `Next workout` and the next day (name, plan · exercise count · time estimate), its exercises with prescription and last working weight (`4 × 8 reps · 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, which celebrate a newly finished day), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
+- **Workout (Home):** the next day as the title with its estimated time, its exercises with prescription and last working weight (`4 × 8 reps · 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, which celebrate a newly finished day), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
 - **Plans:** the active plan and other plans. Plan editor: name, days, add day. Day editor: pick exercises, then sets and reps (or duration).
 - **Progress:** each tracked lift with a sparkline; lift detail shows the estimated 1RM chart and sessions. Free sees the last 3 months; 6M, YTD and All are Pro. Body check-ins (native sheet); trends over time are Pro.
 - **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.

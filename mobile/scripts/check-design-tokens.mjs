@@ -78,6 +78,11 @@ const RULES = [
     test: (line) => /<SymbolView\b[^>]*\bsize=\{\d/.test(line) || /^\s*size=\{\d+\}/.test(line),
   },
   {
+    id: 'middle-dot-separator',
+    fix: 'one fact, lanes, lines or language instead of ` · ` (trim-ui → Copy → Separating facts)',
+    test: (line) => /\s·\s|['"`]\s?·\s?['"`]/.test(line),
+  },
+  {
     id: 'gesture-hint-copy',
     fix: 'no instructions in the UI (trim-ui → Copy); VoiceOver hints are fine',
     test: (line) =>
