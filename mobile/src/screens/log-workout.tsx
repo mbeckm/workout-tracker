@@ -87,7 +87,7 @@ import {
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { spokenTargets, targetsFromHistory, type SetTarget } from '@/domain/targets';
-import { DURATION, EASE_OUT, ENTER_OFFSET, exitFade, SPRING } from '@/motion';
+import { DURATION, EASE_OUT, ENTER_OFFSET, SPRING } from '@/motion';
 import {
   newId,
   type ExercisePrescription,
@@ -2250,6 +2250,12 @@ function LogExerciseSheet({
   const [preview, setPreview] = useState<ExercisePrescription | null>(null);
   // Null until the first move: the sheet's own entrance is the sheet sliding up, not a page.
   const [moved, setMoved] = useState<'forward' | 'back' | null>(null);
+  // The page being left fades out as a layer over the new one (never in the column: kept
+  // there, both pages would stack and the sheet would grow to their sum, then shrink back).
+  const [leaving, setLeaving] = useState<{ id: number; preview: ExercisePrescription | null } | null>(
+    null,
+  );
+  const leaveCount = useRef(0);
   const entering = moved == null
     ? undefined
     : reduceMotion
@@ -2257,57 +2263,92 @@ function LogExerciseSheet({
       : moved === 'forward'
         ? SHEET_PAGE_FORWARD
         : SHEET_PAGE_BACK;
-  const exiting = moved == null ? undefined : exitFade(reduceMotion);
 
-  const open = (item: ExercisePrescription) => {
-    setMoved('forward');
-    setPreview(item);
+  const go = (next: ExercisePrescription | null, direction: 'forward' | 'back') => {
+    leaveCount.current += 1;
+    setLeaving(reduceMotion ? null : { id: leaveCount.current, preview });
+    setMoved(direction);
+    setPreview(next);
   };
-  const back = () => {
-    setMoved('back');
-    setPreview(null);
-  };
+  const open = (item: ExercisePrescription) => go(item, 'forward');
+  const back = () => go(null, 'back');
+
+  const page = (shown: ExercisePrescription | null, live: boolean) =>
+    shown ? (
+      <AlternativePreview
+        // Same slot, same sets and reps: the plan line shows what the swap keeps.
+        exercise={{
+          ...shown,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          repScheme: exercise.repScheme ?? null,
+        }}
+        previous={previousFor(shown.name)}
+        best={bestFor(shown.name)}
+        units={units}
+        focus={live && moved != null}
+        onBack={back}
+        onUse={() => onSwap(shown)}
+      />
+    ) : (
+      <ExerciseFactsPage
+        exercise={exercise}
+        facts={exerciseFacts({
+          exercise,
+          previous,
+          best,
+          targets,
+          units,
+          minutes: durationIsMinutes(exercise),
+        })}
+        alternatives={alternatives}
+        focus={live && moved != null}
+        onOpenAlternative={open}
+        onChooseAnother={onChooseAnother}
+      />
+    );
 
   return (
     <SheetMorph>
-      {preview ? (
-        <Animated.View key={`preview-${preview.id}`} entering={entering} exiting={exiting}>
-          <AlternativePreview
-            // Same slot, same sets and reps: the plan line shows what the swap keeps.
-            exercise={{
-              ...preview,
-              sets: exercise.sets,
-              reps: exercise.reps,
-              repScheme: exercise.repScheme ?? null,
-            }}
-            previous={previousFor(preview.name)}
-            best={bestFor(preview.name)}
-            units={units}
-            focus={moved != null}
-            onBack={back}
-            onUse={() => onSwap(preview)}
-          />
-        </Animated.View>
-      ) : (
-        <Animated.View key="facts" entering={entering} exiting={exiting}>
-          <ExerciseFactsPage
-            exercise={exercise}
-            facts={exerciseFacts({
-              exercise,
-              previous,
-              best,
-              targets,
-              units,
-              minutes: durationIsMinutes(exercise),
-            })}
-            alternatives={alternatives}
-            focus={moved != null}
-            onOpenAlternative={open}
-            onChooseAnother={onChooseAnother}
-          />
-        </Animated.View>
-      )}
+      <Animated.View key={preview ? `preview-${preview.id}` : 'facts'} entering={entering}>
+        {page(preview, true)}
+      </Animated.View>
+      {leaving ? (
+        <LeavingPage key={leaving.id} onDone={() => setLeaving(null)}>
+          {page(leaving.preview, false)}
+        </LeavingPage>
+      ) : null}
     </SheetMorph>
+  );
+}
+
+/** The page just left: a layer over the new one that fades (`exit`) and is gone. */
+function LeavingPage({ children, onDone }: { children: ReactNode; onDone: () => void }) {
+  const opacity = useSharedValue(1);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
+  // Once per page: a parent re-render must not restart the fade.
+  useEffect(() => {
+    const finish = () => onDoneRef.current();
+    opacity.set(
+      withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }, (finished) => {
+        if (finished) {
+          scheduleOnRN(finish);
+        }
+      }),
+    );
+  }, [opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.get() }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, style]}>
+      {children}
+    </Animated.View>
   );
 }
 
