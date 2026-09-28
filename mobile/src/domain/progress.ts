@@ -7,6 +7,7 @@ import {
 import { estimatedOneRM, formatLoggedSetLine } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
+import { monthShort } from '@/domain/weeks';
 
 export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
 
@@ -56,6 +57,8 @@ export type TrackedLift = {
   indexValue: string;
   /** VoiceOver phrasing of `indexValue`. */
   spokenValue: string;
+  /** Latest session with a weighted set: the row's `Last Sep 25`, like body rows. */
+  latestDate: string | null;
 };
 
 function isAddedWeightLift(name: string): boolean {
@@ -85,8 +88,9 @@ function liftIndexPresentation(
   history: LoggedWorkout[],
   units: 'kg' | 'lbs',
   sparklineWindow: ProgressWindow | null,
-): { indexValue: string; spokenValue: string; sparkline: number[]; latestOneRM: number | null } {
+): Omit<TrackedLift, 'name'> {
   const series = liftSeriesFromHistory(name, history);
+  const latestDate = series.length > 0 ? series[series.length - 1].date : null;
   // The sparkline never reaches further back than the detail screen can open.
   const sparkSeries =
     sparklineWindow == null
@@ -105,6 +109,7 @@ function liftIndexPresentation(
         .filter((value) => value != null)
         .slice(-8),
       latestOneRM: null,
+      latestDate,
     };
   }
 
@@ -116,6 +121,7 @@ function liftIndexPresentation(
       : 'no sets yet',
     sparkline: sparkSeries.slice(-8).map((point) => point.oneRM),
     latestOneRM: latest?.oneRM ?? null,
+    latestDate,
   };
 }
 
@@ -357,12 +363,13 @@ export function collectTrackedLifts(
     return left.name.localeCompare(right.name);
   });
 
-  return lifts.map(({ name, latestOneRM, sparkline, indexValue, spokenValue }) => ({
+  return lifts.map(({ name, latestOneRM, sparkline, indexValue, spokenValue, latestDate }) => ({
     name,
     latestOneRM,
     sparkline,
     indexValue,
     spokenValue,
+    latestDate,
   }));
 }
 
@@ -397,11 +404,14 @@ export function formatCheckInDate(iso: string): string {
   });
 }
 
-export function formatProgressShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
+/**
+ * `Sep 25` (`Sep 25, 2025` outside this year), built from parts in the app's English order
+ * like Weeks: a locale format would read `25. Sep` on a German-region phone.
+ */
+export function formatProgressShortDate(iso: string, now: Date = new Date()): string {
+  const date = new Date(iso);
+  const label = `${monthShort(date)} ${date.getDate()}`;
+  return date.getFullYear() === now.getFullYear() ? label : `${label}, ${date.getFullYear()}`;
 }
 
 export function isSessionPR(

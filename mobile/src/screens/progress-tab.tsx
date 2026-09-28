@@ -222,6 +222,9 @@ export function ProgressTab() {
               <MetricRow
                 key={lift.name}
                 title={lift.name}
+                caption={
+                  lift.latestDate ? `Last ${formatProgressShortDate(lift.latestDate)}` : undefined
+                }
                 value={lift.indexValue}
                 spokenValue={lift.spokenValue}
                 sparkline={lift.sparkline}

@@ -14,6 +14,7 @@ import Svg, { Line, Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme/theme-context';
 import type { ProgressPoint } from '@/domain/progress';
+import { monthShort } from '@/domain/weeks';
 import { EASE_IN_OUT } from '@/motion';
 
 type Plotted = { x: number; y: number; value: number; date: string };
@@ -115,8 +116,9 @@ function smoothPath(points: { x: number; y: number }[]): string {
   return path;
 }
 
+/** English month (`Sep`), like the dates beside the chart, on any device region. */
 function axisLabel(dateIso: string): string {
-  return new Date(dateIso).toLocaleDateString(undefined, { month: 'short' });
+  return monthShort(new Date(dateIso));
 }
 
 function nearestIndex(plotted: Plotted[], x: number): number {
