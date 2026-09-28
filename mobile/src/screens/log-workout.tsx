@@ -89,6 +89,7 @@ import {
 } from '@/domain/types';
 import { endWorkoutLiveActivity, loadWorkoutFocus, syncWorkoutLiveActivity } from '@/live-activity/controller';
 import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
+import { openExerciseReplace } from '@/navigation/exercise-replace';
 import { upcomingExerciseIndex } from '@/live-activity/upcoming';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore, type PreviousExerciseLog } from '@/store/workout-store';
@@ -823,22 +824,27 @@ export function LogWorkoutScreen() {
     );
   };
 
-  const swapCurrent = (next: ExercisePrescription) => {
-    if (!current || !plan || !day) {
+  /**
+   * Puts `next` in place of the exercise `targetId` (Alternatives, Choose another exercise):
+   * same slot, same sets and reps; logged sets stay, untouched ones re-prefill for `next`.
+   */
+  const swapExercise = (targetId: string, next: ExercisePrescription) => {
+    const target = drafts.find((item) => item.prescription.id === targetId);
+    if (!target || !plan || !day) {
       return;
     }
     const swapped: ExercisePrescription = {
       ...clonePrescription(next),
-      id: current.prescription.id,
-      sets: current.prescription.sets,
-      reps: current.prescription.reps,
-      repScheme: current.prescription.repScheme ?? null,
+      id: target.prescription.id,
+      sets: target.prescription.sets,
+      reps: target.prescription.reps,
+      repScheme: target.prescription.repScheme ?? null,
     };
-    const hadLogs = current.sets.some((set) => set.done);
+    const hadLogs = target.sets.some((set) => set.done);
     setEditing(null);
     setDrafts((items) => {
-      const next = items.map((exercise, index) => {
-        if (index !== exerciseIndex) {
+      const next = items.map((exercise) => {
+        if (exercise.prescription.id !== targetId) {
           return exercise;
         }
         return {
@@ -851,10 +857,31 @@ export function LogWorkoutScreen() {
     updatePlan(
       withDay(plan, day.id, (currentDay) => ({
         ...currentDay,
-        exercises: currentDay.exercises.map((item) => (item.id === current.prescription.id ? swapped : item)),
+        exercises: currentDay.exercises.map((item) => (item.id === targetId ? swapped : item)),
       })),
     );
     setSheet(null);
+  };
+
+  // The picker answers after this render; it swaps with the log as it is then.
+  const swapExerciseRef = useRef(swapExercise);
+  useEffect(() => {
+    swapExerciseRef.current = swapExercise;
+  });
+  const replaceRequest = useRef<{ id: string; close: () => void } | null>(null);
+  useEffect(() => () => replaceRequest.current?.close(), []);
+
+  /** Any exercise, not only Alternatives: the picker in replace mode, one tap swaps. */
+  const chooseAnotherExercise = () => {
+    if (!current || !plan || !day) {
+      return;
+    }
+    const targetId = current.prescription.id;
+    replaceRequest.current?.close();
+    const request = openExerciseReplace((exercise) => swapExerciseRef.current(targetId, exercise));
+    replaceRequest.current = request;
+    setSheet(null);
+    router.push(`/exercises?planId=${plan.id}&dayId=${day.id}&from=log&replace=${request.id}`);
   };
 
   if (!plan || !day || day.exercises.length === 0) {
@@ -1258,7 +1285,8 @@ export function LogWorkoutScreen() {
             units={units}
             minutes={minutes}
             alternatives={alternativesFor(current.prescription, catalog)}
-            onSwap={swapCurrent}
+            onSwap={(next) => swapExercise(current.prescription.id, next)}
+            onChooseAnother={chooseAnotherExercise}
           />
         ) : null}
         <View style={{ height: Math.max(insets.bottom, 10) }} />
@@ -1810,7 +1838,7 @@ function DaySheetRow({
   );
 }
 
-/** Exercise fact sheet (no media): plan, last time, best — then Alternatives to swap. */
+/** Exercise fact sheet (no media): plan, last time, best — then Alternatives, or any exercise, to swap. */
 function LogExerciseSheet({
   exercise,
   previous,
@@ -1820,6 +1848,7 @@ function LogExerciseSheet({
   minutes,
   alternatives,
   onSwap,
+  onChooseAnother,
 }: {
   exercise: ExercisePrescription;
   previous: PreviousExerciseLog | null;
@@ -1830,8 +1859,10 @@ function LogExerciseSheet({
   minutes: boolean;
   alternatives: ExercisePrescription[];
   onSwap: (next: ExercisePrescription) => void;
+  /** Any exercise from the picker, for when no alternative fits. */
+  onChooseAnother: () => void;
 }) {
-  const { type } = useTheme();
+  const { colors, type } = useTheme();
   const detail = exerciseDetail(exercise);
   const targetSets = targets?.every((target) => target != null) ? (targets as SetTarget[]) : null;
   const facts: { label: string; value: string; spoken?: string }[] = [
@@ -1890,6 +1921,20 @@ function LogExerciseSheet({
           ))}
         </>
       ) : null}
+      <PaperRow
+        title="Choose another exercise"
+        testID="log-choose-exercise"
+        onPress={onChooseAnother}
+        trailing={
+          <SymbolView
+            name="chevron.right"
+            tintColor={colors.tertiaryLabel}
+            size={iconSize.caption}
+            weight="semibold"
+            fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>›</Text>}
+          />
+        }
+      />
     </View>
   );
 }
