@@ -31,12 +31,6 @@ export function WeeksScreen() {
     () => recentWeeks(activePlan, workoutHistory, now),
     [activePlan, workoutHistory, now],
   );
-  const planName = activePlan?.name.trim();
-  const hasPast = weeks.length > 1;
-  const footnote = [
-    planName ? `Goal from ${planName}.` : 'Goal from your plan.',
-    hasPast ? 'Past weeks count every workout you finished.' : 'Past weeks show up here as you train.',
-  ].join(' ');
 
   return (
     <>
@@ -97,9 +91,6 @@ export function WeeksScreen() {
             showSeparator={index < weeks.length - 1}
           />
         ))}
-        <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 16 }]}>
-          {footnote}
-        </Text>
       </ScrollView>
     </>
   );

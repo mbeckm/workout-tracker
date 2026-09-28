@@ -128,7 +128,6 @@ Home's week amount, back in time. A native `formSheet` (`/weeks`, detents 0.7 / 
 - **Summary**: meta row `[target] Goal 5 a week  [chart.bar] Average 3.1` (average of the finished weeks shown; hidden when there are none).
 - **Rows**, newest first, last 8 Monday-based weeks: label 17 (`This week`, `Last week`, `Sep 7 – 13`, `Aug 31 – Sep 6`) + Home's dots on the right: a green dot per workout up to the goal, grey (`systemGray4` on the grouped sheet) for the rest. A week that met the goal is a full green row; nothing else marks it. Hairlines between rows.
 - **Counting**: this week is exactly Home's number (distinct days of the active plan). Past weeks count every finished workout from any plan, capped at the current goal. Weeks before the first workout ever are hidden.
-- **Footnote** 15 grey: `Goal from {plan}. Past weeks count every workout you finished.` (or `… Past weeks show up here as you train.` when only this week exists).
 - No streaks, badges, heatmap, bars or drill-down. Free.
 
 ## Toast
