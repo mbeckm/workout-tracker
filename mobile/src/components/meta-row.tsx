@@ -67,9 +67,13 @@ export function MetaRow({
   }
   const scale = Math.min(fontScale, maxScale);
   const line = Math.round(LINE_HEIGHT * scale);
+  // The cap is applied here, not with `maxFontSizeMultiplier`: RN's text measure cache ignores
+  // that prop, so `4 exercises ·` measured under a 1.8 cap was reused for the same string under
+  // 1.35 (a gap after it) and the other way round (clipped into the next fact). A scaled
+  // `fontSize` is part of the cache key, so every tier measures at the size it draws.
   const text = {
-    fontSize: FONT_SIZE,
-    lineHeight: LINE_HEIGHT,
+    fontSize: FONT_SIZE * scale,
+    lineHeight: LINE_HEIGHT * scale,
     fontWeight: '400' as const,
     color: colors.tertiaryLabel,
     fontVariant: ['tabular-nums' as const],
@@ -107,7 +111,7 @@ export function MetaRow({
               />
             </View>
           ) : null}
-          <Text maxFontSizeMultiplier={maxScale} style={[text, { flexShrink: 1 }]}>
+          <Text allowFontScaling={false} style={[text, { flexShrink: 1 }]}>
             {item.lead}
             {item.plain ? item.value : <Text style={{ fontWeight: '600' }}>{item.value}</Text>}
             {item.unit}

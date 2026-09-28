@@ -12,6 +12,14 @@ import type { LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { sessionIsFor, useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
+/**
+ * One Dynamic Type cap for the whole drawer, the same as Home's exercise list (1.8): the title
+ * stays the largest text at every size (22 → 40, names 17 → 31, prescription and meta 15 → 27).
+ * Sharing Home's cap also keeps RN's text measure cache honest: it ignores the cap, so the same
+ * exercise line under two caps would reuse the wrong measurement.
+ */
+const PREVIEW_MAX_SCALE = 1.8;
+
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -46,10 +54,10 @@ export function DayPreviewBody({
           style={type.title}
           accessibilityRole="header"
           numberOfLines={2}
-          maxFontSizeMultiplier={1.3}>
+          maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
           {day.title}
         </Text>
-        <MetaRow items={meta} testID="preview-meta" />
+        <MetaRow items={meta} maxScale={PREVIEW_MAX_SCALE} testID="preview-meta" />
       </View>
       <ScrollView
         bounces={false}
@@ -61,7 +69,7 @@ export function DayPreviewBody({
           // Home's list (name wraps to two lines, prescription in the meta grey, regular), so
           // the drawer and Home read as one voice (G4).
           <View key={exercise.id} style={{ gap: 2, paddingVertical: 12 }}>
-            <Text style={type.row} numberOfLines={2}>
+            <Text style={type.row} numberOfLines={2} maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
               {exercise.name}
             </Text>
             <Text
@@ -71,7 +79,8 @@ export function DayPreviewBody({
                 fontWeight: '400',
                 color: colors.tertiaryLabel,
                 fontVariant: ['tabular-nums'],
-              }}>
+              }}
+              maxFontSizeMultiplier={PREVIEW_MAX_SCALE}>
               {formatPlanMetricWithLoad(exercise, previousLogForExercise(exercise.name)?.sets, units)}
             </Text>
           </View>

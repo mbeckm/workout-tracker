@@ -319,6 +319,7 @@ const CELEBRATE_DELAY_MS = 320;
  * Week amount: `n of m this week` + dots. While Home is covered (log, Done, paywall) it
  * keeps showing the old amount; when Home is visible again the new dot fills with a small
  * celebration and the count rolls up, so finishing a workout lands on the goal it moved.
+ * A lower count (a deleted workout, a new week) fades its dots back to grey, no ceremony.
  *
  * The whole row is one button (F6): tap opens Weeks, the last 8 weeks against the goal.
  * The trailing chevron is its affordance; without `onPress` it renders read-only, no chevron.
@@ -352,7 +353,11 @@ function WeekAmount({
       return;
     }
     if (done <= seenDone.current) {
-      // A deleted workout or a new week: no ceremony.
+      // A deleted workout or a new week: no ceremony. Drop the last celebration too: while a
+      // dot holds a celebrateKey it ignores `filled`, so it stayed green after a delete.
+      if (done < seenDone.current) {
+        setCelebrate(null);
+      }
       seenDone.current = done;
       setShown(done);
       return;
@@ -461,7 +466,13 @@ function WeekDot({
     if (celebrateKey != null) {
       return;
     }
-    fill.set(filled ? 1 : 0);
+    if (filled) {
+      fill.set(1);
+      return;
+    }
+    // Going down (a deleted workout, a new week) just crossfades back to grey: no ceremony.
+    // It is a color fade, so it plays under Reduce Motion too.
+    fill.set(withTiming(0, { duration: 220, easing: EASE_OUT, reduceMotion: ReduceMotion.Never }));
   }, [celebrateKey, fill, filled]);
 
   useEffect(() => {
