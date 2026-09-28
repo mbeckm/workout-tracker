@@ -21,10 +21,11 @@ Does not ship: ad-hoc / empty workouts, custom transitions, achievements, heatma
 
 ## How to implement UI
 
-1. Read `.cursor/skills/trim-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
-2. Match the Paper artboard for the screen.
-3. System font and iOS semantic colors. Green is for completed work and the one gym CTA, never titles.
-4. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
+1. Read `PRODUCT.md` → Principles, then `.cursor/skills/trim-ui/SKILL.md` (the design system), then `.cursor/skills/implement-screen/SKILL.md`.
+2. Use tokens only: `type`, `space`, `radius`, `colors`, `iconSize` (`mobile/src/constants/theme.ts`) and `DURATION` / `SPRING` (`mobile/src/motion.ts`). No raw font sizes, hex colors or off-scale spacing.
+3. Match the Paper artboard for the screen; where it disagrees with `trim-ui`, `trim-ui` wins.
+4. No helper text, no action on the user's behalf, and motion only when it makes Trim faster, more fluid or more loveable.
+5. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
 
 ## Build / run (macOS + Xcode)
 
@@ -39,7 +40,7 @@ npx expo start --dev-client
 - The repo path contains spaces; `mobile/plugins/with-quoted-bundle-script.js` keeps the iOS bundle phase working. Keep it in `app.json`.
 - CocoaPods: this Mac uses a user-level install (`~/.gem/ruby/2.6.0/bin`). Put it on `PATH` before prebuild.
 - Official Expo skills live in `.agents/skills/`.
-- Checks: `npx tsc --noEmit` (0 errors) and `npx eas-cli metadata:lint`. There is no unit test target yet.
+- Checks: `npm run check` in `mobile/` (tsc + the design-token ratchet, also run by `.github/workflows/checks.yml` on every PR) and `npx eas-cli metadata:lint`. There is no unit test target yet. If you remove raw values, run `node scripts/check-design-tokens.mjs --update` to lower the baseline; never raise it.
 
 Store builds: see `APP_STORE_RELEASE_GUIDE.md` (`npx eas-cli build --platform ios --profile production --auto-submit`).
 

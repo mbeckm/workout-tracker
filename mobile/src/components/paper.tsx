@@ -263,7 +263,7 @@ export function PaperSheetFrame({
 }) {
   const { colors } = useTheme();
   return (
-    <View style={{ flex: 1, backgroundColor: '#00000047', justifyContent: 'flex-end' }}>
+    <View style={{ flex: 1, backgroundColor: colors.scrim, justifyContent: 'flex-end' }}>
       <Pressable style={{ flex: 1 }} onPress={onScrimPress} accessibilityLabel="Dismiss" />
       <View
         style={{

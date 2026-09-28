@@ -20,16 +20,54 @@ export const EASE_SHEET = Easing.bezier(0.32, 0.72, 0, 1);
 
 export const EASE_OUT_CSS = 'cubic-bezier(0.23, 1, 0.32, 1)';
 
-export const PRESS_MS = 120;
+/**
+ * Durations (ms). Motion exists to make Trim feel faster, more fluid or more loveable
+ * (trim-ui → Motion). A tap shows a reaction within 100ms (press feedback starts on
+ * touch-down), and a tap transition finishes within `enter`. `change` is only for changes
+ * you don't wait on; a celebration runs after the action has already landed.
+ */
+export const DURATION = {
+  /** Press feedback. Starts on touch-down. */
+  press: 120,
+  /** Leaving: exits are always faster than enters. */
+  exit: 150,
+  /** Reduced-motion fades. */
+  fade: 160,
+  /** Arriving: a new set line, a toast, content swapped in place. */
+  enter: 200,
+  /** A change you don't wait on: number roll, theme crossfade. Never between a tap and what it opens. */
+  change: 280,
+  /** Ceiling for earned moments (week dot rings). Never on the path of a tap. */
+  celebrate: 760,
+} as const;
+
+/**
+ * Springs. No bounce unless a finger threw it (trim-ui → Motion): `settle` by default,
+ * `fling` only after a gesture that carried momentum (pass its velocity), `pop` only for
+ * rare rewards.
+ */
+export const SPRING = {
+  /** Default: rows, repositioning, snap-back without velocity. Critically damped. */
+  settle: { duration: 300, dampingRatio: 1 },
+  /** After a flick, swipe release or thrown sheet. Hand it the gesture's velocity. */
+  fling: { duration: 300, dampingRatio: 0.8 },
+  /** A mark filling as a reward (week dot). The only real overshoot. */
+  pop: { duration: 520, dampingRatio: 0.42 },
+} as const;
+
+/** Enter/exit distance. Things arrive from 8pt away, never from off-screen or from scale 0. */
+export const ENTER_OFFSET = 8;
+
+export const PRESS_MS = DURATION.press;
 export const PRESS_SCALE = 0.97;
 
-const ENTER_UP = FadeInUp.duration(200).easing(EASE_OUT).withInitialValues({
+const ENTER_UP = FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
   opacity: 0,
-  transform: [{ translateY: 8 }],
+  transform: [{ translateY: ENTER_OFFSET }],
 });
-const ENTER_UP_REDUCED = FadeIn.duration(160);
-const EXIT = FadeOut.duration(150).easing(EASE_OUT);
-const EXIT_REDUCED = FadeOut.duration(120);
+const ENTER_UP_REDUCED = FadeIn.duration(DURATION.fade);
+const EXIT = FadeOut.duration(DURATION.exit).easing(EASE_OUT);
+const EXIT_REDUCED = FadeOut.duration(DURATION.press);
 
 export function enterUp(reduceMotion: boolean, delayMs = 0): EntryOrExitLayoutType {
   const anim = reduceMotion ? ENTER_UP_REDUCED : ENTER_UP;
