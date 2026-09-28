@@ -77,7 +77,7 @@ Then:
   1. `git diff --stat`, then `git diff -- <files>` for that item. Check it against the acceptance criteria and the AGENTS.md / trim-ui rules. Look for scope creep, unrelated edits, missed states and hacks.
   2. If it needs changes, **SendMessage to the same agent** with specific deltas: what's wrong, where, what "right" looks like. Limit 2 rounds per tier, then escalate. Fix a one-liner yourself instead of sending it back.
 - **QA is a functional check, not a design review.** It answers "is the change there, and does it work as the acceptance criteria say?" Look and feel is Marvin's call on device.
-  - Only UI-visible items get Simulator QA. Logic-only items are verified by the diff and `tsc`.
+  - Only UI-visible items get Simulator QA. Logic-only items are verified by the diff and `npm run check`.
   - Write acceptance criteria QA can check literally ("tapping Skip moves to set 2 of 3"), not taste ("feels lighter").
   - Spawn one `qa-tester` for the first wave and **SendMessage it** for later waves; it keeps the app running and its context. Send it the batch of items with their QA scripts and criteria.
   - Send failures back to the original worker through SendMessage, with QA's repro text. Don't open the screenshots yourself unless the failure report is unclear.
@@ -86,7 +86,7 @@ Then:
 
 ## Phase 4: Wrap up
 
-1. `cd mobile && npx tsc --noEmit && npm run lint` on the whole branch (8 known lint errors on `main` aren't yours).
+1. `cd mobile && npm run check && npm run lint` on the whole branch (8 known lint errors on `main` aren't yours).
 2. Only if two or more items touched the same screen: one functional QA pass over that screen. No full re-QA of everything.
 3. If a design decision changed, check that `.cursor/skills/trim-ui/SKILL.md` or `PRODUCT-DECISIONS.md` were updated.
 4. Push and open a PR. The body lists items by status with QA's pass/fail per criterion (screenshot paths are local, so don't link them).

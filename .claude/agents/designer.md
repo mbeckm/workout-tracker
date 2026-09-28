@@ -32,7 +32,7 @@ Decide, then build:
 - Do not commit, switch branches, stash, or reset. Do not drive the iOS Simulator. A QA agent checks that the change is there and works; if not, you get its repro steps.
 - If the change sets a new design rule, update `.cursor/skills/trim-ui/SKILL.md` in the same change.
 
-Before reporting, run `cd mobile && npx tsc --noEmit && npm run lint`.
+Before reporting, run `cd mobile && npm run check && npm run lint`.
 
 Report back in this shape, in under ~300 words (the orchestrator reads the diff itself; don't paste code):
 1. **Status**: done / partial / blocked

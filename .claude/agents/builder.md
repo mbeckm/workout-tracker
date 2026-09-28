@@ -21,7 +21,7 @@ While working:
 - Do not drive the iOS Simulator or start Expo. A separate QA agent verifies on screen.
 - If the item needs a product or design call that the brief doesn't settle, stop and report the options. Don't guess.
 
-Before reporting, run `cd mobile && npx tsc --noEmit && npm run lint`, and fix anything you caused.
+Before reporting, run `cd mobile && npm run check && npm run lint`, and fix anything you caused.
 
 Report back in this shape, per item, in under ~200 words each (the orchestrator reads the diff itself; don't paste code):
 1. **Status**: done / partial / blocked, in one line

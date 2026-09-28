@@ -14,7 +14,7 @@ Rules:
 - Touch only the files named in your brief. If you need another file, say so in your report.
 - Do not commit, switch branches, stash, or reset. The orchestrator owns git.
 - Do not drive the iOS Simulator or start Expo. QA is done separately.
-- Before reporting, run `cd mobile && npx tsc --noEmit` and fix any errors you caused.
+- Before reporting, run `cd mobile && npm run check` (tsc + design tokens) and fix any errors you caused.
 
 Report back in this shape:
 1. **Done / blocked**, in one line
