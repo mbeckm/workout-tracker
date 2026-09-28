@@ -14,7 +14,7 @@ import Svg, { Line, Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme/theme-context';
 import type { ProgressPoint } from '@/domain/progress';
-import { monthShort } from '@/domain/weeks';
+import { monthShort } from '@/domain/dates';
 import { EASE_IN_OUT } from '@/motion';
 
 type Plotted = { x: number; y: number; value: number; date: string };

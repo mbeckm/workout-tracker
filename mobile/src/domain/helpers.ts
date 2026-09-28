@@ -6,6 +6,7 @@ import type {
   WorkoutDay,
   WorkoutPlan,
 } from '@/domain/types';
+import { formatMonthDay, formatWeekdayDay, monthLong, weekdayLong } from '@/domain/dates';
 import { newId } from '@/domain/id';
 import { normalizedStatsKey } from '@/domain/types';
 
@@ -159,14 +160,6 @@ export function formatDuration(totalSeconds: number): string {
     return `${seconds}s`;
   }
   return `${minutes}min ${seconds}s`;
-}
-
-export function formatSessionDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }
 
 export function parsePositiveNumber(value: string): number | null {
@@ -338,16 +331,6 @@ export function personalBestCount(workout: LoggedWorkout, history: LoggedWorkout
   return personalBestSetIds(workout, history).size;
 }
 
-export function formatWorkoutWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
 export function formatPaperMinutes(minutes: number): string {
   const value = Math.max(1, Math.round(minutes));
   return `${value} min`;
@@ -360,9 +343,9 @@ export function formatDaysCount(count: number): string {
 export function formatHistoryMonth(iso: string, now = new Date()): string {
   const date = new Date(iso);
   if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'long' });
+    return monthLong(date);
   }
-  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return `${monthLong(date)} ${date.getFullYear()}`;
 }
 
 export function formatHistoryWhen(iso: string, now = new Date()): string {
@@ -377,12 +360,9 @@ export function formatHistoryWhen(iso: string, now = new Date()): string {
     return 'Yesterday';
   }
   if (diffDays > 1 && diffDays < 7) {
-    return date.toLocaleDateString(undefined, { weekday: 'long' });
+    return weekdayLong(date);
   }
-  if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatMonthDay(date, now);
 }
 
 /** When under a month caption — avoid repeating the month (`Wed 13` not `Jul 13`). */
@@ -397,8 +377,7 @@ export function formatHistoryWhenInMonth(iso: string, now = new Date()): string 
   if (diffDays === 1) {
     return 'Yesterday';
   }
-  const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
-  return `${weekday} ${date.getDate()}`;
+  return formatWeekdayDay(date);
 }
 
 export function formatHistoryMonthCount(label: string, count: number): string {

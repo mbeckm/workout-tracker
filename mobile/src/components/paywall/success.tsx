@@ -12,7 +12,7 @@ import Animated, {
 import Svg, { Path } from 'react-native-svg';
 
 import { FeatureRow } from '@/components/paywall/feature-row';
-import { monthShort } from '@/domain/weeks';
+import { monthShort } from '@/domain/dates';
 import { EASE_OUT } from '@/motion';
 import type { ProFeature } from '@/purchases/pro-features';
 import type { PaywallSuccess } from '@/purchases/use-paywall-controller';

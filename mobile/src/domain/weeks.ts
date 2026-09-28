@@ -1,3 +1,4 @@
+import { monthLong, monthShort } from '@/domain/dates';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
 import type { LoggedWorkout, WorkoutPlan } from '@/domain/types';
 
@@ -100,14 +101,6 @@ export function formatWeekLabel(week: WeekTally, now = new Date()): string {
   return `${startLabel} – ${monthShort(end)} ${end.getDate()}`;
 }
 
-/**
- * `Sep`, `Oct`: the month alone in English (the app's copy is English), so callers can put it
- * in the app's order (`Oct 4`) on any region or device language.
- */
-export function monthShort(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short' });
-}
-
 /** `3.4`, `3`: one decimal at most, with a point like every other number in Trim. */
 export function formatWeeklyAverage(value: number): string {
   return String(Math.round(value * 10) / 10);
@@ -119,7 +112,7 @@ export function spokenWeek(week: WeekTally, goal: number, now = new Date()): str
   const when =
     label === 'This week' || label === 'Last week'
       ? label
-      : `Week of ${week.start.toLocaleDateString(undefined, { month: 'long' })} ${week.start.getDate()}`;
+      : `Week of ${monthLong(week.start)} ${week.start.getDate()}`;
   const met = goal > 0 && week.count >= goal ? ', goal met' : '';
   return `${when}, ${week.count} of ${goal}${met}`;
 }

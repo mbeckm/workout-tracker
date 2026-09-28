@@ -1,3 +1,4 @@
+import { formatMonthDay, formatWeekdayDay } from '@/domain/dates';
 import { durationIsMinutes, setCount, usesDuration, usesReps } from '@/domain/helpers';
 import { restSecondsForExercise } from '@/domain/rest';
 import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
@@ -81,13 +82,9 @@ export function formatDoneWhen(iso: string, now = new Date()): string {
     return 'Yesterday';
   }
   if (diffDays > 1 && diffDays < 28) {
-    const weekday = date.toLocaleDateString(undefined, { weekday: 'short' });
-    return `${weekday} ${date.getDate()}`;
+    return formatWeekdayDay(date);
   }
-  if (date.getFullYear() === now.getFullYear()) {
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  }
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatMonthDay(date, now);
 }
 
 /** `18:02` or `6:02 PM`, following the device locale. */

@@ -7,7 +7,7 @@ import {
 import { estimatedOneRM, formatLoggedSetLine } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
-import { monthShort } from '@/domain/weeks';
+import { formatMonthDay } from '@/domain/dates';
 
 export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
 
@@ -396,22 +396,12 @@ export function latestCheckIn(checkIns: BodyCheckIn[]): BodyCheckIn | null {
   return [...checkIns].sort((left, right) => right.recordedAt.localeCompare(left.recordedAt))[0];
 }
 
-export function formatCheckInDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 /**
  * `Sep 25` (`Sep 25, 2025` outside this year), built from parts in the app's English order
  * like Weeks: a locale format would read `25. Sep` on a German-region phone.
  */
 export function formatProgressShortDate(iso: string, now: Date = new Date()): string {
-  const date = new Date(iso);
-  const label = `${monthShort(date)} ${date.getDate()}`;
-  return date.getFullYear() === now.getFullYear() ? label : `${label}, ${date.getFullYear()}`;
+  return formatMonthDay(new Date(iso), now);
 }
 
 export function isSessionPR(
