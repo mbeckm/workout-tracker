@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import { LastTimeLine } from '@/components/last-time-line';
-import { space } from '@/constants/theme';
+import { PRESSED_OPACITY, space } from '@/constants/theme';
 import { formatLoggedSetLine } from '@/domain/helpers';
 import { lastTimeSetFor } from '@/domain/log-session';
 import { spokenTargetLine, type SetTarget, type TargetUnits } from '@/domain/targets';
@@ -41,7 +41,7 @@ export function TargetLine({
   onUnlock,
 }: TargetLineProps) {
   const { colors, type } = useTheme();
-  const caption = [type.kicker, { fontWeight: '400' as const, fontVariant: ['tabular-nums' as const] }];
+  const caption = [type.kicker, { fontVariant: ['tabular-nums' as const] }];
   const onStage = setIndex !== 'all' && target != null;
 
   if (unlocked && onStage) {
@@ -66,7 +66,7 @@ export function TargetLine({
 
   if (!unlocked && onStage && onUnlock) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
         <View style={{ flexShrink: 1 }}>
           <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} units={units} />
         </View>
@@ -77,7 +77,7 @@ export function TargetLine({
           accessibilityLabel="Target"
           accessibilityHint="Trim Pro suggests the weight and reps for each set."
           hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+          style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
           <Text numberOfLines={1} style={[caption, { color: colors.secondaryLabel }]}>
             Target ›
           </Text>

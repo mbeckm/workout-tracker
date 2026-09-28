@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
-import { PRESSED_OPACITY, radius, space } from '@/constants/theme';
+import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 export function PaperScreen({
@@ -94,14 +94,14 @@ export function PaperBack({ onPress, label }: { onPress: () => void; label?: str
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        paddingTop: 4,
-        paddingBottom: 12,
-        opacity: pressed ? 0.55 : 1,
+        gap: space.tight,
+        paddingTop: space.tight,
+        paddingBottom: space.inline,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <SymbolView name="chevron.left" tintColor={colors.label} size={20} weight="medium" />
+      <SymbolView name="chevron.left" tintColor={colors.label} size={iconSize.control} weight="medium" />
       {label ? (
-        <Text style={[type.body, { color: colors.label, fontWeight: '400' }]}>{label}</Text>
+        <Text style={[type.body, { color: colors.label }]}>{label}</Text>
       ) : null}
     </Pressable>
   );
@@ -132,7 +132,7 @@ export function PaperRow({
     <SymbolView
       name="arrow.up.right"
       tintColor={colors.tertiaryLabel}
-      size={14}
+      size={iconSize.caption}
       weight="semibold"
       fallback={<Text style={[type.row, { color: colors.tertiaryLabel }]}>↗</Text>}
     />
@@ -189,7 +189,7 @@ export function PaperLink({
       accessibilityRole="button"
       onPress={onPress}
       testID={testID}
-      style={({ pressed }) => ({ paddingTop: 16, opacity: pressed ? 0.55 : 1 })}>
+      style={({ pressed }) => ({ paddingTop: space.inset, opacity: pressed ? PRESSED_OPACITY : 1 })}>
       <Text style={[type.kicker, { textAlign: 'center' }]}>{title}</Text>
     </Pressable>
   );
@@ -198,7 +198,7 @@ export function PaperLink({
 export function PaperGrabber() {
   const { colors } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 12 }}>
+    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: space.inline }}>
       <View
         style={{
           width: 36,
@@ -228,8 +228,8 @@ export function PaperSheetFrame({
           borderTopLeftRadius: radius.lg,
           borderTopRightRadius: radius.lg,
           borderCurve: 'continuous',
-          paddingHorizontal: 24,
-          paddingTop: 8,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
         }}>
         <PaperGrabber />
         {children}

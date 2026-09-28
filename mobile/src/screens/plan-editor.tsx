@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
 import { PlanDetailDayRow } from '@/components/plan-detail-day-row';
 import { Button } from '@/components/button';
-import { space } from '@/constants/theme';
+import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
@@ -197,7 +197,7 @@ export function PlanEditorScreen() {
             <Text style={[type.kicker, { color: colors.tertiaryLabel, flexShrink: 1 }]}>{dayMeta}</Text>
             {isActive ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={14} weight="medium" />
+                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
                 <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
               </View>
             ) : null}

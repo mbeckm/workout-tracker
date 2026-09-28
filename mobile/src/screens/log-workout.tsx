@@ -41,7 +41,7 @@ import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
 import { TargetLine } from '@/components/target-line';
 import { exerciseStillMediaURL, offlineCatalogExercises } from '@/catalog';
-import { radius, space } from '@/constants/theme';
+import { iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
 import {
   clonePrescription,
   durationIsMinutes,
@@ -80,7 +80,7 @@ import {
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { spokenTargets, targetsFromHistory, type SetTarget } from '@/domain/targets';
-import { DURATION, EASE_OUT, ENTER_OFFSET } from '@/motion';
+import { DURATION, EASE_OUT, ENTER_OFFSET, SPRING } from '@/motion';
 import {
   newId,
   type ExercisePrescription,
@@ -110,8 +110,9 @@ type SetEdit = {
 const WEIGHT_STEP = { kg: 2.5, lbs: 5 } as const;
 const SWIPE_DISTANCE = 56;
 const CHIP_PAD_X = 12;
-const REST_IN = FadeIn.duration(160).easing(EASE_OUT);
-const REST_OUT = FadeOut.duration(120).easing(EASE_OUT);
+// Rest arrives with the set it follows: every-set tier, 150ms at most (trim-ui §8).
+const REST_IN = FadeIn.duration(DURATION.exit).easing(EASE_OUT);
+const REST_OUT = FadeOut.duration(DURATION.press).easing(EASE_OUT);
 /** Typing in a well settles before it is written; set logs land within this too. */
 const SESSION_WRITE_DEBOUNCE_MS = 400;
 /** Display text (34pt name) and well numerals stop growing here (Dynamic Type). */
@@ -862,9 +863,9 @@ export function LogWorkoutScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          padding: 24,
+          padding: space.gutter,
           justifyContent: 'center',
-          gap: 16,
+          gap: space.inset,
         }}>
         <Text style={[type.planTitle, { textAlign: 'center' }]}>Start from a plan</Text>
         <Text style={[type.kicker, { textAlign: 'center' }]}>
@@ -926,7 +927,7 @@ export function LogWorkoutScreen() {
         <View
           style={{
             paddingTop: insets.top + 4,
-            paddingHorizontal: 24,
+            paddingHorizontal: space.gutter,
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -951,14 +952,14 @@ export function LogWorkoutScreen() {
               alignItems: 'flex-end',
               justifyContent: 'center',
             }}>
-            <Text style={[type.body, { fontWeight: '700' }]}>Finish</Text>
+            <Text style={type.button}>Finish</Text>
           </Pressable>
         </View>
 
         <View style={{ flex: 1, minHeight: 0 }}>
           {current ? (
             <>
-              <View style={{ paddingHorizontal: 24, paddingTop: 8, flexShrink: 0 }}>
+              <View style={{ paddingHorizontal: space.gutter, paddingTop: space.related, flexShrink: 0 }}>
                 <Pressable
                   testID="log-exercise-name"
                   onPress={() => openSheet('exercise')}
@@ -982,7 +983,7 @@ export function LogWorkoutScreen() {
                     <View style={{ width: 17, height: 17, transform: [{ translateY: -3 }] }}>
                       <SymbolView
                         name="chevron.down"
-                        size={17}
+                        size={iconSize.row}
                         weight="semibold"
                         tintColor={colors.tertiaryLabel}
                         fallback={<ChevronFallback color={colors.tertiaryLabel} />}
@@ -991,7 +992,7 @@ export function LogWorkoutScreen() {
                   </Text>
                 </Pressable>
               </View>
-              <View style={{ flexShrink: 0, paddingTop: 20 }}>
+              <View style={{ flexShrink: 0, paddingTop: space.gutter }}>
                 <DayStrip
                   drafts={drafts}
                   selectedIndex={exerciseIndex}
@@ -1011,9 +1012,9 @@ export function LogWorkoutScreen() {
                 }
                 reduceMotion={Boolean(reduceMotion)}>
                 <StageScroll>
-                  <View style={{ paddingHorizontal: 24, paddingTop: 32, gap: 4, flexShrink: 0 }}>
+                  <View style={{ paddingHorizontal: space.gutter, paddingTop: space.section, gap: space.tight, flexShrink: 0 }}>
                     <View
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 28 }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, minHeight: 28 }}
                       accessible
                       accessibilityRole="header"
                       accessibilityLabel={
@@ -1025,13 +1026,11 @@ export function LogWorkoutScreen() {
                       {exerciseComplete && !edit ? (
                         <SymbolView
                           name="checkmark"
-                          size={17}
+                          size={iconSize.row}
                           weight="bold"
                           tintColor={colors.systemGreen}
                           fallback={
-                            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.systemGreen }}>
-                              ✓
-                            </Text>
+                            <Text style={[type.button, { color: colors.systemGreen }]}>✓</Text>
                           }
                         />
                       ) : null}
@@ -1047,7 +1046,7 @@ export function LogWorkoutScreen() {
                     />
                   </View>
 
-                  <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 24, gap: 10 }}>
+                  <View style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter, paddingBottom: space.gutter, gap: space.related }}>
                     {residueSets.map((set) => (
                       <ResidueSetRow
                         key={set.id}
@@ -1082,20 +1081,20 @@ export function LogWorkoutScreen() {
                         style={({ pressed }) => ({
                           flexDirection: 'row',
                           alignItems: 'center',
-                          gap: 10,
+                          gap: space.inline,
                           minHeight: 28,
                           alignSelf: 'flex-start',
-                          paddingRight: 24,
-                          opacity: pressed ? 0.5 : 1,
+                          paddingRight: space.gutter,
+                          opacity: pressed ? PRESSED_OPACITY : 1,
                         })}>
                         <SymbolView
                           name="plus"
-                          size={17}
+                          size={iconSize.row}
                           weight="semibold"
                           tintColor={colors.tertiaryLabel}
                           fallback={
                             <Text
-                              style={{ width: 17, textAlign: 'center', fontSize: 17, color: colors.tertiaryLabel }}>
+                              style={[type.body, { width: iconSize.row, textAlign: 'center', color: colors.tertiaryLabel }]}>
                               +
                             </Text>
                           }
@@ -1113,10 +1112,10 @@ export function LogWorkoutScreen() {
         <KeyboardStickyView
           offset={{ closed: 0, opened: 0 }}
           style={{
-            paddingHorizontal: 24,
+            paddingHorizontal: space.gutter,
             paddingTop: 0,
             paddingBottom: Math.max(insets.bottom, 12),
-            gap: 16,
+            gap: space.inset,
             backgroundColor: colors.systemBackground,
             zIndex: 1,
           }}>
@@ -1132,7 +1131,7 @@ export function LogWorkoutScreen() {
           ) : null}
 
           {wellValues ? (
-            <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: space.inline }}>
               {showWeight ? (
                 <LogWell
                   label={units.toUpperCase()}
@@ -1189,7 +1188,7 @@ export function LogWorkoutScreen() {
             </View>
           ) : null}
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.gutter }}>
             {secondary ? (
               <Pressable
                 onPress={secondary.onPress}
@@ -1200,7 +1199,7 @@ export function LogWorkoutScreen() {
                 style={({ pressed }) => ({
                   minHeight: 52,
                   justifyContent: 'center',
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? PRESSED_OPACITY : 1,
                 })}>
                 <Text style={[type.body, { color: colors.tertiaryLabel }]}>{secondary.title}</Text>
               </Pressable>
@@ -1330,7 +1329,7 @@ function DayStrip({
   onSelect: (index: number) => void;
   onOpenDay: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, type } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const chipX = useRef<number[]>([]);
 
@@ -1349,9 +1348,9 @@ function DayStrip({
       showsHorizontalScrollIndicator={false}
       contentInsetAdjustmentBehavior="never"
       contentContainerStyle={{
-        gap: 6,
-        paddingLeft: 24,
-        paddingRight: 24,
+        gap: space.related,
+        paddingLeft: space.gutter,
+        paddingRight: space.gutter,
         alignItems: 'center',
       }}>
       {drafts.map((exercise, index) => {
@@ -1390,8 +1389,8 @@ function DayStrip({
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 4,
-              paddingVertical: 8,
+              gap: space.tight,
+              paddingVertical: space.related,
               paddingHorizontal: CHIP_PAD_X,
               borderRadius: radius.full,
               backgroundColor: selected
@@ -1403,9 +1402,7 @@ function DayStrip({
             <Text
               numberOfLines={1}
               style={{
-                fontSize: 15,
-                lineHeight: 20,
-                fontWeight: selected || complete ? '500' : '400',
+                ...type.caption,
                 color: selectedComplete
                   ? colors.onGreen
                   : selected || complete
@@ -1417,7 +1414,7 @@ function DayStrip({
             {complete ? (
               <SymbolView
                 name="checkmark"
-                size={12}
+                size={iconSize.caption}
                 weight="bold"
                 tintColor={selected ? colors.onGreen : colors.systemGreen}
               />
@@ -1531,8 +1528,7 @@ function ExerciseStage({
           }
           dragX.set(
             withSpring(0, {
-              duration: 400,
-              dampingRatio: 0.8,
+              ...SPRING.fling,
               velocity: event.velocityX,
               reduceMotion: ReduceMotion.System,
             }),
@@ -1587,7 +1583,7 @@ function LogWell({
   inputRef?: RefObject<TextInput | null>;
   testID?: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, type } = useTheme();
   const nudge = (delta: number) => {
     if (process.env.EXPO_OS === 'ios') {
       void Haptics.selectionAsync();
@@ -1605,22 +1601,16 @@ function LogWell({
     <Animated.View
       style={{
         flex: 1,
-        gap: 8,
+        gap: space.related,
         opacity: dimmed ? 0.45 : 1,
         transitionProperty: 'opacity',
-        transitionDuration: '150ms',
+        transitionDuration: `${DURATION.exit}ms`,
         transitionTimingFunction: 'ease',
       }}>
       <Text
         importantForAccessibility="no"
         accessibilityElementsHidden
-        style={{
-          fontSize: 13,
-          fontWeight: '500',
-          letterSpacing: 0.04 * 13,
-          lineHeight: 16,
-          color: colors.tertiaryLabel,
-        }}>
+        style={type.caption}>
         {label}
       </Text>
       <Animated.View
@@ -1632,7 +1622,7 @@ function LogWell({
           borderWidth: 2,
           borderColor: focused ? colors.label : 'transparent',
           transitionProperty: ['backgroundColor', 'borderColor'],
-          transitionDuration: '150ms',
+          transitionDuration: `${DURATION.exit}ms`,
           transitionTimingFunction: 'ease',
         }}>
         <TextInput
@@ -1649,12 +1639,11 @@ function LogWell({
           accessibilityHint={a11yHint}
           maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
           style={{
+            ...type.displayCompact,
+            // No lineHeight on a TextInput: iOS applies it to typed text but not the placeholder.
+            lineHeight: undefined,
             minHeight: 68,
             textAlign: 'center',
-            fontSize: 34,
-            fontWeight: '700',
-            letterSpacing: -0.02 * 34,
-            color: colors.label,
             fontVariant: ['tabular-nums'],
             paddingVertical: 0,
           }}
@@ -1673,7 +1662,7 @@ function LogWell({
             style={stepperStyle}>
             <Text
               maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
-              style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>
+              style={[type.caption, { color: colors.secondaryLabel }]}>
               −
             </Text>
           </Pressable>
@@ -1685,7 +1674,7 @@ function LogWell({
             style={stepperStyle}>
             <Text
               maxFontSizeMultiplier={WELL_TEXT_MAX_SCALE}
-              style={{ fontSize: 20, lineHeight: 24, color: colors.secondaryLabel }}>
+              style={[type.caption, { color: colors.secondaryLabel }]}>
               +
             </Text>
           </Pressable>
@@ -1732,8 +1721,7 @@ function DaySheetRow({
           const delta = Math.round(translateY.get() / 52);
           translateY.set(
             withSpring(0, {
-              duration: 400,
-              dampingRatio: 0.8,
+              ...SPRING.fling,
               velocity: event.velocityY,
               reduceMotion: ReduceMotion.System,
             }),
@@ -1772,7 +1760,7 @@ function DaySheetRow({
         {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 12,
+          paddingVertical: space.inline,
         },
         animatedStyle,
       ]}>
@@ -1783,16 +1771,17 @@ function DaySheetRow({
           style={{
             width: 44,
             minHeight: 44,
-            marginLeft: -10,
+            // The glyph, not its touch target, lines up with the gutter.
+            marginLeft: -(TOUCH_TARGET - iconSize.control) / 2,
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
           <SymbolView
             name="line.3.horizontal"
-            size={16}
+            size={iconSize.control}
             tintColor={colors.tertiaryLabel}
-            fallback={<Text style={{ fontSize: 16, color: colors.tertiaryLabel }}>≡</Text>}
+            fallback={<Text style={[type.body, { color: colors.tertiaryLabel }]}>≡</Text>}
           />
         </View>
       </GestureDetector>
@@ -1802,18 +1791,18 @@ function DaySheetRow({
         accessibilityLabel={`${name}, ${complete ? 'done' : meta}${current ? ', now' : ''}`}
         accessibilityActions={actions}
         onAccessibilityAction={onAccessibilityAction}
-        style={{ flex: 1, paddingLeft: 2, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={{ flex: 1, gap: 2 }}>
+        style={{ flex: 1, paddingLeft: space.pair, flexDirection: 'row', alignItems: 'center', gap: space.inline }}>
+        <View style={{ flex: 1, gap: space.pair }}>
           <Text style={type.row}>{name}</Text>
           <Text style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>{meta}</Text>
         </View>
         {complete ? (
           <SymbolView
             name="checkmark"
-            size={17}
+            size={iconSize.row}
             weight="bold"
             tintColor={colors.systemGreen}
-            fallback={<Text style={{ fontSize: 17, fontWeight: '700', color: colors.systemGreen }}>✓</Text>}
+            fallback={<Text style={[type.button, { color: colors.systemGreen }]}>✓</Text>}
           />
         ) : current ? (
           <Text style={type.kicker}>Now</Text>
@@ -1879,11 +1868,11 @@ function LogExerciseSheet({
 
   return (
     <View>
-      <View style={{ gap: 6, paddingBottom: 12 }}>
+      <View style={{ gap: space.tight, paddingBottom: space.inline }}>
         <Text style={type.title}>{exercise.name}</Text>
         {detail ? <Text style={type.kicker}>{detail}</Text> : null}
       </View>
-      <View style={{ paddingBottom: 16 }}>
+      <View style={{ paddingBottom: space.inset }}>
         {facts.map((fact) => (
           <FactRow key={fact.label} label={fact.label} value={fact.value} spoken={fact.spoken} />
         ))}
@@ -1917,16 +1906,16 @@ function FactRow({ label, value, spoken }: { label: string; value: string; spoke
         flexDirection: 'row',
         alignItems: 'baseline',
         justifyContent: 'space-between',
-        gap: 16,
+        gap: space.inset,
         minHeight: 44,
-        paddingVertical: 11,
+        paddingVertical: space.inline,
       }}>
       <Text style={[type.body, { flexShrink: 0 }]}>{label}</Text>
       <Text
         numberOfLines={1}
         style={[
           type.kicker,
-          { fontWeight: '400', flexShrink: 1, textAlign: 'right', color: colors.secondaryLabel, fontVariant: ['tabular-nums'] },
+          { flexShrink: 1, textAlign: 'right', color: colors.secondaryLabel, fontVariant: ['tabular-nums'] },
         ]}>
         {value}
       </Text>

@@ -10,6 +10,7 @@ import { useTheme } from '@/theme/theme-context';
 import { useFinishOnboarding } from './finish';
 import { OnboardingFrame } from './frame';
 import { joinNames } from './join-names';
+import { space } from '@/constants/theme';
 
 /** Step 5: the reveal. The exact plan the user is about to own, then one tap to use it. */
 export function OnboardingPlanReady() {
@@ -34,13 +35,13 @@ function PlanReady({ template }: { template: StarterTemplate }) {
       <Text accessibilityRole="header" style={type.displayDay} maxFontSizeMultiplier={1.3}>
         {plan.name}
       </Text>
-      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 4 }]}>{planMeta(plan)}</Text>
-      <View style={{ paddingTop: 28, gap: 28 }}>
+      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.tight }]}>{planMeta(plan)}</Text>
+      <View style={{ paddingTop: space.section, gap: space.section }}>
         {plan.days.map((day, index) => (
           <ReadyDay key={day.id} day={day} index={index} />
         ))}
       </View>
-      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 28 }]}>
+      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.section }]}>
         Change anything later in Plans.
       </Text>
     </OnboardingFrame>
@@ -55,7 +56,7 @@ function ReadyDay({ day, index }: { day: WorkoutDay; index: number }) {
     <View
       accessible
       accessibilityLabel={`Day ${index + 1}, ${day.title}: ${names.join(', ')}`}
-      style={{ gap: 2 }}>
+      style={{ gap: space.pair }}>
       <Text style={type.row}>{day.title}</Text>
       <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{joinNames(names)}</Text>
     </View>

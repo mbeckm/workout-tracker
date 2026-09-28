@@ -15,6 +15,8 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@/theme/theme-context';
+import { iconSize, space } from '@/constants/theme';
+import { DURATION, EASE_IN_OUT, SPRING } from '@/motion';
 
 const DELETE_TRAVEL = 36;
 const ROW_RUBBER_DIM = 120;
@@ -67,7 +69,7 @@ export function ResidueSetRow({
       return;
     }
     armed.set(0);
-    translateX.set(withSpring(0, { duration: 300, dampingRatio: 0.85 }));
+    translateX.set(withSpring(0, SPRING.settle));
   }, [armed, reduceMotion, resetKey, translateX]);
 
   const pan = useMemo(
@@ -98,8 +100,7 @@ export function ResidueSetRow({
             armed.set(1);
             translateX.set(
               withSpring(-DELETE_TRAVEL, {
-                duration: 280,
-                dampingRatio: 0.9,
+                ...SPRING.fling,
                 velocity: event.velocityX,
               }),
             );
@@ -109,8 +110,7 @@ export function ResidueSetRow({
           armed.set(0);
           translateX.set(
             withSpring(0, {
-              duration: 300,
-              dampingRatio: 0.85,
+              ...SPRING.fling,
               velocity: event.velocityX,
             }),
           );
@@ -177,7 +177,7 @@ export function ResidueSetRow({
     <GestureDetector gesture={pan}>
       <Animated.View
         entering={entering}
-        layout={LinearTransition.duration(200)}
+        layout={LinearTransition.duration(DURATION.enter).easing(EASE_IN_OUT)}
         style={rowStyle}>
         <Pressable
           onPress={onPress}
@@ -194,7 +194,7 @@ export function ResidueSetRow({
           <Animated.View style={checkStyle}>
             <SymbolView
               name="checkmark"
-              size={17}
+              size={iconSize.row}
               weight="bold"
               tintColor={colors.systemGreen}
               fallback={<CheckFallback color={colors.systemGreen} />}
@@ -219,9 +219,9 @@ export function ResidueSetRow({
 
 /** Web / no SF Symbols: same 17pt lane, so rows keep their rhythm. */
 function CheckFallback({ color }: { color: string }) {
+  const { type } = useTheme();
   return (
-    <Animated.Text
-      style={{ width: 17, fontSize: 15, fontWeight: '700', color, textAlign: 'center' }}>
+    <Animated.Text style={[type.caption, { width: iconSize.row, color, textAlign: 'center' }]}>
       ✓
     </Animated.Text>
   );
@@ -231,10 +231,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: space.inline,
     minHeight: 28,
     alignSelf: 'flex-start',
-    paddingRight: 24,
+    paddingRight: space.gutter,
   },
   labelWrap: {
     position: 'relative',

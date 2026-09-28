@@ -6,6 +6,7 @@ import { useWorkoutStore } from '@/store/workout-store';
 
 import { BigChoice } from './choice';
 import { OnboardingFrame } from './frame';
+import { space } from '@/constants/theme';
 
 const UNITS = [
   { value: 'kg', label: 'kg', spoken: 'Kilograms' },
@@ -23,7 +24,7 @@ export function OnboardingUnits() {
       title="Units"
       action={{ title: 'Continue', onPress: () => router.push('/onboarding/days') }}
       testID="onboarding-units">
-      <View accessibilityRole="radiogroup" accessibilityLabel="Units" style={{ paddingTop: 28 }}>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Units" style={{ paddingTop: space.section }}>
         {UNITS.map((option) => (
           <BigChoice
             key={option.value}
@@ -31,12 +32,12 @@ export function OnboardingUnits() {
             accessibilityLabel={option.spoken}
             selected={units === option.value}
             onSelect={() => setUnits(option.value)}
-            style={{ alignSelf: 'flex-start', paddingRight: 24 }}
+            style={{ alignSelf: 'flex-start', paddingRight: space.gutter }}
             testID={`onboarding-units-${option.value}`}
           />
         ))}
       </View>
-      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 20 }]}>
+      <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.gutter }]}>
         Change it anytime in Settings.
       </Text>
     </OnboardingFrame>

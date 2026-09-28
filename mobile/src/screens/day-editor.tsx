@@ -13,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
 import { PaperBack } from '@/components/paper';
-import { radius } from '@/constants/theme';
-import { EASE_OUT } from '@/motion';
+import { PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
+import { DURATION, EASE_IN_OUT, EASE_OUT, ENTER_OFFSET } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import { formatPlanMetric, withDay } from '@/domain/helpers';
 import { prescriptionFields, type PrescriptionField } from '@/domain/prescription-fields';
@@ -22,7 +22,8 @@ import type { ExercisePrescription } from '@/domain/types';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
-const LIST_LAYOUT = LinearTransition.duration(220).easing(EASE_OUT);
+/** Expand / collapse in place (trim-ui §8): `enter`, ease-in-out. */
+const LIST_LAYOUT = LinearTransition.duration(DURATION.enter).easing(EASE_IN_OUT);
 
 export function DayEditorScreen() {
   const { colors, type } = useTheme();
@@ -120,8 +121,8 @@ export function DayEditorScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + 16,
-          paddingHorizontal: 24,
+          paddingTop: insets.top + space.inset,
+          paddingHorizontal: space.gutter,
         }}>
         <PaperBack
           onPress={() => {
@@ -146,7 +147,7 @@ export function DayEditorScreen() {
         />
         {exerciseCount > 0 ? (
           <Pressable accessible={false} onPress={editingId ? collapseConfigurator : undefined}>
-            <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: 4 }]}>
+            <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.tight }]}>
               {exerciseMeta}
             </Text>
           </Pressable>
@@ -237,17 +238,17 @@ function ExercisePrescribeRow({
         accessibilityState={{ expanded }}
         onPress={onToggle}
         style={({ pressed }) => ({
-          paddingTop: isFirst ? 0 : 14,
-          paddingBottom: expanded ? 12 : 14,
-          opacity: pressed ? 0.7 : 1,
+          paddingTop: isFirst ? 0 : space.inset,
+          paddingBottom: expanded ? space.inline : space.inset,
+          opacity: pressed ? PRESSED_OPACITY : 1,
         })}>
-        <View style={{ gap: 2 }}>
+        <View style={{ gap: space.pair }}>
           <Text style={type.row} numberOfLines={1}>
             {exercise.name}
           </Text>
           {expanded ? null : (
             <Animated.View
-              entering={reduceMotion ? FadeIn.duration(160) : FadeIn.duration(180).easing(EASE_OUT)}
+              entering={reduceMotion ? FadeIn.duration(DURATION.fade) : FadeIn.duration(DURATION.enter).easing(EASE_OUT)}
               layout={reduceMotion ? undefined : LIST_LAYOUT}>
               <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={1}>
                 {formatPlanMetric(exercise)}
@@ -260,22 +261,22 @@ function ExercisePrescribeRow({
         <Animated.View
           entering={
             reduceMotion
-              ? FadeIn.duration(160)
-              : FadeInDown.duration(200)
+              ? FadeIn.duration(DURATION.fade)
+              : FadeInDown.duration(DURATION.enter)
                   .easing(EASE_OUT)
                   .withInitialValues({
                     opacity: 0,
-                    transform: [{ translateY: -8 }],
+                    transform: [{ translateY: -ENTER_OFFSET }],
                   })
           }
           exiting={
             reduceMotion
-              ? FadeOut.duration(140)
-              : FadeOutUp.duration(180).easing(EASE_OUT)
+              ? FadeOut.duration(DURATION.fade)
+              : FadeOutUp.duration(DURATION.exit).easing(EASE_OUT)
           }
           layout={reduceMotion ? undefined : LIST_LAYOUT}
-          style={{ gap: 12, paddingBottom: 14 }}>
-          <View style={{ flexDirection: 'row', gap: 12 }}>
+          style={{ gap: space.inline, paddingBottom: space.inset }}>
+          <View style={{ flexDirection: 'row', gap: space.inline }}>
             {fields.map((field) => (
               <PrescribeField
                 key={field.key}
@@ -285,7 +286,7 @@ function ExercisePrescribeRow({
               />
             ))}
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.gutter }}>
             <RowAction
               title="Remove"
               accessibilityLabel={`Remove ${exercise.name}`}
@@ -335,7 +336,7 @@ function RowAction({
       style={({ pressed }) => ({
         minHeight: 44,
         justifyContent: 'center',
-        opacity: pressed ? 0.55 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
       <Text style={[type.kicker, { color }]}>{title}</Text>
     </Pressable>
@@ -370,7 +371,7 @@ function PrescribeField({
   };
 
   return (
-    <View style={{ flex: 1, gap: 8 }}>
+    <View style={{ flex: 1, gap: space.related }}>
       <Text style={type.kicker}>{label}</Text>
       <TextInput
         value={text}
@@ -396,16 +397,15 @@ function PrescribeField({
           }
         }}
         style={{
-          minHeight: 44,
-          paddingVertical: 6,
+          ...type.title,
+          // No lineHeight on a TextInput: iOS applies it to typed text but not the placeholder.
+          lineHeight: undefined,
+          height: TOUCH_TARGET,
+          paddingVertical: 0,
           borderRadius: radius.md,
           borderCurve: 'continuous',
           backgroundColor: colors.secondarySystemBackground,
           textAlign: 'center',
-          fontSize: 22,
-          fontWeight: '600',
-          lineHeight: 28,
-          color: colors.label,
           fontVariant: ['tabular-nums'],
         }}
       />

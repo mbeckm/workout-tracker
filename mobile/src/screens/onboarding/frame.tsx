@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { useTheme } from '@/theme/theme-context';
+import { iconSize, PRESSED_OPACITY, space } from '@/constants/theme';
 
 /** SF Symbol on iOS; the matching Material Symbol keeps web QA honest. */
 export const SYMBOL_CHECK = { ios: 'checkmark', android: 'check', web: 'check' } as const;
@@ -45,7 +46,7 @@ export function OnboardingFrame({
         paddingTop: insets.top + 16,
         paddingBottom: Math.max(insets.bottom, 12),
       }}>
-      <View style={{ paddingHorizontal: 24, minHeight: 44, justifyContent: 'center' }}>
+      <View style={{ paddingHorizontal: space.gutter, minHeight: 44, justifyContent: 'center' }}>
         {back ? <OnboardingBack onPress={() => router.back()} /> : null}
       </View>
       <ScrollView
@@ -53,9 +54,9 @@ export function OnboardingFrame({
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: 24,
+          paddingHorizontal: space.gutter,
           paddingTop: centered ? 0 : 12,
-          paddingBottom: 24,
+          paddingBottom: space.gutter,
           justifyContent: centered ? 'center' : 'flex-start',
         }}>
         {title ? (
@@ -65,7 +66,7 @@ export function OnboardingFrame({
         ) : null}
         {children}
       </ScrollView>
-      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+      <View style={{ paddingHorizontal: space.gutter, paddingTop: space.related }}>
         <Button
           title={action.title}
           variant="black"
@@ -91,9 +92,9 @@ function OnboardingBack({ onPress }: { onPress: () => void }) {
         minHeight: 44,
         minWidth: 44,
         justifyContent: 'center',
-        opacity: pressed ? 0.55 : 1,
+        opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <SymbolView name={SYMBOL_BACK} tintColor={colors.label} size={20} weight="medium" />
+      <SymbolView name={SYMBOL_BACK} tintColor={colors.label} size={iconSize.control} weight="medium" />
     </Pressable>
   );
 }

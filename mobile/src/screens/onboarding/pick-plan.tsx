@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { isStarterDayCount, starterTemplatesForDays, type StarterTemplate } from '@/catalog/templates';
-import { radius } from '@/constants/theme';
+import { iconSize, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 
 import { selectionTick } from './choice';
@@ -45,7 +45,7 @@ export function OnboardingPickPlan() {
 
   return (
     <OnboardingFrame title="Pick a plan" action={{ title: 'Continue', onPress: next }} testID="onboarding-plan">
-      <View accessibilityRole="radiogroup" accessibilityLabel="Plans" style={{ paddingTop: 28, gap: 8 }}>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Plans" style={{ paddingTop: space.section, gap: space.related }}>
         <View
           style={{
             borderRadius: radius.md,
@@ -109,24 +109,24 @@ function PlanOption({
       })}>
       <View
         style={{
-          marginHorizontal: 16,
+          marginHorizontal: space.inset,
           minHeight: 44,
-          paddingVertical: 14,
+          paddingVertical: space.inset,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: space.inline,
           borderTopWidth: separator ? 0.5 : 0,
           borderTopColor: colors.separator,
         }}>
-        <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+        <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
           <Text style={type.row}>{title}</Text>
           <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={3}>
             {meta}
           </Text>
         </View>
-        <View style={{ width: 22, alignItems: 'center', flexShrink: 0 }}>
+        <View style={{ width: iconSize.control, alignItems: 'center', flexShrink: 0 }}>
           {selected ? (
-            <SymbolView name={SYMBOL_CHECK} tintColor={colors.label} size={20} weight="semibold" />
+            <SymbolView name={SYMBOL_CHECK} tintColor={colors.label} size={iconSize.row} weight="semibold" />
           ) : null}
         </View>
       </View>

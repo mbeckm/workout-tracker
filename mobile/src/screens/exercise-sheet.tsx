@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exerciseDetail, formatPlanMetric } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
+import { space } from '@/constants/theme';
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -32,7 +33,7 @@ export function ExerciseSheetScreen() {
 
   if (!exercise) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: 24 }}>
+      <View style={{ flex: 1, backgroundColor: colors.systemBackground, padding: space.gutter }}>
         <Text style={type.body}>That exercise is gone.</Text>
       </View>
     );
@@ -46,15 +47,15 @@ export function ExerciseSheetScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingHorizontal: 24,
-          paddingTop: 8,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
           paddingBottom: insets.bottom + 10,
         }}>
-        <View style={{ gap: 6, paddingBottom: 16 }}>
+        <View style={{ gap: space.tight, paddingBottom: space.inset }}>
           <Text style={type.title}>{exercise.name}</Text>
           {detail ? <Text style={type.kicker}>{detail}</Text> : null}
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.inline }}>
           <Text style={type.body}>Plan</Text>
           <Text style={[type.body, { color: colors.tertiaryLabel, fontVariant: ['tabular-nums'] }]}>
             {formatPlanMetric(exercise)}

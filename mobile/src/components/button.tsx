@@ -3,7 +3,7 @@ import { useState, type ComponentProps } from 'react';
 import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
-import { radius, spacing } from '@/constants/theme';
+import { PRESSED_OPACITY, radius, spacing } from '@/constants/theme';
 import { PRESS_MS, PRESS_SCALE } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
@@ -91,7 +91,7 @@ export function Button({
           borderRadius: pill ? radius.full : 0,
           borderCurve: 'continuous',
           backgroundColor,
-          opacity: disabled && !quietDisabled ? 0.4 : reduceMotion && pressed ? 0.7 : 1,
+          opacity: disabled && !quietDisabled ? 0.4 : reduceMotion && pressed ? PRESSED_OPACITY : 1,
           transform: [{ scale: scalePress ? PRESS_SCALE : 1 }],
           transitionProperty: 'transform',
           transitionDuration: `${PRESS_MS}ms`,
