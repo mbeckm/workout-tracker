@@ -21,7 +21,7 @@ export function spokenSetLine(line: string, unit: WeightUnit | null): string {
 }
 
 /**
- * One exercise in a finished-workout recap (Done, History detail): the `row` name, then one
+ * One exercise in a finished workout's record (History session detail): the `row` name, then one
  * `caption` line per set with the set number in a narrow tertiary lane, so a scan down the
  * column reads set by set. The set that beat a prior session carries the yellow crown.
  *
