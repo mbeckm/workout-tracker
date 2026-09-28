@@ -140,7 +140,7 @@ export function ProgressLiftDetailScreen() {
               <ProgressDelta percent={deltaRounded} color={colors.tertiaryLabel} />
             ) : null}
           </View>
-          <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
+          <Text style={[type.footnote, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
             {scrubbing && scrubbed
               ? formatProgressShortDate(scrubbed.date)
               : 'Estimated 1-rep max'}

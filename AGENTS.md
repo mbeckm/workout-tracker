@@ -21,10 +21,11 @@ Does not ship: ad-hoc / empty workouts, custom transitions, achievements, heatma
 
 ## How to implement UI
 
-1. Read `.cursor/skills/trim-ui/SKILL.md`, then `.cursor/skills/implement-screen/SKILL.md`.
-2. Match the Paper artboard for the screen.
-3. System font and iOS semantic colors. Green is for completed work and the one gym CTA, never titles.
-4. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
+1. Read `PRODUCT.md` → Principles, then `.cursor/skills/trim-ui/SKILL.md` (the design system), then `.cursor/skills/implement-screen/SKILL.md`.
+2. Use tokens only: `type`, `space`, `radius`, `colors`, `iconSize` (`mobile/src/constants/theme.ts`) and `DURATION` / `SPRING` (`mobile/src/motion.ts`). No raw font sizes, hex colors or off-scale spacing.
+3. Match the Paper artboard for the screen; where it disagrees with `trim-ui`, `trim-ui` wins.
+4. No helper text, no action on the user's behalf, and motion only when it makes Trim faster, more fluid or more loveable.
+5. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
 
 ## Build / run (macOS + Xcode)
 
@@ -39,7 +40,7 @@ npx expo start --dev-client
 - The repo path contains spaces; `mobile/plugins/with-quoted-bundle-script.js` keeps the iOS bundle phase working. Keep it in `app.json`.
 - CocoaPods: this Mac uses a user-level install (`~/.gem/ruby/2.6.0/bin`). Put it on `PATH` before prebuild.
 - Official Expo skills live in `.agents/skills/`.
-- Checks: `npx tsc --noEmit` (0 errors) and `npx eas-cli metadata:lint`. There is no unit test target yet.
+- Checks: `npm run check` in `mobile/` (tsc + the design-token ratchet, also run by `.github/workflows/checks.yml` on every PR) and `npx eas-cli metadata:lint`. There is no unit test target yet. If you remove raw values, run `node scripts/check-design-tokens.mjs --update` to lower the baseline; never raise it.
 
 Store builds: see `APP_STORE_RELEASE_GUIDE.md` (`npx eas-cli build --platform ios --profile production --auto-submit`).
 
@@ -122,4 +123,4 @@ Read this before your first command. Each item cost real time once.
 
 Paste a list of dogfooding feedback into a new Claude Code session running **Opus 5.5 at medium effort** and run `/feedback-sprint`. The main session acts as orchestrator/PM (`.claude/skills/feedback-sprint/SKILL.md`): it triages every item, routes it to a worker, reviews the diff, sends it back with feedback, runs simulator QA, commits per item and opens a PR.
 
-Workers live in `.claude/agents/`. Effort is set per agent, so the orchestrator picks effort by picking the agent: `quick-fixer` (low), `builder` (medium, default), `designer` (xhigh, taste-heavy items), `product-thinker` (high, read-only product calls), `qa-tester` (medium, simulator, one at a time). Design work always starts with Mobbin + Appllama research; the designer reports its references and the orchestrator sends back designs without them. The run's ledger is written to `.claude/feedback-runs/` (gitignored).
+Workers live in `.claude/agents/`. Model and effort are set per agent, so the orchestrator picks them by picking the agent: `quick-fixer` (Opus, low), `builder` (Opus, medium, default), `designer` (Opus, high, taste-heavy items), `product-thinker` (Opus, high, read-only product calls), `qa-tester` (Opus, low, simulator, one per sprint). The orchestrator does one-line fixes itself, gives one worker all items in an area, and reuses agents with SendMessage; see the skill's *Token budget*. New design patterns start with Mobbin + Appllama research; polish cites the trim-ui rule it matches. Simulator QA only checks that each change is there and works; the sprint report ends with a look-and-feel list for Marvin to check on device. The run's ledger is written to `.claude/feedback-runs/` (gitignored).

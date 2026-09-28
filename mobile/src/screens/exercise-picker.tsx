@@ -509,7 +509,7 @@ export function ExercisePickerScreen() {
               {section.title ? (
                 <Text
                   style={[
-                    type.caption,
+                    type.footnote,
                     {
                       color: colors.tertiaryLabel,
                       paddingTop: sectionIndex === 0 ? 0 : 12,

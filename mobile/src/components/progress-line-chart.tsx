@@ -394,7 +394,7 @@ export function ProgressLineChart({
         />
         <Text
           style={[
-            type.caption,
+            type.footnote,
             {
               position: 'absolute',
               left: 0,
@@ -410,7 +410,7 @@ export function ProgressLineChart({
         </Text>
         <Text
           style={[
-            type.caption,
+            type.footnote,
             {
               position: 'absolute',
               right: 0,

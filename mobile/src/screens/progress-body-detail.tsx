@@ -154,7 +154,7 @@ export function ProgressBodyDetailScreen() {
               when scrubbing starts. At rest it holds the place; the title already names the metric. */}
           <Text
             style={[
-              type.caption,
+              type.footnote,
               { color: colors.tertiaryLabel, fontWeight: '400', opacity: scrubbing ? 1 : 0 },
             ]}
             accessibilityElementsHidden={!scrubbing}
