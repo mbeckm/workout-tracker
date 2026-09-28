@@ -167,7 +167,7 @@ export function SettingsTab() {
           />
         </View>
         <Text
-          style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400', paddingTop: 24 }]}
+          style={[type.footnote, { color: colors.tertiaryLabel, fontWeight: '400', paddingTop: 24 }]}
           selectable
           testID="settings-version">
           {versionLabel()}

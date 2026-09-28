@@ -150,7 +150,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         {selected && trial ? <TrialTimeline offer={selected} trial={trial} /> : null}
 
         {paywall.termsText ? (
-          <Text style={[type.caption, { fontWeight: '400' }]} testID="paywall-terms">
+          <Text style={[type.footnote, { fontWeight: '400' }]} testID="paywall-terms">
             {paywall.termsText}
           </Text>
         ) : null}
@@ -280,7 +280,7 @@ function FeatureRow({ feature }: { feature: ProFeature }) {
 function Dot() {
   const { type } = useTheme();
   return (
-    <Text style={type.caption} accessible={false} importantForAccessibility="no">
+    <Text style={type.footnote} accessible={false} importantForAccessibility="no">
       ·
     </Text>
   );
@@ -311,7 +311,7 @@ function FooterLink({
         justifyContent: 'center',
         opacity: disabled ? 0.4 : pressed ? 0.55 : 1,
       })}>
-      <Text style={type.caption}>{title}</Text>
+      <Text style={type.footnote}>{title}</Text>
     </Pressable>
   );
 }

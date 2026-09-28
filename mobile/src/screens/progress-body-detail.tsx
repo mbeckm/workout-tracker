@@ -173,7 +173,7 @@ export function ProgressBodyDetailScreen() {
             ) : null}
           </View>
           {isPro && scrubbing && scrubbed ? (
-            <Text style={[type.caption, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
+            <Text style={[type.footnote, { color: colors.tertiaryLabel, fontWeight: '400' }]}>
               {formatProgressShortDate(scrubbed.date)}
             </Text>
           ) : null}
