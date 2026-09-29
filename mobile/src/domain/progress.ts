@@ -88,14 +88,17 @@ function liftIndexPresentation(
   history: LoggedWorkout[],
   units: 'kg' | 'lbs',
   sparklineWindow: ProgressWindow | null,
+  sparklineSinceMs: number | null,
 ): Omit<TrackedLift, 'name'> {
   const series = liftSeriesFromHistory(name, history);
   const latestDate = series.length > 0 ? series[series.length - 1].date : null;
-  // The sparkline never reaches further back than the detail screen can open.
-  const sparkSeries =
-    sparklineWindow == null
-      ? series
-      : series.filter((point) => isInProgressWindow(point.date, sparklineWindow));
+  // The sparkline never reaches further back than the detail screen can open, and on
+  // Progress v3 covers the sparkline window (`PROGRESS_SPARKLINE_DAYS`).
+  const sparkSeries = series.filter(
+    (point) =>
+      (sparklineWindow == null || isInProgressWindow(point.date, sparklineWindow)) &&
+      (sparklineSinceMs == null || new Date(point.date).getTime() >= sparklineSinceMs),
+  );
 
   if (isAddedWeightLift(name)) {
     const weights = series.map((point) => point.bestSet.weight).filter((value) => value != null);
@@ -263,6 +266,17 @@ export function percentFromWindowStart(
   return ((value - first) / first) * 100;
 }
 
+/**
+ * Progress v3's sparklines cover the last 30 days (PRODUCT-DECISIONS 62), sensible for most
+ * lifters; 90 days for advanced lifters is a later setting.
+ */
+export const PROGRESS_SPARKLINE_DAYS = 30;
+
+/** Start of the sparkline window, `days` before now. */
+export function sparklineSince(days = PROGRESS_SPARKLINE_DAYS, now = new Date()): number {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - days).getTime();
+}
+
 export function formatProgressWeight(value: number, units: 'kg' | 'lbs'): string {
   const rounded = Math.round(value * 10) / 10;
   const text = Number.isInteger(rounded) ? String(Math.round(rounded)) : rounded.toFixed(1);
@@ -336,13 +350,14 @@ export function collectTrackedLifts(
   activePlan?: WorkoutPlan | null,
   units: 'kg' | 'lbs' = 'kg',
   sparklineWindow: ProgressWindow | null = null,
+  sparklineSinceMs: number | null = null,
 ): TrackedLift[] {
   const names = exerciseNamesFromHistory(history);
   const planOrder = planExerciseOrder(activePlan);
   const planRank = new Map(planOrder.map((key, index) => [key, index]));
 
   const lifts = [...names.entries()].map(([key, name]) => {
-    const presentation = liftIndexPresentation(name, history, units, sparklineWindow);
+    const presentation = liftIndexPresentation(name, history, units, sparklineWindow, sparklineSinceMs);
 
     return { key, name, ...presentation };
   });
