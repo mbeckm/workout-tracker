@@ -623,7 +623,7 @@ Home reflects what just happened (PRODUCT.md principle 11). Same layout in every
 | --- | --- | --- | --- |
 | **Training day** (the default) | Flame gray; today ringed | `Next workout`; the next day selected, rows with today's loads (↑ where the target rises) | Ink `Start Upper` |
 | **Just trained** (a workout finished today) | Today green | `Today`; the finished day selected (ink, green ✓); rows show what changed: ↑ `2.5 kg` in ink, `same` in tertiary, the crown instead of the ↑ on a PR | Gray pill `Start Lower` (the next day): possible, not pushed |
-| **Week complete** (the plan's goal reached) | Flame lit orange, the count rolls up; under the circles `↑ 9 lifts went up` and 👑 `2 new records` | `Next workout`, rows with the next loads | Ink `Start Upper`: another workout always stays one tap away |
+| **Week complete** (the plan's goal reached) | Flame lit orange, the count rolls up; under the circles `↑ 9 lifts went up` and 👑 `2 new records` | `Next workout`; every chip wears its green ✓ (the whole plan is done this week), the next day selected, rows with the next loads. The checks clear when the new week starts. | Ink `Start Upper`: another workout always stays one tap away |
 | **Mid-workout** | as it was | the running day | Ink `Resume` |
 
 ### Home week details
