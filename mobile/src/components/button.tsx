@@ -44,9 +44,9 @@ export function Button({
   const [pressed, setPressed] = useState(false);
   const compact = size === 'compact';
   const pill = variant === 'filled' || variant === 'black' || variant === 'green' || variant === 'gray';
-  // A disabled green pill at 40% reads as broken, not unavailable. Render it as a quiet
-  // gray pill instead so the one green on a stage always means "ready".
-  const quietDisabled = Boolean(disabled) && variant === 'green';
+  // A disabled green or ink pill at 40% reads as broken, not unavailable. Render it as the
+  // quiet gray pill instead (trim-ui §5 Disabled), so a filled pill always means "ready".
+  const quietDisabled = Boolean(disabled) && (variant === 'green' || variant === 'black');
   // Only a button that opts in crossfades its fill; everywhere else a variant change is instant.
   const lightable = unlit != null && variant === 'green';
   const waiting = lightable && Boolean(unlit) && !disabled;

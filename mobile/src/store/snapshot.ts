@@ -1,5 +1,6 @@
 import type { AppearancePreference, ColorScheme } from '@/constants/theme';
 import { migrateLegacyThigh, type BodyCheckIn } from '@/domain/check-in';
+import { normalizeGoals, type Goal } from '@/domain/goals';
 import { normalizeLogSession, type LogSession } from '@/domain/log-session';
 import type {
   CustomExerciseDefinition,
@@ -33,6 +34,8 @@ export type WorkoutSnapshot = {
    * that earned it. A moment fires once (trim-ui §12): deleting workouts never re-earns it.
    */
   milestonesShown: Record<string, string>;
+  /** Lift goals (PRODUCT-DECISIONS 63): one per lift, up to 3 pinned to Progress. */
+  goals: Goal[];
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -51,6 +54,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   isPro: false,
   activeSession: null,
   milestonesShown: {},
+  goals: [],
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -150,5 +154,7 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     // Only live plans: a session for a deleted or archived plan/day is dropped.
     activeSession: normalizeLogSession(data.activeSession, plans),
     milestonesShown: normalizeMilestones(data.milestonesShown),
+    // Snapshots from before goals have none.
+    goals: normalizeGoals(data.goals),
   };
 }

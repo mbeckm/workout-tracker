@@ -1,92 +1,185 @@
 import { SymbolView } from 'expo-symbols';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { HeaderActions } from '@/components/button';
 import { ProgressSparkline } from '@/components/progress-sparkline';
-import { iconSize, PRESSED_OPACITY, space, TOUCH_TARGET } from '@/constants/theme';
+import { showToast } from '@/components/toast';
+import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space, spacing, TOUCH_TARGET } from '@/constants/theme';
 import { PROGRESS_INDEX_BODY_METRICS } from '@/domain/check-in';
+import { goalForLift, goalProgress, pinnedGoals, type Goal } from '@/domain/goals';
 import {
   bodyMetricSeries,
   collectTrackedLifts,
-  filterPointsByWindow,
-  FREE_PROGRESS_WINDOWS,
-  formatProgressShortDate,
-  formatProgressWeight,
-  latestCheckIn,
+  PROGRESS_SPARKLINE_DAYS,
+  sparklineSince,
 } from '@/domain/progress';
-import { useTheme } from '@/theme/theme-context';
+import { normalizedStatsKey } from '@/domain/types';
 import { progressDemoMode } from '@/store/progress-demo';
 import { useWorkoutStore } from '@/store/workout-store';
+import { useTheme } from '@/theme/theme-context';
 
-function SectionCaption({ title }: { title: string }) {
+/** Single-line rows on fixed lanes (trim-ui §13 Progress): 52 tall. */
+const ROW_HEIGHT = TOUCH_TARGET + space.related;
+/** The sparkline lane (trim-ui §13 Progress: 64pt). */
+const SPARKLINE_WIDTH = 64;
+const SPARKLINE_HEIGHT = 18;
+/** The value lane fits `102.5 kg`; it grows with the text. */
+const VALUE_LANE = 88;
+/** The goal track (trim-ui §13 Progress: 8pt, green: progress toward a goal is completeness). */
+const TRACK = spacing.sm;
+
+const LIFTS_COLLAPSED = 5;
+
+type Units = 'kg' | 'lbs';
+
+/** `82`, `82.1`: a value whose unit sits beside it in `caption`. */
+function formatValue(value: number, decimals: 0 | 1): string {
+  if (decimals === 0) {
+    return String(Math.round(value));
+  }
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function SectionCaption({ title, trailing }: { title: string; trailing?: string }) {
   const { type } = useTheme();
   return (
-    <Text style={[type.caption, { paddingBottom: space.related }]} accessibilityRole="header">
-      {title}
-    </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', paddingBottom: space.related }}>
+      <Text style={[type.caption, { flex: 1 }]} accessibilityRole="header">
+        {title}
+      </Text>
+      {trailing ? <Text style={type.caption}>{trailing}</Text> : null}
+    </View>
   );
 }
 
-function Divider() {
-  const { colors } = useTheme();
-  return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.separator }} />;
+/** `118` `title` + `of 140 kg` / `kg` `caption` on one baseline. */
+function Value({ value, suffix }: { value: string; suffix: string }) {
+  const { type } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end', gap: space.tight }}>
+      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} maxFontSizeMultiplier={fontScaleCap.title}>
+        {value}
+      </Text>
+      <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]} maxFontSizeMultiplier={fontScaleCap.title}>
+        {suffix}
+      </Text>
+    </View>
+  );
 }
 
-/** `row` name over `caption` latest; sparkline and chevron in the trailing lane. Rows grow and wrap. */
+/**
+ * A lift or body row: `row` name, a 64pt sparkline of the window, the value in `title` + unit.
+ * Three fixed lanes, hairlines, no chevron (trim-ui §13 Progress).
+ */
 function MetricRow({
   title,
-  caption,
+  value,
+  unit,
   spokenValue,
   sparkline,
-  onPress,
   showDivider,
-  testID,
 }: {
   title: string;
-  caption?: string;
+  value: string | null;
+  unit: string;
   spokenValue?: string;
   sparkline: number[];
-  onPress: () => void;
-  showDivider?: boolean;
-  testID?: string;
+  showDivider: boolean;
 }) {
   const { colors, type } = useTheme();
+  const { fontScale } = useWindowDimensions();
   return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={[title, caption, spokenValue].filter(Boolean).join(', ')}
-        testID={testID}
-        onPress={onPress}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.inline,
-          paddingVertical: space.inset,
-          opacity: pressed ? PRESSED_OPACITY : 1,
-        })}>
-        <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
-          <Text style={type.row} numberOfLines={2}>
-            {title}
+    <View
+      accessible
+      accessibilityLabel={[title, spokenValue].filter(Boolean).join(', ')}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.inline,
+        minHeight: ROW_HEIGHT,
+        paddingVertical: space.related,
+        borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0,
+        borderBottomColor: colors.separator,
+      }}>
+      <Text style={[type.row, { flex: 1, minWidth: 0 }]} numberOfLines={1}>
+        {title}
+      </Text>
+      <ProgressSparkline values={sparkline} width={SPARKLINE_WIDTH} height={SPARKLINE_HEIGHT} />
+      <View style={{ minWidth: VALUE_LANE * Math.min(fontScale, fontScaleCap.title) }}>
+        {value != null ? <Value value={value} suffix={unit} /> : <Value value="—" suffix="" />}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * A pinned goal: `row` name with the current 1RM in `title` + `of 100 kg` on one line, and an
+ * 8pt green track under it. Reached: a green ✓ after the name, `100 kg reached`, a full track.
+ */
+function GoalRow({
+  goal,
+  current,
+  units,
+  showDivider,
+}: {
+  goal: Goal;
+  current: number | null;
+  units: Units;
+  showDivider: boolean;
+}) {
+  const { colors, type } = useTheme();
+  const reached = goal.reachedAt != null;
+  const progress = goalProgress(goal, current);
+  const target = formatValue(goal.target, 1);
+  return (
+    <View
+      accessible
+      accessibilityLabel={
+        reached
+          ? `${goal.exerciseName} goal, ${target} ${units} reached`
+          : `${goal.exerciseName} goal, ${current != null ? formatValue(current, 0) : 'no sets yet'} of ${target} ${units}`
+      }
+      style={{
+        gap: space.related,
+        paddingVertical: space.inset,
+        borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0,
+        borderBottomColor: colors.separator,
+      }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.inline }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
+          <Text style={[type.row, { flexShrink: 1 }]} numberOfLines={1}>
+            {goal.exerciseName}
           </Text>
-          {caption ? (
-            <Text style={type.caption} numberOfLines={2}>
-              {caption}
-            </Text>
+          {reached ? (
+            <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
           ) : null}
         </View>
-        <ProgressSparkline values={sparkline} />
-        <SymbolView
-          name="chevron.right"
-          tintColor={colors.tertiaryLabel}
-          size={iconSize.caption}
-          weight="semibold"
+        {reached ? (
+          <Value value={target} suffix={`${units} reached`} />
+        ) : (
+          <Value value={current != null ? formatValue(current, 0) : '—'} suffix={`of ${target} ${units}`} />
+        )}
+      </View>
+      <View
+        style={{
+          height: TRACK,
+          borderRadius: radius.full,
+          backgroundColor: colors.systemGray5,
+          overflow: 'hidden',
+        }}>
+        <View
+          style={{
+            width: `${Math.round(progress * 1000) / 10}%`,
+            height: TRACK,
+            borderRadius: radius.full,
+            backgroundColor: colors.systemGreen,
+          }}
         />
-      </Pressable>
-      {showDivider ? <Divider /> : null}
-    </>
+      </View>
+    </View>
   );
 }
 
@@ -102,40 +195,69 @@ function MoreRow({
 }) {
   const { colors, type } = useTheme();
   return (
-    <>
-      <Divider />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ expanded }}
-        testID="progress-lifts-more"
-        onPress={onPress}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.inline,
-          minHeight: TOUCH_TARGET,
-          paddingVertical: space.inset,
-          opacity: pressed ? PRESSED_OPACITY : 1,
-        })}>
-        <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>{title}</Text>
-        <SymbolView
-          name={expanded ? 'chevron.up' : 'chevron.down'}
-          tintColor={colors.tertiaryLabel}
-          size={iconSize.caption}
-          weight="semibold"
-        />
-      </Pressable>
-    </>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+      testID="progress-lifts-more"
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.inline,
+        minHeight: ROW_HEIGHT,
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.separator,
+        opacity: pressed ? PRESSED_OPACITY : 1,
+      })}>
+      <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>{title}</Text>
+      <SymbolView
+        name={expanded ? 'chevron.up' : 'chevron.down'}
+        tintColor={colors.tertiaryLabel}
+        size={iconSize.caption}
+        weight="semibold"
+      />
+    </Pressable>
   );
 }
 
-const LIFTS_COLLAPSED = 5;
+/** A row that opens its detail on tap and a native context menu on long-press. */
+function MenuRow({
+  href,
+  testID,
+  menu,
+  children,
+}: {
+  href: { pathname: '/progress-lift' | '/progress-body'; params: Record<string, string> };
+  testID?: string;
+  menu?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Link href={href} asChild>
+      <Link.Trigger>
+        <Pressable testID={testID} style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
+          {children}
+        </Pressable>
+      </Link.Trigger>
+      {menu}
+    </Link>
+  );
+}
 
+/**
+ * Progress v3 (trim-ui §13 Progress, PRODUCT-DECISIONS 62 and 63): goals first, then lifts and
+ * body, calm. Pinned goals lead with their track; a lift with a pinned goal lives only there.
+ * Lifts and Body are single-line rows with a 30-day sparkline and the value. Long-press a lift
+ * to set a goal; long-press a goal to edit, unpin or remove it (immediate, with Undo).
+ */
 export function ProgressTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { activePlan, bodyCheckIns, isPro, units, workoutHistory } = useWorkoutStore();
+  const { activePlan, bodyCheckIns, units, workoutHistory, goals, removeGoal, restoreGoal, setGoalPinned } =
+    useWorkoutStore();
   const openCheckIn = () => router.push('/check-in');
+  const openGoal = (exerciseName: string) =>
+    router.push({ pathname: '/goal', params: { name: exerciseName } });
   const [liftsExpanded, setLiftsExpanded] = useState(false);
 
   useEffect(() => {
@@ -146,46 +268,47 @@ export function ProgressTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- demo deep link, once on mount
   }, []);
 
-  // Free: each sparkline, lift or body, stays inside the window detail opens (3M). Latest
-  // values stay, as on the log screen's last time.
-  const sparklineWindow = isPro ? null : FREE_PROGRESS_WINDOWS[0];
+  const since = sparklineSince();
   const lifts = useMemo(
-    () => collectTrackedLifts(workoutHistory, activePlan, units, sparklineWindow),
-    [activePlan, sparklineWindow, units, workoutHistory],
+    () => collectTrackedLifts(workoutHistory, activePlan, units, null, since),
+    [activePlan, since, units, workoutHistory],
   );
-  const latest = useMemo(() => latestCheckIn(bodyCheckIns), [bodyCheckIns]);
+  const pinned = useMemo(() => pinnedGoals(goals), [goals]);
+  const pinnedKeys = new Set(pinned.map((goal) => normalizedStatsKey(goal.exerciseName)));
+  const oneRMs = new Map(lifts.map((lift) => [normalizedStatsKey(lift.name), lift.latestOneRM]));
+  // A lift with a pinned goal appears once: under Goals.
+  const listed = lifts.filter((lift) => !pinnedKeys.has(normalizedStatsKey(lift.name)));
 
   const bodyRows = useMemo(
     () =>
       PROGRESS_INDEX_BODY_METRICS.map((metric) => {
         const series = bodyMetricSeries(bodyCheckIns, metric.key, units);
         const latestPoint = series.length > 0 ? series[series.length - 1] : null;
-        const spokenValue =
-          latestPoint == null
-            ? undefined
-            : metric.key === 'bodyweightKg'
-              ? formatProgressWeight(latestPoint.value, units)
-              : `${latestPoint.value} cm`;
+        const unit = metric.key === 'bodyweightKg' ? units : 'cm';
         return {
           ...metric,
-          sparkline: (sparklineWindow == null
-            ? series
-            : filterPointsByWindow(series, sparklineWindow)
-          )
+          unit,
+          value: latestPoint ? formatValue(latestPoint.value, 1) : null,
+          spokenValue: latestPoint ? `${formatValue(latestPoint.value, 1)} ${unit}` : undefined,
+          sparkline: series
+            .filter((point) => new Date(point.date).getTime() >= since)
             .slice(-8)
             .map((point) => point.value),
-          spokenValue,
-          caption: latestPoint
-            ? `Last ${formatProgressShortDate(latestPoint.date)}`
-            : undefined,
         };
       }),
-    [bodyCheckIns, sparklineWindow, units],
+    [bodyCheckIns, since, units],
   );
 
+  const remove = (goal: Goal) => {
+    const removed = removeGoal(goal.id);
+    if (removed) {
+      showToast({ title: 'Goal removed', onUndo: () => restoreGoal(removed) });
+    }
+  };
+
   // Plan order already puts the lifts you train first; the tail waits behind a peer row.
-  const hiddenLiftCount = Math.max(0, lifts.length - LIFTS_COLLAPSED);
-  const visibleLifts = liftsExpanded ? lifts : lifts.slice(0, LIFTS_COLLAPSED);
+  const hiddenLiftCount = Math.max(0, listed.length - LIFTS_COLLAPSED);
+  const visibleLifts = liftsExpanded ? listed : listed.slice(0, LIFTS_COLLAPSED);
 
   return (
     <>
@@ -199,29 +322,77 @@ export function ProgressTab() {
           paddingHorizontal: space.margin,
           paddingBottom: space.section,
         }}>
-        <SectionCaption title="Lifts" />
-        {lifts.length === 0 ? (
+        {pinned.length > 0 ? (
+          <View style={{ paddingBottom: space.section }} testID="progress-goals">
+            <SectionCaption title="Goals" />
+            {pinned.map((goal, index) => (
+              <MenuRow
+                key={goal.id}
+                href={{ pathname: '/progress-lift', params: { name: goal.exerciseName } }}
+                testID={`progress-goal-row-${index}`}
+                menu={
+                  <Link.Menu>
+                    <Link.MenuAction title="Edit goal" icon="pencil" onPress={() => openGoal(goal.exerciseName)} />
+                    <Link.MenuAction
+                      title="Unpin from Progress"
+                      icon="pin.slash"
+                      onPress={() => setGoalPinned(goal.id, false)}
+                    />
+                    <Link.MenuAction title="Remove goal" icon="trash" destructive onPress={() => remove(goal)} />
+                  </Link.Menu>
+                }>
+                <GoalRow
+                  goal={goal}
+                  current={oneRMs.get(normalizedStatsKey(goal.exerciseName)) ?? null}
+                  units={units}
+                  showDivider={index < pinned.length - 1}
+                />
+              </MenuRow>
+            ))}
+          </View>
+        ) : null}
+
+        <SectionCaption title="Lifts" trailing={`${PROGRESS_SPARKLINE_DAYS} days`} />
+        {listed.length === 0 ? (
           <Text style={[type.row, { color: colors.tertiaryLabel, paddingVertical: space.inset }]}>
             No lifts yet
           </Text>
         ) : (
           <>
-            {visibleLifts.map((lift, index) => (
-              <MetricRow
-                key={lift.name}
-                title={lift.name}
-                caption={
-                  lift.latestDate ? `Last ${formatProgressShortDate(lift.latestDate)}` : undefined
-                }
-                spokenValue={lift.spokenValue}
-                sparkline={lift.sparkline}
-                showDivider={index < visibleLifts.length - 1}
-                testID={`progress-lift-row-${lift.name.replace(/\s+/g, '-').toLowerCase()}`}
-                onPress={() =>
-                  router.push({ pathname: '/progress-lift', params: { name: lift.name } })
-                }
-              />
-            ))}
+            {visibleLifts.map((lift, index) => {
+              const goal = goalForLift(goals, lift.name);
+              const added = lift.latestOneRM == null ? lift.indexValue.split(' ') : null;
+              return (
+                <MenuRow
+                  key={lift.name}
+                  href={{ pathname: '/progress-lift', params: { name: lift.name } }}
+                  testID={`progress-lift-row-${lift.name.replace(/\s+/g, '-').toLowerCase()}`}
+                  menu={
+                    <Link.Menu>
+                      <Link.MenuAction
+                        title={goal ? 'Edit goal' : 'Set a goal'}
+                        icon={goal ? 'pencil' : 'scope'}
+                        onPress={() => openGoal(lift.name)}
+                      />
+                    </Link.Menu>
+                  }>
+                  <MetricRow
+                    title={lift.name}
+                    value={
+                      lift.latestOneRM != null
+                        ? formatValue(lift.latestOneRM, 0)
+                        : added && added[0] !== '—'
+                          ? added[0]
+                          : null
+                    }
+                    unit={units}
+                    spokenValue={lift.spokenValue}
+                    sparkline={lift.sparkline}
+                    showDivider={index < visibleLifts.length - 1}
+                  />
+                </MenuRow>
+              );
+            })}
             {hiddenLiftCount > 0 ? (
               <MoreRow
                 title={
@@ -254,18 +425,19 @@ export function ProgressTab() {
           </Pressable>
         ) : (
           bodyRows.map((row, index) => (
-            <MetricRow
+            <MenuRow
               key={row.key}
-              title={row.label}
-              caption={row.caption}
-              spokenValue={row.spokenValue}
-              sparkline={row.sparkline}
-              showDivider={index < bodyRows.length - 1}
-              testID={`progress-body-row-${row.key}`}
-              onPress={() =>
-                router.push({ pathname: '/progress-body', params: { metric: row.key } })
-              }
-            />
+              href={{ pathname: '/progress-body', params: { metric: row.key } }}
+              testID={`progress-body-row-${row.key}`}>
+              <MetricRow
+                title={row.label}
+                value={row.value}
+                unit={row.unit}
+                spokenValue={row.spokenValue}
+                sparkline={row.sparkline}
+                showDivider={index < bodyRows.length - 1}
+              />
+            </MenuRow>
           ))
         )}
       </ScrollView>

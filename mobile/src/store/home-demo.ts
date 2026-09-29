@@ -1,4 +1,5 @@
 import { bundledExerciseById } from '@/catalog/bundled';
+import { withGoal, withReachedGoals, type Goal } from '@/domain/goals';
 import { clonePrescription, emptyDay, emptyPlan } from '@/domain/helpers';
 import { newId, type LoggedSet, type LoggedWorkout, type WorkoutDay } from '@/domain/types';
 import type { WorkoutSnapshot } from '@/store/snapshot';
@@ -197,6 +198,14 @@ function thisWeekSessions(mode: HomeDemoMode): Record<string, number> {
   return {};
 }
 
+/** Lift and target (kg), in pin order: the fourth finds Progress full and lives on its detail. */
+const DEMO_GOALS: [string, number][] = [
+  ['bundled-flat-barbell-bench-press', 70],
+  ['bundled-barbell-back-squat', 125],
+  ['bundled-romanian-deadlift', 120],
+  ['bundled-overhead-press', 55],
+];
+
 function loggedSets(sets: [number, number][]): LoggedSet[] {
   return sets.map(([weight, reps], index) => ({
     id: newId(),
@@ -252,6 +261,19 @@ export function homeDemoSnapshot(base: WorkoutSnapshot, mode: HomeDemoMode): Wor
   });
   workouts.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
 
+  // Goals for Progress: three pinned (Bench Press already reached), one on its detail only.
+  let goals: Goal[] = [];
+  const created = new Date(daysAgo(FIRST_LOWER + 1));
+  for (const [id, target] of DEMO_GOALS) {
+    const row = bundledExerciseById(id);
+    if (row) {
+      goals = withGoal(goals, { exerciseName: row.name, target, pinned: true }, created);
+    }
+  }
+  for (const workout of [...workouts].reverse()) {
+    goals = withReachedGoals(goals, workout);
+  }
+
   return {
     ...base,
     hasCompletedOnboarding: true,
@@ -263,6 +285,7 @@ export function homeDemoSnapshot(base: WorkoutSnapshot, mode: HomeDemoMode): Wor
     isPro: mode.startsWith('pro'),
     activeSession: null,
     workoutHistory: workouts,
+    goals,
     nextDayIndex: 0,
   };
 }

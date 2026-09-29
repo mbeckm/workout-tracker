@@ -13,6 +13,7 @@ import { AppState } from 'react-native';
 
 import { withLoggedTenRM, workoutMilestone } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
+import { MAX_PINNED_GOALS, withGoal, withReachedGoals, type Goal, type GoalInput } from '../domain/goals';
 import {
   clearedSession,
   loggedSetCount,
@@ -131,7 +132,18 @@ type WorkoutStoreState = {
   milestoneFor: (workout: LoggedWorkout) => string | null;
   /** Records that `milestone` was shown for `workoutId` (first claim wins). */
   claimMilestone: (milestone: string, workoutId: string) => void;
+  /** Lift goals (PRODUCT-DECISIONS 63). Selectors live in `domain/goals.ts`. */
+  goals: Goal[];
+  /** Creates a lift's goal or changes its target (goal sheet). */
+  setGoal: (input: GoalInput) => void;
+  /** Removes a goal at once; pass the result to `restoreGoal` for Undo. */
+  removeGoal: (id: string) => RemovedGoal | null;
+  restoreGoal: (removed: RemovedGoal) => void;
+  /** Unpin keeps the goal on its lift's detail. Pinning needs a free slot. */
+  setGoalPinned: (id: string, pinned: boolean) => void;
 };
+
+export type RemovedGoal = { goal: Goal; index: number };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
 
@@ -414,9 +426,56 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       ...current,
       workoutHistory: [workout, ...current.workoutHistory],
       activeSession: sessionAfterWorkout(current.activeSession, workout),
+      // A goal is reached by the workout whose estimated 1RM first meets it.
+      goals: withReachedGoals(current.goals, workout),
     }));
 
     return workout;
+  }, []);
+
+  const setGoal = useCallback((input: GoalInput) => {
+    setSnapshot((current) => ({ ...current, goals: withGoal(current.goals, input) }));
+  }, []);
+
+  const removeGoal = useCallback(
+    (id: string): RemovedGoal | null => {
+      const index = snapshot.goals.findIndex((goal) => goal.id === id);
+      if (index === -1) {
+        return null;
+      }
+      const removed = { goal: snapshot.goals[index], index };
+      setSnapshot((current) => ({ ...current, goals: current.goals.filter((goal) => goal.id !== id) }));
+      return removed;
+    },
+    [snapshot.goals],
+  );
+
+  const restoreGoal = useCallback(({ goal, index }: RemovedGoal) => {
+    setSnapshot((current) => {
+      if (current.goals.some((item) => item.id === goal.id)) {
+        return current;
+      }
+      // Back where it was; it re-pins only if a slot is still free.
+      const pinned =
+        goal.pinned && current.goals.filter((item) => item.pinned).length < MAX_PINNED_GOALS;
+      const at = Math.min(index, current.goals.length);
+      return {
+        ...current,
+        goals: [...current.goals.slice(0, at), { ...goal, pinned }, ...current.goals.slice(at)],
+      };
+    });
+  }, []);
+
+  const setGoalPinned = useCallback((id: string, pinned: boolean) => {
+    setSnapshot((current) => {
+      if (pinned && current.goals.filter((goal) => goal.pinned).length >= MAX_PINNED_GOALS) {
+        return current;
+      }
+      return {
+        ...current,
+        goals: current.goals.map((goal) => (goal.id === id ? { ...goal, pinned } : goal)),
+      };
+    });
   }, []);
 
   const deleteWorkout = useCallback((id: string) => {
@@ -628,6 +687,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       applyEntitlement,
       milestoneFor,
       claimMilestone,
+      goals: snapshot.goals,
+      setGoal,
+      removeGoal,
+      restoreGoal,
+      setGoalPinned,
     };
   }, [
     snapshot,
@@ -661,6 +725,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     claimMilestone,
     saveLogSession,
     clearLogSession,
+    setGoal,
+    removeGoal,
+    restoreGoal,
+    setGoalPinned,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);
