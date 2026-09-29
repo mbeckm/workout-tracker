@@ -303,7 +303,8 @@ The more often a moment happens, the less it may animate. Delight is spent where
 | Rest over | At 0:00 the clock gives way to `Go` in green in the same 28pt slot: the clock fades (`press`), `Go` rises 8pt with a fade (`press`) on the frame of the success haptic, −15 / +15 / Skip fade (`press`). Holds 2s, then Rest leaves (`press`). Reduced motion: crossfade. | Loveable |
 | CTA changes meaning | label crossfade in place, `press` | Fluid |
 | Expand / collapse in place | layout `enter` (200), ease-in-out | Fluid |
-| List reflows | A row removed, restored by Undo, added, duplicated or moved (Plans, plan editor days, History sessions): it fades (`exit` out, `enter` in, no travel) and its neighbours glide to their new places (layout `enter`, ease-in-out, `listReflow`). Switching the active plan crossfades the card. `LayoutAnimationConfig skipEntering skipExiting` keeps first appearance still. Reduced motion: fades only, no glide. | Fluid |
+| List reflows | A row removed, restored by Undo, added, duplicated or reordered (Plans, plan editor days, History sessions): its neighbours glide to their new places (layout `enter`, ease-in-out, `listReflow`); a row that arrives fades in (`enter`, no travel). A row removed from a context menu has no exit fade (the menu's own dismissal takes it away); a History session confirmed after a swipe fades out (`exit`). Switching the active plan crossfades the card. `LayoutAnimationConfig skipEntering skipExiting` keeps first appearance still. Reduced motion: fades only, no glide. | Fluid |
+| Row reorder | Plan editor days: the trailing `line.3.horizontal` handle drags on touch-down (`react-native-reorderable-list`); the row lifts to scale 1.02 (`press`, ease-out) on the `secondarySystemBackground` surface, edge to edge, no shadow, no dimming; the rows it passes step aside (`enter`); release settles it in its slot. A selection haptic each time it crosses into a new slot. VoiceOver keeps Move up / Move down. Reduced motion: surface only, no scale. | Fluid |
 | Sheets | native (preferred), or `SPRING.fling` with gesture velocity | Fluid |
 | Sheet content morphs | A row that opens detail inside a custom sheet (an Alternative in the exercise sheet) changes the sheet in place: its height glides to the new page's height as a native layout transition in the same frame the page mounts (`enter`, the iOS sheet curve `EASE_SHEET`, `AnimatedSheet morph`; never a JS-driven `height`, which starts late and steps), the old page fades out (`exit`) as a layer over the new one (never kept in the column, or the sheet would grow to both pages and shrink back), and the new fades in from 8pt on the side you moved toward (`enter`); Back reverses it. Reduced motion: height snaps, the fade stays. | Fluid |
 | Toast | rise 8pt, `enter`; leave `exit` the same way | Fluid |
@@ -330,6 +331,7 @@ A haptic confirms something the body did. It's never decoration.
 | Well −/+, swiping between exercises, picking a paywall option | selection |
 | A sheet snapping to a detent | light impact |
 | Scrubbing a chart across a data point | selection |
+| A dragged row crossing into a new slot | selection |
 
 Nothing else buzzes. No haptic on navigation, toggles, errors or celebrations.
 

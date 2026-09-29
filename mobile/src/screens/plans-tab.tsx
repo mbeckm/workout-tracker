@@ -16,7 +16,7 @@ import Animated, {
 import { HeaderActions } from '@/components/button';
 import { PaperEmpty } from '@/components/paper';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
-import { EASE_IN_OUT, EASE_OUT, exitFade, listReflow, rowIn } from '@/motion';
+import { EASE_IN_OUT, EASE_OUT, listReflow, rowIn } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
@@ -105,13 +105,13 @@ export function PlansTab() {
           />
         ) : (
           // Delete, Undo and Use this plan move rows in place (trim-ui §8, List reflows);
-          // nothing animates when Plans first appears.
+          // nothing animates when Plans first appears. No exit fade: these rows leave from
+          // the context menu, whose own dismissal already takes the row away.
           <LayoutAnimationConfig skipEntering skipExiting>
             {activePlan ? (
               <Animated.View
                 key={activePlan.id}
                 entering={rowIn(reduceMotion)}
-                exiting={exitFade(reduceMotion)}
                 layout={listReflow(reduceMotion)}>
                 <PlanMenuRow
                   plan={activePlan}
@@ -129,7 +129,6 @@ export function PlansTab() {
                   <Animated.View
                     key={plan.id}
                     entering={rowIn(reduceMotion)}
-                    exiting={exitFade(reduceMotion)}
                     layout={listReflow(reduceMotion)}>
                     <PlanMenuRow
                       plan={plan}

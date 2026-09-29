@@ -1,8 +1,22 @@
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
-import Animated, { LayoutAnimationConfig, useReducedMotion } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { Alert, Text, View, type AnimatableNumericValue } from 'react-native';
+import Animated, {
+  LayoutAnimationConfig,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import {
+  NestedReorderableList,
+  reorderItems,
+  ScrollViewContainer,
+  type ReorderableListCellAnimations,
+  type ReorderableListReorderEvent,
+} from 'react-native-reorderable-list';
+import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
@@ -12,7 +26,7 @@ import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
-import { exitFade, listReflow, rowIn } from '@/motion';
+import { DURATION, EASE_OUT, listReflow, rowIn } from '@/motion';
 import { largeTitleOptions } from '@/navigation/large-title';
 import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
@@ -30,6 +44,7 @@ export function PlanEditorScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
+  const lift = useDragLift();
   const { plans, activePlanId, updatePlan, activatePlan, deletePlan, isPro } =
     useWorkoutStore();
   const { removePlan, removeDay: removeDayWithUndo } = useUndoableDeletes();
@@ -153,6 +168,12 @@ export function PlanEditorScreen() {
     });
   };
 
+  const reorderDays = ({ from, to }: ReorderableListReorderEvent) => {
+    if (from !== to) {
+      updatePlan({ ...plan, days: reorderItems(plan.days, from, to) });
+    }
+  };
+
   const removeDay = (dayId: string) => {
     if (plan.days.length <= 1) {
       Alert.alert('Keep one day', 'A plan needs at least one training day.');
@@ -183,7 +204,7 @@ export function PlanEditorScreen() {
   return (
     <>
       <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
-        <ScrollView
+        <ScrollViewContainer
           style={{ flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{
@@ -205,31 +226,42 @@ export function PlanEditorScreen() {
               </View>
             ) : null}
           </View>
-          {/* Remove, Undo, Duplicate, Add and Move reflow the days in place (trim-ui §8, List
-              reflows); nothing animates when the editor first appears. */}
-          <View style={{ paddingTop: EDITOR_LIST_TOP }}>
+          {/* Remove, Undo, Duplicate, Add and drag reflow the days in place (trim-ui §8, List
+              reflows); nothing animates when the editor first appears. Rows pad themselves, so
+              the list starts one row padding short of the 32. */}
+          <View style={{ paddingTop: EDITOR_LIST_TOP - space.inset }}>
             <LayoutAnimationConfig skipEntering skipExiting>
-              {plan.days.map((day, index) => (
-                <Animated.View
-                  key={day.id}
-                  entering={rowIn(reduceMotion)}
-                  exiting={exitFade(reduceMotion)}
-                  layout={listReflow(reduceMotion)}>
-                  <PlanDetailDayRow
-                    day={day}
-                    index={index}
-                    href={dayHref(day)}
-                    isFirst={index === 0}
-                    actions={{
-                      onRename: () => renameDay(day.id),
-                      onDuplicate: () => duplicateDay(day.id),
-                      onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
-                      onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
-                      onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
-                    }}
-                  />
-                </Animated.View>
-              ))}
+              <NestedReorderableList
+                // Full width: rows pad their own gutter, so the lifted surface reaches the edges.
+                style={{ marginHorizontal: -space.gutter }}
+                data={plan.days}
+                keyExtractor={(day) => day.id}
+                onReorder={reorderDays}
+                onDragStart={lift.onDragStart}
+                onDragEnd={lift.onDragEnd}
+                onIndexChange={lift.onIndexChange}
+                shouldUpdateActiveItem
+                cellAnimations={lift.cellAnimations}
+                animationDuration={DURATION.enter}
+                itemLayoutAnimation={listReflow(reduceMotion)}
+                renderItem={({ item: day, index }) => (
+                  <Animated.View entering={rowIn(reduceMotion)}>
+                    <PlanDetailDayRow
+                      day={day}
+                      index={index}
+                      href={dayHref(day)}
+                      reorderable={plan.days.length > 1}
+                      actions={{
+                        onRename: () => renameDay(day.id),
+                        onDuplicate: () => duplicateDay(day.id),
+                        onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
+                        onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
+                        onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
+                      }}
+                    />
+                  </Animated.View>
+                )}
+              />
               <Animated.View layout={listReflow(reduceMotion)}>
                 <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
               </Animated.View>
@@ -262,7 +294,7 @@ export function PlanEditorScreen() {
               />
             ) : null}
           </Animated.View>
-        </ScrollView>
+        </ScrollViewContainer>
         {showDone ? (
           <View
             style={{
@@ -282,4 +314,43 @@ export function PlanEditorScreen() {
       />
     </>
   );
+}
+
+const selectionTick = () => {
+  void Haptics.selectionAsync();
+};
+
+/**
+ * A dragged day lifts: scale 1.02 (`press`, ease-out) while the row wears the secondary
+ * surface (`PlanDetailDayRow`), no shadow and no dimming, and settles back on release. Each slot it crosses ticks a selection haptic,
+ * like a picker detent (trim-ui §8, Reorder). Reduced motion: the surface only.
+ */
+function useDragLift() {
+  const reduceMotion = useReducedMotion();
+  // Typed as the list's cell style expects (a shared value is invariant in its type).
+  const scale = useSharedValue<AnimatableNumericValue>(1);
+  const liftScale = reduceMotion ? 1 : 1.02;
+
+  const cellAnimations: ReorderableListCellAnimations = {
+    opacity: 1,
+    transform: [{ scale }],
+  };
+
+  return {
+    cellAnimations,
+    onDragStart: () => {
+      'worklet';
+      const timing = { duration: DURATION.press, easing: EASE_OUT };
+      scale.set(withTiming(liftScale, timing));
+    },
+    onDragEnd: () => {
+      'worklet';
+      const timing = { duration: DURATION.press, easing: EASE_OUT };
+      scale.set(withTiming(1, timing));
+    },
+    onIndexChange: () => {
+      'worklet';
+      scheduleOnRN(selectionTick);
+    },
+  };
 }

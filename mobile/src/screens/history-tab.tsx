@@ -119,11 +119,14 @@ function SessionRow({
   workout,
   prCount,
   showDivider,
+  isFirst,
   onDelete,
 }: {
   workout: LoggedWorkout;
   prCount: number;
   showDivider: boolean;
+  /** First of its month: starts at the caption's bottom edge, so a swipe never paints over it. */
+  isFirst: boolean;
   onDelete: () => void;
 }) {
   const { colors, type } = useTheme();
@@ -186,7 +189,8 @@ function SessionRow({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: space.inline,
-                paddingVertical: space.inset,
+                paddingTop: isFirst ? space.related : space.inset,
+                paddingBottom: space.inset,
                 paddingHorizontal: space.gutter,
                 backgroundColor: colors.systemBackground,
               }}>
@@ -253,8 +257,7 @@ export function HistoryTab() {
               <Animated.View
                 key={group.key}
                 exiting={exitFade(reduceMotion)}
-                layout={listReflow(reduceMotion)}
-                style={{ gap: space.related }}>
+                layout={listReflow(reduceMotion)}>
                 <View
                   accessible
                   accessibilityRole="header"
@@ -263,31 +266,27 @@ export function HistoryTab() {
                     justifyContent: 'space-between',
                     gap: space.inline,
                     paddingHorizontal: space.gutter,
-                    // The rows below are pulled up into this caption's padding and paint an
-                    // opaque swipe background; drawn above them, the caption never clips.
-                    zIndex: 1,
                   }}>
                   <Text style={[type.caption, { flexShrink: 1 }]}>{group.label}</Text>
                   <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>
                     {formatSessionsCount(group.workouts.length)}
                   </Text>
                 </View>
-                {/* Rows pad themselves: the caption's 8 is to the row's text, not its edge. */}
-                <View style={{ marginTop: -space.inset }}>
-                  {group.workouts.map((workout, index) => (
-                    <Animated.View
-                      key={workout.id}
-                      exiting={exitFade(reduceMotion)}
-                      layout={listReflow(reduceMotion)}>
-                      <SessionRow
-                        workout={workout}
-                        prCount={personalBestCount(workout, workoutHistory)}
-                        showDivider={index < group.workouts.length - 1}
-                        onDelete={() => deleteWorkout(workout.id)}
-                      />
-                    </Animated.View>
-                  ))}
-                </View>
+                {/* Caption → first row's text is 8: the first row pads its own top by 8. */}
+                {group.workouts.map((workout, index) => (
+                  <Animated.View
+                    key={workout.id}
+                    exiting={exitFade(reduceMotion)}
+                    layout={listReflow(reduceMotion)}>
+                    <SessionRow
+                      workout={workout}
+                      prCount={personalBestCount(workout, workoutHistory)}
+                      showDivider={index < group.workouts.length - 1}
+                      isFirst={index === 0}
+                      onDelete={() => deleteWorkout(workout.id)}
+                    />
+                  </Animated.View>
+                ))}
               </Animated.View>
             ))}
           </View>
