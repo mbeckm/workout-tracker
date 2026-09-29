@@ -7,11 +7,13 @@ import type { WorkoutSnapshot } from '@/store/snapshot';
  * Development only: `EXPO_PUBLIC_HOME_DEMO=free` or `=pro` replaces the user's data with a
  * four-day plan and three full weeks of history, dated relative to today, so Home can be
  * checked with real-looking numbers. Add `-trained` (`=pro-trained`) for Home's Just trained
- * state (Upper finished today) or `-complete` for Week complete (every day done this week).
+ * state (Upper finished today), `-complete` for Week complete (every day done this week), or
+ * `-almost` for every day but Upper done by yesterday, so finishing Upper plays the full week
+ * moment on Home (the circle, every ✓, the flame).
  * The fixture is never saved: the store skips persistence while it's on, so turning the flag
  * off brings the real data back.
  */
-export type HomeDemoMode = `${'free' | 'pro'}${'' | '-trained' | '-complete'}`;
+export type HomeDemoMode = `${'free' | 'pro'}${'' | '-trained' | '-complete' | '-almost'}`;
 
 const MODES: readonly HomeDemoMode[] = [
   'free',
@@ -20,6 +22,8 @@ const MODES: readonly HomeDemoMode[] = [
   'pro-trained',
   'free-complete',
   'pro-complete',
+  'free-almost',
+  'pro-almost',
 ];
 
 export function homeDemoMode(): HomeDemoMode | null {
@@ -183,6 +187,12 @@ function thisWeekSessions(mode: HomeDemoMode): Record<string, number> {
   }
   if (mode.endsWith('-complete')) {
     return { Upper: 0, Push: 0, Pull: 0 };
+  }
+  if (mode.endsWith('-almost')) {
+    // Yesterday, unless today is Monday (then today, so the week still holds them).
+    const sinceMonday = (new Date().getDay() + 6) % 7;
+    const ago = Math.min(1, sinceMonday);
+    return { Push: ago, Pull: ago };
   }
   return {};
 }

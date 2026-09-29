@@ -1,35 +1,59 @@
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import Animated, {
+  ReduceMotion,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import { Button } from '@/components/button';
-import { DoneExercise } from '@/components/done-exercise';
-import { Fact, FactRow } from '@/components/fact';
+import { Fact } from '@/components/fact';
+import { LiftRow } from '@/components/lift-row';
 import { StaggerValue } from '@/components/stagger-value';
-import { WeekProgress, type WeekCelebration } from '@/components/week-progress';
-import { fontScaleCap, space } from '@/constants/theme';
-import { weekMovedBy } from '@/domain/plan-loop';
-import { formatWeekStreak, STREAK_MIN, weekStreak } from '@/domain/weeks';
-import { workoutPersonalBests, workoutUsesLoad } from '@/domain/set-lines';
-import { useTheme } from '@/theme/theme-context';
-import { formatPaperMinutes, ordinal } from '@/domain/helpers';
+import { fontScaleCap, radius, space } from '@/constants/theme';
+import { formatPaperMinutes, formatPlanMetricShort, ordinal } from '@/domain/helpers';
+import { liftChangeFor, liftChanges } from '@/domain/home-numbers';
+import type { LoggedExercise, LoggedWorkout, WorkoutPlan } from '@/domain/types';
+import { normalizedStatsKey } from '@/domain/types';
+import { DURATION, EASE_OUT, SPRING } from '@/motion';
+import { queueWeekMoment } from '@/navigation/week-moment';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
+import { useTheme } from '@/theme/theme-context';
 
 /** If the modal's `transitionEnd` never comes (web, a restored screen), land anyway. */
 const LAND_FALLBACK_MS = 700;
-/** PR crowns land just after the week dot, 70ms apart, the last by 440ms: done within 1.2s. */
-const CROWN_START_MS = 160;
-const CROWN_STAGGER_MS = 70;
-const CROWN_LAST_MS = 440;
+/**
+ * The rows' ↑ and crowns land once the tick has popped, 60ms apart, the last by 440ms: the
+ * whole moment is over within about a second (Paper `Motion · Done → Home`).
+ */
+const CHANGE_START_MS = 160;
+const CHANGE_STAGGER_MS = 60;
+const CHANGE_LAST_MS = 440;
+/** The tick (trim-ui §13 Done): a 64pt green circle, the check drawn in its middle. */
+const TICK = 64;
+const CHECK = 30;
+/** The check's path on a 17pt grid, and its length, so the stroke can draw itself. */
+const CHECK_PATH = 'M3 9l3.5 3.5L14 4.5';
+const CHECK_LENGTH = 16;
+const CHECK_STROKE = 2.4;
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 /**
- * Done (trim-ui → Per screen → Done). Finishing is a moment, not a report: `Done`, the day and
- * how long, then the week this workout just moved, whose new dot fills with the pop once the
- * modal has landed (and the count rolls). A PR crown lands on its exercise, a milestone's
- * number rolls up. Each exercise is one line; every set lives in History. The green Done is
- * live from the first frame, and nothing here waits on the motion.
+ * Done v2 (trim-ui §13 Done, PRODUCT-DECISIONS 61): what did I just do, and did it get better.
+ * A green tick pops in and draws itself as the modal lands, then the day as the title with its
+ * duration, then each lift as one row with what changed (↑ `2.5 kg` in ink, `same`, the crown
+ * on a record), each ↑ rising into place. No week or streak here: that moment plays on Home
+ * after Done (`queueWeekMoment`). The green Done is live from the first frame, and nothing
+ * here waits on the motion.
  */
 export function WorkoutCompleteScreen() {
   const { colors, type } = useTheme();
@@ -55,26 +79,10 @@ export function WorkoutCompleteScreen() {
       claimMilestone(milestone, workoutId);
     }
   }, [claimMilestone, milestone, workoutId]);
-  const personalBests = useMemo(
-    () => (workout ? workoutPersonalBests(workout, workoutHistory) : null),
+  const changes = useMemo(
+    () => (workout ? liftChanges(workout, workoutHistory) : null),
     [workout, workoutHistory],
   );
-  const week = useMemo(
-    () => (workout ? weekMovedBy(activePlan, workoutHistory, workout) : null),
-    [activePlan, workout, workoutHistory],
-  );
-  // Full weeks in a row before and after this workout: a week it completes counts up with the
-  // dots as Done lands (trim-ui → Moments → Week complete).
-  const streak = useMemo(() => {
-    if (!workout) {
-      return null;
-    }
-    const others = workoutHistory.filter((item) => item.id !== workout.id);
-    return {
-      before: weekStreak(activePlan, others),
-      after: weekStreak(activePlan, [workout, ...others]),
-    };
-  }, [activePlan, workout, workoutHistory]);
 
   // The moment starts on the frame the modal finishes sliding in (trim-ui → Moments: after
   // the action lands). Until then the week shows its old amount.
@@ -107,6 +115,10 @@ export function WorkoutCompleteScreen() {
       return;
     }
     leaving.current = true;
+    // The week celebrates on Home once Done has gone (trim-ui §13 Home week details).
+    if (workout) {
+      queueWeekMoment(workout.id);
+    }
     // The paywall marks the offer shown only once prices render, so a failed load retries next time.
     if (shouldOfferPostWorkoutPaywall) {
       await openPaywall('post_workout');
@@ -140,20 +152,8 @@ export function WorkoutCompleteScreen() {
     );
   }
 
-  // One line (trim-ui → Done): the day, then how long behind the duration glyph.
   const minutes = formatPaperMinutes(workout.durationMinutes);
-  const moved = week != null && week.after > week.before;
-  const celebrate: WeekCelebration | null =
-    landed && week && moved
-      ? { index: week.after - 1, weekDone: week.after >= week.total, key: 1 }
-      : null;
-  const shownStreak = streak ? (landed ? streak.after : streak.before) : 0;
-  const weekLabel = week
-    ? `${week.after} of ${week.total} this week` +
-      (streak && streak.after >= STREAK_MIN ? `, ${formatWeekStreak(streak.after)}` : '')
-    : '';
-  const unit = workoutUsesLoad(workout) ? units : null;
-  let prIndex = 0;
+  let changed = 0;
 
   return (
     <>
@@ -167,55 +167,41 @@ export function WorkoutCompleteScreen() {
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingTop: space.gutter,
+            paddingTop: space.pause,
             paddingHorizontal: space.gutter,
             paddingBottom: space.gutter,
           }}>
-          <View style={{ gap: space.related }}>
+          <DoneTick landed={landed} />
+          <View style={{ paddingTop: space.gutter, gap: space.related }}>
             <Text
-              style={type.hero}
+              style={type.displayCompact}
               accessibilityRole="header"
+              numberOfLines={2}
               maxFontSizeMultiplier={fontScaleCap.display}>
-              Done
+              {workout.title}
             </Text>
             <View>
-              <View accessible accessibilityLabel={`${workout.title}, ${minutes}`} testID="done-facts">
-                <FactRow>
-                  <Text style={[type.caption, { flexShrink: 1 }]} numberOfLines={2}>
-                    {workout.title}
-                  </Text>
-                  <Fact kind="duration">{minutes}</Fact>
-                </FactRow>
+              <View accessible accessibilityLabel={`Done, ${minutes}`} testID="done-facts">
+                <Fact kind="duration">{minutes}</Fact>
               </View>
               {milestone ? <MilestoneFact milestone={milestone} landed={landed} /> : null}
             </View>
           </View>
-          {week ? (
-            <View
-              style={{ paddingTop: space.pause }}
-              accessible
-              accessibilityLabel={weekLabel}
-              testID="done-week">
-              <WeekProgress
-                done={landed ? week.after : week.before}
-                total={week.total}
-                celebrate={celebrate}
-                streak={shownStreak}
-              />
-            </View>
-          ) : null}
-          <View style={{ paddingTop: week ? space.section : space.pause, gap: space.section }}>
-            {workout.exercises.map((exercise) => {
-              const pr = exercise.sets.some((set) => personalBests?.setIds.has(set.id));
-              const delayMs = pr
-                ? Math.min(CROWN_START_MS + prIndex++ * CROWN_STAGGER_MS, CROWN_LAST_MS)
+          <View style={{ paddingTop: space.section }} testID="done-lifts">
+            {workout.exercises.map((exercise, index) => {
+              const change = changes ? liftChangeFor(changes, exercise.exerciseName) : null;
+              const moves = change != null && (change.record || change.kind === 'up' || change.kind === 'down');
+              const delayMs = moves
+                ? Math.min(CHANGE_START_MS + changed++ * CHANGE_STAGGER_MS, CHANGE_LAST_MS)
                 : 0;
               return (
-                <DoneExercise
+                <LiftRow
                   key={exercise.id}
-                  exercise={exercise}
-                  unit={unit}
-                  prSetIds={personalBests?.setIds}
+                  name={exercise.exerciseName}
+                  metric={doneMetric(exercise, workout, activePlan)}
+                  change={change}
+                  units={units}
+                  showSeparator={index < workout.exercises.length - 1}
                   landed={landed}
                   delayMs={delayMs}
                   testID={`done-recap-${exercise.id}`}
@@ -230,6 +216,99 @@ export function WorkoutCompleteScreen() {
       </View>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, title: 'Done' }} />
     </>
+  );
+}
+
+/**
+ * `4 × 6`: the plan's prescription for this lift when the workout was a day of the active
+ * plan, else what was logged (sets × the heaviest set's reps).
+ */
+function doneMetric(
+  exercise: LoggedExercise,
+  workout: LoggedWorkout,
+  plan: WorkoutPlan | null | undefined,
+): string {
+  const key = normalizedStatsKey(exercise.exerciseName);
+  const day = plan?.days.find((item) => item.id === workout.dayId);
+  const prescription = day?.exercises.find((item) => normalizedStatsKey(item.name) === key);
+  if (prescription) {
+    return formatPlanMetricShort(prescription);
+  }
+  const top = exercise.sets.reduce<LoggedExercise['sets'][number] | null>(
+    (best, set) => ((set.weight ?? 0) > (best?.weight ?? -1) ? set : best),
+    null,
+  );
+  return top?.reps != null ? `${exercise.sets.length} × ${top.reps}` : `${exercise.sets.length} sets`;
+}
+
+/**
+ * The tick: a green circle that pops in (`SPRING.pop`, 0.5 → 1) as the modal lands, its check
+ * drawing itself (stroke 0 → 1, `change`). Finish already gave the success haptic, so it has
+ * none of its own. Reduce Motion: it fades in with the check drawn.
+ */
+function DoneTick({ landed }: { landed: boolean }) {
+  const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const shown = useSharedValue(0);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.5);
+  const drawn = useSharedValue(reduceMotion ? 1 : 0);
+
+  useEffect(() => {
+    if (!landed) {
+      return;
+    }
+    shown.set(
+      withTiming(1, {
+        duration: reduceMotion ? DURATION.change : DURATION.fade,
+        easing: EASE_OUT,
+        reduceMotion: ReduceMotion.Never,
+      }),
+    );
+    if (reduceMotion) {
+      return;
+    }
+    scale.set(withSpring(1, SPRING.pop));
+    drawn.set(withTiming(1, { duration: DURATION.change, easing: EASE_OUT }));
+  }, [drawn, landed, reduceMotion, scale, shown]);
+
+  const circle = useAnimatedStyle(() => ({
+    opacity: shown.get(),
+    transform: [{ scale: scale.get() }],
+  }));
+  const check = useAnimatedProps(() => ({
+    strokeDashoffset: CHECK_LENGTH * (1 - drawn.get()),
+  }));
+
+  return (
+    <Animated.View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel="Done"
+      testID="done-tick"
+      style={[
+        {
+          width: TICK,
+          height: TICK,
+          borderRadius: radius.full,
+          backgroundColor: colors.systemGreen,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        circle,
+      ]}>
+      <Svg width={CHECK} height={CHECK} viewBox="0 0 17 17">
+        <AnimatedPath
+          d={CHECK_PATH}
+          fill="none"
+          stroke={colors.onGreen}
+          strokeWidth={CHECK_STROKE}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={[CHECK_LENGTH, CHECK_LENGTH]}
+          animatedProps={check}
+        />
+      </Svg>
+    </Animated.View>
   );
 }
 
