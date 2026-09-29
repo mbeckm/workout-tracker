@@ -188,88 +188,88 @@ export function PlanEditorScreen() {
 
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentInsetAdjustmentBehavior="automatic"
-          // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
-          contentContainerStyle={{
-            paddingHorizontal: space.margin,
-            paddingBottom: showDone ? space.gutter : insets.bottom + space.gutter,
+      {/* The ScrollView is the screen's first view, not wrapped, so the native large title
+          finds it and collapses into the bar on scroll. */}
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
+        contentContainerStyle={{
+          paddingHorizontal: space.margin,
+          paddingBottom: showDone ? space.gutter : insets.bottom + space.gutter,
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: space.inline,
           }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: space.inline,
-            }}>
-            <Text style={[type.kicker, { color: colors.tertiaryLabel, flexShrink: 1 }]}>{dayMeta}</Text>
-            {isActive ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
-                <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={{ paddingTop: EDITOR_LIST_TOP }}>
-            {plan.days.map((day, index) => (
-              <PlanDetailDayRow
-                key={day.id}
-                day={day}
-                index={index}
-                href={dayHref(day)}
-                isFirst={index === 0}
-                actions={{
-                  onRename: () => renameDay(day.id),
-                  onDuplicate: () => duplicateDay(day.id),
-                  onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
-                  onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
-                  onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
-                }}
-              />
-            ))}
-            <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
-          </View>
-          <View style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
-            <EditorActionRow title="Rename plan" symbol="pencil" onPress={renamePlan} testID="plan-rename" />
-            {isActive ? null : (
-              <EditorActionRow
-                title={isPro ? 'Use this plan' : 'Use this plan (Pro)'}
-                symbol="checkmark"
-                onPress={async () => {
-                  if (await requirePro('switch_plan')) {
-                    activatePlan(plan);
-                  }
-                }}
-              />
-            )}
-            {hasExercises ? (
-              <EditorActionRow
-                title="Delete plan"
-                symbol="trash"
-                tone="destructive"
-                onPress={() => {
-                  // Leaving by Delete must not confirm the plan it just removed.
-                  deletedRef.current = true;
-                  removePlan(plan);
-                  router.back();
-                }}
-              />
-            ) : null}
-          </View>
-        </ScrollView>
-        {showDone ? (
-          <View
-            style={{
-              paddingHorizontal: space.margin,
-              paddingTop: space.related,
-              paddingBottom: Math.max(insets.bottom, space.inset),
-            }}>
-            <Button title="Done" variant="black" testID="plan-done" onPress={finish} />
-          </View>
-        ) : null}
-      </View>
+          <Text style={[type.kicker, { color: colors.tertiaryLabel, flexShrink: 1 }]}>{dayMeta}</Text>
+          {isActive ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
+              <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
+              <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
+            </View>
+          ) : null}
+        </View>
+        <View style={{ paddingTop: EDITOR_LIST_TOP }}>
+          {plan.days.map((day, index) => (
+            <PlanDetailDayRow
+              key={day.id}
+              day={day}
+              index={index}
+              href={dayHref(day)}
+              isFirst={index === 0}
+              actions={{
+                onRename: () => renameDay(day.id),
+                onDuplicate: () => duplicateDay(day.id),
+                onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
+                onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
+                onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
+              }}
+            />
+          ))}
+          <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
+        </View>
+        <View style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+          <EditorActionRow title="Rename plan" symbol="pencil" onPress={renamePlan} testID="plan-rename" />
+          {isActive ? null : (
+            <EditorActionRow
+              title={isPro ? 'Use this plan' : 'Use this plan (Pro)'}
+              symbol="checkmark"
+              onPress={async () => {
+                if (await requirePro('switch_plan')) {
+                  activatePlan(plan);
+                }
+              }}
+            />
+          )}
+          {hasExercises ? (
+            <EditorActionRow
+              title="Delete plan"
+              symbol="trash"
+              tone="destructive"
+              onPress={() => {
+                // Leaving by Delete must not confirm the plan it just removed.
+                deletedRef.current = true;
+                removePlan(plan);
+                router.back();
+              }}
+            />
+          ) : null}
+        </View>
+      </ScrollView>
+      {showDone ? (
+        <View
+          style={{
+            paddingHorizontal: space.margin,
+            paddingTop: space.related,
+            paddingBottom: Math.max(insets.bottom, space.inset),
+          }}>
+          <Button title="Done" variant="black" testID="plan-done" onPress={finish} />
+        </View>
+      ) : null}
       <Stack.Screen
         options={{
           ...largeTitleOptions(colors, named ? plan.name.trim() : 'New plan'),

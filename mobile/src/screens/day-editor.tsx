@@ -126,60 +126,60 @@ export function DayEditorScreen() {
 
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          onScrollBeginDrag={collapseEditor}
-          automaticallyAdjustKeyboardInsets
-          // Same page as the plan editor: the day name is the native large title and content
-          // sits on its edge (trim-ui → Layout → Under a large title).
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: space.margin,
-            paddingBottom: insets.bottom + space.gutter,
-          }}>
-          <Pressable accessible={false} onPress={collapseEditor} style={{ flexGrow: 1 }}>
-            {exerciseCount > 0 ? (
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{exerciseMeta}</Text>
-            ) : null}
-            {/* Title block → first row text is `section`; a first action row brings its own 16. */}
-            <View style={{ paddingTop: exerciseCount > 0 ? EDITOR_LIST_TOP : space.inset }}>
-              {day.exercises.map((exercise, index) => (
-                <ExercisePrescribeRow
-                  key={exercise.id}
-                  exercise={exercise}
-                  isFirst={index === 0}
-                  expanded={exercise.id === editingId}
-                  reduceMotion={Boolean(reduceMotion)}
-                  onToggle={() => toggleExercise(exercise.id)}
-                  onChange={(patch) => updateExercise(exercise.id, patch)}
-                  onMoveUp={index > 0 ? () => moveExercise(exercise.id, -1) : undefined}
-                  onMoveDown={index < lastIndex ? () => moveExercise(exercise.id, 1) : undefined}
-                  onRemove={() => removeExercise(exercise.id)}
-                />
-              ))}
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
-                <EditorActionRow
-                  title="Add exercise"
-                  symbol="plus"
-                  tone="quiet"
-                  onPress={openExercisePicker}
-                  testID="prescribe-add"
-                />
-              </Animated.View>
-            </View>
-            <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
-              <EditorActionRow title="Rename day" symbol="pencil" onPress={renameDay} testID="day-rename" />
-              {plan.days.length > 1 ? (
-                <EditorActionRow title="Remove day" symbol="trash" tone="destructive" onPress={removeDay} />
-              ) : null}
+      {/* The ScrollView is the screen's first view, not wrapped, so the native large title
+          finds it and collapses into the bar on scroll. */}
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.systemBackground }}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={collapseEditor}
+        automaticallyAdjustKeyboardInsets
+        // Same page as the plan editor: the day name is the native large title and content
+        // sits on its edge (trim-ui → Layout → Under a large title).
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: space.margin,
+          paddingBottom: insets.bottom + space.gutter,
+        }}>
+        <Pressable accessible={false} onPress={collapseEditor} style={{ flexGrow: 1 }}>
+          {exerciseCount > 0 ? (
+            <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{exerciseMeta}</Text>
+          ) : null}
+          {/* Title block → first row text is `section`; a first action row brings its own 16. */}
+          <View style={{ paddingTop: exerciseCount > 0 ? EDITOR_LIST_TOP : space.inset }}>
+            {day.exercises.map((exercise, index) => (
+              <ExercisePrescribeRow
+                key={exercise.id}
+                exercise={exercise}
+                isFirst={index === 0}
+                expanded={exercise.id === editingId}
+                reduceMotion={Boolean(reduceMotion)}
+                onToggle={() => toggleExercise(exercise.id)}
+                onChange={(patch) => updateExercise(exercise.id, patch)}
+                onMoveUp={index > 0 ? () => moveExercise(exercise.id, -1) : undefined}
+                onMoveDown={index < lastIndex ? () => moveExercise(exercise.id, 1) : undefined}
+                onRemove={() => removeExercise(exercise.id)}
+              />
+            ))}
+            <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
+              <EditorActionRow
+                title="Add exercise"
+                symbol="plus"
+                tone="quiet"
+                onPress={openExercisePicker}
+                testID="prescribe-add"
+              />
             </Animated.View>
-          </Pressable>
-        </ScrollView>
-      </View>
+          </View>
+          <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+            <EditorActionRow title="Rename day" symbol="pencil" onPress={renameDay} testID="day-rename" />
+            {plan.days.length > 1 ? (
+              <EditorActionRow title="Remove day" symbol="trash" tone="destructive" onPress={removeDay} />
+            ) : null}
+          </Animated.View>
+        </Pressable>
+      </ScrollView>
       <Stack.Screen
         options={{
           ...largeTitleOptions(colors, day.title.trim() || 'Day'),
