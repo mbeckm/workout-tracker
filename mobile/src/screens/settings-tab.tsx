@@ -16,7 +16,7 @@ import { useTheme } from '@/theme/theme-context';
 
 /**
  * Air between setting groups (preferences, Pro, links out, data), on top of the rows' own 16
- * padding: 40 text to text against 32 inside a group, and tighter than the title's gap
+ * padding: ~46 text to text against ~38 inside a group, and tighter than the title's gap
  * (trim-ui → Layout → Under a large title, rule 3).
  */
 const GROUP_GAP = space.related;
@@ -105,11 +105,12 @@ export function SettingsTab() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        // Content shares the title's leading edge; the first row's text sits `section` under the
-        // title (its own 16 padding counts), like every tab (trim-ui → Layout → Under a large title).
+        // Content shares the title's leading edge, and the title block gets `section` air before
+        // the first group, like every tab (trim-ui → Layout → Under a large title). That keeps
+        // the title's gap (~62 text to text) clearly larger than a group break (~46).
         contentContainerStyle={{
           paddingHorizontal: space.margin,
-          paddingTop: space.inset,
+          paddingTop: space.section,
           paddingBottom: space.section,
         }}>
         <View>
