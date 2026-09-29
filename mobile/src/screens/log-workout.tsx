@@ -40,7 +40,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedSheet, SheetMorph } from '@/components/animated-sheet';
+import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { confirmAction } from '@/components/confirm-action';
 import { LogRest } from '@/components/log-rest';
@@ -1314,7 +1314,8 @@ export function LogWorkoutScreen() {
       <AnimatedSheet
         visible={sheet === 'exercise'}
         onClose={() => setSheet(null)}
-        dragFrom="sheet">
+        dragFrom="sheet"
+        morph>
         {current ? (
           <LogExerciseSheet
             exercise={current.prescription}
@@ -2309,7 +2310,8 @@ function LogExerciseSheet({
     );
 
   return (
-    <SheetMorph>
+    // The sheet glides to the new page's height (`morph`).
+    <View>
       <Animated.View key={preview ? `preview-${preview.id}` : 'facts'} entering={entering}>
         {page(preview, true)}
       </Animated.View>
@@ -2318,7 +2320,7 @@ function LogExerciseSheet({
           {page(leaving.preview, false)}
         </LeavingPage>
       ) : null}
-    </SheetMorph>
+    </View>
   );
 }
 
