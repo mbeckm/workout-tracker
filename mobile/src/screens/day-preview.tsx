@@ -1,6 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { space } from '@/constants/theme';
@@ -36,9 +35,11 @@ export function DayPreviewBody({
 }) {
   const { type } = useTheme();
   const { previousLogForExercise, units } = useWorkoutStore();
-  const insets = useSafeAreaInsets();
   const count = day.exercises.length;
 
+  // One inset, 24, on every edge and between the three blocks (title, list, Start). The
+  // sheet keeps its own bottom safe area under Start, so nothing is added there: adding the
+  // window's inset again left Start floating twice as far from the bottom as from the sides.
   return (
     <View
       collapsable={false}
@@ -85,8 +86,6 @@ export function DayPreviewBody({
           onPress={onStart}
         />
       ) : null}
-      {/* The thumb CTA sits 16 above the safe area (trim-ui → Layout → Thumb zone). */}
-      <View style={{ height: insets.bottom + space.inset }} />
     </View>
   );
 }
