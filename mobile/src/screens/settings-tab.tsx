@@ -14,8 +14,12 @@ import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
-/** Air between setting groups: preferences, Pro, links out, data. */
-const GROUP_GAP = space.section;
+/**
+ * Air between setting groups (preferences, Pro, links out, data), on top of the rows' own 16
+ * padding: 40 text to text against 32 inside a group, and tighter than the title's gap
+ * (trim-ui → Layout → Under a large title, rule 3).
+ */
+const GROUP_GAP = space.related;
 
 const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
 const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
