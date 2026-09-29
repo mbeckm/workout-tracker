@@ -299,7 +299,7 @@ function isPersonalBestTenRM(current: number, previousBest: number | null): bool
 }
 
 /** Set that achieved the session's best 10RM for an exercise (first if tied). */
-function bestTenRMSetId(sets: LoggedSet[]): string | null {
+export function bestTenRMSetId(sets: LoggedSet[]): string | null {
   let bestId: string | null = null;
   let bestValue = -Infinity;
   for (const set of sets) {

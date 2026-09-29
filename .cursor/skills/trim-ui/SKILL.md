@@ -165,7 +165,7 @@ Captions are always tertiary. Secondary is never a caption color. It's for settl
 
 | Token | Means | Allowed | Never |
 | --- | --- | --- | --- |
-| `systemGreen` (#34C759 / #30D158) | **Done, or go.** | Marks for finished work (set checks, strip checks, completed week dots, `Active` on Plans, PR-up delta on Progress). Fill of the one gym CTA (`Log set`, `Finish workout`, `Done`). | Titles, icons that encode nothing, a second green control on a stage, "success" banners |
+| `systemGreen` (#34C759 / #30D158) | **Done, or go.** | Marks for finished work (set checks, strip checks, completed week dots, `Active` on Plans, PR-up delta on Progress), and `Go` where the rest clock was when rest is over. Fill of the one gym CTA (`Log set`, `Finish workout`, `Done`). | Titles, icons that encode nothing, a second green control on a stage, "success" banners |
 | `systemRed` | **Destroys.** | Delete, Remove, Clear history, destructive menu items, an inline error line | Missed workouts, going down on a chart, warnings |
 | `systemYellow` | **Record.** | The PR crown | Anything else |
 | Ink CTA (`label` fill, `onLabel` text) | **Primary, not gym.** | Start, Resume, Continue, Create plan, Use this plan, paywall CTA | Two on one screen |
@@ -298,16 +298,21 @@ The more often a moment happens, the less it may animate. Delight is spent where
 | Row / text / glyph press | opacity `PRESSED_OPACITY`, immediate | Faster |
 | Set logged | new line opacity 0→1 + translateY +8→0 (rises from the wells), ≤ 150ms | Fluid |
 | Number changes in place | NumberFlow roll (`StaggerValue`), `change`, `EASE_OUT_FN` | Fluid |
-| Log stage swaps exercise | Same frame as the tap. Enters from the side you moved toward (8pt, `press`). A swipe tracks 1:1 and settles with `SPRING.fling`. | Fluid |
+| Log stage swaps exercise | A tap (strip, `Next exercise`, auto-advance): same frame, enters from the side you moved toward (8pt, `press`). A swipe pages: the name and the stage are one position, with each neighbour's name, `Set n of m`, Last time and logged sets already drawn one page over (at 0.5 opacity one page away, brightening as it arrives; motion only, at rest neighbours are off-screen). The pan takes over after 14pt without jumping, tracks 1:1, commits on distance or a flick (projected ≥ 56pt), and hands the finger's velocity to `SPRING.fling`. The wells switch on release, while the page settles; grabbing a settling page takes it from where it is. A rightward swipe on a logged set belongs to the stage. | Fluid |
+| Workout starts | Fresh Start only (not resume, not a Live Activity reopen): `Log set` rides up with the modal in the gray fill at 0.97 and lights green (fill + label crossfade `enter`, scale to 1 `press`) on the frame the modal lands, with one medium impact. Tappable throughout. Reduced motion: color only. | Loveable |
+| Rest over | At 0:00 the clock gives way to `Go` in green in the same 28pt slot: the clock fades (`press`), `Go` rises 8pt with a fade (`press`) on the frame of the success haptic, −15 / +15 / Skip fade (`press`). Holds 2s, then Rest leaves (`press`). Reduced motion: crossfade. | Loveable |
 | CTA changes meaning | label crossfade in place, `press` | Fluid |
 | Expand / collapse in place | layout `enter` (200), ease-in-out | Fluid |
 | Sheets | native (preferred), or `SPRING.fling` with gesture velocity | Fluid |
+| Sheet content morphs | A row that opens detail inside a custom sheet (an Alternative in the exercise sheet) changes the sheet in place: its height eases to the new page's height (`enter`, ease-in-out, `SheetMorph`, from wherever it is), the old page fades out (`exit`) as a layer over the new one (never kept in the column, or the sheet would grow to both pages and shrink back), and the new fades in from 8pt on the side you moved toward (`enter`); Back reverses it. Reduced motion: height snaps, the fade stays. | Fluid |
 | Toast | rise 8pt, `enter`; leave `exit` the same way | Fluid |
 | Chart range change | the line morphs to the new range, `change`, never blocks scrubbing | Fluid |
 | Appearance change | full-screen crossfade, `change` | Fluid |
 | New plan lands in Plans | its row fades in the active card's surface (`enter`-ish 180), holds ~700ms while the toast rises, then dissolves (520). Opacity only, so it stays under Reduce Motion. Once per created plan. | Fluid |
 | Pro lock opens | the tapped chip's `lock.fill` becomes `lock.open.fill` on the frame the purchase lands, holds ~900ms, then fades (`exit`). Once per purchase. | Loveable |
-| Week dot fills | `SPRING.pop` 0.5→1 + two green rings (×3.4, 0.45→0, 760ms, 140ms apart). A full week adds a staggered bump across all dots. Starts ~320ms after Home is visible again. | Loveable |
+| Week dot fills | On Done: `SPRING.pop` 0.5→1 + two green rings (×3.4, 0.45→0, 760ms, 140ms apart) while `n of m` rolls up. A full week adds a staggered bump across all dots. Starts on the frame the Done modal finishes sliding in (`transitionEnd`), once per workout. Home then just shows the new amount. Reduced motion: the dot's color crossfades. | Loveable |
+| PR crown lands | On Done, each PR exercise's crown pops in (`SPRING.pop` 0.5→1 + fade) 160ms after Done lands, 70ms apart, the last by 440ms. Reduced motion: a fade. | Loveable |
+| Milestone rolls up | On Done, `10th workout` rolls from `9th` with NumberFlow (`change`) as Done lands. | Loveable |
 
 Anything not on this list needs a purpose, a spec, and a row here before it ships.
 
@@ -319,6 +324,7 @@ A haptic confirms something the body did. It's never decoration.
 | --- | --- |
 | Set logged | light impact |
 | Rest reaches 0:00, Finish | success |
+| The log lands from Start (`Log set` lights up) | medium impact |
 | A Pro purchase lands (the `Trim Pro is on` toast) | success |
 | Well −/+, swiping between exercises, picking a paywall option | selection |
 | A sheet snapping to a detent | light impact |
@@ -479,10 +485,10 @@ Some moments deserve a feeling, not just a result. They're the rare tier (§8), 
 | --- | --- |
 | **First open (unpacking)** | The Trim mark builds itself: three bars trim down into place, the shortest one turns green with a light haptic, and the wordmark settles in beside them. Then the welcome line. |
 | **First plan ready** | The plan's week lays out: one dot per training day, filling left to right, then Start appears. The plan the user built is the reward. |
-| **First workout logged** | Done carries the fact `First workout` under the hero. Back on Home, the first week dot fills with the pop. |
+| **First workout logged** | Done carries the fact `First workout` under the hero, and the first week dot fills with the pop as Done lands. |
 | **First Pro purchase** | The lock on whatever they tapped opens (`lock.fill` → `lock.open.fill`, then it fades), the thing they wanted happens, and a toast confirms `Trim Pro is on`, with a success haptic. Settings shows Trim Pro with its renewal date. |
-| **A new personal record** | The crown lands on the PR set with the pop on Done. |
-| **Week complete** | The week-dot celebration (§8). |
+| **A new personal record** | The crown lands on the PR exercise's line with the pop on Done, and that line reads in `label` ink. |
+| **Week complete** | The week-dot celebration on Done (§8), with the bump across every dot. |
 | **Milestones** (10th, 50th, 100th workout) | Done states the fact (`100th workout`), with the number rolling up. No badges, no trophy screen. |
 
 Rules for every moment:
@@ -543,14 +549,14 @@ Same system, different winner. Don't invent a type size for a screen.
 | --- | --- | --- |
 | **Home** | The day name is the screen's native large title (`Push`), collapsing into the glass bar on scroll. Under it, one fact: the estimated duration (`~55 min`, the median of the last three sessions of this day, else the prescription estimate). No `Next workout` heading, no plan name (Plans owns it), no exercise count (the list shows it). Exercise list as one object surface: `row` name + `caption` prescription (`4 × 8 reps at 60 kg`), no thumbnails. After ~4 rows, a peer row `n more exercises` + chevron.down that expands in place and ends with `Show less`. Ink Start sits 16 under the list. Week (`title` `n of m` + `caption` `this week` + dots) one `section` below. Then `Other days` caption + rows (title `row` + first exercise names `caption`; trailing green check if done this week). Tap another day → its preview sheet. The exercise list is read-only (its fold is the only way to see more). | Completed dots + checks |
 | **Day preview** (sheet) | Day `title`, rows `row` + `caption`, read-only. Ink Start at the thumb. | None |
-| **Log** | Header: Cancel (`body`, tertiary) left, Finish (`button`) right. Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air), wells (labels `footnote`, numbers `displayCompact`), green `Log set`. The upper stage never moves (§14). | `Log set` + checks |
-| **Done** | `Done` `hero`, then the day and duration on one `caption` line joined in words (`Push, 52 min`), plus a first-time or milestone fact when there is one (`First workout`), then per exercise `row` name + one `caption` line per set (narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set; `RecapExercise`). Green Done at thumb. Scrolls, uncapped. | Done |
+| **Log** | Header: Cancel (`body`, tertiary) left, Finish (`button`) right. Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, `Last time …` `caption`. Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air; at 0:00 the clock becomes a green `Go`), wells (labels `footnote`, numbers `displayCompact`), green `Log set` (on a fresh Start it lights up as the log lands, §8). Exercise sheet: facts, then Alternatives rows with a chevron that open that exercise's facts in place, with Back and an ink `Use this exercise`; only that swaps. The upper stage never moves (§14). | `Log set`, checks, `Go` |
+| **Done** | A moment, not a report. `Done` `hero`, then the day and duration on one `caption` line joined in words (`Push, 52 min`), plus a first-time or milestone fact in `label` ink when there is one (`First workout`, `10th workout` rolling up). `pause` below, the week this workout moved (`WeekProgress`: `title` `n of m` + `caption` `this week` + dots; the new dot fills with the pop as Done lands), only when the workout is a day of the active plan and the plan has 2+ days. `section` below, per exercise `row` name + **one** `caption` line in `secondaryLabel` (`DoneExercise`): `4 × 8 reps at 60 kg` when every set matched, else `4 sets, best 85 kg × 8`; a PR line reads in `label` with its crown landing. Every set lives in session detail. Green Done at thumb, live from the first frame. Scrolls, uncapped. No haptic of its own: Finish already gave the success. | Done |
 | **Plans** | Native large title + toolbar `+`. Active plan first, as a `title` row with `6 days` on the left and a green `Active` trailing. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Delete (immediate, with Undo). Swipe left to delete. No icons, no permanent edit chrome. | `Active` |
 | **Plan detail** | Plan name as the native large title, `6 days` under it (+ green `Active` trailing). Days as `row` title + `caption` exercise names in words (`Bench Press, Incline Press and 2 more`, 2 lines max). `Add day` as a quiet row. `Rename plan` (system text prompt; a new plan asks `Name this plan` once). `Use this plan` ink if not active. `Delete plan` red, last. | `Active` |
 | **Progress** | Native large title. Lift rows: `row` name + `caption` latest, sparkline and chevron in the trailing lane. Body row the same. | Up-delta only |
 | **Lift / body detail** | Lift name `title`, 1RM `hero` with unit, delta (green if up, ink otherwise), chart, range chips below it (3M free, rest Pro-locked), sessions list. Charts follow §11. | Up-delta only |
 | **History** | Native large title. Month as a section caption with its amount in the trailing lane (`August` … `4 sessions`). Session row: `row` title over `caption` when (`Wed 13`), duration trailing (`52 min`), and the PR pill (gray fill, yellow crown, count) beside the duration when there is one. Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
-| **Session detail** | Back, workout title as the native large title, facts on two lines in `caption` (`Wed 13 September, 18:02` / `52 min, 14 sets`), exercises as in Done. A record, not a ceremony: no green, no Done button. | None |
+| **Session detail** | Back, workout title as the native large title, facts on two lines in `caption` (`Wed 13 September, 18:02` / `52 min, 14 sets`), every set of each exercise on its own line (`RecapExercise`: narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set). A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | Native large title. `PaperRow` groups separated by `section` air: (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews Oct 3`, or `On until Oct 3` once renewal is off; dates as elsewhere in Trim). | None |
 | **Paywall** | Follows §12. `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, then Restore, Terms and Privacy as three quiet `footnote` links separated by air (no dots). All above the fold on a 6.3" phone. | None |
 | **Body check-in** | Native `formSheet`: Cancel, title and Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
@@ -558,7 +564,7 @@ Same system, different winner. Don't invent a type size for a screen.
 
 ### Home week details
 
-- While Home is covered (log, Done, paywall), the week amount keeps its old value. The celebration runs once Home is visible again (§8, rare tier).
+- The week celebrates on Done, where the workout lands (§8 Week dot fills). Home shows the amount without ceremony; a lower count (a deleted workout, a new week) crossfades its dots back to grey.
 - Week progress is an **amount**, not a sequence. `n of m` + dots, never a day-name checklist, and one progress language per section.
 
 ---
@@ -571,7 +577,8 @@ The hardest screen and the reference for all the others. Don't copy its layout o
 2. **Type to jump, tap ± to nudge.** Tap a well's number → system `decimal-pad` (weight) or `number-pad` (reps). −/+ are for small gym steps (+2.5). Never make steppers the only path from 0 to 100.
 3. **The keyboard docks the cluster.** Wells + `Log set` (+ Rest) ride above the keyboard via `react-native-keyboard-controller` (`translateY` from `useReanimatedKeyboardAnimation`) on the footer only. The upper stage stays put. Don't build a custom keypad.
 4. **Prefill proposes, Log set commits.** Wells show last time's values. Nothing is logged until the user taps.
-5. **Don't** use set-number circles, a `Previous sets` card, 10RM as chrome, or `80 × 8` at calculator size as the hero.
+5. **Swipes page, taps jump.** Name and stage move as one page with the neighbours already drawn, so a swipe never reveals an empty or popping page. The strip stays put; it's the index.
+6. **Don't** use set-number circles, a `Previous sets` card, 10RM as chrome, or `80 × 8` at calculator size as the hero.
 
 ---
 

@@ -23,12 +23,17 @@ export function workoutLogUrl(link: { planId: string; dayId: string; exerciseId:
   });
 }
 
-export function workoutLogHref(link: WorkoutLogLink): `/log?${string}` {
+export function workoutLogHref(link: WorkoutLogLink & { start?: boolean }): `/log?${string}` {
   const params = new URLSearchParams();
   params.set('planId', link.planId);
   params.set('dayId', link.dayId);
   if (link.exerciseId) {
     params.set('exerciseId', link.exerciseId);
+  }
+  // Start tapped (Home, day preview): the log plays its start moment. Resume and Live
+  // Activity links never carry it.
+  if (link.start) {
+    params.set('start', '1');
   }
   return `/log?${params.toString()}`;
 }

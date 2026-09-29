@@ -75,7 +75,10 @@ export function ResidueSetRow({
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX([-10, 10])
+        // Leftward only: a set swipes left to undo; a rightward swipe belongs to the stage
+        // (previous exercise), so it isn't swallowed by the row it started on.
+        .activeOffsetX(-10)
+        .failOffsetX(10)
         .failOffsetY([-12, 12])
         .enabled(!reduceMotion)
         .onStart(() => {
@@ -217,11 +220,14 @@ export function ResidueSetRow({
   );
 }
 
-/** Web / no SF Symbols: same 17pt lane, so rows keep their rhythm. */
+/**
+ * Web / no SF Symbols: same 17pt lane, so rows keep their rhythm. Set in the label's own
+ * role so the glyph sits on the set text's line box and baseline.
+ */
 function CheckFallback({ color }: { color: string }) {
   const { type } = useTheme();
   return (
-    <Animated.Text style={[type.caption, { width: iconSize.row, color, textAlign: 'center' }]}>
+    <Animated.Text style={[type.body, { width: iconSize.row, color, textAlign: 'center' }]}>
       ✓
     </Animated.Text>
   );
@@ -236,10 +242,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingRight: space.gutter,
   },
+  // Centered in the row like the check (no alignSelf override): both share the row's
+  // center line, which is the set text's cap-height center for 17pt digits.
   labelWrap: {
     position: 'relative',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
   },
   strike: {
     position: 'absolute',
