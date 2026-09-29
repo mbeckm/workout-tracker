@@ -5,19 +5,19 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Animated, {
   Extrapolation,
   interpolate,
+  LinearTransition,
   ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { PaperGrabber } from '@/components/paper';
 import { darkColors, lightColors, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
-import { DURATION, EASE_IN_OUT, SPRING } from '@/motion';
+import { DURATION, EASE_SHEET, SPRING } from '@/motion';
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -39,6 +39,13 @@ const SPRING_DISMISS = {
   reduceMotion: ReduceMotion.System,
 } as const;
 
+/**
+ * Sheet content morphs (trim-ui §8): the sheet's frame glides to the new content's height
+ * natively, in the commit that mounts it. Never a JS-driven `height` (one layout pass and a
+ * JS round trip per frame: it starts late and steps).
+ */
+const SHEET_MORPH = LinearTransition.duration(DURATION.enter).easing(EASE_SHEET);
+
 function snapHaptic() {
   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 }
@@ -53,6 +60,7 @@ export function AnimatedSheet({
   dragFrom = 'sheet',
   expandable = false,
   expanded = false,
+  morph = false,
   onDragStart,
 }: {
   visible: boolean;
@@ -68,9 +76,15 @@ export function AnimatedSheet({
   expandable?: boolean;
   /** Drive the large detent from outside (e.g. while typing). */
   expanded?: boolean;
+  /**
+   * Content that changes in place (a row opens its detail, Back returns): the sheet's height
+   * glides to the new content instead of jumping. Reduce Motion snaps it.
+   */
+  morph?: boolean;
   onDragStart?: () => void;
 }) {
   const { colors, scheme } = useTheme();
+  const reduceMotion = useReducedMotion();
   const dark = scheme === 'dark';
   const { height: windowHeight } = useWindowDimensions();
   const largeHeight = Math.round(windowHeight * 0.92);
@@ -309,6 +323,7 @@ export function AnimatedSheet({
 
   const sheet = (
     <Animated.View
+      layout={morph && !expandable && !reduceMotion ? SHEET_MORPH : undefined}
       onLayout={(event) => {
         if (expandable) {
           sheetHeight.set(snap.get() === 1 || expanded ? largeHeight : Math.round(largeHeight * 0.58));
@@ -375,37 +390,5 @@ export function AnimatedSheet({
     <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>{body}</GestureHandlerRootView>
     </Modal>
-  );
-}
-
-/**
- * Sheet content that changes in place (a list row opens its detail, Back returns): the
- * sheet's height eases to the new content (`enter`, ease-in-out, trim-ui §8 Sheet content
- * morphs) instead of jumping, so the sheet reads as one object changing shape. Key the
- * children per state and give them `entering` / `exiting` for the crossfade. Under Reduce
- * Motion the height snaps and only the crossfade remains.
- */
-export function SheetMorph({ children }: { children: ReactNode }) {
-  const reduceMotion = useReducedMotion();
-  // -1 until the first layout: the first height is the content's own, never animated.
-  const height = useSharedValue(-1);
-  const style = useAnimatedStyle(() => {
-    const value = height.get();
-    return value < 0 ? {} : { height: value };
-  });
-  return (
-    <Animated.View style={[{ overflow: 'hidden' }, style]}>
-      <View
-        onLayout={(event) => {
-          const next = event.nativeEvent.layout.height;
-          if (height.get() < 0 || reduceMotion) {
-            height.set(next);
-            return;
-          }
-          height.set(withTiming(next, { duration: DURATION.enter, easing: EASE_IN_OUT }));
-        }}>
-        {children}
-      </View>
-    </Animated.View>
   );
 }

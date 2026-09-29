@@ -304,7 +304,7 @@ The more often a moment happens, the less it may animate. Delight is spent where
 | CTA changes meaning | label crossfade in place, `press` | Fluid |
 | Expand / collapse in place | layout `enter` (200), ease-in-out | Fluid |
 | Sheets | native (preferred), or `SPRING.fling` with gesture velocity | Fluid |
-| Sheet content morphs | A row that opens detail inside a custom sheet (an Alternative in the exercise sheet) changes the sheet in place: its height eases to the new page's height (`enter`, ease-in-out, `SheetMorph`, from wherever it is), the old page fades out (`exit`) as a layer over the new one (never kept in the column, or the sheet would grow to both pages and shrink back), and the new fades in from 8pt on the side you moved toward (`enter`); Back reverses it. Reduced motion: height snaps, the fade stays. | Fluid |
+| Sheet content morphs | A row that opens detail inside a custom sheet (an Alternative in the exercise sheet) changes the sheet in place: its height glides to the new page's height as a native layout transition in the same frame the page mounts (`enter`, the iOS sheet curve `EASE_SHEET`, `AnimatedSheet morph`; never a JS-driven `height`, which starts late and steps), the old page fades out (`exit`) as a layer over the new one (never kept in the column, or the sheet would grow to both pages and shrink back), and the new fades in from 8pt on the side you moved toward (`enter`); Back reverses it. Reduced motion: height snaps, the fade stays. | Fluid |
 | Toast | rise 8pt, `enter`; leave `exit` the same way | Fluid |
 | Chart range change | the line morphs to the new range, `change`, never blocks scrubbing | Fluid |
 | Appearance change | full-screen crossfade, `change` | Fluid |
