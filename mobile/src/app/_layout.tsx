@@ -337,6 +337,18 @@ function RootNav() {
         }}
       />
       <Stack.Screen
+        name="goal"
+        options={{
+          // The goal sheet (trim-ui §13 Goals): native, sized to its content, Trim's grabber.
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: false,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.systemBackground },
+          title: 'Goal',
+        }}
+      />
+      <Stack.Screen
         name="weeks"
         options={{
           // F6: Home's week amount over the last weeks. Read-only, so a medium detent that
