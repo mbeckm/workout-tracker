@@ -37,6 +37,8 @@ export function PlanDetailDayRow({
   actions: PlanDayActions;
 }) {
   const { colors, type } = useTheme();
+  // Rename never saves a blank name; a day blanked by the old inline field still reads as a day.
+  const title = day.title.trim() || `Day ${index + 1}`;
   const names = day.exercises.map((exercise) => exercise.name.trim()).filter(Boolean);
   const count = names.length;
   const exerciseWord = count === 1 ? 'exercise' : 'exercises';
@@ -78,8 +80,8 @@ export function PlanDetailDayRow({
           accessibilityRole="button"
           accessibilityLabel={
             count > 0
-              ? `${day.title}, ${count} ${exerciseWord}`
-              : `${day.title}, no exercises. Add exercises`
+              ? `${title}, ${count} ${exerciseWord}`
+              : `${title}, no exercises. Add exercises`
           }
           accessibilityHint={count > 0 ? 'Opens this training day' : 'Opens the exercise list'}
           accessibilityActions={a11yActions}
@@ -89,7 +91,7 @@ export function PlanDetailDayRow({
           {/* Padding lives on this View: Link asChild doesn't forward a style function on web. */}
           <View style={{ paddingTop: isFirst ? 0 : space.inset, paddingBottom: space.inset, gap: space.pair }}>
             <Text style={type.row} numberOfLines={1}>
-              {day.title}
+              {title}
             </Text>
             {count > 0 ? (
               <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={2}>

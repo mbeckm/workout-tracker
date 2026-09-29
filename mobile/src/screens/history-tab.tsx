@@ -184,7 +184,7 @@ function SessionRow({
                 alignItems: 'center',
                 gap: space.inline,
                 paddingVertical: space.inset,
-                paddingHorizontal: space.gutter,
+                paddingHorizontal: space.margin,
                 backgroundColor: colors.systemBackground,
               }}>
               <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
@@ -203,8 +203,8 @@ function SessionRow({
                 <View
                   style={{
                     position: 'absolute',
-                    left: space.gutter,
-                    right: space.gutter,
+                    left: space.margin,
+                    right: space.margin,
                     bottom: 0,
                     height: StyleSheet.hairlineWidth,
                     backgroundColor: colors.separator,
@@ -225,6 +225,11 @@ function SessionRow({
 /**
  * History (trim-ui → History): native large title, then months. Each month is a section
  * caption with its amount in the trailing lane, over its sessions with hairlines between.
+ * Rhythm, measured text to text (trim-ui → Layout → Under a large title): the large title →
+ * the first month `section`, counted from the bar, so it always reads a little looser than the
+ * months below; a month's last row → the next month `section` (the row's own 16 + 16); a
+ * month's caption → its first row `related`. Months part by their caption and the missing
+ * hairline, not by extra air, so the title stays the largest gap on the page.
  */
 export function HistoryTab() {
   const { colors, type } = useTheme();
@@ -235,13 +240,14 @@ export function HistoryTab() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.systemBackground }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ paddingTop: space.related, paddingBottom: space.section }}>
+      contentContainerStyle={{ paddingTop: space.section, paddingBottom: space.section }}>
       {workoutHistory.length === 0 ? (
-        <View testID="history-empty" style={{ paddingHorizontal: space.gutter }}>
+        <View testID="history-empty" style={{ paddingHorizontal: space.margin }}>
           <Text style={type.title}>No workouts yet</Text>
         </View>
       ) : (
-        <View style={{ gap: space.section }}>
+        // The last row's own bottom padding (16) + 16 = `section` from its text to the next month.
+        <View style={{ gap: space.inset }}>
           {groups.map((group) => (
             <View key={group.key} style={{ gap: space.related }}>
               <View
@@ -251,7 +257,7 @@ export function HistoryTab() {
                   flexDirection: 'row',
                   justifyContent: 'space-between',
                   gap: space.inline,
-                  paddingHorizontal: space.gutter,
+                  paddingHorizontal: space.margin,
                   // The rows below are pulled up into this caption's padding and paint an
                   // opaque swipe background; drawn above them, the caption never clips.
                   zIndex: 1,

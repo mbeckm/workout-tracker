@@ -40,13 +40,15 @@ export function PrCrown({ size = 13 }: { size?: number }) {
   );
 }
 
-/** History row trailing: quiet grey pill with the crown, the count and `PR` or `PRs`. */
+/**
+ * History row trailing: quiet grey pill with the crown and the count. The crown stands in for
+ * the word `PRs` (trim-ui §7 Fact glyphs); the row's VoiceOver label says it in words.
+ */
 export function PrCrownCount({ count }: { count: number }) {
   const { colors, type } = useTheme();
   if (count <= 0) {
     return null;
   }
-  const label = count === 1 ? 'PR' : 'PRs';
   return (
     <View
       accessibilityElementsHidden
@@ -74,11 +76,6 @@ export function PrCrownCount({ count }: { count: number }) {
         ]}
         maxFontSizeMultiplier={1.4}>
         {count}
-      </Text>
-      <Text
-        style={[type.kicker, { color: colors.secondaryLabel, lineHeight: 18 }]}
-        maxFontSizeMultiplier={1.4}>
-        {label}
       </Text>
     </View>
   );

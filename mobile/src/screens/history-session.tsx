@@ -3,11 +3,17 @@ import { useMemo } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 
 import { EDITOR_ACTIONS_TOP, EditorActionRow } from '@/components/editor-chrome';
+import { Fact, FactRow } from '@/components/fact';
 import { RecapExercise } from '@/components/recap-exercise';
 import { space } from '@/constants/theme';
 import { formatClockTime } from '@/domain/day-facts';
 import { formatPaperMinutes, formatSessionDate, formatSetsCount } from '@/domain/helpers';
-import { loggedSetTotal, workoutPersonalBests, workoutUsesLoad } from '@/domain/set-lines';
+import {
+  formatPrCount,
+  loggedSetTotal,
+  workoutPersonalBests,
+  workoutUsesLoad,
+} from '@/domain/set-lines';
 import type { LoggedWorkout } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -75,17 +81,33 @@ export function HistorySessionScreen() {
   }
 
   const when = `${formatSessionDate(workout.completedAt)}, ${formatClockTime(workout.completedAt)}`;
-  const amount = `${formatPaperMinutes(workout.durationMinutes)}, ${formatSetsCount(loggedSetTotal(workout))}`;
+  const minutes = formatPaperMinutes(workout.durationMinutes);
+  const sets = formatSetsCount(loggedSetTotal(workout));
+  const records = personalBests?.count ?? 0;
+  const amount = [minutes, sets, records > 0 ? formatPrCount(records) : null]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.gutter }}>
-        <View testID="session-facts" accessible accessibilityLabel={`${when}, ${amount}`}>
+        // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
+        contentContainerStyle={{ paddingHorizontal: space.margin, paddingBottom: space.gutter }}>
+        {/* When on one line; how much on the next as glyph-led facts, like the History row's
+            crown (trim-ui §7 Fact glyphs): how long, how many sets, how many PRs. */}
+        <View
+          testID="session-facts"
+          accessible
+          accessibilityLabel={`${when}, ${amount}`}
+          style={{ gap: space.pair }}>
           <Text style={type.caption}>{when}</Text>
-          <Text style={type.caption}>{amount}</Text>
+          <FactRow>
+            <Fact kind="duration">{minutes}</Fact>
+            <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>{sets}</Text>
+            {records > 0 ? <Fact kind="record">{String(records)}</Fact> : null}
+          </FactRow>
         </View>
         <View style={{ paddingTop: space.section, gap: space.section }}>
           {workout.exercises.map((exercise) => (

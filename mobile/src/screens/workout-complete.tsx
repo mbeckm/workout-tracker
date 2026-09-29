@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { DoneExercise } from '@/components/done-exercise';
+import { Fact, FactRow } from '@/components/fact';
 import { StaggerValue } from '@/components/stagger-value';
 import { WeekProgress, type WeekCelebration } from '@/components/week-progress';
 import { fontScaleCap, space } from '@/constants/theme';
@@ -139,8 +140,8 @@ export function WorkoutCompleteScreen() {
     );
   }
 
-  // One line in words (trim-ui → Done): the day and how long.
-  const facts = `${workout.title}, ${formatPaperMinutes(workout.durationMinutes)}`;
+  // One line (trim-ui → Done): the day, then how long behind the duration glyph.
+  const minutes = formatPaperMinutes(workout.durationMinutes);
   const moved = week != null && week.after > week.before;
   const celebrate: WeekCelebration | null =
     landed && week && moved
@@ -178,9 +179,14 @@ export function WorkoutCompleteScreen() {
               Done
             </Text>
             <View>
-              <Text style={type.caption} testID="done-facts">
-                {facts}
-              </Text>
+              <View accessible accessibilityLabel={`${workout.title}, ${minutes}`} testID="done-facts">
+                <FactRow>
+                  <Text style={[type.caption, { flexShrink: 1 }]} numberOfLines={2}>
+                    {workout.title}
+                  </Text>
+                  <Fact kind="duration">{minutes}</Fact>
+                </FactRow>
+              </View>
               {milestone ? <MilestoneFact milestone={milestone} landed={landed} /> : null}
             </View>
           </View>

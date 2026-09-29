@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PaperGrabber } from '@/components/paper';
 import { exerciseDetail, formatPlanMetric } from '@/domain/helpers';
 import { useTheme } from '@/theme/theme-context';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -48,9 +49,11 @@ export function ExerciseSheetScreen() {
           flex: 1,
           backgroundColor: colors.systemBackground,
           paddingHorizontal: space.gutter,
-          paddingTop: space.related,
+          // Clear of the grabber, like every sheet's first line.
+          paddingTop: space.gutter,
           paddingBottom: insets.bottom + 10,
         }}>
+        <PaperGrabber overlay />
         <View style={{ gap: space.tight, paddingBottom: space.inset }}>
           <Text style={type.title}>{exercise.name}</Text>
           {detail ? <Text style={type.kicker}>{detail}</Text> : null}

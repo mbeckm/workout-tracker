@@ -16,6 +16,7 @@ import { PaperEmpty } from '@/components/paper';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
+import { promptRename } from '@/navigation/rename-prompt';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
@@ -39,9 +40,9 @@ const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
 export function PlansTab() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, updatePlan, activatePlan, isPro } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
@@ -83,15 +84,27 @@ export function PlansTab() {
 
   const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
 
+  // The same rename as the plan editor's Rename row and a day's context menu.
+  const renamePlan = (plan: WorkoutPlan) =>
+    promptRename({
+      title: 'Rename plan',
+      current: plan.name,
+      scheme,
+      onSave: (name) => updatePlan({ ...plan, name }),
+    });
+
   return (
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
+        // Title, active card and plan rows share the title's leading edge, and each section
+        // starts `section` below the last, measured to what you see: the card's edge or a row's
+        // text, whose own 16 padding counts (trim-ui → Layout → Under a large title).
         contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: space.gutter,
-          paddingTop: space.related,
+          paddingHorizontal: space.margin,
+          paddingTop: activePlan || plans.length === 0 ? space.section : space.inset,
           paddingBottom: space.section,
         }}>
         {plans.length === 0 ? (
@@ -107,11 +120,12 @@ export function PlansTab() {
                 plan={activePlan}
                 variant="active"
                 onActivate={() => activatePlan(activePlan)}
+                onRename={() => renamePlan(activePlan)}
                 onDelete={() => confirmDelete(activePlan)}
               />
             ) : null}
             {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? space.section : 0 }}>
+              <View style={{ paddingTop: activePlan ? space.inset : 0 }}>
                 {otherPlans.map((plan, index) => (
                   <PlanMenuRow
                     key={plan.id}
@@ -125,6 +139,7 @@ export function PlansTab() {
                         activatePlan(plan);
                       }
                     }}
+                    onRename={() => renamePlan(plan)}
                     onDelete={() => confirmDelete(plan)}
                   />
                 ))}
@@ -147,6 +162,7 @@ function PlanMenuRow({
   proLabel = false,
   revealed = false,
   onActivate,
+  onRename,
   onDelete,
 }: {
   plan: WorkoutPlan;
@@ -157,6 +173,7 @@ function PlanMenuRow({
   /** Just created: light the row once so the eye finds where the plan went. */
   revealed?: boolean;
   onActivate: () => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
   const { colors, type } = useTheme();
@@ -218,6 +235,7 @@ function PlanMenuRow({
             onPress={onActivate}
           />
         )}
+        <Link.MenuAction title="Rename" icon="pencil" onPress={onRename} />
         <Link.MenuAction title="Delete" icon="trash" destructive onPress={onDelete} />
       </Link.Menu>
     </Link>
@@ -225,9 +243,9 @@ function PlanMenuRow({
 }
 
 /**
- * The row briefly wears the same 16-inset surface as the active plan card, then lets it go.
- * Inset 2pt top and bottom so it never touches a hairline separator. Decorative: VoiceOver
- * hears the toast instead.
+ * The row briefly lights up edge to edge, like a system list row's highlight, then lets it go.
+ * The row's text sits on the title's edge, so a rounded card around it would touch the screen
+ * edge. It stops above the row's hairline. Decorative: VoiceOver hears the toast instead.
  */
 function RevealSurface({ revealed }: { revealed: boolean }) {
   const { colors } = useTheme();
@@ -266,12 +284,10 @@ function RevealSurface({ revealed }: { revealed: boolean }) {
       style={[
         {
           position: 'absolute',
-          top: 2,
-          bottom: 2,
-          left: -16,
-          right: -16,
-          borderRadius: radius.md,
-          borderCurve: 'continuous',
+          top: 0,
+          bottom: 0,
+          left: -space.margin,
+          right: -space.margin,
           backgroundColor: colors.systemGray5,
         },
         style,
