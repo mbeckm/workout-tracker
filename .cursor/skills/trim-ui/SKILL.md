@@ -283,7 +283,7 @@ The more often a moment happens, the less it may animate. Delight is spent where
    - A logged set rises from the wells (+8 → 0), because that's where the value came from.
    - Moving to the next exercise comes in from the right, going back from the left, matching the swipe and the strip order. A swipe follows the finger 1:1 and settles with its velocity.
    - A control that changes meaning morphs in place (`Log set` → `Next exercise` → `Finish workout`: the label crossfades, the pill stays).
-   - Numbers that change roll (`StaggerValue`, `ProgressDelta`): `Set 2 of 4`, the week count, the 1RM and delta while scrubbing, the delta when the chart range changes.
+   - Numbers that change roll (`StaggerValue`, `ProgressDelta`): `Set 2 of 4`, the week count, the 1RM and delta while scrubbing, the delta when the chart range changes, the rest clock on −15 / +15. Time passing never rolls: the countdown ticks plainly.
    - A sheet dismisses downward because it came from below. A toast leaves the way it entered.
 7. **Haptic and visual on the same frame.** A haptic fires at the causal moment (the set lands, the detent catches), never when an animation finishes.
 8. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
@@ -298,6 +298,8 @@ The more often a moment happens, the less it may animate. Delight is spent where
 | Row / text / glyph press | opacity `PRESSED_OPACITY`, immediate | Faster |
 | Set logged | new line opacity 0→1 + translateY +8→0 (rises from the wells), ≤ 150ms | Fluid |
 | Number changes in place | NumberFlow roll (`StaggerValue`), `change`, `EASE_OUT_FN` | Fluid |
+| Set counter | `Set n of m`: n rolls (`StaggerValue` with `prefix`, `change`) when a set is logged, undone or picked to edit. A new exercise's page arrives with its own count already drawn; it doesn't roll, the page is the motion. | Fluid |
+| Rest nudge | −15 / +15: the clock rolls to the new time in the nudge's direction (two NumberFlow runs `m` and `ss`, `change`; the seconds' tens wrap at 5), with a selection tick on the tap. The per-second countdown swaps plainly. Capped at 1.2× Dynamic Type like the plain clock. Reduced motion: the digits swap, the tick stays. | Fluid |
 | Log stage swaps exercise | A tap (strip, `Next exercise`, auto-advance): same frame, enters from the side you moved toward (8pt, `press`). A swipe pages: the name and the stage are one position, with each neighbour's name, `Set n of m`, Last time and logged sets already drawn one page over (at 0.5 opacity one page away, brightening as it arrives; motion only, at rest neighbours are off-screen). The pan takes over after 14pt without jumping, tracks 1:1, commits on distance or a flick (projected ≥ 56pt), and hands the finger's velocity to `SPRING.fling`. The wells switch on release, while the page settles; grabbing a settling page takes it from where it is. A rightward swipe on a logged set belongs to the stage. | Fluid |
 | Workout starts | Fresh Start only (not resume, not a Live Activity reopen): `Log set` rides up with the modal in the gray fill at 0.97 and lights green (fill + label crossfade `enter`, scale to 1 `press`) on the frame the modal lands, with one medium impact. Tappable throughout. Reduced motion: color only. | Loveable |
 | Rest over | At 0:00 the clock gives way to `Go` in green in the same 28pt slot: the clock fades (`press`), `Go` rises 8pt with a fade (`press`) on the frame of the success haptic, −15 / +15 / Skip fade (`press`). Holds 2s, then Rest leaves (`press`). Reduced motion: crossfade. | Loveable |
@@ -326,7 +328,7 @@ A haptic confirms something the body did. It's never decoration.
 | Rest reaches 0:00, Finish | success |
 | The log lands from Start (`Log set` lights up) | medium impact |
 | A Pro purchase lands (the `Trim Pro is on` toast) | success |
-| Well −/+, swiping between exercises, picking a paywall option, picking a chart range | selection |
+| Well −/+, rest −15 / +15, swiping between exercises, picking a paywall option, picking a chart range | selection |
 | A sheet snapping to a detent | light impact |
 | Scrubbing a chart across a data point | selection |
 

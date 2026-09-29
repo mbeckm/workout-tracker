@@ -44,6 +44,7 @@ import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { confirmAction } from '@/components/confirm-action';
 import { LogRest } from '@/components/log-rest';
+import { StaggerValue } from '@/components/stagger-value';
 import { PaperRow } from '@/components/paper';
 import { ResidueSetRow } from '@/components/residue-set-row';
 import { TargetLine } from '@/components/target-line';
@@ -1104,6 +1105,11 @@ export function LogWorkoutScreen() {
                           <View style={STAGE_HEAD}>
                             <SetStatus
                               label={exerciseComplete && !edit ? 'Done' : (setHint ?? 'Set')}
+                              set={
+                                stageSetIndex >= 0
+                                  ? { number: stageSetIndex + 1, of: current.sets.length }
+                                  : undefined
+                              }
                               complete={exerciseComplete && !edit}
                               accessibilityLabel={
                                 exerciseComplete && !edit ? `${current.prescription.name} done` : setHint
@@ -1741,14 +1747,21 @@ const STAGE_SETS = {
   gap: space.related,
 } as const;
 
-/** `Set 2 of 4`, or `Done` with the green check. */
+/**
+ * `Set 2 of 4`, or `Done` with the green check. The set number rolls (NumberFlow, `change`)
+ * when a set is logged or a logged set is picked to edit (trim-ui §8 rule 6). Neighbour pages
+ * draw the same component, so a swipe hands over without a swap.
+ */
 function SetStatus({
   label,
+  set,
   complete,
   accessibilityLabel,
   testID,
 }: {
+  /** What the header says, and reads when there is no set to roll (`Done`). */
   label: string;
+  set?: { number: number; of: number };
   complete: boolean;
   accessibilityLabel?: string;
   testID?: string;
@@ -1759,10 +1772,19 @@ function SetStatus({
       style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, minHeight: 28 }}
       accessible
       accessibilityRole="header"
-      accessibilityLabel={accessibilityLabel}>
-      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} testID={testID}>
-        {label}
-      </Text>
+      accessibilityLabel={accessibilityLabel ?? label}
+      testID={testID}>
+      {set && !complete ? (
+        <StaggerValue
+          value={set.number}
+          prefix="Set "
+          suffix={` of ${set.of}`}
+          format={{ useGrouping: false }}
+          style={[type.title, { fontVariant: ['tabular-nums'] }]}
+        />
+      ) : (
+        <Text style={[type.title, { fontVariant: ['tabular-nums'] }]}>{label}</Text>
+      )}
       {complete ? (
         <SymbolView
           name="checkmark"
@@ -1844,6 +1866,7 @@ const StagePreview = memo(function StagePreview({
       <View style={STAGE_HEAD}>
         <SetStatus
           label={complete ? 'Done' : `Set ${Math.max(0, setIndex) + 1} of ${draft.sets.length}`}
+          set={{ number: Math.max(0, setIndex) + 1, of: draft.sets.length }}
           complete={complete}
         />
         <TargetLine

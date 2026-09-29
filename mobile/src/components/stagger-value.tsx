@@ -11,6 +11,7 @@ const SPIN = {
 /** Digit-roll hero — RN port of [NumberFlow](https://github.com/barvian/number-flow). */
 export function StaggerValue({
   value,
+  prefix,
   suffix,
   format,
   locales,
@@ -18,6 +19,8 @@ export function StaggerValue({
   animated = true,
 }: {
   value: number | null;
+  /** Static text before the number, in the same run so both share a baseline (`Set 2 of 4`). */
+  prefix?: string;
   suffix?: string;
   format?: Intl.NumberFormatOptions;
   /** Defaults to the device region. */
@@ -38,6 +41,7 @@ export function StaggerValue({
   return (
     <NumberFlow
       value={value}
+      prefix={prefix}
       suffix={suffix}
       format={format}
       locales={locales}

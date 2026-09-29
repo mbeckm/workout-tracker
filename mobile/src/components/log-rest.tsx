@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
+import { NumberFlow } from 'number-flow-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View, type TextStyle } from 'react-native';
 import Animated, { FadeIn, FadeInUp, FadeOut, useReducedMotion } from 'react-native-reanimated';
 
 import type { RestWindow } from '@/domain/log-session';
 import { useTheme } from '@/theme/theme-context';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
-import { DURATION, EASE_OUT, ENTER_OFFSET } from '@/motion';
+import { DURATION, EASE_OUT, EASE_OUT_FN, ENTER_OFFSET } from '@/motion';
 
 /** How long `Go` stays up after the clock hits 0:00. */
 export const REST_GO_MS = 2000;
@@ -24,6 +25,55 @@ const CLOCK_OUT = FadeOut.duration(DURATION.press).easing(EASE_OUT);
 
 function formatRestClock(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** The clock's cap on Dynamic Type, so it never outgrows the exercise name. */
+const CLOCK_MAX_SCALE = 1.2;
+const ROLL = { duration: DURATION.change, easing: EASE_OUT_FN } as const;
+/** Seconds' tens digit wraps at 5 (0:50 + 15 = 1:05 spins 5 → 0, not back through 4…1). */
+const SECONDS_DIGITS = { 1: { max: 5 } } as const;
+
+/**
+ * `m:ss` as two NumberFlow runs. It only rolls while `rolling` (a −15 / +15 nudge, in the
+ * nudge's direction); the per-second countdown swaps plainly, because time passing is
+ * information, not motion (trim-ui §8 rule 9).
+ */
+function RestClock({
+  seconds,
+  rolling,
+  style,
+}: {
+  seconds: number;
+  rolling: -1 | 1 | null;
+  style: TextStyle;
+}) {
+  const { fontScale } = useWindowDimensions();
+  const { lineHeight: _lineHeight, ...flat } = StyleSheet.flatten(style);
+  // NumberFlow has no maxFontSizeMultiplier; its glyphs scale with fontScale, so shrink the
+  // base size to land on the same cap the plain Text had.
+  const fontSize =
+    flat.fontSize == null ? undefined : (flat.fontSize * Math.min(fontScale, CLOCK_MAX_SCALE)) / fontScale;
+  const shared = {
+    style: fontSize == null ? flat : { ...flat, fontSize },
+    animated: rolling != null,
+    trend: rolling ?? 0,
+    respectMotionPreference: true,
+    mask: false,
+    spinTiming: ROLL,
+    transformTiming: ROLL,
+    opacityTiming: { duration: DURATION.enter, easing: EASE_OUT_FN },
+  } as const;
+  return (
+    <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <NumberFlow {...shared} value={Math.floor(seconds / 60)} suffix=":" format={{ useGrouping: false }} />
+      <NumberFlow
+        {...shared}
+        value={seconds % 60}
+        format={{ minimumIntegerDigits: 2, useGrouping: false }}
+        digits={SECONDS_DIGITS}
+      />
+    </View>
+  );
 }
 
 /**
@@ -77,6 +127,23 @@ export function LogRest({
     return () => clearInterval(tick);
   }, [rest.endsAtMs]);
 
+  // A nudge rolls the clock for one `change`, with a selection tick on the tap (trim-ui → Haptics).
+  const [rolling, setRolling] = useState<-1 | 1 | null>(null);
+  useEffect(() => {
+    if (rolling == null) {
+      return;
+    }
+    const timer = setTimeout(() => setRolling(null), DURATION.change);
+    return () => clearTimeout(timer);
+  }, [rolling, rest.endsAtMs]);
+  const nudge = (seconds: number) => {
+    if (process.env.EXPO_OS === 'ios') {
+      void Haptics.selectionAsync();
+    }
+    setRolling(seconds > 0 ? 1 : -1);
+    onAdjust(seconds);
+  };
+
   const done = nowMs >= rest.endsAtMs;
   const seconds = Math.max(0, Math.ceil((rest.endsAtMs - nowMs) / 1000));
   const control = type.caption;
@@ -93,18 +160,18 @@ export function LogRest({
           <Animated.Text
             key="go"
             entering={reduceMotion ? GO_IN_REDUCED : GO_IN}
-            maxFontSizeMultiplier={1.2}
+            maxFontSizeMultiplier={CLOCK_MAX_SCALE}
             style={[type.residue, { color: colors.systemGreen }]}>
             Go
           </Animated.Text>
         ) : (
-          <Animated.Text
-            key="clock"
-            exiting={CLOCK_OUT}
-            maxFontSizeMultiplier={1.2}
-            style={[type.residue, { fontVariant: ['tabular-nums'] }]}>
-            {formatRestClock(seconds)}
-          </Animated.Text>
+          <Animated.View key="clock" exiting={CLOCK_OUT}>
+            <RestClock
+              seconds={seconds}
+              rolling={rolling}
+              style={{ ...type.residue, fontVariant: ['tabular-nums'] }}
+            />
+          </Animated.View>
         )}
       </Pressable>
       <Animated.View
@@ -118,8 +185,8 @@ export function LogRest({
           transitionTimingFunction: 'ease-out',
         }}>
         {[
-          { label: `−${REST_NUDGE_SECONDS}`, a11y: `Shorten rest by ${REST_NUDGE_SECONDS} seconds`, onPress: () => onAdjust(-REST_NUDGE_SECONDS) },
-          { label: `+${REST_NUDGE_SECONDS}`, a11y: `Add ${REST_NUDGE_SECONDS} seconds of rest`, onPress: () => onAdjust(REST_NUDGE_SECONDS) },
+          { label: `−${REST_NUDGE_SECONDS}`, a11y: `Shorten rest by ${REST_NUDGE_SECONDS} seconds`, onPress: () => nudge(-REST_NUDGE_SECONDS) },
+          { label: `+${REST_NUDGE_SECONDS}`, a11y: `Add ${REST_NUDGE_SECONDS} seconds of rest`, onPress: () => nudge(REST_NUDGE_SECONDS) },
           { label: 'Skip', a11y: 'Skip rest', onPress: onSkip },
         ].map((item) => (
           <Pressable
