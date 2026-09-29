@@ -14,6 +14,7 @@ import Animated, {
 
 import { StaggerValue } from '@/components/stagger-value';
 import { radius, space } from '@/constants/theme';
+import { STREAK_MIN } from '@/domain/weeks';
 import { DURATION, EASE_OUT, SPRING } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
@@ -24,15 +25,20 @@ export type WeekCelebration = { index: number; weekDone: boolean; key: number };
  * The week as an amount (trim-ui → Home week details): `n of m` + `this week` + dots, one dot
  * per trainable day, green once done. Home shows it read-only in its week row; Done plays the
  * celebration on it when the workout just moved the week (trim-ui → Motion → Week dot fills).
+ *
+ * `streak` (full weeks in a row) trails the dots as a `caption` fact, from two weeks up. It
+ * rolls when it changes, so Done's full-week moment counts it up along with the dots.
  */
 export function WeekProgress({
   done,
   total,
   celebrate = null,
+  streak = 0,
 }: {
   done: number;
   total: number;
   celebrate?: WeekCelebration | null;
+  streak?: number;
 }) {
   const { type } = useTheme();
   return (
@@ -43,16 +49,27 @@ export function WeekProgress({
         <StaggerValue value={done} suffix={` of ${total}`} style={type.title} />
         <Text style={type.caption}>this week</Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }}>
-        {Array.from({ length: total }, (_, index) => (
-          <WeekDot
-            key={index}
-            filled={index < done}
-            celebrateKey={celebrate?.index === index ? celebrate.key : null}
-            waveKey={celebrate?.weekDone ? celebrate.key : null}
-            waveDelay={index * WAVE_STAGGER_MS}
-          />
-        ))}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.inline }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }}>
+          {Array.from({ length: total }, (_, index) => (
+            <WeekDot
+              key={index}
+              filled={index < done}
+              celebrateKey={celebrate?.index === index ? celebrate.key : null}
+              waveKey={celebrate?.weekDone ? celebrate.key : null}
+              waveDelay={index * WAVE_STAGGER_MS}
+            />
+          ))}
+        </View>
+        {streak >= STREAK_MIN ? (
+          <View testID="week-streak">
+            <StaggerValue
+              value={streak}
+              suffix=" weeks in a row"
+              style={[type.caption, { fontVariant: ['tabular-nums'] }]}
+            />
+          </View>
+        ) : null}
       </View>
     </View>
   );

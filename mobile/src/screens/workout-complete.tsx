@@ -9,6 +9,7 @@ import { StaggerValue } from '@/components/stagger-value';
 import { WeekProgress, type WeekCelebration } from '@/components/week-progress';
 import { fontScaleCap, space } from '@/constants/theme';
 import { weekMovedBy } from '@/domain/plan-loop';
+import { formatWeekStreak, STREAK_MIN, weekStreak } from '@/domain/weeks';
 import { workoutPersonalBests, workoutUsesLoad } from '@/domain/set-lines';
 import { useTheme } from '@/theme/theme-context';
 import { formatPaperMinutes, ordinal } from '@/domain/helpers';
@@ -61,6 +62,18 @@ export function WorkoutCompleteScreen() {
     () => (workout ? weekMovedBy(activePlan, workoutHistory, workout) : null),
     [activePlan, workout, workoutHistory],
   );
+  // Full weeks in a row before and after this workout: a week it completes counts up with the
+  // dots as Done lands (trim-ui → Moments → Week complete).
+  const streak = useMemo(() => {
+    if (!workout) {
+      return null;
+    }
+    const others = workoutHistory.filter((item) => item.id !== workout.id);
+    return {
+      before: weekStreak(activePlan, others),
+      after: weekStreak(activePlan, [workout, ...others]),
+    };
+  }, [activePlan, workout, workoutHistory]);
 
   // The moment starts on the frame the modal finishes sliding in (trim-ui → Moments: after
   // the action lands). Until then the week shows its old amount.
@@ -133,6 +146,11 @@ export function WorkoutCompleteScreen() {
     landed && week && moved
       ? { index: week.after - 1, weekDone: week.after >= week.total, key: 1 }
       : null;
+  const shownStreak = streak ? (landed ? streak.after : streak.before) : 0;
+  const weekLabel = week
+    ? `${week.after} of ${week.total} this week` +
+      (streak && streak.after >= STREAK_MIN ? `, ${formatWeekStreak(streak.after)}` : '')
+    : '';
   const unit = workoutUsesLoad(workout) ? units : null;
   let prIndex = 0;
 
@@ -170,12 +188,13 @@ export function WorkoutCompleteScreen() {
             <View
               style={{ paddingTop: space.pause }}
               accessible
-              accessibilityLabel={`${week.after} of ${week.total} this week`}
+              accessibilityLabel={weekLabel}
               testID="done-week">
               <WeekProgress
                 done={landed ? week.after : week.before}
                 total={week.total}
                 celebrate={celebrate}
+                streak={shownStreak}
               />
             </View>
           ) : null}
