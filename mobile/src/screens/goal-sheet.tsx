@@ -45,15 +45,21 @@ function parseTarget(text: string): number | null {
 export function GoalSheetScreen() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ name?: string | string[] }>();
+  const params = useLocalSearchParams<{ name?: string | string[]; next?: string | string[] }>();
   const name = firstParam(params.name) ?? '';
+  // `Set next goal` on a reached goal: the next round number above where the lift is now.
+  const next = firstParam(params.next) === '1';
   const { goals, workoutHistory, units, setGoal, removeGoal, restoreGoal } = useWorkoutStore();
   const existing = goalForLift(goals, name);
   const current = useMemo(() => currentOneRM(name, workoutHistory), [name, workoutHistory]);
   const step = goalStep(units);
 
   const [text, setText] = useState(() =>
-    formatTarget(existing?.target ?? suggestedGoalTarget(current, units)),
+    formatTarget(
+      existing && !next
+        ? existing.target
+        : suggestedGoalTarget(Math.max(current ?? 0, next && existing ? existing.target : 0), units),
+    ),
   );
   const target = parseTarget(text);
 
@@ -64,7 +70,8 @@ export function GoalSheetScreen() {
   const [replaceId, setReplaceId] = useState<string | null>(null);
 
   // A goal is something to reach: it sits above where the lift is now.
-  const valid = target != null && (current == null || target > current || existing?.target === target);
+  const valid =
+    target != null && (current == null || target > current || (!next && existing?.target === target));
 
   const nudge = (direction: 1 | -1) => {
     const base = target ?? suggestedGoalTarget(current, units);
@@ -218,7 +225,7 @@ export function GoalSheetScreen() {
                 );
               })
             : null}
-          {existing ? (
+          {existing && !next ? (
             <Pressable
               accessibilityRole="button"
               onPress={remove}

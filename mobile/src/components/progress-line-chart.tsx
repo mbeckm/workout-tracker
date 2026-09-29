@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme/theme-context';
 import { fontScaleCap, radius } from '@/constants/theme';
@@ -28,39 +28,59 @@ const MORPH_MS = DURATION.change;
 const DOT_ALL_BELOW = 6;
 const DOT_RADIUS = 4;
 const SCRUB_DOT = 10;
+/** The latest point's soft halo (trim-ui §11 rule 11: the hero is its label). */
+const HALO_RADIUS = 10;
+const HALO_OPACITY = 0.14;
+/** The goal line: 1pt, green, dashed (trim-ui §11 rule 10). */
+const GOAL_STROKE = 1;
+const GOAL_DASH = [4, 4];
+/** Air between a label and the point or line it names. */
+const LABEL_GAP = 4;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-function plotPoints(
+/**
+ * The y-scale for the window's values, stretched to include `extra` (a goal) so its line is
+ * always on the chart (trim-ui §11 rule 10).
+ */
+function yScale(
   values: ProgressPoint[],
-  width: number,
+  extra: number | null,
   height: number,
-  padX: number,
   padTop: number,
   padBottom: number,
-): Plotted[] {
-  if (values.length === 0) {
-    return [];
-  }
-
+): (value: number) => number {
   const plotH = Math.max(height - padTop - padBottom, 1);
-
-  if (values.length === 1) {
-    return [{ x: width - padX, y: padTop + plotH / 2, value: values[0].value, date: values[0].date }];
+  const all = values.map((point) => point.value);
+  if (extra != null) {
+    all.push(extra);
   }
-
-  const min = Math.min(...values.map((point) => point.value));
-  const max = Math.max(...values.map((point) => point.value));
-  const last = values.length - 1;
+  const min = Math.min(...all);
+  const max = Math.max(...all);
   // A flat series sits in the middle; otherwise the range never starts at zero.
   const pad = (max - min) * Y_PADDING;
   const low = min - pad;
   const span = max + pad - low;
+  return (value: number) => (span > 0 ? padTop + plotH - ((value - low) / span) * plotH : padTop + plotH / 2);
+}
 
+function plotPoints(
+  values: ProgressPoint[],
+  width: number,
+  padX: number,
+  y: (value: number) => number,
+): Plotted[] {
+  if (values.length === 0) {
+    return [];
+  }
+  if (values.length === 1) {
+    return [{ x: width - padX, y: y(values[0].value), value: values[0].value, date: values[0].date }];
+  }
+  const last = values.length - 1;
   return values.map((point, index) => ({
     x: padX + (index / last) * (width - padX * 2),
-    y: span > 0 ? padTop + plotH - ((point.value - low) / span) * plotH : padTop + plotH / 2,
+    y: y(point.value),
     value: point.value,
     date: point.date,
   }));
@@ -141,10 +161,26 @@ export function ProgressLineChart({
   height = 180,
   onScrub,
   accessibilityLabel,
+  inset = 4,
+  goal = null,
+  goalLabel,
+  firstLabel,
 }: {
   points: ProgressPoint[];
   width: number;
   height?: number;
+  /**
+   * Where the first and last points sit from the edges. A full-bleed chart (lift detail v5)
+   * passes the page gutter, so the line meets the text edges while the goal line runs edge to
+   * edge.
+   */
+  inset?: number;
+  /** A goal value: a green dashed line across the chart, the y-range stretched to include it. */
+  goal?: number | null;
+  /** The goal line's label (`100`), green `footnote` at its right end, at the left once reached. */
+  goalLabel?: string;
+  /** The range's first value (`75`), `footnote` under its point. The latest point has none. */
+  firstLabel?: string;
   /** `null` when the finger lifts — restore the latest value. */
   onScrub?: (point: ProgressPoint | null) => void;
   /** Spoken summary of the trend; the drawn line is invisible to VoiceOver otherwise. */
@@ -153,19 +189,26 @@ export function ProgressLineChart({
   const { colors, type } = useTheme();
   const reduceMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
-  const padX = 4;
-  const padTop = 8;
+  const padX = inset;
+  // A chart label's line, grown with Dynamic Type like the axis dates.
+  const labelLine = Math.ceil(type.footnote.lineHeight * Math.min(Math.max(fontScale, 1), AXIS_MAX_SCALE));
+  // Room above for the goal's label when the goal is the chart's top.
+  const padTop = goal != null ? LABEL_GAP * 2 + labelLine : 8;
   // Large text grows the space under the axis by the labels' extra height, so the baseline
   // never runs through them; the plot keeps its size and the chart gets taller instead.
   const labelGrowth = Math.ceil(
     type.footnote.lineHeight * (Math.min(Math.max(fontScale, 1), AXIS_MAX_SCALE) - 1),
   );
-  const padBottom = PAD_BOTTOM + labelGrowth;
-  const totalHeight = height + labelGrowth;
-  const plotted = useMemo(
-    () => plotPoints(points, width, totalHeight, padX, padTop, padBottom),
-    [padBottom, points, totalHeight, width],
+  // A first-value label gets its own line under the plot, above the dates.
+  const firstRoom = firstLabel ? LABEL_GAP + labelLine : 0;
+  const padBottom = PAD_BOTTOM + labelGrowth + firstRoom;
+  const totalHeight = height + labelGrowth + firstRoom;
+  const scale = useMemo(
+    () => yScale(points, goal, totalHeight, padTop, padBottom),
+    [goal, padBottom, padTop, points, totalHeight],
   );
+  const plotted = useMemo(() => plotPoints(points, width, padX, scale), [padX, points, scale, width]);
+  const goalY = goal != null && points.length > 0 ? scale(goal) : null;
   const chartHeight = totalHeight - padBottom;
   const axisY = chartHeight - 0.5;
 
@@ -328,6 +371,9 @@ export function ProgressLineChart({
   const dotIndexes =
     plotted.length < DOT_ALL_BELOW ? plotted.map((_, index) => index) : [plotted.length - 1];
   const [startLabel, endLabel] = axisLabels(points[0].date, points[points.length - 1].date);
+  const latest = plotted[plotted.length - 1];
+  // Once the line reaches the goal, its label moves to the left end, out of the latest point's way.
+  const goalReached = goal != null && latest.value >= goal;
 
   return (
     <GestureDetector gesture={pan}>
@@ -337,6 +383,20 @@ export function ProgressLineChart({
         accessibilityRole={accessibilityLabel != null ? 'image' : undefined}
         accessibilityLabel={accessibilityLabel}>
         <Svg width={width} height={chartHeight}>
+          {goalY != null ? (
+            <Line
+              x1={0}
+              x2={width}
+              y1={goalY}
+              y2={goalY}
+              stroke={colors.systemGreen}
+              strokeWidth={GOAL_STROKE}
+              strokeDasharray={GOAL_DASH}
+            />
+          ) : null}
+          {plotted.length > 1 ? (
+            <Circle cx={latest.x} cy={latest.y} r={HALO_RADIUS} fill={colors.label} opacity={HALO_OPACITY} />
+          ) : null}
           <AnimatedPath
             animatedProps={pathProps}
             stroke={colors.label}
@@ -391,13 +451,47 @@ export function ProgressLineChart({
             scrubDotStyle,
           ]}
         />
+        {goalY != null && goalLabel ? (
+          <Text
+            style={[
+              type.footnote,
+              {
+                position: 'absolute',
+                color: colors.systemGreen,
+                top: goalY - LABEL_GAP - labelLine,
+                ...(goalReached ? { left: padX } : { right: padX }),
+              },
+            ]}
+            maxFontSizeMultiplier={AXIS_MAX_SCALE}
+            testID="chart-goal-label">
+            {goalLabel}
+          </Text>
+        ) : null}
+        {firstLabel && plotted.length > 1 ? (
+          <Text
+            style={[
+              type.footnote,
+              {
+                position: 'absolute',
+                left: plotted[0].x + LABEL_GAP,
+                // Under its point, or above it when the point sits on the chart's floor.
+                top:
+                  plotted[0].y + LABEL_GAP + labelLine <= chartHeight + firstRoom
+                    ? plotted[0].y + LABEL_GAP
+                    : plotted[0].y - LABEL_GAP - labelLine,
+              },
+            ]}
+            maxFontSizeMultiplier={AXIS_MAX_SCALE}>
+            {firstLabel}
+          </Text>
+        ) : null}
         <Text
-          style={[type.footnote, { position: 'absolute', left: 0, bottom: 0 }]}
+          style={[type.footnote, { position: 'absolute', left: padX, bottom: 0 }]}
           maxFontSizeMultiplier={AXIS_MAX_SCALE}>
           {startLabel}
         </Text>
         <Text
-          style={[type.footnote, { position: 'absolute', right: 0, bottom: 0 }]}
+          style={[type.footnote, { position: 'absolute', right: padX, bottom: 0 }]}
           maxFontSizeMultiplier={AXIS_MAX_SCALE}>
           {endLabel}
         </Text>

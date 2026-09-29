@@ -1,23 +1,20 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { PaperScreen } from '@/components/paper';
 import { space } from '@/constants/theme';
 import { ProgressDelta } from '@/components/progress-delta';
-import { ProgressLineChart } from '@/components/progress-line-chart';
+import { ProgressReadout } from '@/components/progress-readout';
 import { StaggerValue } from '@/components/stagger-value';
-import { WindowChips } from '@/components/window-chips';
+import { useProgressWindow, WindowChips } from '@/components/window-chips';
 import { BODY_METRICS, type BodyMetricKey } from '@/domain/check-in';
 import {
   bodyMetricSeries,
-  defaultProgressWindow,
   filterPointsByWindow,
   formatProgressChartSummary,
   formatProgressShortDate,
-  formatProgressWindow,
   isInProgressWindow,
   isProgressWindowLocked,
-  percentFromWindowStart,
   PROGRESS_HERO_LOCALE,
   type ProgressPoint,
   type ProgressWindow,
@@ -54,20 +51,15 @@ function bodyHeroFormat(key: BodyMetricKey): Intl.NumberFormatOptions | undefine
   return { maximumFractionDigits: 0, useGrouping: false };
 }
 
-const CHART_HEIGHT = 180;
-
 export function ProgressBodyDetailScreen() {
   const { colors, type } = useTheme();
-  const { width } = useWindowDimensions();
   const { metric } = useLocalSearchParams<{ metric: BodyMetricKey }>();
   const metricKey = (metric ?? 'waistCm') as BodyMetricKey;
   const metricMeta = BODY_METRICS.find((item) => item.key === metricKey) ?? BODY_METRICS[1];
   const { bodyCheckIns, units, isPro } = useWorkoutStore();
-  // Body works exactly like lifts: free gets the 3M chart; longer windows are Pro, behind the
-  // same gate and paywall placement as lift detail.
-  const [picked, setPicked] = useState<ProgressWindow | null>(null);
-  const window =
-    picked != null && !isProgressWindowLocked(picked, isPro) ? picked : defaultProgressWindow(isPro);
+  // Body works exactly like lifts: `1M` and `3M` free, longer ranges Pro, behind the same gate
+  // and paywall placement as lift detail, and the range carries over between them.
+  const [window, setPicked] = useProgressWindow(isPro);
   const [scrubbed, setScrubbed] = useState<ProgressPoint | null>(null);
 
   const isLocked = (candidate: ProgressWindow) => isProgressWindowLocked(candidate, isPro);
@@ -88,8 +80,9 @@ export function ProgressBodyDetailScreen() {
 
   const heroValue = scrubbed?.value ?? latest;
   const heroNumber = heroValue != null ? bodyHeroValue(heroValue, metricKey) : null;
-  const delta = heroValue != null ? percentFromWindowStart(filtered, heroValue) : null;
-  const deltaRounded = delta == null ? null : Math.round(delta);
+  // The change over the range, in the metric's unit: body values have no good direction, and
+  // change is ink anyway (trim-ui §11 rule 2).
+  const change = heroValue != null && filtered.length >= 2 ? heroValue - filtered[0].value : null;
 
   // The list follows the window, newest first, like lift detail.
   const recent = useMemo(
@@ -104,7 +97,6 @@ export function ProgressBodyDetailScreen() {
   const chartLabel = formatProgressChartSummary(metricMeta.label, filtered, (value) =>
     formatBodyValue(value, metricKey, units),
   );
-  const chartWidth = width - space.gutter * 2;
 
   return (
     <>
@@ -126,47 +118,31 @@ export function ProgressBodyDetailScreen() {
           />
         </View>
 
-        <View style={{ paddingTop: space.gutter, paddingBottom: space.gutter, gap: space.tight }}>
-          {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              alignItems: 'flex-end',
-              columnGap: space.inline,
-              rowGap: space.tight,
-            }}>
-            <StaggerValue
-              value={heroNumber}
-              suffix={bodyHeroSuffix(metricKey, units)}
-              format={bodyHeroFormat(metricKey)}
-              locales={PROGRESS_HERO_LOCALE}
-              style={type.hero}
-            />
-            {deltaRounded != null ? <ProgressDelta percent={deltaRounded} /> : null}
-          </View>
-          {/* The scrubbed date takes the range label's place, so nothing jumps (trim-ui → Charts 3). */}
-          <Text style={type.caption}>
-            {scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : formatProgressWindow(window)}
-          </Text>
-        </View>
-
-        {filtered.length > 0 ? (
-          <ProgressLineChart
+        <View style={{ paddingTop: space.gutter, paddingBottom: space.gutter }}>
+          <ProgressReadout
+            // The scrubbed date takes the caption's place, so nothing jumps (trim-ui §11 rule 3).
+            caption={scrubbing && scrubbed ? formatProgressShortDate(scrubbed.date) : metricMeta.label}
+            hero={
+              <StaggerValue
+                value={heroNumber}
+                format={bodyHeroFormat(metricKey)}
+                locales={PROGRESS_HERO_LOCALE}
+                style={type.hero}
+              />
+            }
+            unit={bodyHeroSuffix(metricKey, units).trim()}
+            delta={
+              change != null ? (
+                <ProgressDelta change={change} unit={bodyHeroSuffix(metricKey, units).trim()} decimals={1} />
+              ) : null
+            }
             points={filtered}
-            width={chartWidth}
-            height={CHART_HEIGHT}
+            emptyText={series.length === 0 ? 'No check-ins yet' : 'No check-ins in this range'}
             onScrub={setScrubbed}
             accessibilityLabel={chartLabel}
+            firstLabel={filtered.length > 1 ? formatBodyValue(filtered[0].value, metricKey, units).split(' ')[0] : undefined}
           />
-        ) : (
-          // Same frame as the chart, so the check-ins below never jump between ranges.
-          <View style={{ height: CHART_HEIGHT }}>
-            <Text style={type.caption}>
-              {series.length === 0 ? 'No check-ins yet' : 'No check-ins in this range'}
-            </Text>
-          </View>
-        )}
+        </View>
 
         {/* The check-ins are the line's points, so they follow it closely. */}
         <View style={{ height: space.inset }} />

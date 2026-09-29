@@ -1,3 +1,4 @@
+import { SymbolView } from 'expo-symbols';
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -17,7 +18,8 @@ import { Button } from '@/components/button';
 import { Fact } from '@/components/fact';
 import { LiftRow } from '@/components/lift-row';
 import { StaggerValue } from '@/components/stagger-value';
-import { fontScaleCap, radius, space } from '@/constants/theme';
+import { fontScaleCap, iconSize, radius, space, spacing } from '@/constants/theme';
+import { currentOneRM, goalsReachedIn, type Goal } from '@/domain/goals';
 import { formatPaperMinutes, formatPlanMetricShort, ordinal } from '@/domain/helpers';
 import { liftChangeFor, liftChanges } from '@/domain/home-numbers';
 import type { LoggedExercise, LoggedWorkout, WorkoutPlan } from '@/domain/types';
@@ -69,7 +71,7 @@ export function WorkoutCompleteScreen() {
   const workout =
     workoutHistory.find((item) => item.id === id) ??
     (lastCompletedWorkout?.id === id ? lastCompletedWorkout : null);
-  const { units, milestoneFor, claimMilestone, activePlan } = useWorkoutStore();
+  const { units, milestoneFor, claimMilestone, activePlan, goals } = useWorkoutStore();
   const milestone = workout ? milestoneFor(workout) : null;
   const workoutId = workout?.id;
 
@@ -187,6 +189,16 @@ export function WorkoutCompleteScreen() {
               {milestone ? <MilestoneFact milestone={milestone} landed={landed} /> : null}
             </View>
           </View>
+          {goalsReachedIn(workout, goals).map((goal) => (
+            <View key={goal.id} style={{ paddingTop: space.section }}>
+              <GoalReached
+                goal={goal}
+                from={goalStart(goal, workout, workoutHistory)}
+                units={units}
+                landed={landed}
+              />
+            </View>
+          ))}
           <View style={{ paddingTop: space.section }} testID="done-lifts">
             {workout.exercises.map((exercise, index) => {
               const change = changes ? liftChangeFor(changes, exercise.exerciseName) : null;
@@ -216,6 +228,76 @@ export function WorkoutCompleteScreen() {
       </View>
       <Stack.Screen options={{ headerShown: false, gestureEnabled: false, title: 'Done' }} />
     </>
+  );
+}
+
+/** Where the goal's track stood before this workout: the lift's 1RM then, over the target. */
+function goalStart(goal: Goal, workout: LoggedWorkout, history: LoggedWorkout[]): number {
+  const before = currentOneRM(
+    goal.exerciseName,
+    history.filter((item) => item.id !== workout.id && item.completedAt < workout.completedAt),
+  );
+  return before != null && goal.target > 0 ? Math.min(1, before / goal.target) : 0;
+}
+
+/** The goal track (trim-ui §13 Goals: 8pt, green). */
+const TRACK = spacing.sm;
+
+/**
+ * A goal this workout reached (trim-ui §13 Done): 🎯 `Bench Press goal reached` with `100 kg`,
+ * over a green track that fills from where it stood to the end with the pop once Done lands.
+ * Rare, so it gets motion. Reduce Motion: the track fills without the overshoot.
+ */
+function GoalReached({
+  goal,
+  from,
+  units,
+  landed,
+}: {
+  goal: Goal;
+  from: number;
+  units: 'kg' | 'lbs';
+  landed: boolean;
+}) {
+  const { colors, type } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const fill = useSharedValue(from);
+
+  useEffect(() => {
+    if (!landed) {
+      return;
+    }
+    fill.set(
+      reduceMotion
+        ? withTiming(1, { duration: DURATION.change, easing: EASE_OUT, reduceMotion: ReduceMotion.Never })
+        : withSpring(1, SPRING.pop),
+    );
+  }, [fill, landed, reduceMotion]);
+
+  // The track clips the overshoot, so the pop reads as the fill landing hard at the end.
+  const fillStyle = useAnimatedStyle(() => ({ width: `${Math.max(0, fill.get()) * 100}%` }));
+  const target = `${Math.round(goal.target * 10) / 10} ${units}`;
+
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${goal.exerciseName} goal reached, ${target}`}
+      testID="done-goal-reached"
+      style={{ gap: space.related }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }}>
+        <SymbolView name="scope" size={iconSize.row} weight="medium" tintColor={colors.systemGreen} />
+        <Text style={[type.row, { flex: 1 }]} numberOfLines={2}>
+          {`${goal.exerciseName} goal reached`}
+        </Text>
+        <Text style={[type.row, { fontVariant: ['tabular-nums'] }]}>{target}</Text>
+      </View>
+      <View
+        style={{ height: TRACK, borderRadius: radius.full, backgroundColor: colors.systemGray5, overflow: 'hidden' }}>
+        <Animated.View
+          style={[{ height: TRACK, borderRadius: radius.full, backgroundColor: colors.systemGreen }, fillStyle]}
+        />
+      </View>
+    </View>
   );
 }
 
