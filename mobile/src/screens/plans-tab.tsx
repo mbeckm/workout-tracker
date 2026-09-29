@@ -16,6 +16,7 @@ import { PaperEmpty } from '@/components/paper';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
+import { promptRename } from '@/navigation/rename-prompt';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
@@ -39,9 +40,9 @@ const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
 export function PlansTab() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, updatePlan, activatePlan, isPro } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
@@ -83,6 +84,15 @@ export function PlansTab() {
 
   const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
 
+  // The same rename as the plan editor's Rename row and a day's context menu.
+  const renamePlan = (plan: WorkoutPlan) =>
+    promptRename({
+      title: 'Rename plan',
+      current: plan.name,
+      scheme,
+      onSave: (name) => updatePlan({ ...plan, name }),
+    });
+
   return (
     <>
       <ScrollView
@@ -110,6 +120,7 @@ export function PlansTab() {
                 plan={activePlan}
                 variant="active"
                 onActivate={() => activatePlan(activePlan)}
+                onRename={() => renamePlan(activePlan)}
                 onDelete={() => confirmDelete(activePlan)}
               />
             ) : null}
@@ -128,6 +139,7 @@ export function PlansTab() {
                         activatePlan(plan);
                       }
                     }}
+                    onRename={() => renamePlan(plan)}
                     onDelete={() => confirmDelete(plan)}
                   />
                 ))}
@@ -150,6 +162,7 @@ function PlanMenuRow({
   proLabel = false,
   revealed = false,
   onActivate,
+  onRename,
   onDelete,
 }: {
   plan: WorkoutPlan;
@@ -160,6 +173,7 @@ function PlanMenuRow({
   /** Just created: light the row once so the eye finds where the plan went. */
   revealed?: boolean;
   onActivate: () => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
   const { colors, type } = useTheme();
@@ -221,6 +235,7 @@ function PlanMenuRow({
             onPress={onActivate}
           />
         )}
+        <Link.MenuAction title="Rename" icon="pencil" onPress={onRename} />
         <Link.MenuAction title="Delete" icon="trash" destructive onPress={onDelete} />
       </Link.Menu>
     </Link>

@@ -12,13 +12,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
-import { PaperBack } from '@/components/paper';
 import { PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
 import { DURATION, EASE_IN_OUT, EASE_OUT, ENTER_OFFSET } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import { formatPlanMetric, withDay } from '@/domain/helpers';
 import { prescriptionFields, type PrescriptionField } from '@/domain/prescription-fields';
 import type { ExercisePrescription } from '@/domain/types';
+import { largeTitleOptions } from '@/navigation/large-title';
+import { promptRename } from '@/navigation/rename-prompt';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -26,12 +27,8 @@ import { useWorkoutStore } from '@/store/workout-store';
 const LIST_LAYOUT = LinearTransition.duration(DURATION.enter).easing(EASE_IN_OUT);
 
 export function DayEditorScreen() {
-  const { colors, type } = useTheme();
-  const { planId, dayId, focus } = useLocalSearchParams<{
-    planId: string;
-    dayId: string;
-    focus?: string;
-  }>();
+  const { colors, scheme, type } = useTheme();
+  const { planId, dayId } = useLocalSearchParams<{ planId: string; dayId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
@@ -40,6 +37,11 @@ export function DayEditorScreen() {
   const plan = plans.find((item) => item.id === planId);
   const day = plan?.days.find((item) => item.id === dayId);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Rename saves after the prompt closes; by then a well's blur may have saved a newer plan.
+  const planRef = useRef(plan);
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
 
   if (!plan || !day) {
     return <View style={{ flex: 1, backgroundColor: colors.systemBackground }} />;
@@ -48,10 +50,6 @@ export function DayEditorScreen() {
   const exerciseCount = day.exercises.length;
   const exerciseMeta = exerciseCount === 1 ? '1 exercise' : `${exerciseCount} exercises`;
   const lastIndex = exerciseCount - 1;
-
-  const collapseConfigurator = () => {
-    setEditingId(null);
-  };
 
   const collapseEditor = () => {
     Keyboard.dismiss();
@@ -64,10 +62,6 @@ export function DayEditorScreen() {
       return;
     }
     setEditingId(exerciseId);
-  };
-
-  const updateTitle = (title: string) => {
-    updatePlan(withDay(plan, day.id, (current) => ({ ...current, title })));
   };
 
   const updateExercise = (exerciseId: string, patch: Partial<ExercisePrescription>) => {
@@ -115,94 +109,83 @@ export function DayEditorScreen() {
     router.push(`/exercises?planId=${plan.id}&dayId=${day.id}&from=prescribe`);
   };
 
+  const renameDay = () => {
+    collapseEditor();
+    promptRename({
+      title: 'Rename day',
+      current: day.title,
+      scheme,
+      onSave: (title) => {
+        const latest = planRef.current;
+        if (latest) {
+          updatePlan(withDay(latest, day.id, (current) => ({ ...current, title })));
+        }
+      },
+    });
+  };
+
   return (
     <>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + space.inset,
-          paddingHorizontal: space.gutter,
-        }}>
-        <PaperBack
-          onPress={() => {
-            collapseEditor();
-            router.back();
-          }}
-        />
-        <TextInput
-          value={day.title}
-          onChangeText={updateTitle}
-          onFocus={collapseConfigurator}
-          placeholder="Day"
-          placeholderTextColor={colors.tertiaryLabel}
-          accessibilityLabel="Day name"
-          autoFocus={focus === 'title'}
-          selectTextOnFocus={focus === 'title'}
-          returnKeyType="done"
-          submitBehavior="blurAndSubmit"
-          scrollEnabled={false}
-          maxFontSizeMultiplier={1.2}
-          style={[type.displayDay, { padding: 0, margin: 0 }]}
-        />
-        {exerciseCount > 0 ? (
-          <Pressable accessible={false} onPress={editingId ? collapseConfigurator : undefined}>
-            <Text style={[type.kicker, { color: colors.tertiaryLabel, paddingTop: space.tight }]}>
-              {exerciseMeta}
-            </Text>
-          </Pressable>
-        ) : null}
+      <View style={{ flex: 1, backgroundColor: colors.systemBackground }}>
         <ScrollView
           style={{ flex: 1 }}
+          contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           onScrollBeginDrag={collapseEditor}
           automaticallyAdjustKeyboardInsets
+          // Same page as the plan editor: the day name is the native large title and content
+          // sits on its edge (trim-ui → Layout → Under a large title).
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: insets.bottom + 24,
+            paddingHorizontal: space.margin,
+            paddingBottom: insets.bottom + space.gutter,
           }}>
-          <Pressable
-            accessible={false}
-            onPress={collapseEditor}
-            style={{ flexGrow: 1, paddingTop: EDITOR_LIST_TOP }}>
-            {day.exercises.map((exercise, index) => (
-              <ExercisePrescribeRow
-                key={exercise.id}
-                exercise={exercise}
-                isFirst={index === 0}
-                expanded={exercise.id === editingId}
-                reduceMotion={Boolean(reduceMotion)}
-                onToggle={() => toggleExercise(exercise.id)}
-                onChange={(patch) => updateExercise(exercise.id, patch)}
-                onMoveUp={index > 0 ? () => moveExercise(exercise.id, -1) : undefined}
-                onMoveDown={index < lastIndex ? () => moveExercise(exercise.id, 1) : undefined}
-                onRemove={() => removeExercise(exercise.id)}
-              />
-            ))}
-            <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
-              <EditorActionRow
-                title="Add exercise"
-                symbol="plus"
-                tone="quiet"
-                onPress={openExercisePicker}
-                testID="prescribe-add"
-              />
-            </Animated.View>
-            {plan.days.length > 1 ? (
-              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+          <Pressable accessible={false} onPress={collapseEditor} style={{ flexGrow: 1 }}>
+            {exerciseCount > 0 ? (
+              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{exerciseMeta}</Text>
+            ) : null}
+            {/* Title block → first row text is `section`; a first action row brings its own 16. */}
+            <View style={{ paddingTop: exerciseCount > 0 ? EDITOR_LIST_TOP : space.inset }}>
+              {day.exercises.map((exercise, index) => (
+                <ExercisePrescribeRow
+                  key={exercise.id}
+                  exercise={exercise}
+                  isFirst={index === 0}
+                  expanded={exercise.id === editingId}
+                  reduceMotion={Boolean(reduceMotion)}
+                  onToggle={() => toggleExercise(exercise.id)}
+                  onChange={(patch) => updateExercise(exercise.id, patch)}
+                  onMoveUp={index > 0 ? () => moveExercise(exercise.id, -1) : undefined}
+                  onMoveDown={index < lastIndex ? () => moveExercise(exercise.id, 1) : undefined}
+                  onRemove={() => removeExercise(exercise.id)}
+                />
+              ))}
+              <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT}>
                 <EditorActionRow
-                  title="Remove day"
-                  symbol="trash"
-                  tone="destructive"
-                  onPress={removeDay}
+                  title="Add exercise"
+                  symbol="plus"
+                  tone="quiet"
+                  onPress={openExercisePicker}
+                  testID="prescribe-add"
                 />
               </Animated.View>
-            ) : null}
+            </View>
+            <Animated.View layout={reduceMotion ? undefined : LIST_LAYOUT} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+              <EditorActionRow title="Rename day" symbol="pencil" onPress={renameDay} testID="day-rename" />
+              {plan.days.length > 1 ? (
+                <EditorActionRow title="Remove day" symbol="trash" tone="destructive" onPress={removeDay} />
+              ) : null}
+            </Animated.View>
           </Pressable>
         </ScrollView>
       </View>
-      <Stack.Screen options={{ headerShown: false, title: day.title, keyboardHandlingEnabled: false }} />
+      <Stack.Screen
+        options={{
+          ...largeTitleOptions(colors, day.title.trim() || 'Day'),
+          keyboardHandlingEnabled: false,
+        }}
+      />
     </>
   );
 }

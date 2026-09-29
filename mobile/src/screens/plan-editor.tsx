@@ -9,10 +9,11 @@ import { PlanDetailDayRow } from '@/components/plan-detail-day-row';
 import { Button } from '@/components/button';
 import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
-import { clonePrescription, emptyDay } from '@/domain/helpers';
+import { clonePrescription, emptyDay, withDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
 import { largeTitleOptions } from '@/navigation/large-title';
 import { confirmPlanCreated } from '@/navigation/plan-created';
+import { promptRename } from '@/navigation/rename-prompt';
 import { requirePro } from '@/purchases/pro-gate';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -58,36 +59,24 @@ export function PlanEditorScreen() {
     });
   }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed]);
 
-  // The name is the native large title, so it's edited in the system text prompt. It takes
-  // Trim's own light/dark (JS-only, so the prompt would otherwise follow the OS), and an empty
-  // or unchanged name keeps the plan as it is: Save never blanks a name.
+  // Plan and day names are native large titles, renamed the same way: the system prompt
+  // (`promptRename`), from the row's context menu or the editor's Rename row.
   const renamePlan = () => {
     const current = planRef.current;
     if (!current) {
       return;
     }
-    const name = current.name.trim();
-    Alert.prompt(
-      name ? 'Rename plan' : 'Name this plan',
-      undefined,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Save',
-          onPress: (value?: string) => {
-            const next = (value ?? '').trim();
-            const latest = planRef.current;
-            if (latest && next && next !== latest.name.trim()) {
-              updatePlan({ ...latest, name: next });
-            }
-          },
-        },
-      ],
-      'plain-text',
-      name,
-      'default',
-      { userInterfaceStyle: scheme },
-    );
+    promptRename({
+      title: current.name.trim() ? 'Rename plan' : 'Name this plan',
+      current: current.name,
+      scheme,
+      onSave: (name) => {
+        const latest = planRef.current;
+        if (latest) {
+          updatePlan({ ...latest, name });
+        }
+      },
+    });
   };
 
   // A new plan asks for its name once it has slid in, where the old editor focused the name.
@@ -116,8 +105,23 @@ export function PlanEditorScreen() {
       ? (`/exercises?planId=${plan.id}&dayId=${day.id}&dayTitle=${encodeURIComponent(day.title)}` as const)
       : (`/prescribe?planId=${plan.id}&dayId=${day.id}` as const);
 
+  // Renamed in place, like the plan: no push to the day just to change its name.
   const renameDay = (dayId: string) => {
-    router.push(`/prescribe?planId=${plan.id}&dayId=${dayId}&focus=title`);
+    const day = plan.days.find((item) => item.id === dayId);
+    if (!day) {
+      return;
+    }
+    promptRename({
+      title: 'Rename day',
+      current: day.title,
+      scheme,
+      onSave: (title) => {
+        const latest = planRef.current;
+        if (latest) {
+          updatePlan(withDay(latest, dayId, (current) => ({ ...current, title })));
+        }
+      },
+    });
   };
 
   const duplicateDay = (dayId: string) => {
