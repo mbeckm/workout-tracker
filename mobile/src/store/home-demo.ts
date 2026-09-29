@@ -204,6 +204,8 @@ const DEMO_GOALS: [string, number][] = [
   ['bundled-barbell-back-squat', 125],
   ['bundled-romanian-deadlift', 120],
   ['bundled-overhead-press', 55],
+  // Unpinned; finishing Upper at its Pro target (57.5 × 10) reaches it, for Done's goal row.
+  ['bundled-lat-pulldown', 75],
 ];
 
 function loggedSets(sets: [number, number][]): LoggedSet[] {
