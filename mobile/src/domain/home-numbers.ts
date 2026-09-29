@@ -1,6 +1,9 @@
 import { formatDoneWhen } from '@/domain/day-facts';
+import { personalBestCount } from '@/domain/helpers';
+import { dayIdForPlanWorkout } from '@/domain/plan-loop';
+import { workoutPersonalBests } from '@/domain/set-lines';
 import { exerciseTargets, recentSessionSets, type TargetPrescription, type TargetUnits } from '@/domain/targets';
-import type { LoggedSet, LoggedWorkout } from '@/domain/types';
+import type { LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
 
 /**
@@ -140,4 +143,127 @@ export function weekDayMarks(
     });
     return { date, done, isToday: date.getTime() === today, isFuture: date.getTime() > today };
   });
+}
+
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * The workout of this plan finished today, newest first, or null (Home's "Just trained"
+ * state, trim-ui §13 Home states). History is newest first.
+ */
+export function workoutFinishedToday(
+  plan: WorkoutPlan | null | undefined,
+  history: readonly LoggedWorkout[],
+  now = new Date(),
+): LoggedWorkout | null {
+  if (!plan) {
+    return null;
+  }
+  const today = startOfDay(now);
+  for (const workout of history) {
+    if (new Date(workout.completedAt).getTime() < today) {
+      return null;
+    }
+    if (dayIdForPlanWorkout(workout, plan)) {
+      return workout;
+    }
+  }
+  return null;
+}
+
+/**
+ * What one lift did in a finished workout, against the session before it: its heaviest set
+ * went up, held or went down by `delta`, or it's the first time (`load` alone). `record` when
+ * the workout set a personal best on it (the crown replaces the ↑).
+ */
+export type LiftChange = {
+  kind: 'up' | 'same' | 'down' | 'first';
+  /** The heaviest set today. */
+  load: number;
+  /** Absolute change of the heaviest set, 0 for `same` and `first`. */
+  delta: number;
+  record: boolean;
+};
+
+/** Per exercise name (stats key) of `workout`: how its heaviest set changed. */
+export function liftChanges(
+  workout: LoggedWorkout,
+  history: readonly LoggedWorkout[],
+): Map<string, LiftChange> {
+  const index = history.findIndex((item) => item.id === workout.id);
+  const older = index === -1 ? history : history.slice(index + 1);
+  const records = workoutPersonalBests(workout, [...history]).exerciseIds;
+  const changes = new Map<string, LiftChange>();
+  for (const exercise of workout.exercises) {
+    const top = heaviest(exercise.sets);
+    if (top?.weight == null) {
+      continue;
+    }
+    const [previous] = recentSessionSets(older, exercise.exerciseName, 1);
+    const before = previous ? heaviest(previous) : null;
+    const record = records.has(exercise.id);
+    const key = normalizedStatsKey(exercise.exerciseName);
+    if (before?.weight == null) {
+      changes.set(key, { kind: 'first', load: top.weight, delta: 0, record });
+      continue;
+    }
+    const delta = tidy(top.weight - before.weight);
+    changes.set(key, {
+      kind: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
+      load: top.weight,
+      delta: Math.abs(delta),
+      record,
+    });
+  }
+  return changes;
+}
+
+/** Looks up an exercise's change by name, the way history matches exercises. */
+export function liftChangeFor(changes: Map<string, LiftChange>, name: string): LiftChange | null {
+  return changes.get(normalizedStatsKey(name)) ?? null;
+}
+
+/**
+ * This week in numbers, for a complete week (`↑ 9 lifts went up`, 👑 `2 new records`): lifts
+ * whose heaviest set this week beats their last session before it, and the personal bests set
+ * this week.
+ */
+export function weekLiftSummary(
+  history: readonly LoggedWorkout[],
+  weekStart: Date,
+): { liftsUp: number; records: number } {
+  const since = weekStart.getTime();
+  const thisWeek = history.filter(
+    (workout) => workout.setCount > 0 && new Date(workout.completedAt).getTime() >= since,
+  );
+  const before = history.filter((workout) => new Date(workout.completedAt).getTime() < since);
+  const best = new Map<string, { name: string; weight: number }>();
+  for (const workout of thisWeek) {
+    for (const exercise of workout.exercises) {
+      const top = heaviest(exercise.sets);
+      if (top?.weight == null) {
+        continue;
+      }
+      const key = normalizedStatsKey(exercise.exerciseName);
+      const current = best.get(key);
+      if (!current || top.weight > current.weight) {
+        best.set(key, { name: exercise.exerciseName, weight: top.weight });
+      }
+    }
+  }
+  let liftsUp = 0;
+  for (const { name, weight } of best.values()) {
+    const [previous] = recentSessionSets(before, name, 1);
+    const previousTop = previous ? heaviest(previous) : null;
+    if (previousTop?.weight != null && weight > previousTop.weight) {
+      liftsUp += 1;
+    }
+  }
+  const records = thisWeek.reduce(
+    (sum, workout) => sum + personalBestCount(workout, [...history]),
+    0,
+  );
+  return { liftsUp, records };
 }
