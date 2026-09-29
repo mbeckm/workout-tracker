@@ -7,15 +7,17 @@ import Animated, {
   interpolate,
   ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { PaperGrabber } from '@/components/paper';
 import { darkColors, lightColors, radius, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
-import { SPRING } from '@/motion';
+import { DURATION, EASE_IN_OUT, SPRING } from '@/motion';
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -373,5 +375,37 @@ export function AnimatedSheet({
     <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
       <GestureHandlerRootView style={{ flex: 1 }}>{body}</GestureHandlerRootView>
     </Modal>
+  );
+}
+
+/**
+ * Sheet content that changes in place (a list row opens its detail, Back returns): the
+ * sheet's height eases to the new content (`enter`, ease-in-out, trim-ui §8 Sheet content
+ * morphs) instead of jumping, so the sheet reads as one object changing shape. Key the
+ * children per state and give them `entering` / `exiting` for the crossfade. Under Reduce
+ * Motion the height snaps and only the crossfade remains.
+ */
+export function SheetMorph({ children }: { children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  // -1 until the first layout: the first height is the content's own, never animated.
+  const height = useSharedValue(-1);
+  const style = useAnimatedStyle(() => {
+    const value = height.get();
+    return value < 0 ? {} : { height: value };
+  });
+  return (
+    <Animated.View style={[{ overflow: 'hidden' }, style]}>
+      <View
+        onLayout={(event) => {
+          const next = event.nativeEvent.layout.height;
+          if (height.get() < 0 || reduceMotion) {
+            height.set(next);
+            return;
+          }
+          height.set(withTiming(next, { duration: DURATION.enter, easing: EASE_IN_OUT }));
+        }}>
+        {children}
+      </View>
+    </Animated.View>
   );
 }

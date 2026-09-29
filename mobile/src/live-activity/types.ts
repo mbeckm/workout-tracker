@@ -10,4 +10,6 @@ export type WorkoutLiveActivitySync = {
   exerciseName: string;
   imageURL: string | null;
   rest: WorkoutRestWindow | null;
+  /** The last rest ran out (or was skipped) and no new one has started. */
+  restOver?: boolean;
 };

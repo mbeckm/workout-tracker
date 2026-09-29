@@ -3,24 +3,21 @@ import { forwardRef, type ComponentRef } from 'react';
 import { Pressable, Text } from 'react-native';
 
 import { useTheme } from '@/theme/theme-context';
+import { space, TOUCH_TARGET } from '@/constants/theme';
 
 /** Web stand-in for native tabs: same ink as iOS (label selected, tertiary waiting). */
 const TabButton = forwardRef<ComponentRef<typeof Pressable>, TabTriggerSlotProps & { title: string }>(
   function TabButton({ title, isFocused, ...props }, ref) {
-    const { colors } = useTheme();
+    const { colors, type } = useTheme();
     return (
       <Pressable
         ref={ref}
         {...props}
         accessibilityRole="tab"
         accessibilityState={{ selected: Boolean(isFocused) }}
-        style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}>
+        style={{ minHeight: TOUCH_TARGET, justifyContent: 'center', paddingHorizontal: space.tight }}>
         <Text
-          style={{
-            fontSize: 15,
-            fontWeight: '500',
-            color: isFocused ? colors.label : colors.tertiaryLabel,
-          }}>
+          style={[type.caption, { color: isFocused ? colors.label : colors.tertiaryLabel }]}>
           {title}
         </Text>
       </Pressable>
@@ -37,8 +34,8 @@ export default function TabsLayout() {
         style={{
           flexDirection: 'row',
           justifyContent: 'space-around',
-          paddingHorizontal: 12,
-          paddingVertical: 4,
+          paddingHorizontal: space.inline,
+          paddingVertical: space.tight,
           backgroundColor: colors.systemBackground,
           borderTopWidth: 1,
           borderTopColor: colors.separator,

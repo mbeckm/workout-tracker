@@ -5,4 +5,6 @@ export type WorkoutActivityProps = {
   isResting: boolean;
   restStartEpochMs: number;
   restEndEpochMs: number;
+  /** Rest ran out and the next set is up: `Go` where the clock was. */
+  restOver: boolean;
 };

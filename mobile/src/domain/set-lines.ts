@@ -1,8 +1,11 @@
 import {
+  bestTenRMSetId,
+  formatLoadWithUnit,
   formatLoggedSetLine,
   formatSetsCount,
   personalBestSetIds,
   type SetLineOptions,
+  type WeightUnit,
 } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout } from '@/domain/types';
 
@@ -169,4 +172,91 @@ export function exerciseRecapLabel(
   ]
     .filter(Boolean)
     .join(', ');
+}
+
+export type DoneLine = {
+  /** `4 × 8 reps at 60 kg`, `4 sets, best 85 kg × 8`, or one set as logged (`60 kg × 8`). */
+  text: string;
+  /** VoiceOver: `4 sets of 8 reps at 60 kilograms`. */
+  accessibilityLabel: string;
+  /** The line names this exercise's personal-best set. */
+  pr: boolean;
+};
+
+const SPOKEN_UNIT: Record<WeightUnit, string> = { kg: 'kilograms', lbs: 'pounds' };
+
+function spokenLine(line: string, unit: WeightUnit | null | undefined): string {
+  let spoken = line;
+  if (unit) {
+    spoken = spoken.replace(` ${unit}`, ` ${SPOKEN_UNIT[unit]}`);
+  }
+  return spoken.includes(' × ') ? `${spoken.replace(' × ', ' for ')} reps` : spoken;
+}
+
+/** The set a lifter would call their best: highest 10RM, else most reps, else longest. */
+function bestSet(sets: LoggedSet[]): LoggedSet | undefined {
+  const byTenRM = bestTenRMSetId(sets);
+  if (byTenRM) {
+    return sets.find((set) => set.id === byTenRM);
+  }
+  const score = (set: LoggedSet) => set.reps ?? set.durationSeconds ?? -1;
+  return sets.reduce<LoggedSet | undefined>(
+    (best, set) => (best == null || score(set) > score(best) ? set : best),
+    undefined,
+  );
+}
+
+/**
+ * Done's one line per exercise (trim-ui → Done, PRODUCT-DECISIONS 46). When every set matched,
+ * it says so in the plan's own words (`4 × 8 reps at 60 kg`, `3 × 30s`); otherwise the count and
+ * the best set (`4 sets, best 85 kg × 8`), which is the PR set when there is one. History's
+ * session detail keeps every set (decision 26): Done is the moment, detail is the record.
+ */
+export function exerciseDoneLine(
+  exercise: Pick<LoggedExercise, 'sets'>,
+  options: SetLineOptions & { prSetIds?: ReadonlySet<string> },
+): DoneLine {
+  const { sets } = exercise;
+  const unit = options.unit;
+  const pr = sets.some((set) => options.prSetIds?.has(set.id) ?? false);
+  const first = sets[0];
+  if (!first) {
+    return { text: '—', accessibilityLabel: 'No sets', pr: false };
+  }
+  const lines = sets.map((set) => formatLoggedSetLine(set, options));
+  const count = sets.length;
+
+  if (count === 1) {
+    return { text: lines[0] ?? '—', accessibilityLabel: spokenLine(lines[0] ?? '', unit), pr };
+  }
+
+  if (lines.every((line) => line === lines[0])) {
+    const load = first.weight ?? first.counterweight ?? null;
+    if (first.reps != null) {
+      const reps = `${first.reps} ${first.reps === 1 ? 'rep' : 'reps'}`;
+      if (load != null) {
+        const loadText = formatLoadWithUnit(load, unit);
+        return {
+          text: `${count} × ${reps} at ${loadText}`,
+          accessibilityLabel: `${count} sets of ${reps} at ${spokenLine(loadText, unit)}`,
+          pr,
+        };
+      }
+      return { text: `${count} × ${reps}`, accessibilityLabel: `${count} sets of ${reps}`, pr };
+    }
+    return {
+      text: `${count} × ${lines[0]}`,
+      accessibilityLabel: `${count} sets of ${spokenLine(lines[0] ?? '', unit)}`,
+      pr,
+    };
+  }
+
+  const prSet = sets.find((set) => options.prSetIds?.has(set.id));
+  const best = prSet ?? bestSet(sets) ?? first;
+  const bestText = formatLoggedSetLine(best, options);
+  return {
+    text: `${count} sets, best ${bestText}`,
+    accessibilityLabel: `${count} sets, best ${spokenLine(bestText, unit)}`,
+    pr,
+  };
 }

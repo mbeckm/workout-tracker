@@ -252,6 +252,9 @@ export function HistoryTab() {
                   justifyContent: 'space-between',
                   gap: space.inline,
                   paddingHorizontal: space.gutter,
+                  // The rows below are pulled up into this caption's padding and paint an
+                  // opaque swipe background; drawn above them, the caption never clips.
+                  zIndex: 1,
                 }}>
                 <Text style={[type.caption, { flexShrink: 1 }]}>{group.label}</Text>
                 <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>

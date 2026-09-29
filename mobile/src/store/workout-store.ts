@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { withLoggedTenRM } from '../domain/helpers';
+import { withLoggedTenRM, workoutMilestone } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
 import {
   clearedSession,
@@ -88,6 +88,8 @@ type WorkoutStoreState = {
   isPro: boolean;
   /** Known after the first entitlement sync this launch; null when not Pro or not known yet. */
   proPeriod: ProPeriod | null;
+  /** When the current Pro period ends, and whether it renews then. Null when not known. */
+  proRenewal: { expiresAt: string; willRenew: boolean } | null;
   isHydrated: boolean;
   shouldOfferPostWorkoutPaywall: boolean;
   lastCompletedWorkout: LoggedWorkout | null;
@@ -124,6 +126,10 @@ type WorkoutStoreState = {
   markPaywallShown: (reason: ProReason) => void;
   /** Ignores `unknown`, so offline or an SDK error never downgrades a cached Pro user. */
   applyEntitlement: (entitlement: Entitlement) => void;
+  /** Done's moment fact for this workout, shown once ever: null once another workout had it. */
+  milestoneFor: (workout: LoggedWorkout) => string | null;
+  /** Records that `milestone` was shown for `workoutId` (first claim wins). */
+  claimMilestone: (milestone: string, workoutId: string) => void;
 };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
@@ -133,6 +139,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [lastCompletedWorkout, setLastCompletedWorkout] = useState<LoggedWorkout | null>(null);
   const [proPeriod, setProPeriod] = useState<ProPeriod | null>(null);
+  const [proRenewal, setProRenewal] = useState<WorkoutStoreState['proRenewal']>(null);
   const persistTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const snapshotRef = useRef(snapshot);
   const hydratedRef = useRef(false);
@@ -510,12 +517,37 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const milestoneFor = useCallback(
+    (workout: LoggedWorkout) => {
+      const milestone = workoutMilestone(workout, snapshot.workoutHistory);
+      if (!milestone) {
+        return null;
+      }
+      const owner = snapshot.milestonesShown[milestone];
+      return owner == null || owner === workout.id ? milestone : null;
+    },
+    [snapshot.milestonesShown, snapshot.workoutHistory],
+  );
+
+  const claimMilestone = useCallback((milestone: string, workoutId: string) => {
+    setSnapshot((current) =>
+      current.milestonesShown[milestone] != null
+        ? current
+        : { ...current, milestonesShown: { ...current.milestonesShown, [milestone]: workoutId } },
+    );
+  }, []);
+
   const applyEntitlement = useCallback((entitlement: Entitlement) => {
     if (entitlement.status === 'unknown') {
       return;
     }
     const isPro = entitlement.status === 'pro';
     setProPeriod(isPro ? entitlement.period : null);
+    setProRenewal(
+      isPro && entitlement.expiresAt
+        ? { expiresAt: entitlement.expiresAt, willRenew: entitlement.willRenew !== false }
+        : null,
+    );
     setSnapshot((current) => (current.isPro === isPro ? current : { ...current, isPro }));
   }, []);
 
@@ -560,6 +592,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       postWorkoutPaywallShownAt: snapshot.postWorkoutPaywallShownAt,
       isPro: snapshot.isPro,
       proPeriod: snapshot.isPro ? proPeriod : null,
+      proRenewal: snapshot.isPro ? proRenewal : null,
       isHydrated,
       shouldOfferPostWorkoutPaywall,
       lastCompletedWorkout,
@@ -587,11 +620,14 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       completeOnboarding,
       markPaywallShown,
       applyEntitlement,
+      milestoneFor,
+      claimMilestone,
     };
   }, [
     snapshot,
     activePlan,
     proPeriod,
+    proRenewal,
     isHydrated,
     shouldOfferPostWorkoutPaywall,
     lastCompletedWorkout,
@@ -615,6 +651,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     completeOnboarding,
     markPaywallShown,
     applyEntitlement,
+    milestoneFor,
+    claimMilestone,
     saveLogSession,
     clearLogSession,
   ]);

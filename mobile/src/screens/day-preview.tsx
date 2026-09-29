@@ -1,8 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedSheet } from '@/components/animated-sheet';
 import { Button } from '@/components/button';
 import { space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
@@ -41,7 +40,9 @@ export function DayPreviewBody({
   const count = day.exercises.length;
 
   return (
-    <>
+    <View
+      collapsable={false}
+      style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter }}>
       <View style={{ gap: space.tight }}>
         <Text style={type.title} accessibilityRole="header" numberOfLines={2}>
           {day.title}
@@ -86,13 +87,12 @@ export function DayPreviewBody({
       ) : null}
       {/* The thumb CTA sits 16 above the safe area (trim-ui → Layout → Thumb zone). */}
       <View style={{ height: insets.bottom + space.inset }} />
-    </>
+    </View>
   );
 }
 
 export function DayPreviewScreen() {
   const { colors, type } = useTheme();
-  const router = useRouter();
   const params = useLocalSearchParams<{ planId?: string | string[]; dayId?: string | string[] }>();
   const planId = firstParam(params.planId);
   const dayId = firstParam(params.dayId);
@@ -113,18 +113,16 @@ export function DayPreviewScreen() {
 
   return (
     <>
-      <AnimatedSheet hosted visible onClose={() => router.back()} dragFrom="sheet">
-        <DayPreviewBody
-          day={day}
-          fact={
-            minutes != null
-              ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
-              : null
-          }
-          actionTitle={sessionIsFor(activeSession, plan.id, day.id) ? 'Resume' : 'Start'}
-          onStart={() => startDay(plan, day, { replace: true })}
-        />
-      </AnimatedSheet>
+      <DayPreviewBody
+        day={day}
+        fact={
+          minutes != null
+            ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
+            : null
+        }
+        actionTitle={sessionIsFor(activeSession, plan.id, day.id) ? 'Resume' : 'Start'}
+        onStart={() => startDay(plan, day, { replace: true })}
+      />
       <Stack.Screen options={{ headerShown: false, title: day.title }} />
     </>
   );

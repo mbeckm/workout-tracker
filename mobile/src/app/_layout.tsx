@@ -306,11 +306,12 @@ function RootNav() {
       <Stack.Screen
         name="day-preview"
         options={{
-          presentation: 'transparentModal',
-          animation: 'none',
+          // Native sheet: system glass, grabber, detent and drag-to-dismiss (trim-ui §5).
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: true,
           headerShown: false,
-          gestureEnabled: false,
-          contentStyle: { backgroundColor: 'transparent' },
+          contentStyle: { backgroundColor: themeColors.systemBackground },
           title: 'Day',
         }}
       />

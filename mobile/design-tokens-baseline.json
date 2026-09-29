@@ -1,9 +1,4 @@
 {
-  "app/(tabs)/_layout.web.tsx": {
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-spacing": 3
-  },
   "components/button.tsx": {
     "raw-font-weight": 1
   },
@@ -14,27 +9,14 @@
     "off-scale-spacing": 1,
     "raw-spacing": 1
   },
-  "components/pr-crown.tsx": {
-    "off-scale-spacing": 2,
-    "raw-spacing": 2
-  },
   "components/residue-set-row.tsx": {
     "raw-radius": 1
   },
   "components/window-chips.tsx": {
-    "off-scale-spacing": 3,
-    "raw-font-size": 1,
-    "raw-font-weight": 1,
-    "raw-icon-size": 1,
-    "raw-pressed-opacity": 1,
-    "raw-radius": 1,
-    "raw-spacing": 3
+    "raw-radius": 1
   },
   "screens/check-in.tsx": {
-    "off-scale-spacing": 1,
-    "raw-font-weight": 1,
-    "raw-radius": 1,
-    "raw-spacing": 1
+    "raw-font-weight": 1
   },
   "screens/log-workout.tsx": {
     "off-scale-spacing": 1

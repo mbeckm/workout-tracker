@@ -32,12 +32,12 @@ import type {
   ExerciseCatalogNotice,
   ExerciseJumpChipTitle,
 } from '@/catalog';
-import { Button } from '@/components/button';
-import { PaperBack } from '@/components/paper';
+import { Button, HeaderActions } from '@/components/button';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, withDay } from '@/domain/helpers';
 import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/types';
 import { newId } from '@/domain/types';
+import { resolveExerciseReplace } from '@/navigation/exercise-replace';
 import { useWorkoutStore } from '@/store/workout-store';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 
@@ -84,12 +84,15 @@ function withListKeys(
 
 export function ExercisePickerScreen() {
   const { colors, type } = useTheme();
-  const { planId, dayId, from, dayTitle } = useLocalSearchParams<{
+  const { planId, dayId, from, dayTitle, replace } = useLocalSearchParams<{
     planId?: string;
     dayId?: string;
     from?: string;
     dayTitle?: string;
+    /** From the log: one tap swaps the exercise on the stage (`navigation/exercise-replace`). */
+    replace?: string;
   }>();
+  const replacing = from === 'log' && Boolean(replace);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { plans, customExercises, updatePlan, saveCustomExercise } = useWorkoutStore();
@@ -235,8 +238,21 @@ export function ExercisePickerScreen() {
     syncActiveChipFromScroll(event.nativeEvent.contentOffset.y);
   };
 
+  /** Replace mode: hand the log this exercise and go back to it. */
+  const pickReplacement = (item: ExercisePrescription) => {
+    if (replace) {
+      resolveExerciseReplace(replace, item);
+    }
+    void recordExerciseSelection(item);
+    router.back();
+  };
+
   const toggle = (item: ExercisePrescription) => {
     if (inDayKeys.has(catalogKey(item))) {
+      return;
+    }
+    if (replacing) {
+      pickReplacement(item);
       return;
     }
     const key = catalogKey(item);
@@ -306,6 +322,10 @@ export function ExercisePickerScreen() {
     const created = offlineCatalogExercises([...customExercises, definition]).find(
       (item) => item.customExerciseID === definition.id,
     );
+    if (created && replacing) {
+      pickReplacement(created);
+      return;
+    }
     if (created) {
       setSelected((current) => [...current, clonePrescription(created)]);
       void recordExerciseSelection(created);
@@ -323,7 +343,7 @@ export function ExercisePickerScreen() {
       <Pressable
         key={item.listKey}
         accessibilityRole="button"
-        accessibilityState={{ selected: isOn, disabled: inDay }}
+        accessibilityState={replacing ? { disabled: inDay } : { selected: isOn, disabled: inDay }}
         disabled={inDay}
         onPress={() => toggle(item)}
         style={({ pressed }) => ({
@@ -346,23 +366,25 @@ export function ExercisePickerScreen() {
             </Text>
           ) : null}
         </View>
-        <View
-          style={{
-            width: 22,
-            height: 22,
-            flexShrink: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          {inDay ? null : (
-            <SymbolView
-              name={isOn ? 'checkmark.circle.fill' : 'circle'}
-              tintColor={isOn ? colors.label : colors.systemGray4}
-              size={iconSize.control}
-              weight="regular"
-            />
-          )}
-        </View>
+        {replacing ? null : (
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            {inDay ? null : (
+              <SymbolView
+                name={isOn ? 'checkmark.circle.fill' : 'circle'}
+                tintColor={isOn ? colors.label : colors.systemGray4}
+                size={iconSize.control}
+                weight="regular"
+              />
+            )}
+          </View>
+        )}
       </Pressable>
     );
   };
@@ -373,11 +395,9 @@ export function ExercisePickerScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.systemBackground,
-          paddingTop: insets.top + 16,
+          paddingTop: space.related,
           paddingHorizontal: space.gutter,
         }}>
-        <PaperBack onPress={() => router.back()} />
-        <Text style={[type.planTitle, { paddingBottom: space.inline }]}>Exercises</Text>
 
         <View
           style={{
@@ -587,17 +607,33 @@ export function ExercisePickerScreen() {
           ) : null}
         </ScrollView>
 
-        <View style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: space.related }}>
-          <Button
-            title={addTitle(selected.length)}
-            variant="black"
-            testID="exercises-add"
-            disabled={!canAdd}
-            onPress={addSelected}
-          />
-        </View>
+        {replacing ? (
+          <View style={{ height: insets.bottom }} />
+        ) : (
+          <View style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: space.related }}>
+            <Button
+              title={addTitle(selected.length)}
+              variant="black"
+              testID="exercises-add"
+              disabled={!canAdd}
+              onPress={addSelected}
+            />
+          </View>
+        )}
       </View>
-      <Stack.Screen options={{ headerShown: false, title: 'Exercises' }} />
+      {/* The system bar with its own back button and title: the search field sits right under
+          it, so the title stays inline instead of a large title over the list. */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerShadowVisible: false,
+          headerTintColor: colors.label,
+          headerTitleStyle: { color: colors.label },
+          title: 'Exercises',
+        }}
+      />
+      {/* Over the log the picker is a sheet with no back button: Cancel leaves the log as it was. */}
+      {replacing ? <HeaderActions left={{ title: 'Cancel', onPress: () => router.back() }} /> : null}
     </>
   );
 }

@@ -1,7 +1,7 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { PaperBack, PaperScreen } from '@/components/paper';
+import { PaperScreen } from '@/components/paper';
 import { space } from '@/constants/theme';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressLineChart } from '@/components/progress-line-chart';
@@ -58,7 +58,6 @@ const CHART_HEIGHT = 180;
 
 export function ProgressBodyDetailScreen() {
   const { colors, type } = useTheme();
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const { metric } = useLocalSearchParams<{ metric: BodyMetricKey }>();
   const metricKey = (metric ?? 'waistCm') as BodyMetricKey;
@@ -110,7 +109,6 @@ export function ProgressBodyDetailScreen() {
   return (
     <>
       <PaperScreen testID="progress-body-detail">
-        <PaperBack onPress={() => router.back()} label="Progress" />
         <Text
           // Wraps, never truncates.
           style={type.title}
@@ -194,7 +192,18 @@ export function ProgressBodyDetailScreen() {
           </View>
         ))}
       </PaperScreen>
-      <Stack.Screen options={{ headerShown: false, title: metricMeta.label }} />
+      <Stack.Screen
+        options={{
+          // The system bar: back button and scroll-edge glass; the name stays the `title` below.
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTintColor: colors.label,
+          headerBackTitle: 'Progress',
+          headerTitle: '',
+          title: metricMeta.label,
+        }}
+      />
     </>
   );
 }

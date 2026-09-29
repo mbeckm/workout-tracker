@@ -25,7 +25,7 @@ import { latestCheckIn } from '@/domain/progress';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 import { track } from '@/analytics/analytics';
-import { PRESSED_OPACITY, space } from '@/constants/theme';
+import { PRESSED_OPACITY, radius, space } from '@/constants/theme';
 
 const ACCESSORY_ID = 'check-in-accessory';
 /** Lets the sheet finish closing before the toast rises over Progress. */
@@ -109,7 +109,7 @@ export function CheckInScreen() {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: 20,
+          paddingTop: space.gutter,
           paddingHorizontal: space.inline,
           paddingBottom: space.related,
           backgroundColor: colors.secondarySystemBackground,
@@ -159,7 +159,7 @@ export function CheckInScreen() {
                 style={{
                   width: 8,
                   height: 8,
-                  borderRadius: 4,
+                  borderRadius: radius.full,
                   backgroundColor: active ? colors.systemGreen : colors.systemGray4,
                 }}
               />

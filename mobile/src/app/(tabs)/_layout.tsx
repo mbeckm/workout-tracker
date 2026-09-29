@@ -3,8 +3,11 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useTheme } from '@/theme/theme-context';
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   return (
+    // The system's glass bar (trim-ui §5 Liquid Glass): no background, no hairline, and it
+    // turns clear at the scroll edge. Light and dark are JS-only, so the material follows
+    // Trim's scheme instead of the OS appearance.
     <NativeTabs
       tintColor={colors.label}
       iconColor={{ default: colors.tertiaryLabel, selected: colors.label }}
@@ -12,11 +15,8 @@ export default function TabsLayout() {
         default: { color: colors.tertiaryLabel },
         selected: { color: colors.label },
       }}
-      backgroundColor={colors.systemBackground}
-      blurEffect="none"
-      shadowColor={colors.separator}
+      blurEffect={scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
       minimizeBehavior="never"
-      disableTransparentOnScrollEdge
       disableIndicator
       labelVisibilityMode="labeled">
       <NativeTabs.Trigger name="(workout)" disableAutomaticContentInsets testID="tab-workout">

@@ -54,12 +54,12 @@ export function PrCrownCount({ count }: { count: number }) {
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: space.tight,
         flexShrink: 0,
         backgroundColor: colors.secondarySystemBackground,
         borderRadius: radius.full,
         borderCurve: 'continuous',
-        paddingHorizontal: 10,
+        paddingHorizontal: space.related,
         paddingVertical: space.tight,
       }}>
       <CrownGlyph size={12} />

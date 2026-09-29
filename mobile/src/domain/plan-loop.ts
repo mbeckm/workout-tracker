@@ -122,6 +122,35 @@ export function completedPlanDayIdsSince(
   return completed;
 }
 
+export type WeekMove = { before: number; after: number; total: number };
+
+/**
+ * Where a just-finished workout moved the plan's week (Done, trim-ui → Moments): `n of m`
+ * before and after it. Null when the workout isn't a day of this plan, or the plan has one
+ * trainable day (Home shows no week for it either).
+ */
+export function weekMovedBy(
+  plan: WorkoutPlan | null | undefined,
+  history: LoggedWorkout[],
+  workout: LoggedWorkout,
+  weekStart = startOfLocalWeek(),
+): WeekMove | null {
+  if (!plan || !dayIdForPlanWorkout(workout, plan)) {
+    return null;
+  }
+  const total = trainableDays(plan).length;
+  if (total <= 1) {
+    return null;
+  }
+  const others = history.filter((item) => item.id !== workout.id);
+  const before = Math.min(completedPlanDayIdsSince(plan, others, weekStart).length, total);
+  const after = Math.min(
+    completedPlanDayIdsSince(plan, [workout, ...others], weekStart).length,
+    total,
+  );
+  return { before, after, total };
+}
+
 function dayIdForPlanWorkout(workout: LoggedWorkout, plan: WorkoutPlan): string | null {
   if (workout.setCount <= 0) {
     return null;

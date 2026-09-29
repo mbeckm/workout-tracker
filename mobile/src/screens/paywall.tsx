@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
+import { Button, HeaderActions } from '@/components/button';
 import { paywallPreview } from '@/components/paywall/dev-preview';
 import { FeatureRow } from '@/components/paywall/feature-row';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
@@ -42,25 +42,13 @@ export function PaywallScreen({ reason, session }: { reason: ProReason; session?
 function PaywallView({ paywall }: { paywall: PaywallController }) {
   const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
-  // Hairline over the footer only while content continues beneath it.
-  const [contentBelow, setContentBelow] = useState(false);
-  const [contentAbove, setContentAbove] = useState(false);
   const [footerHeight, setFooterHeight] = useState(0);
-  const scrollMetrics = useRef({ offset: 0, viewport: 0, content: 0 });
-  const updateEdge = (next: Partial<typeof scrollMetrics.current>) => {
-    const metrics = { ...scrollMetrics.current, ...next };
-    scrollMetrics.current = metrics;
-    setContentBelow(metrics.viewport > 0 && metrics.offset + metrics.viewport < metrics.content - 1);
-    setContentAbove(metrics.offset > 1);
-  };
 
   const headline = REASON_HEADLINE[paywall.reason];
   const features = proFeaturesFor(paywall.reason);
   const busy = paywall.busy !== null;
   const { load, selected, trial, message } = paywall;
   const failed = paywall.loadError != null;
-  /** The bar `Not now` sits in: one touch target tall, under the status bar. */
-  const barHeight = insets.top + TOUCH_TARGET;
 
   const select = (offer: (typeof paywall.offers)[number]) => {
     if (offer.id === selected?.id) {
@@ -92,16 +80,48 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
     <View
       style={{ flex: 1, backgroundColor: colors.systemBackground }}
       onAccessibilityEscape={busy ? undefined : paywall.close}>
-      <Stack.Screen options={{ headerShown: false, title: 'Trim Pro' }} />
+      {/* `Not now` is a native toolbar item on the system glass, always reachable, never hidden
+          or delayed; content scrolls under it with the scroll-edge effect (trim-ui §13 Paywall). */}
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerTitle: '',
+          headerBackVisible: false,
+          headerTintColor: colors.label,
+          title: 'Trim Pro',
+          // Toolbar items are iOS-only; elsewhere the plain button below is the way out.
+          headerRight:
+            process.env.EXPO_OS === 'ios'
+              ? undefined
+              : () => (
+                  <Pressable
+                    accessibilityRole="button"
+                    testID="paywall-not-now"
+                    disabled={busy}
+                    onPress={paywall.close}
+                    style={({ pressed }) => ({
+                      minHeight: TOUCH_TARGET,
+                      paddingHorizontal: space.inline,
+                      justifyContent: 'center',
+                      opacity: pressed ? PRESSED_OPACITY : 1,
+                    })}>
+                    <Text style={[type.body, { color: busy ? colors.tertiaryLabel : colors.secondaryLabel }]}>
+                      Not now
+                    </Text>
+                  </Pressable>
+                ),
+        }}
+      />
+      {process.env.EXPO_OS === 'ios' ? (
+        <HeaderActions right={{ title: 'Not now', variant: 'plain', disabled: busy, onPress: paywall.close }} />
+      ) : null}
       <ScrollView
         style={{ flex: 1 }}
-        contentInsetAdjustmentBehavior="never"
-        scrollEventThrottle={32}
-        onLayout={(event) => updateEdge({ viewport: event.nativeEvent.layout.height })}
-        onContentSizeChange={(_, height) => updateEdge({ content: height })}
-        onScroll={(event) => updateEdge({ offset: event.nativeEvent.contentOffset.y })}
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
-          paddingTop: barHeight,
+          paddingTop: space.related,
           paddingHorizontal: space.gutter,
           paddingBottom: space.gutter,
           gap: space.section,
@@ -163,52 +183,12 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         ) : null}
       </ScrollView>
 
-      {/* Solid band under the status bar and Not now, so scrolled copy never runs under
-          either. Hairline only while content sits beneath it, like the footer. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: barHeight,
-          backgroundColor: colors.systemBackground,
-          borderBottomWidth: contentAbove ? StyleSheet.hairlineWidth : 0,
-          borderBottomColor: colors.separator,
-        }}
-      />
-
-      {/* Always reachable, never hidden or delayed: top right, where a close lives on iOS. */}
-      <View style={{ position: 'absolute', top: insets.top, right: space.inline }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: busy }}
-          testID="paywall-not-now"
-          disabled={busy}
-          onPress={paywall.close}
-          style={({ pressed }) => ({
-            minHeight: TOUCH_TARGET,
-            paddingHorizontal: space.inline,
-            justifyContent: 'center',
-            opacity: pressed ? PRESSED_OPACITY : 1,
-          })}>
-          <Text
-            maxFontSizeMultiplier={fontScaleCap.text}
-            style={[type.body, { color: busy ? colors.tertiaryLabel : colors.secondaryLabel }]}>
-            Not now
-          </Text>
-        </Pressable>
-      </View>
-
       <View
         onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
         style={{
           paddingTop: space.inline,
           paddingHorizontal: space.gutter,
           paddingBottom: Math.max(insets.bottom, space.related),
-          borderTopWidth: contentBelow ? StyleSheet.hairlineWidth : 0,
-          borderTopColor: colors.separator,
           backgroundColor: colors.systemBackground,
         }}>
         {message ? (

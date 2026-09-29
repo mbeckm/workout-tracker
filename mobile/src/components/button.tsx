@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { Pressable, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 import { PRESSED_OPACITY, radius, spacing } from '@/constants/theme';
-import { PRESS_MS, PRESS_SCALE } from '@/motion';
+import { DURATION, PRESS_MS, PRESS_SCALE } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 
 export type ButtonVariant = 'filled' | 'black' | 'green' | 'gray' | 'plain' | 'destructive';
@@ -22,6 +22,7 @@ export function Button({
   style,
   testID,
   maxFontSizeMultiplier,
+  unlit,
 }: {
   title: string;
   onPress?: () => void;
@@ -32,6 +33,11 @@ export function Button({
   testID?: string;
   /** Caps Dynamic Type on the label, for buttons in fixed chrome (a footer that doesn't scroll). */
   maxFontSizeMultiplier?: number;
+  /**
+   * Green only: the pill waits in the gray fill (label ink, a hair smaller) and lights up
+   * green when this turns false (the log's start moment, trim-ui §8). It stays tappable.
+   */
+  unlit?: boolean;
 }) {
   const { colors, type } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -41,8 +47,13 @@ export function Button({
   // A disabled green pill at 40% reads as broken, not unavailable. Render it as a quiet
   // gray pill instead so the one green on a stage always means "ready".
   const quietDisabled = Boolean(disabled) && variant === 'green';
+  // Only a button that opts in crossfades its fill; everywhere else a variant change is instant.
+  const lightable = unlit != null && variant === 'green';
+  const waiting = lightable && Boolean(unlit) && !disabled;
   const color = quietDisabled
     ? colors.tertiaryLabel
+    : waiting
+      ? colors.label
     : variant === 'black'
       ? colors.onLabel
       : variant === 'green'
@@ -54,7 +65,7 @@ export function Button({
             : variant === 'gray'
               ? colors.label
               : colors.systemBlue;
-  const backgroundColor = quietDisabled
+  const backgroundColor = quietDisabled || waiting
     ? colors.secondarySystemBackground
     : variant === 'green'
       ? colors.systemGreen
@@ -66,6 +77,7 @@ export function Button({
             ? colors.secondarySystemBackground
             : 'transparent';
   const scalePress = Boolean(pressed && !disabled && !reduceMotion);
+  const scale = scalePress || (waiting && !reduceMotion) ? PRESS_SCALE : 1;
 
   return (
     <Pressable
@@ -92,12 +104,12 @@ export function Button({
           borderCurve: 'continuous',
           backgroundColor,
           opacity: disabled && !quietDisabled ? 0.4 : reduceMotion && pressed ? PRESSED_OPACITY : 1,
-          transform: [{ scale: scalePress ? PRESS_SCALE : 1 }],
-          transitionProperty: 'transform',
-          transitionDuration: `${PRESS_MS}ms`,
+          transform: [{ scale }],
+          transitionProperty: lightable ? ['transform', 'backgroundColor'] : 'transform',
+          transitionDuration: lightable ? [`${PRESS_MS}ms`, `${DURATION.enter}ms`] : `${PRESS_MS}ms`,
           transitionTimingFunction: 'ease-out',
         }}>
-        <Text
+        <Animated.Text
           maxFontSizeMultiplier={maxFontSizeMultiplier}
           style={{
             ...type.headline,
@@ -105,9 +117,16 @@ export function Button({
             fontSize: compact ? 15 : 17,
             textAlign: 'center',
             color,
+            ...(lightable
+              ? {
+                  transitionProperty: 'color',
+                  transitionDuration: `${DURATION.enter}ms`,
+                  transitionTimingFunction: 'ease-out',
+                }
+              : null),
           }}>
           {title}
-        </Text>
+        </Animated.Text>
       </Animated.View>
     </Pressable>
   );

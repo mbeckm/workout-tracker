@@ -1,27 +1,14 @@
 import { SymbolView } from 'expo-symbols';
-import { Stack, useIsFocused, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  interpolateColor,
-  LinearTransition,
-  ReduceMotion,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { HomeDayRow } from '@/components/home-day-row';
-import { StaggerValue } from '@/components/stagger-value';
+import { WeekProgress } from '@/components/week-progress';
 import { iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
-import { DURATION, EASE_IN_OUT, EASE_OUT, SPRING } from '@/motion';
+import { DURATION, EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { useTheme } from '@/theme/theme-context';
 import {
   estimateDayMinutes,
@@ -139,11 +126,7 @@ export function WorkoutTab() {
 
             {day && hasExercises ? (
               <View style={{ paddingTop: space.gutter }}>
-                <ExerciseList
-                  key={day.id}
-                  exercises={day.exercises}
-                  onOpen={() => openPreview(activePlan, day)}
-                />
+                <ExerciseList key={day.id} exercises={day.exercises} />
               </View>
             ) : null}
 
@@ -221,17 +204,11 @@ export function WorkoutTab() {
 }
 
 /**
- * The day's exercises as one object surface. Tapping the list opens the day's preview sheet.
- * A long day folds after `COLLAPSED_ROWS` into a peer row that expands in place and ends with
+ * The day's exercises as one object surface, read-only: the preview sheet would only repeat
+ * it (feedback F7, PRODUCT-DECISIONS 42). A long day folds after `COLLAPSED_ROWS` into a peer row that expands in place and ends with
  * `Show less`; never a sheet just to show the rest (trim-ui → Structure).
  */
-function ExerciseList({
-  exercises,
-  onOpen,
-}: {
-  exercises: ExercisePrescription[];
-  onOpen: () => void;
-}) {
+function ExerciseList({ exercises }: { exercises: ExercisePrescription[] }) {
   const { colors, type } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const foldable = exercises.length > COLLAPSED_ROWS + 1;
@@ -250,11 +227,7 @@ function ExerciseList({
         padding: space.inset,
         gap: space.inset,
       }}>
-      <Pressable
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityHint="Shows this day."
-        style={({ pressed }) => ({ gap: space.inset, opacity: pressed ? PRESSED_OPACITY : 1 })}>
+      <View style={{ gap: space.inset }}>
         {visible.map((exercise, index) => (
           <Animated.View
             key={`${exercise.id}-${index}`}
@@ -264,7 +237,7 @@ function ExerciseList({
             <ExerciseRow exercise={exercise} />
           </Animated.View>
         ))}
-      </Pressable>
+      </View>
       {foldable ? (
         <Pressable
           onPress={() => setExpanded((value) => !value)}
@@ -308,17 +281,12 @@ function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
   );
 }
 
-/** Wait for the modal that finished the workout to slide away before celebrating. */
-const CELEBRATE_DELAY_MS = 320;
-
 /**
- * Week amount: `n of m` + `this week` + dots. While Home is covered (log, Done, paywall) it
- * keeps showing the old amount; when Home is visible again the new dot fills with a small
- * celebration and the count rolls up, so finishing a workout lands on the goal it moved.
- * A lower count (a deleted workout, a new week) fades its dots back to grey, no ceremony.
- *
- * The whole row is one button (F6): tap opens Weeks, the last 8 weeks against the goal.
- * The trailing chevron is its affordance; without `onPress` it renders read-only, no chevron.
+ * Week amount: `n of m` + `this week` + dots, as one button (F6): tap opens Weeks, the last 8
+ * weeks against the goal. The trailing chevron is its affordance; without `onPress` it renders
+ * read-only, no chevron. The dot a workout fills celebrates on Done, where the workout lands
+ * (PRODUCT-DECISIONS 46), so Home just shows the amount. A lower count (a deleted workout, a
+ * new week) fades its dots back to grey, no ceremony.
  */
 function WeekAmount({
   done,
@@ -329,40 +297,7 @@ function WeekAmount({
   total: number;
   onPress?: () => void;
 }) {
-  const { colors, type } = useTheme();
-  const isFocused = useIsFocused();
-  const seenDone = useRef<number | null>(null);
-  const [shown, setShown] = useState(done);
-  const [celebrate, setCelebrate] = useState<{ index: number; weekDone: boolean; key: number } | null>(
-    null,
-  );
-
-  useEffect(() => {
-    if (seenDone.current == null) {
-      seenDone.current = done;
-      setShown(done);
-      return;
-    }
-    if (done <= seenDone.current) {
-      // A deleted workout or a new week: no ceremony. Drop the last celebration too: while a
-      // dot holds a celebrateKey it ignores `filled`, so it stayed green after a delete.
-      if (done < seenDone.current) {
-        setCelebrate(null);
-      }
-      seenDone.current = done;
-      setShown(done);
-      return;
-    }
-    if (!isFocused) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      seenDone.current = done;
-      setShown(done);
-      setCelebrate({ index: done - 1, weekDone: done >= total, key: Date.now() });
-    }, CELEBRATE_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [done, isFocused, total]);
+  const { colors } = useTheme();
 
   return (
     <Pressable
@@ -379,26 +314,10 @@ function WeekAmount({
       })}
       accessible
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${shown} of ${total} this week`}
+      accessibilityLabel={`${done} of ${total} this week`}
       accessibilityHint={onPress ? 'Shows past weeks' : undefined}>
-      <View style={{ flex: 1, gap: space.related, alignItems: 'flex-start' }}>
-        {/* NumberFlow has no text baseline to align to; bottom edges match within a point. */}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.tight }}>
-          {/* One NumberFlow with a suffix: a sibling Text would sit on a different baseline. */}
-          <StaggerValue value={shown} suffix={` of ${total}`} style={type.title} />
-          <Text style={type.caption}>this week</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }}>
-          {Array.from({ length: total }, (_, index) => (
-            <WeekDot
-              key={index}
-              filled={index < shown}
-              celebrateKey={celebrate?.index === index ? celebrate.key : null}
-              waveKey={celebrate?.weekDone ? celebrate.key : null}
-              waveDelay={index * WAVE_STAGGER_MS}
-            />
-          ))}
-        </View>
+      <View style={{ flex: 1 }}>
+        <WeekProgress done={done} total={total} />
       </View>
       {onPress ? (
         // The quiet affordance for F6: the week opens its past weeks.
@@ -411,119 +330,5 @@ function WeekAmount({
         />
       ) : null}
     </Pressable>
-  );
-}
-
-const DOT = 10;
-/** The rings leave 140ms apart (trim-ui → Motion → Week dot fills). */
-const RING_STAGGER_MS = 140;
-/** A full week: the bump starts once the new dot has popped, then crosses the dots. */
-const WAVE_START_MS = 420;
-const WAVE_STAGGER_MS = 70;
-
-/**
- * One week dot. `celebrateKey` fills it with a springy pop and two soft green rings;
- * `waveKey` gives it a small staggered bump when the whole week is done.
- */
-function WeekDot({
-  filled,
-  celebrateKey,
-  waveKey,
-  waveDelay,
-}: {
-  filled: boolean;
-  celebrateKey: number | null;
-  waveKey: number | null;
-  waveDelay: number;
-}) {
-  const { colors } = useTheme();
-  const reduceMotion = useReducedMotion();
-  const fill = useSharedValue(filled ? 1 : 0);
-  const scale = useSharedValue(1);
-  const ringA = useSharedValue(0);
-  const ringB = useSharedValue(0);
-
-  useEffect(() => {
-    if (celebrateKey != null) {
-      return;
-    }
-    if (filled) {
-      fill.set(1);
-      return;
-    }
-    // Going down (a deleted workout, a new week) just crossfades back to grey: no ceremony.
-    // It is a color fade, so it plays under Reduce Motion too.
-    fill.set(
-      withTiming(0, { duration: DURATION.change, easing: EASE_OUT, reduceMotion: ReduceMotion.Never }),
-    );
-  }, [celebrateKey, fill, filled]);
-
-  useEffect(() => {
-    if (celebrateKey == null) {
-      return;
-    }
-    // A color crossfade is the reduced-motion celebration: it must still play (not jump).
-    fill.set(
-      withTiming(1, {
-        duration: reduceMotion ? DURATION.change : DURATION.fade,
-        easing: EASE_OUT,
-        reduceMotion: ReduceMotion.Never,
-      }),
-    );
-    if (reduceMotion) {
-      return;
-    }
-    scale.set(0.5);
-    scale.set(withSpring(1, SPRING.pop));
-    ringA.set(0);
-    ringA.set(withTiming(1, { duration: DURATION.celebrate, easing: EASE_OUT }));
-    ringB.set(0);
-    ringB.set(
-      withDelay(RING_STAGGER_MS, withTiming(1, { duration: DURATION.celebrate, easing: EASE_OUT })),
-    );
-  }, [celebrateKey, fill, reduceMotion, ringA, ringB, scale]);
-
-  useEffect(() => {
-    if (waveKey == null || reduceMotion) {
-      return;
-    }
-    scale.set(
-      withDelay(
-        WAVE_START_MS + waveDelay,
-        withSequence(
-          withTiming(1.35, { duration: DURATION.press, easing: EASE_OUT }),
-          withSpring(1, SPRING.settle),
-        ),
-      ),
-    );
-  }, [reduceMotion, scale, waveDelay, waveKey]);
-
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.get() }],
-    backgroundColor: interpolateColor(fill.get(), [0, 1], [colors.systemGray5, colors.systemGreen]),
-  }));
-  const ringAStyle = useAnimatedStyle(() => ({
-    opacity: ringA.get() === 0 ? 0 : 0.45 * (1 - ringA.get()),
-    transform: [{ scale: 1 + ringA.get() * 2.4 }],
-  }));
-  const ringBStyle = useAnimatedStyle(() => ({
-    opacity: ringB.get() === 0 ? 0 : 0.45 * (1 - ringB.get()),
-    transform: [{ scale: 1 + ringB.get() * 2.4 }],
-  }));
-
-  const ring = {
-    position: 'absolute' as const,
-    width: DOT,
-    height: DOT,
-    borderRadius: radius.full,
-    backgroundColor: colors.systemGreen,
-  };
-
-  return (
-    <View style={{ width: DOT, height: DOT }}>
-      <Animated.View pointerEvents="none" style={[ring, ringAStyle]} />
-      <Animated.View pointerEvents="none" style={[ring, ringBStyle]} />
-      <Animated.View style={[{ width: DOT, height: DOT, borderRadius: radius.full }, dotStyle]} />
-    </View>
   );
 }

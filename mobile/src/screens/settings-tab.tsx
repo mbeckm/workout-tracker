@@ -7,6 +7,7 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 import { PaperRow } from '@/components/paper';
 import { showToast } from '@/components/toast';
 import { LEGAL_URLS } from '@/constants/legal';
+import { formatMonthDay } from '@/domain/dates';
 import { appearanceLabel, space, type AppearancePreference } from '@/constants/theme';
 import { openPaywall } from '@/purchases/pro-gate';
 import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases/purchases';
@@ -35,6 +36,7 @@ export function SettingsTab() {
     setAppearance,
     isPro,
     proPeriod,
+    proRenewal,
     applyEntitlement,
     clearWorkoutHistory,
   } = useWorkoutStore();
@@ -123,7 +125,7 @@ export function SettingsTab() {
             testID="settings-pro"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
-                {isPro ? 'On' : 'Off'}
+                {proStatusLabel(isPro, proRenewal)}
               </Text>
             }
             onPress={
@@ -176,4 +178,17 @@ export function SettingsTab() {
       </ScrollView>
     </>
   );
+}
+
+/** `Off`, `On`, `On, renews Oct 3`, or `On until Oct 3` once renewal is off (trim-ui §13 Settings). */
+function proStatusLabel(isPro: boolean, renewal: { expiresAt: string; willRenew: boolean } | null): string {
+  if (!isPro) {
+    return 'Off';
+  }
+  const ends = renewal ? new Date(renewal.expiresAt) : null;
+  if (!ends || Number.isNaN(ends.getTime())) {
+    return 'On';
+  }
+  const date = formatMonthDay(ends);
+  return renewal?.willRenew ? `On, renews ${date}` : `On until ${date}`;
 }
