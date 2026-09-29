@@ -1,8 +1,8 @@
 import { Link, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, Text, View, type AccessibilityActionEvent } from 'react-native';
-import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 
+import { SortableHandle, useSortableLifted } from '@/components/sortable-column';
 import { formatExerciseNames } from '@/domain/day-facts';
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
@@ -30,7 +30,7 @@ export type PlanDayActions = {
  *
  * The row spans the screen edge to edge (it pads its own gutter) on an opaque background, so
  * the context menu lifts a clean cell and a dragged row covers the ones it passes. Render it
- * inside a full-width `NestedReorderableList` (a list clips what hangs outside it).
+ * inside a full-width `SortableColumn`, keyed by the day's id.
  */
 export function PlanDetailDayRow({
   day,
@@ -47,9 +47,8 @@ export function PlanDetailDayRow({
   actions: PlanDayActions;
 }) {
   const { colors, type } = useTheme();
-  const drag = useReorderableDrag();
   // Lifted by the handle: the row wears the secondary surface over the rows it passes.
-  const fill = useIsActive() ? colors.secondarySystemBackground : colors.systemBackground;
+  const fill = useSortableLifted(day.id) ? colors.secondarySystemBackground : colors.systemBackground;
   const names = day.exercises.map((exercise) => exercise.name.trim()).filter(Boolean);
   const count = names.length;
   const exerciseWord = count === 1 ? 'exercise' : 'exercises';
@@ -140,28 +139,29 @@ export function PlanDetailDayRow({
       </Link>
       {reorderable ? (
         // Outside the menu trigger, so holding the handle drags instead of opening the menu.
-        // The drag starts on touch-down; the list lifts the row (trim-ui §8, Reorder).
-        <Pressable
-          onPressIn={drag}
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-          style={{
-            position: 'absolute',
-            top: 0,
-            bottom: 0,
-            // The glyph, not its touch target, lines up with the gutter.
-            right: space.gutter - (TOUCH_TARGET - iconSize.control) / 2,
-            width: TOUCH_TARGET,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <SymbolView
-            name="line.3.horizontal"
-            size={iconSize.control}
-            tintColor={colors.tertiaryLabel}
-            fallback={<Text style={[type.body, { color: colors.tertiaryLabel }]}>≡</Text>}
-          />
-        </Pressable>
+        // The row lifts on touch-down and follows the finger (trim-ui §8, Row reorder).
+        <SortableHandle rowKey={day.id}>
+          <View
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              // The glyph, not its touch target, lines up with the gutter.
+              right: space.gutter - (TOUCH_TARGET - iconSize.control) / 2,
+              width: TOUCH_TARGET,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <SymbolView
+              name="line.3.horizontal"
+              size={iconSize.control}
+              tintColor={colors.tertiaryLabel}
+              fallback={<Text style={[type.body, { color: colors.tertiaryLabel }]}>≡</Text>}
+            />
+          </View>
+        </SortableHandle>
       ) : null}
     </View>
   );
