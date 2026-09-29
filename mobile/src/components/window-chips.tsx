@@ -6,13 +6,19 @@ import Animated, { FadeOut } from 'react-native-reanimated';
 
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { DURATION, EASE_OUT } from '@/motion';
-import { PROGRESS_WINDOWS, type ProgressWindow } from '@/domain/progress';
+import {
+  defaultProgressWindow,
+  isProgressWindowLocked,
+  PROGRESS_WINDOWS,
+  type ProgressWindow,
+} from '@/domain/progress';
 import { useTheme } from '@/theme/theme-context';
 
 const WINDOW_NAMES: Record<ProgressWindow, string> = {
+  '1M': 'Last month',
   '3M': 'Last 3 months',
   '6M': 'Last 6 months',
-  YTD: 'Year to date',
+  '1Y': 'Last year',
   All: 'All time',
 };
 
@@ -147,4 +153,21 @@ function useOpeningLocks(locked: ((window: ProgressWindow) => boolean) | undefin
   }, [lockedNow]);
 
   return opening;
+}
+
+/** The range picked on a detail screen, carried over to the next lift or body metric this session. */
+let rememberedWindow: ProgressWindow | null = null;
+
+/**
+ * The detail screens' range (PRODUCT-DECISIONS 63: the range chosen carries over between
+ * lifts). A picked range counts only while it's open to this user; otherwise the default.
+ */
+export function useProgressWindow(isPro: boolean): [ProgressWindow, (window: ProgressWindow) => void] {
+  const [picked, setPicked] = useState<ProgressWindow | null>(rememberedWindow);
+  const window = picked != null && !isProgressWindowLocked(picked, isPro) ? picked : defaultProgressWindow(isPro);
+  const pick = (next: ProgressWindow) => {
+    rememberedWindow = next;
+    setPicked(next);
+  };
+  return [window, pick];
 }

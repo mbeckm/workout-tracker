@@ -9,24 +9,24 @@ import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/do
 import { normalizedStatsKey } from '@/domain/types';
 import { formatMonthDay } from '@/domain/dates';
 
-export type ProgressWindow = '3M' | '6M' | 'YTD' | 'All';
+export type ProgressWindow = '1M' | '3M' | '6M' | '1Y' | 'All';
 
-export const PROGRESS_WINDOWS: ProgressWindow[] = ['3M', '6M', 'YTD', 'All'];
+export const PROGRESS_WINDOWS: ProgressWindow[] = ['1M', '3M', '6M', '1Y', 'All'];
 
 /**
- * Pro boundary: free keeps the recent view (3M, about 90 days); Trim Pro unlocks the long
- * view. YTD is Pro too, because from spring on it reaches further back than 3M.
- * `isProgressWindowLocked` feeds `WindowChips.locked` on lift and body detail.
+ * Pro boundary (PRODUCT-DECISIONS 63): free keeps the recent view (`1M`, `3M`); Trim Pro
+ * unlocks the long view (`6M`, `1Y`, `All`). `isProgressWindowLocked` feeds
+ * `WindowChips.locked` on lift and body detail.
  */
-export const FREE_PROGRESS_WINDOWS: readonly ProgressWindow[] = ['3M'];
+export const FREE_PROGRESS_WINDOWS: readonly ProgressWindow[] = ['1M', '3M'];
 
 export function isProgressWindowLocked(window: ProgressWindow, isPro: boolean): boolean {
   return !isPro && !FREE_PROGRESS_WINDOWS.includes(window);
 }
 
-/** Default chip: the widest window the user can open, capped at 6M. */
-export function defaultProgressWindow(isPro: boolean): ProgressWindow {
-  return isPro ? '6M' : '3M';
+/** Default chip: a month, the window Progress's sparklines show. */
+export function defaultProgressWindow(_isPro?: boolean): ProgressWindow {
+  return '1M';
 }
 
 /**
@@ -203,11 +203,7 @@ function windowStart(window: ProgressWindow, now = new Date()): Date | null {
 
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  if (window === 'YTD') {
-    return new Date(now.getFullYear(), 0, 1);
-  }
-
-  const months = window === '3M' ? 3 : 6;
+  const months = window === '1M' ? 1 : window === '3M' ? 3 : window === '6M' ? 6 : 12;
   start.setMonth(start.getMonth() - months);
   return start;
 }
@@ -437,9 +433,10 @@ export function isSessionPR(
 }
 
 const WINDOW_LABELS: Record<ProgressWindow, string> = {
+  '1M': 'Last month',
   '3M': 'Last 3 months',
   '6M': 'Last 6 months',
-  YTD: 'This year',
+  '1Y': 'Last year',
   All: 'All time',
 };
 
