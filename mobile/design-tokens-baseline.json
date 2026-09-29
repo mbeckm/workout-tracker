@@ -5,10 +5,6 @@
   "components/log-rest.tsx": {
     "off-scale-spacing": 1
   },
-  "components/paper.tsx": {
-    "off-scale-spacing": 1,
-    "raw-spacing": 1
-  },
   "components/residue-set-row.tsx": {
     "raw-radius": 1
   },

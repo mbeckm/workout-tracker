@@ -226,10 +226,31 @@ export function PaperLink({
   );
 }
 
-export function PaperGrabber() {
+/**
+ * Sheet grabber → the sheet's top edge (trim-ui → Components → Sheets). One inset on every
+ * sheet, native and custom: iOS draws its own grabber 5pt from the edge, tight under the
+ * floating sheet's large corners, so native sheets hide it and draw this one instead.
+ */
+export const GRABBER_INSET = space.inline;
+
+/**
+ * The sheet's grabber. In flow at the top of a custom sheet (it is the drag handle there,
+ * `space.inset` above the title), or `overlay` on a native `formSheet`, where the system's
+ * pan owns the drag and the content keeps its own top padding.
+ */
+export function PaperGrabber({ overlay = false }: { overlay?: boolean }) {
   const { colors } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: space.inline }}>
+    <View
+      pointerEvents={overlay ? 'none' : 'auto'}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+      style={[
+        { alignItems: 'center', paddingTop: GRABBER_INSET },
+        overlay
+          ? { position: 'absolute', top: 0, left: 0, right: 0 }
+          : { paddingBottom: space.inset },
+      ]}>
       <View
         style={{
           width: 36,
@@ -260,7 +281,6 @@ export function PaperSheetFrame({
           borderTopRightRadius: radius.lg,
           borderCurve: 'continuous',
           paddingHorizontal: space.gutter,
-          paddingTop: space.related,
         }}>
         <PaperGrabber />
         {children}

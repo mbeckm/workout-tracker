@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PaperGrabber } from '@/components/paper';
 import { showToast } from '@/components/toast';
 import {
   bodyMetricForDisplay,
@@ -114,6 +115,7 @@ export function CheckInScreen() {
           paddingBottom: space.related,
           backgroundColor: colors.secondarySystemBackground,
         }}>
+        <PaperGrabber overlay />
         <HeaderButton title="Cancel" onPress={() => router.back()} testID="check-in-cancel" />
         <Text style={[type.body, { fontWeight: '600' }]} accessibilityRole="header">
           Check in

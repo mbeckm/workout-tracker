@@ -315,7 +315,7 @@ export function AnimatedSheet({
   }));
 
   const handle = (
-    <View style={{ paddingBottom: header ? 12 : 0 }}>
+    <View style={{ paddingBottom: header ? space.inline : 0 }}>
       <PaperGrabber />
       {header != null ? header : null}
     </View>
@@ -350,8 +350,8 @@ export function AnimatedSheet({
                 borderColor: colors.separator,
               }
             : null),
+          // No top padding: the grabber carries the one sheet inset (`GRABBER_INSET`).
           paddingHorizontal: space.gutter,
-          paddingTop: space.related,
           overflow: 'hidden',
         },
         sheetStyle,
