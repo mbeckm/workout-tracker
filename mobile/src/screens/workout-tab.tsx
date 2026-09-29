@@ -44,9 +44,9 @@ const ROW_ENTER = FadeIn.duration(DURATION.enter).easing(EASE_IN_OUT).reduceMoti
 const ROW_EXIT = FadeOut.duration(DURATION.exit).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
 
 /**
- * Home (trim-ui → Per screen → Home). The day name is the native large title; under it one
- * fact, the estimated duration. Then the day's exercises as one object surface with Start
- * right under it, the week, and the plan's other days.
+ * Home (trim-ui → Per screen → Home). The day name is the native large title, alone. Then the
+ * day's exercises as one object surface with Start right under it and the estimated duration
+ * under Start, the week, and the plan's other days.
  */
 export function WorkoutTab() {
   const { colors, type } = useTheme();
@@ -85,20 +85,18 @@ export function WorkoutTab() {
   const done = Math.min(workoutsSince(workoutHistory, weekStart), total);
   const streak = weekStreak(activePlan, workoutHistory);
 
-  // One fact under the title (trim-ui → Copy → Separating facts): how long the day takes, or,
-  // mid-workout, when it started.
+  // One fact, under Start (G3, PRODUCT-DECISIONS 58): what tapping it costs, how long the day
+  // takes, or, mid-workout, when it started. An empty day has no fact: `Add exercises` says it.
   let fact: { text: string; spoken?: string } | null = null;
-  if (activePlan && day) {
+  if (activePlan && day && hasExercises) {
     if (resuming && session) {
       fact = { text: `Started ${formatClockTime(session.startedAt)}` };
-    } else if (hasExercises) {
+    } else {
       const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
       fact =
         minutes != null
           ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
           : null;
-    } else {
-      fact = { text: 'No exercises yet' };
     }
   }
 
@@ -124,16 +122,7 @@ export function WorkoutTab() {
         testID="home-scroll">
         {activePlan ? (
           <View testID="home-next-day">
-            {fact ? (
-              <Text
-                style={[type.caption, { fontVariant: ['tabular-nums'] }]}
-                accessibilityLabel={fact.spoken}
-                testID="home-day-meta">
-                {fact.text}
-              </Text>
-            ) : null}
-
-            {/* The title block (title + its one fact) is a section of its own: `section` air to the list. */}
+            {/* The day's name stands alone as the title block: the list sits `section` under the bar. */}
             {day && hasExercises ? (
               <View style={{ paddingTop: space.section }}>
                 <ExerciseList key={day.id} exercises={day.exercises} />
@@ -150,6 +139,18 @@ export function WorkoutTab() {
                     testID={resuming ? 'home-resume' : 'home-start'}
                     onPress={() => startDay(activePlan, day)}
                   />
+                  {/* The note under a full-width CTA, centered like the paywall's price note. */}
+                  {fact ? (
+                    <Text
+                      style={[
+                        type.caption,
+                        { paddingTop: space.related, textAlign: 'center', fontVariant: ['tabular-nums'] },
+                      ]}
+                      accessibilityLabel={fact.spoken}
+                      testID="home-day-meta">
+                      {fact.text}
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
 
