@@ -1,7 +1,7 @@
-// Home exploration (PRODUCT-DECISIONS 52): "Your numbers". The classic Home is unchanged in
-// `screens/workout-tab.tsx`; render `<WorkoutTab />` here to switch back.
-import { WorkoutTabNumbers } from '@/screens/workout-tab-numbers';
+// Home v3 (PRODUCT-DECISIONS 61). The classic Home is kept, unused, in `screens/workout-tab.tsx`
+// and the superseded "Your numbers" Home (60) in `screens/workout-tab-numbers.tsx`.
+import { Home } from '@/screens/home';
 
 export default function WorkoutRoute() {
-  return <WorkoutTabNumbers />;
+  return <Home />;
 }

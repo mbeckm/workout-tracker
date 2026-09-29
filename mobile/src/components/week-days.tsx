@@ -6,13 +6,13 @@ import { weekdayLong, weekdayShort } from '@/domain/dates';
 import type { WeekDayMark } from '@/domain/home-numbers';
 import { useTheme } from '@/theme/theme-context';
 
-/** One day's circle: big enough to read at arm's length, seven fit a 320pt phone. */
-const DAY = 36;
+/** One day's circle (trim-ui §13 Home: 40pt): read at arm's length, seven fit a 320pt phone. */
+const DAY = 40;
 /** Today's ring, the same weight as the focused well's ring (trim-ui → States). */
 const RING = 2;
 
 /**
- * The current week as seven days, Monday first (the "Your numbers" Home). A day with a
+ * The current week as seven days, Monday first (Home v3). A day with a
  * finished workout is a green circle with a check; today is an ink ring; every other day is
  * an empty grey circle. A missed day stays grey like a future one: Trim doesn't scold.
  */
