@@ -694,7 +694,7 @@ Before a screen ships, check it in light **and** dark, at default and at the lar
 
 Still to do. Fix it when touching a screen, or in a dedicated pass with simulator QA:
 
-- **Home v3 (PRODUCT-DECISIONS 61, designed, not built):** the Home spec in §13 and Home states are the target; the shipped Home is still the classic layout. Build from Paper page `Your numbers (2026-09-29)`, row V4. Draft PR #57's first "Your numbers" Home is superseded and gets rebuilt, not polished.
+- **Home v3 (PRODUCT-DECISIONS 61, built in draft PR #57):** `screens/home.tsx` is the Home, with all four Home states (dev fixture: `EXPO_PUBLIC_HOME_DEMO=pro|free`, add `-trained` or `-complete`). The classic Home (`workout-tab.tsx`) and the superseded "Your numbers" Home (`workout-tab-numbers.tsx`) stay in the repo, unused. Still to do: the week moment after Done (§13 Home week details: today's circle pops with rings, the chip's ✓, the flame lighting and the count rolling up) isn't built; Home shows the new state plainly, and Done still plays the week dot. The streak count is plain text until then (NumberFlow mis-measures at large Dynamic Type). Done's rows still use the old recap, not Home's Just trained rows.
 - **Progress goals and lift detail v5 (63, designed, not built):** §13 Progress, Lift / body detail, Goals and §11 rules 10–11 are the target.
 - **Change is ink (61):** Progress and lift detail still paint the up-delta green (`progress-delta.tsx`); it turns ink with its arrow. The log's green-up target and Done still need the same pass.
 
