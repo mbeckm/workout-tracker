@@ -101,7 +101,17 @@ export function ProgressLiftDetailScreen() {
           {exerciseName}
         </Text>
 
-        <View style={{ paddingTop: space.inset, paddingBottom: space.gutter, gap: space.tight }}>
+        {/* The range scopes everything under it: the delta, the line and the sessions (trim-ui → Charts 6). */}
+        <View style={{ paddingTop: space.inset }}>
+          <WindowChips
+            value={window}
+            onChange={setPicked}
+            locked={isLocked}
+            onLockedPress={(candidate) => void unlockWindow(candidate)}
+          />
+        </View>
+
+        <View style={{ paddingTop: space.gutter, paddingBottom: space.gutter, gap: space.tight }}>
           {/* Wraps so the delta drops under the value when both don't fit (large Dynamic Type). */}
           <View
             style={{
@@ -135,20 +145,14 @@ export function ProgressLiftDetailScreen() {
             accessibilityLabel={chartLabel}
           />
         ) : (
-          // Same frame as the chart, so the chips below never move between ranges.
+          // Same frame as the chart, so the sessions below never jump between ranges.
           <View style={{ height: CHART_HEIGHT }}>
             <Text style={type.caption}>No sessions in this range</Text>
           </View>
         )}
 
-        <View style={{ paddingTop: space.inset, paddingBottom: space.section }}>
-          <WindowChips
-            value={window}
-            onChange={setPicked}
-            locked={isLocked}
-            onLockedPress={(candidate) => void unlockWindow(candidate)}
-          />
-        </View>
+        {/* The sessions are the line's points, so they follow it closely. */}
+        <View style={{ height: space.inset }} />
 
         {recent.map((session, index) => {
           const pr = isSessionPR(exerciseName, session.oneRM, workoutHistory, session.workoutId);

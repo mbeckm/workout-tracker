@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PaperGrabber } from '@/components/paper';
 import { radius, space, TOUCH_TARGET } from '@/constants/theme';
 import {
   formatWeekLabel,
@@ -53,6 +54,7 @@ export function WeeksScreen() {
           paddingBottom: space.related,
           backgroundColor: colors.secondarySystemBackground,
         }}>
+        <PaperGrabber overlay />
         <Text style={type.title} accessibilityRole="header">
           Weeks
         </Text>

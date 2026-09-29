@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Fact } from '@/components/fact';
+import { PaperGrabber } from '@/components/paper';
 import { space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { estimateDayMinutes, formatEstimateMinutes, spokenEstimateMinutes } from '@/domain/day-facts';
@@ -36,24 +37,24 @@ export function DayPreviewBody({
 }) {
   const { type } = useTheme();
   const { previousLogForExercise, units } = useWorkoutStore();
-  const insets = useSafeAreaInsets();
   const count = day.exercises.length;
 
+  // One inset, 24, on every edge and between the three blocks (title, list, Start). The
+  // sheet keeps its own bottom safe area under Start, so nothing is added there: adding the
+  // window's inset again left Start floating twice as far from the bottom as from the sides.
   return (
     <View
       collapsable={false}
       style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter }}>
+      <PaperGrabber overlay />
       <View style={{ gap: space.tight }}>
         <Text style={type.title} accessibilityRole="header" numberOfLines={2}>
           {day.title}
         </Text>
         {fact ? (
-          <Text
-            style={[type.caption, { fontVariant: ['tabular-nums'] }]}
-            accessibilityLabel={fact.spoken}
-            testID="preview-meta">
+          <Fact kind="duration" spoken={fact.spoken} testID="preview-meta">
             {fact.text}
-          </Text>
+          </Fact>
         ) : null}
       </View>
       <ScrollView
@@ -85,8 +86,6 @@ export function DayPreviewBody({
           onPress={onStart}
         />
       ) : null}
-      {/* The thumb CTA sits 16 above the safe area (trim-ui → Layout → Thumb zone). */}
-      <View style={{ height: insets.bottom + space.inset }} />
     </View>
   );
 }

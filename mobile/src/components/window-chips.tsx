@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -56,6 +57,19 @@ export function WindowChips({
   const { colors, type } = useTheme();
   const opening = useOpeningLocks(locked);
 
+  // Picking a range ticks like a scrub does, on the same frame the delta starts rolling and
+  // the line starts morphing (trim-ui → Haptics). The selected chip and a locked one (it opens
+  // the paywall: navigation) stay quiet.
+  const pick = (window: ProgressWindow) => {
+    if (window === value) {
+      return;
+    }
+    if (process.env.EXPO_OS === 'ios') {
+      void Haptics.selectionAsync();
+    }
+    onChange(window);
+  };
+
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.related }}>
       {PROGRESS_WINDOWS.map((window) => {
@@ -70,7 +84,7 @@ export function WindowChips({
             accessibilityHint={isLocked ? 'Opens Trim Pro' : undefined}
             accessibilityState={{ selected }}
             testID={`window-chip-${window}`}
-            onPress={() => (isLocked ? onLockedPress?.(window) : onChange(window))}
+            onPress={() => (isLocked ? onLockedPress?.(window) : pick(window))}
             // Chips are 34pt tall; extend the touch target to 44pt.
             hitSlop={{ top: 6, bottom: 6 }}
             style={({ pressed }) => ({

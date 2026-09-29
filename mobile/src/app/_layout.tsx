@@ -306,10 +306,11 @@ function RootNav() {
       <Stack.Screen
         name="day-preview"
         options={{
-          // Native sheet: system glass, grabber, detent and drag-to-dismiss (trim-ui §5).
+          // Native sheet: system glass, detent and drag-to-dismiss (trim-ui §5). Every sheet
+          // draws Trim's grabber (`PaperGrabber overlay`): iOS's sits 5pt from the edge.
           presentation: 'formSheet',
           sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: true,
+          sheetGrabberVisible: false,
           headerShown: false,
           contentStyle: { backgroundColor: themeColors.systemBackground },
           title: 'Day',
@@ -328,7 +329,7 @@ function RootNav() {
         options={{
           presentation: 'formSheet',
           sheetAllowedDetents: [1],
-          sheetGrabberVisible: true,
+          sheetGrabberVisible: false,
           sheetCornerRadius: 24,
           headerShown: false,
           contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
@@ -342,7 +343,7 @@ function RootNav() {
           // can grow for large text; the grouped background matches Check in.
           presentation: 'formSheet',
           sheetAllowedDetents: [0.7, 1],
-          sheetGrabberVisible: true,
+          sheetGrabberVisible: false,
           sheetCornerRadius: 24,
           headerShown: false,
           contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
@@ -354,7 +355,7 @@ function RootNav() {
         options={{
           presentation: 'formSheet',
           sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: true,
+          sheetGrabberVisible: false,
           headerShown: false,
           contentStyle: { backgroundColor: themeColors.systemBackground },
           title: 'Exercise',

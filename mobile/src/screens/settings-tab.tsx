@@ -14,8 +14,12 @@ import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
-/** Air between setting groups: preferences, Pro, links out, data. */
-const GROUP_GAP = space.section;
+/**
+ * Air between setting groups (preferences, Pro, links out, data), on top of the rows' own 16
+ * padding: ~46 text to text against ~38 inside a group, and tighter than the title's gap
+ * (trim-ui → Layout → Under a large title, rule 3).
+ */
+const GROUP_GAP = space.related;
 
 const SUPPORT_EMAIL = 'marvinbeckm@gmail.com';
 const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Trim%20support`;
@@ -101,15 +105,24 @@ export function SettingsTab() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.section }}>
+        // Content shares the title's leading edge, and the title block gets `section` air before
+        // the first group, like every tab (trim-ui → Layout → Under a large title). That keeps
+        // the title's gap (~62 text to text) clearly larger than a group break (~46).
+        contentContainerStyle={{
+          paddingHorizontal: space.margin,
+          paddingTop: space.section,
+          paddingBottom: space.section,
+        }}>
         <View>
           <PaperRow
             title="Weight"
+            symbol="scalemass"
             trailing={<Text style={[type.row, { color: colors.tertiaryLabel }]}>{units}</Text>}
             onPress={pickUnits}
           />
           <PaperRow
             title="Appearance"
+            symbol="circle.lefthalf.filled"
             testID="settings-appearance"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
@@ -122,6 +135,8 @@ export function SettingsTab() {
         <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Trim Pro"
+            // The same lock the Pro-locked chips wear; it opens once Pro is on.
+            symbol={isPro ? 'lock.open' : 'lock'}
             testID="settings-pro"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
@@ -138,6 +153,7 @@ export function SettingsTab() {
           />
           <PaperRow
             title={restoring ? 'Restoring…' : 'Restore purchases'}
+            symbol="arrow.clockwise"
             meta={restoreError ?? undefined}
             testID="settings-restore"
             onPress={restoring ? undefined : () => void restore()}
@@ -145,13 +161,30 @@ export function SettingsTab() {
         </View>
         {/* Rows that leave the app sit in their own group and carry the ↗ arrow. */}
         <View style={{ paddingTop: GROUP_GAP }}>
-          <PaperRow link title="Contact support" testID="settings-support" onPress={contactSupport} />
-          <PaperRow link title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
-          <PaperRow link title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
+          <PaperRow
+            link
+            title="Contact support"
+            symbol="envelope"
+            testID="settings-support"
+            onPress={contactSupport}
+          />
+          <PaperRow
+            link
+            title="Privacy Policy"
+            symbol="hand.raised"
+            onPress={() => openLegal(LEGAL_URLS.privacyPolicy)}
+          />
+          <PaperRow
+            link
+            title="Terms of Use"
+            symbol="doc.text"
+            onPress={() => openLegal(LEGAL_URLS.termsOfUse)}
+          />
         </View>
         <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Clear history"
+            symbol="trash"
             destructive
             onPress={() =>
               Alert.alert(

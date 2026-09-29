@@ -1,10 +1,28 @@
-import { SymbolView } from 'expo-symbols';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { Button } from '@/components/button';
-import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
+import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, ROW_GLYPH_SLOT, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
+
+/**
+ * A row's leading glyph grows with Dynamic Type like the `row` text beside it (trim-ui §7: a
+ * symbol takes its text's size), capped where 17pt text is capped.
+ */
+export function useRowGlyph() {
+  const { fontScale } = useWindowDimensions();
+  const scale = Math.min(Math.max(fontScale, 1), fontScaleCap.text);
+  return { size: Math.round(iconSize.row * scale), slot: Math.round(ROW_GLYPH_SLOT * scale) };
+}
 
 export function PaperScreen({
   children,
@@ -95,6 +113,7 @@ export function PaperBack({ onPress, label }: { onPress: () => void; label?: str
 export function PaperRow({
   title,
   meta,
+  symbol,
   trailing,
   onPress,
   onLongPress,
@@ -104,6 +123,12 @@ export function PaperRow({
 }: {
   title: string;
   meta?: string;
+  /**
+   * Leading glyph for a command or setting row (Settings), in the same lane as the editors'
+   * action rows. Content rows (plans, days, sessions, lifts) never take one: the name is the
+   * identity (trim-ui §7).
+   */
+  symbol?: SFSymbol;
   trailing?: ReactNode;
   onPress?: () => void;
   onLongPress?: () => void;
@@ -113,6 +138,7 @@ export function PaperRow({
   testID?: string;
 }) {
   const { colors, type } = useTheme();
+  const glyph = useRowGlyph();
   const trailingContent = link ? (
     <SymbolView
       name="arrow.up.right"
@@ -141,6 +167,26 @@ export function PaperRow({
         gap: space.inline,
         opacity: pressed && onPress ? PRESSED_OPACITY : 1,
       })}>
+      {symbol ? (
+        // Centred on a one-line row like the editors' action rows; with a meta line it stays
+        // on the name's line instead of drifting between the two.
+        <View
+          style={{
+            width: glyph.slot,
+            height: glyph.slot,
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignSelf: meta ? 'flex-start' : 'center',
+            flexShrink: 0,
+          }}>
+          <SymbolView
+            name={symbol}
+            tintColor={destructive ? colors.systemRed : colors.label}
+            size={glyph.size}
+            weight="medium"
+          />
+        </View>
+      ) : null}
       <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
         <Text
           style={[type.row, destructive ? { color: colors.systemRed } : null]}
@@ -180,10 +226,31 @@ export function PaperLink({
   );
 }
 
-export function PaperGrabber() {
+/**
+ * Sheet grabber → the sheet's top edge (trim-ui → Components → Sheets). One inset on every
+ * sheet, native and custom: iOS draws its own grabber 5pt from the edge, tight under the
+ * floating sheet's large corners, so native sheets hide it and draw this one instead.
+ */
+export const GRABBER_INSET = space.inline;
+
+/**
+ * The sheet's grabber. In flow at the top of a custom sheet (it is the drag handle there,
+ * `space.inset` above the title), or `overlay` on a native `formSheet`, where the system's
+ * pan owns the drag and the content keeps its own top padding.
+ */
+export function PaperGrabber({ overlay = false }: { overlay?: boolean }) {
   const { colors } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: space.inline }}>
+    <View
+      pointerEvents={overlay ? 'none' : 'auto'}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+      style={[
+        { alignItems: 'center', paddingTop: GRABBER_INSET },
+        overlay
+          ? { position: 'absolute', top: 0, left: 0, right: 0 }
+          : { paddingBottom: space.inset },
+      ]}>
       <View
         style={{
           width: 36,
@@ -214,7 +281,6 @@ export function PaperSheetFrame({
           borderTopRightRadius: radius.lg,
           borderCurve: 'continuous',
           paddingHorizontal: space.gutter,
-          paddingTop: space.related,
         }}>
         <PaperGrabber />
         {children}

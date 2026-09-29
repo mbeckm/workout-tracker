@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
+import { Fact } from '@/components/fact';
 import { HomeDayRow } from '@/components/home-day-row';
 import { WeekProgress } from '@/components/week-progress';
 import { iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
@@ -44,9 +45,9 @@ const ROW_ENTER = FadeIn.duration(DURATION.enter).easing(EASE_IN_OUT).reduceMoti
 const ROW_EXIT = FadeOut.duration(DURATION.exit).easing(EASE_OUT).reduceMotion(ReduceMotion.Never);
 
 /**
- * Home (trim-ui → Per screen → Home). The day name is the native large title; under it one
- * fact, the estimated duration. Then the day's exercises as one object surface with Start
- * right under it, the week, and the plan's other days.
+ * Home (trim-ui → Per screen → Home). The day name is the native large title, alone. Then the
+ * day's exercises as one object surface with Start right under it and the estimated duration
+ * under Start, the week, and the plan's other days.
  */
 export function WorkoutTab() {
   const { colors, type } = useTheme();
@@ -85,20 +86,18 @@ export function WorkoutTab() {
   const done = Math.min(workoutsSince(workoutHistory, weekStart), total);
   const streak = weekStreak(activePlan, workoutHistory);
 
-  // One fact under the title (trim-ui → Copy → Separating facts): how long the day takes, or,
-  // mid-workout, when it started.
-  let fact: { text: string; spoken?: string } | null = null;
-  if (activePlan && day) {
+  // One fact, under Start (PRODUCT-DECISIONS 58): what tapping it costs, how long the day
+  // takes, or, mid-workout, when it started. An empty day has no fact: `Add exercises` says it.
+  let fact: { text: string; spoken?: string; duration?: boolean } | null = null;
+  if (activePlan && day && hasExercises) {
     if (resuming && session) {
       fact = { text: `Started ${formatClockTime(session.startedAt)}` };
-    } else if (hasExercises) {
+    } else {
       const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
       fact =
         minutes != null
-          ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
+          ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes), duration: true }
           : null;
-    } else {
-      fact = { text: 'No exercises yet' };
     }
   }
 
@@ -117,23 +116,16 @@ export function WorkoutTab() {
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
-        // Insets for the large title bar and the tab bar come from the system.
+        // Insets for the large title bar and the tab bar come from the system. Content shares
+        // the title's leading edge (trim-ui → Layout → Under a large title).
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.pause }}
+        contentContainerStyle={{ paddingHorizontal: space.margin, paddingBottom: space.pause }}
         testID="home-scroll">
         {activePlan ? (
           <View testID="home-next-day">
-            {fact ? (
-              <Text
-                style={[type.caption, { fontVariant: ['tabular-nums'] }]}
-                accessibilityLabel={fact.spoken}
-                testID="home-day-meta">
-                {fact.text}
-              </Text>
-            ) : null}
-
+            {/* The day's name stands alone as the title block: the list sits `section` under the bar. */}
             {day && hasExercises ? (
-              <View style={{ paddingTop: space.gutter }}>
+              <View style={{ paddingTop: space.section }}>
                 <ExerciseList key={day.id} exercises={day.exercises} />
               </View>
             ) : null}
@@ -148,12 +140,31 @@ export function WorkoutTab() {
                     testID={resuming ? 'home-resume' : 'home-start'}
                     onPress={() => startDay(activePlan, day)}
                   />
+                  {/* The note under a full-width CTA, centered like the paywall's price note. */}
+                  {fact?.duration ? (
+                    // The estimate leads with the duration glyph (trim-ui §7: a fact's glyph).
+                    <View style={{ paddingTop: space.related }}>
+                      <Fact kind="duration" centered spoken={fact.spoken} testID="home-day-meta">
+                        {fact.text}
+                      </Fact>
+                    </View>
+                  ) : fact ? (
+                    <Text
+                      style={[
+                        type.caption,
+                        { paddingTop: space.related, textAlign: 'center', fontVariant: ['tabular-nums'] },
+                      ]}
+                      accessibilityLabel={fact.spoken}
+                      testID="home-day-meta">
+                      {fact.text}
+                    </Text>
+                  ) : null}
                 </View>
               ) : null}
 
               {day && !hasExercises ? (
                 // H-2: an empty next day gets a way forward instead of a dead end.
-                <View style={{ paddingTop: space.gutter }}>
+                <View style={{ paddingTop: space.section }}>
                   <Button
                     title="Add exercises"
                     variant="black"
@@ -201,7 +212,7 @@ export function WorkoutTab() {
           </View>
         ) : (
           // Empty: the fact is the large title, and the one action sits under it.
-          <View testID="home-empty">
+          <View testID="home-empty" style={{ paddingTop: space.section }}>
             <Button
               title="Create plan"
               variant="black"
