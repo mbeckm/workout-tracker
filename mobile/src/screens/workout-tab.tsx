@@ -21,6 +21,7 @@ import {
 import { emptyPlan, formatPlanMetricWithLoad } from '@/domain/helpers';
 import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
 import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/types';
+import { formatWeekStreak, STREAK_MIN, weekStreak } from '@/domain/weeks';
 import { useStartDay } from '@/navigation/start-day';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -76,6 +77,7 @@ export function WorkoutTab() {
   const doneIds = completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
   const total = activePlan ? trainableDays(activePlan).length : 0;
   const done = Math.min(doneIds.length, total);
+  const streak = weekStreak(activePlan, workoutHistory);
 
   // One fact under the title (trim-ui → Copy → Separating facts): how long the day takes, or,
   // mid-workout, when it started.
@@ -157,7 +159,12 @@ export function WorkoutTab() {
 
               {total > 1 ? (
                 <View style={{ paddingTop: space.section }}>
-                  <WeekAmount done={done} total={total} onPress={() => router.push('/weeks')} />
+                  <WeekAmount
+                    done={done}
+                    total={total}
+                    streak={streak}
+                    onPress={() => router.push('/weeks')}
+                  />
                 </View>
               ) : onlyDayDoneAt ? (
                 <View style={{ paddingTop: space.section }}>
@@ -286,15 +293,18 @@ function ExerciseRow({ exercise }: { exercise: ExercisePrescription }) {
  * weeks against the goal. The trailing chevron is its affordance; without `onPress` it renders
  * read-only, no chevron. The dot a workout fills celebrates on Done, where the workout lands
  * (PRODUCT-DECISIONS 46), so Home just shows the amount. A lower count (a deleted workout, a
- * new week) fades its dots back to grey, no ceremony.
+ * new week) fades its dots back to grey, no ceremony. Full weeks in a row trail the dots
+ * (`4 weeks in a row`, PRODUCT-DECISIONS 51).
  */
 function WeekAmount({
   done,
   total,
+  streak,
   onPress,
 }: {
   done: number;
   total: number;
+  streak: number;
   onPress?: () => void;
 }) {
   const { colors } = useTheme();
@@ -314,10 +324,14 @@ function WeekAmount({
       })}
       accessible
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${done} of ${total} this week`}
+      accessibilityLabel={
+        streak >= STREAK_MIN
+          ? `${done} of ${total} this week, ${formatWeekStreak(streak)}`
+          : `${done} of ${total} this week`
+      }
       accessibilityHint={onPress ? 'Shows past weeks' : undefined}>
       <View style={{ flex: 1 }}>
-        <WeekProgress done={done} total={total} />
+        <WeekProgress done={done} total={total} streak={streak} />
       </View>
       {onPress ? (
         // The quiet affordance for F6: the week opens its past weeks.

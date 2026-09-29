@@ -25,8 +25,8 @@ function formatWeeksSummary(goal: number, average: number | null): string {
 /**
  * Weeks (F6): Home's week amount, repeated back in time. Newest first, one row per Monday-based
  * week with the same dots as Home (a green dot per workout, up to the goal), so a week that met
- * the goal is a full green row. No streaks, no badges, no drill-down: it answers "how often
- * was I in the gym lately", nothing more.
+ * the goal is a full green row (a streak week, PRODUCT-DECISIONS 51). No badges, no drill-down:
+ * it answers "how often was I in the gym lately", nothing more.
  *
  * A native form sheet (trim-ui → Components → Sheets): grabber, `title`, content. It closes by
  * drag, so there's no Done. One non-collapsable header plus one ScrollView (RNScreens formSheet).

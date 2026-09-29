@@ -62,7 +62,7 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 
 **Workout, Plans, Progress, History, Settings.**
 
-- **Workout (Home):** the next day as the title with its estimated time, its exercises with prescription and last working weight (`4 × 8 reps at 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, which celebrate a newly finished day), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
+- **Workout (Home):** the next day as the title with its estimated time, its exercises with prescription and last working weight (`4 × 8 reps at 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, which celebrate a newly finished day; from two full weeks in a row, `4 weeks in a row` trails the dots), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
 - **Plans:** the active plan and other plans. Plan editor: name, days, add day. Day editor: pick exercises, then sets and reps (or duration).
 - **Progress:** each tracked lift with a sparkline; lift detail shows the estimated 1RM chart and sessions. Free sees the last 3 months; 6M, YTD and All are Pro. Body check-ins (native sheet) chart the same way: 3 months free, longer ranges Pro.
 - **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.

@@ -116,3 +116,51 @@ export function spokenWeek(week: WeekTally, goal: number, now = new Date()): str
   const met = goal > 0 && week.count >= goal ? ', goal met' : '';
   return `${when}, ${week.count} of ${goal}${met}`;
 }
+
+/** A streak is only worth stating from two weeks up: one full week is just the dots. */
+export const STREAK_MIN = 2;
+
+/**
+ * Full weeks in a row: weeks that met the active plan's goal, counted back from this week if
+ * it's already full, else from last week (a week still in progress doesn't break the streak).
+ * Weeks count the same way as Weeks' rows, so a full green row there is a streak week: this
+ * week is Home's number, past weeks count every finished workout. Zero when the plan has fewer
+ * than two trainable days, since Home shows no week for it.
+ */
+export function weekStreak(
+  plan: WorkoutPlan | null | undefined,
+  history: LoggedWorkout[],
+  now = new Date(),
+): number {
+  const goal = plan ? trainableDays(plan).length : 0;
+  if (goal < 2) {
+    return 0;
+  }
+  const thisWeek = startOfLocalWeek(now);
+
+  // One pass: workouts per past week, keyed by that week's Monday.
+  const perWeek = new Map<number, number>();
+  let firstWeekMs = thisWeek.getTime();
+  for (const workout of history) {
+    if (workout.setCount <= 0) {
+      continue;
+    }
+    const weekMs = startOfLocalWeek(new Date(workout.completedAt)).getTime();
+    perWeek.set(weekMs, (perWeek.get(weekMs) ?? 0) + 1);
+    firstWeekMs = Math.min(firstWeekMs, weekMs);
+  }
+
+  const thisWeekFull = completedPlanDayIdsSince(plan, history, thisWeek).length >= goal;
+  let streak = thisWeekFull ? 1 : 0;
+  let start = addDays(thisWeek, -7);
+  while (start.getTime() >= firstWeekMs && (perWeek.get(start.getTime()) ?? 0) >= goal) {
+    streak += 1;
+    start = addDays(start, -7);
+  }
+  return streak;
+}
+
+/** `4 weeks in a row`. */
+export function formatWeekStreak(streak: number): string {
+  return `${streak} weeks in a row`;
+}
