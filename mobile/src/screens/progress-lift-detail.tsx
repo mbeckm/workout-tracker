@@ -245,12 +245,12 @@ export function ProgressLiftDetailScreen() {
             hero={
               <StaggerValue
                 value={heroRounded}
-                suffix={` ${units}`}
                 format={{ maximumFractionDigits: 0, useGrouping: false }}
                 locales={PROGRESS_HERO_LOCALE}
                 style={type.hero}
               />
             }
+            unit={units}
             delta={change != null ? <ProgressDelta change={change} unit={units} /> : null}
             points={filtered}
             emptyText="No sessions in this range"

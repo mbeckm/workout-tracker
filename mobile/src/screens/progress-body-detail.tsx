@@ -125,12 +125,12 @@ export function ProgressBodyDetailScreen() {
             hero={
               <StaggerValue
                 value={heroNumber}
-                suffix={bodyHeroSuffix(metricKey, units)}
                 format={bodyHeroFormat(metricKey)}
                 locales={PROGRESS_HERO_LOCALE}
                 style={type.hero}
               />
             }
+            unit={bodyHeroSuffix(metricKey, units).trim()}
             delta={
               change != null ? (
                 <ProgressDelta change={change} unit={bodyHeroSuffix(metricKey, units).trim()} decimals={1} />
