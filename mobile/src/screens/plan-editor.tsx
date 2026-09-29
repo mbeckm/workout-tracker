@@ -18,7 +18,7 @@ import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 
 export function PlanEditorScreen() {
-  const { colors, type } = useTheme();
+  const { colors, scheme, type } = useTheme();
   const params = useLocalSearchParams<{ id: string; new?: string }>();
   const id = params.id;
   // PE-2: opened to create a plan (Plans +, Home's Create plan, onboarding's Build my own),
@@ -58,30 +58,35 @@ export function PlanEditorScreen() {
     });
   }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed]);
 
-  // The name is the native large title, so it's edited in the system text prompt.
+  // The name is the native large title, so it's edited in the system text prompt. It takes
+  // Trim's own light/dark (JS-only, so the prompt would otherwise follow the OS), and an empty
+  // or unchanged name keeps the plan as it is: Save never blanks a name.
   const renamePlan = () => {
     const current = planRef.current;
     if (!current) {
       return;
     }
+    const name = current.name.trim();
     Alert.prompt(
-      current.name.trim() ? 'Rename plan' : 'Name this plan',
+      name ? 'Rename plan' : 'Name this plan',
       undefined,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Save',
-          isPreferred: true,
           onPress: (value?: string) => {
+            const next = (value ?? '').trim();
             const latest = planRef.current;
-            if (latest) {
-              updatePlan({ ...latest, name: (value ?? '').trim() });
+            if (latest && next && next !== latest.name.trim()) {
+              updatePlan({ ...latest, name: next });
             }
           },
         },
       ],
       'plain-text',
-      current.name,
+      name,
+      'default',
+      { userInterfaceStyle: scheme },
     );
   };
 
