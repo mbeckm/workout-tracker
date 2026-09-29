@@ -34,6 +34,7 @@ import type { Entitlement, ProPeriod } from '@/purchases/entitlement';
 import { setProCache, type ProReason } from '@/purchases/pro-gate';
 
 import { loadSnapshot, saveSnapshot } from './persistence';
+import { homeDemoMode, homeDemoSnapshot } from './home-demo';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
 import { defaultSnapshot, type WorkoutSnapshot } from './snapshot';
 
@@ -153,7 +154,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (loaded) {
+      const homeDemo = homeDemoMode();
+      if (homeDemo) {
+        // Dev only, never saved (see the persistence effects below).
+        setSnapshot(homeDemoSnapshot(loaded ?? defaultSnapshot, homeDemo));
+      } else if (loaded) {
         setSnapshot(shouldUseProgressDemo() ? progressDemoSnapshot(loaded) : loaded);
       } else if (shouldUseProgressDemo()) {
         setSnapshot(progressDemoSnapshot(defaultSnapshot));
@@ -175,7 +180,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || !hydratedRef.current) {
+      if (state === 'active' || !hydratedRef.current || homeDemoMode()) {
         return;
       }
       if (persistTimeoutRef.current) {
@@ -188,7 +193,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) {
+    // The Home demo fixture must never overwrite the user's saved data.
+    if (!isHydrated || homeDemoMode()) {
       return;
     }
 
@@ -464,7 +470,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const saveLogSession = useCallback((session: LogSession, options?: { flush?: boolean }) => {
     setSnapshot((current) => {
       const next = { ...current, activeSession: session };
-      if (options?.flush) {
+      if (options?.flush && !homeDemoMode()) {
         // Backgrounding: write now instead of waiting for the debounce. Idempotent.
         void saveSnapshot(next);
       }
