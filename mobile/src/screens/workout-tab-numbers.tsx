@@ -294,13 +294,13 @@ function LiftHero({
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: space.tight }}>
           <SymbolView
             name="arrow.up"
-            tintColor={colors.systemGreen}
+            tintColor={colors.label}
             size={iconSize.row}
             weight="bold"
           />
-          {/* Green at `title` size, as Progress's up-delta (trim-ui → Charts 2). */}
+          {/* Ink at `title` size: change is ink (trim-ui §5). */}
           <Text
-            style={[type.title, { color: colors.systemGreen, fontVariant: ['tabular-nums'] }]}
+            style={[type.title, { fontVariant: ['tabular-nums'] }]}
             maxFontSizeMultiplier={fontScaleCap.title}>
             {upText}
           </Text>
@@ -432,7 +432,7 @@ function ExerciseRow({
           {up ? (
             <SymbolView
               name="arrow.up"
-              tintColor={colors.systemGreen}
+              tintColor={colors.label}
               size={iconSize.caption}
               weight="bold"
             />

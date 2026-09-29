@@ -1,12 +1,15 @@
 import { SymbolView } from 'expo-symbols';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
@@ -14,10 +17,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button } from '@/components/button';
+import { LiftRow, STACK_FONT_SCALE } from '@/components/lift-row';
 import { PrCrown } from '@/components/pr-crown';
-import { WeekDays } from '@/components/week-days';
+import { StaggerValue } from '@/components/stagger-value';
+import { WeekDays, type DayCelebration } from '@/components/week-days';
 import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
-import { emptyPlan, formatLoadWithUnit, formatPlanMetricShort } from '@/domain/helpers';
+import { emptyPlan, formatPlanMetricShort } from '@/domain/helpers';
 import {
   liftChangeFor,
   liftChanges,
@@ -35,26 +40,27 @@ import {
   trainableDays,
   workoutsSince,
 } from '@/domain/plan-loop';
-import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/types';
+import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { weekStreak } from '@/domain/weeks';
 import { DURATION, EASE_OUT, SPRING } from '@/motion';
 import { useStartDay } from '@/navigation/start-day';
+import { clearWeekMoment, usePendingWeekMoment } from '@/navigation/week-moment';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 type Units = 'kg' | 'lbs';
 
 /**
- * From the larger Dynamic Type sizes up (xxxLarge and the accessibility sizes), a row stacks
- * the prescription and load under the name instead of squeezing the name to an ellipsis.
+ * The week moment after Done (trim-ui §13 Home week details; Paper `Motion · Done → Home`):
+ * it starts once Done's modal has slid away, the day's chip gets its ✓ just after today's
+ * circle pops, and a completed week then lights the flame and ticks every chip, left to right.
  */
-const STACK_FONT_SCALE = 1.3;
-
-/** A single-line row: a 44pt touch target plus the air a `title` load needs (Paper V4: 48). */
-const ROW_HEIGHT = TOUCH_TARGET + space.tight;
-/** Lanes, so every row's prescription and load line up (Paper V4; the load lane fits `102.5 kg` with its ↑). They grow with the text. */
-const METRIC_LANE = 44;
-const LOAD_LANE = 100;
+const MOMENT_DELAY_MS = 360;
+const MOMENT_CHIP_MS = 160;
+const MOMENT_WEEK_MS = 420;
+const MOMENT_WAVE_MS = 70;
+/** After this the moment's marks give way to the plain ones (they look the same by then). */
+const MOMENT_DONE_MS = MOMENT_WEEK_MS + DURATION.celebrate * 2;
 
 /** Pager feel, shared with the log stage (trim-ui §8 Log stage swaps exercise). */
 const PAN_SLOP = 14;
@@ -64,11 +70,6 @@ const EDGE_RESISTANCE = 0.22;
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
   return ((velocity / 1000) * decelerationRate) / (1 - decelerationRate);
-}
-
-/** `62.5`, `60`: the load alone, for a number whose unit sits beside it. */
-function formatLoad(value: number): string {
-  return String(Math.round(value * 100) / 100);
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -99,11 +100,47 @@ export function Home() {
 
   const weekStartMs = startOfLocalWeek().getTime();
   const weekStart = new Date(weekStartMs);
-  const goal = activePlan ? trainableDays(activePlan).length : 0;
-  const weekComplete = goal > 0 && workoutsSince(workoutHistory, weekStart) >= goal;
-  const streak = weekStreak(activePlan, workoutHistory);
-  const marks = weekDayMarks(workoutHistory, weekStart);
-  const summary = weekComplete ? weekLiftSummary(workoutHistory, weekStart) : null;
+
+  // The week moment: while Done's workout waits to be celebrated, the week shows its state
+  // from before it; then it plays once (`playing`) and the week lands on the new state.
+  const pendingMoment = usePendingWeekMoment();
+  const [playing, setPlaying] = useState<string | null>(null);
+  const momentId = pendingMoment ?? playing;
+  const momentWorkout = momentId ? (workoutHistory.find((item) => item.id === momentId) ?? null) : null;
+  const after = weekState(activePlan, days, workoutHistory, weekStart);
+  const before = momentWorkout
+    ? weekState(
+        activePlan,
+        days,
+        workoutHistory.filter((item) => item.id !== momentWorkout.id),
+        weekStart,
+      )
+    : after;
+  const week = pendingMoment ? before : after;
+  const { weekComplete } = after;
+  const summary = week.weekComplete ? weekLiftSummary(workoutHistory, weekStart) : null;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!pendingMoment) {
+        return;
+      }
+      const timer = setTimeout(() => {
+        setPlaying(pendingMoment);
+        clearWeekMoment();
+      }, MOMENT_DELAY_MS);
+      return () => clearTimeout(timer);
+    }, [pendingMoment]),
+  );
+  useEffect(() => {
+    if (!playing) {
+      return;
+    }
+    const timer = setTimeout(() => setPlaying(null), MOMENT_DONE_MS);
+    return () => clearTimeout(timer);
+  }, [playing]);
+
+  const moment = playing && momentWorkout && !pendingMoment ? momentFor(momentWorkout, before, after, days, activePlan) : null;
 
   // Just trained: a day of this plan finished today, and the week isn't complete yet (a
   // complete week takes over, with the next day selected).
@@ -116,11 +153,6 @@ export function Home() {
     () => (trained ? liftChanges(trained, workoutHistory) : null),
     [trained, workoutHistory],
   );
-
-  // The whole plan is done this week: every chip wears its ✓ until the new week starts.
-  const doneIds = weekComplete
-    ? days.map((item) => item.id)
-    : completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
 
   // The day Home would pick; a chip the user picks holds until that default moves (a finished
   // workout, a new week), so Home never keeps showing a stale choice.
@@ -208,10 +240,11 @@ export function Home() {
         {activePlan && days.length > 0 ? (
           <View testID="home-next-day">
             <WeekHeader
-              streak={streak}
-              secured={weekComplete}
-              marks={marks}
+              streak={week.streak}
+              secured={week.weekComplete}
+              marks={week.marks}
               summary={summary}
+              moment={moment}
               onPress={() => router.push('/weeks')}
             />
 
@@ -222,7 +255,13 @@ export function Home() {
                 {selected && selected.id === trainedDayId ? 'Today' : 'Next workout'}
               </Text>
               <View style={{ paddingTop: space.related }}>
-                <DayChips days={days} selectedIndex={selectedIndex} doneIds={doneIds} onSelect={select} />
+                <DayChips
+                  days={days}
+                  selectedIndex={selectedIndex}
+                  doneIds={week.doneIds}
+                  moment={moment}
+                  onSelect={select}
+                />
               </View>
             </View>
 
@@ -268,6 +307,143 @@ export function Home() {
   );
 }
 
+type WeekState = {
+  weekComplete: boolean;
+  streak: number;
+  marks: ReturnType<typeof weekDayMarks>;
+  /** Days wearing their ✓: the days done this week, or every day once the week is complete. */
+  doneIds: string[];
+};
+
+function weekState(
+  plan: WorkoutPlan | null | undefined,
+  days: WorkoutDay[],
+  history: LoggedWorkout[],
+  weekStart: Date,
+): WeekState {
+  const goal = plan ? trainableDays(plan).length : 0;
+  const weekComplete = goal > 0 && workoutsSince(history, weekStart) >= goal;
+  return {
+    weekComplete,
+    streak: weekStreak(plan, history),
+    marks: weekDayMarks(history, weekStart),
+    // The whole plan is done this week: every chip wears its ✓ until the new week starts.
+    doneIds: weekComplete
+      ? days.map((item) => item.id)
+      : completedPlanDayIdsSince(plan, history, weekStart),
+  };
+}
+
+/** What the week moment plays: which circle fills, which ✓ pop in when, whether the flame lights. */
+type WeekMoment = {
+  key: string;
+  day: DayCelebration | null;
+  chipDelays: Record<string, number>;
+  lightsFlame: boolean;
+};
+
+function momentFor(
+  workout: LoggedWorkout,
+  before: WeekState,
+  after: WeekState,
+  days: WorkoutDay[],
+  plan: WorkoutPlan | null | undefined,
+): WeekMoment {
+  const dayIndex = after.marks.findIndex((mark, index) => mark.done && !before.marks[index]?.done);
+  const trainedDayId = plan ? dayIdForPlanWorkout(workout, plan) : null;
+  const chipDelays: Record<string, number> = {};
+  let wave = 0;
+  days.forEach((day) => {
+    if (!after.doneIds.includes(day.id) || before.doneIds.includes(day.id)) {
+      return;
+    }
+    chipDelays[day.id] =
+      day.id === trainedDayId ? MOMENT_CHIP_MS : MOMENT_WEEK_MS + wave++ * MOMENT_WAVE_MS;
+  });
+  return {
+    key: workout.id,
+    day: dayIndex >= 0 ? { index: dayIndex, key: workout.id } : null,
+    chipDelays,
+    lightsFlame: after.weekComplete && !before.weekComplete,
+  };
+}
+
+/**
+ * The streak flame: gray while the week's goal is open, orange once it's reached. When the
+ * week moment completes the week, it lights (gray → orange crossfade) with a small flicker.
+ * Reduce Motion: the crossfade alone.
+ */
+function Flame({ size, secured, lightKey }: { size: number; secured: boolean; lightKey: string | null }) {
+  const { colors, type } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const lit = useSharedValue(secured ? 1 : 0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (lightKey == null) {
+      lit.set(secured ? 1 : 0);
+      return;
+    }
+    lit.set(0);
+    lit.set(
+      withDelay(
+        MOMENT_WEEK_MS,
+        withTiming(1, { duration: DURATION.change, easing: EASE_OUT, reduceMotion: ReduceMotion.Never }),
+      ),
+    );
+    if (!reduceMotion) {
+      scale.set(
+        withDelay(
+          MOMENT_WEEK_MS,
+          withSequence(
+            withTiming(1.2, { duration: DURATION.press, easing: EASE_OUT }),
+            withSpring(1, SPRING.pop),
+          ),
+        ),
+      );
+    }
+  }, [lightKey, lit, reduceMotion, scale, secured]);
+
+  const flicker = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  const orange = useAnimatedStyle(() => ({ opacity: lit.get() }));
+  const fallback = <Text style={type.tabTitle}>🔥</Text>;
+
+  return (
+    <Animated.View style={flicker}>
+      <SymbolView name="flame.fill" size={size} tintColor={colors.systemGray3} fallback={fallback} />
+      <Animated.View style={[{ position: 'absolute', top: 0, left: 0 }, orange]}>
+        <SymbolView name="flame.fill" size={size} tintColor={colors.systemOrange} fallback={fallback} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+/** A mark arriving in the week moment: pops in from half size (`SPRING.pop`). Reduce Motion: a fade. */
+function PopIn({ delayMs, children }: { delayMs: number; children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
+  const shown = useSharedValue(0);
+  const scale = useSharedValue(reduceMotion ? 1 : 0.5);
+
+  useEffect(() => {
+    shown.set(
+      withDelay(
+        delayMs,
+        withTiming(1, {
+          duration: reduceMotion ? DURATION.change : DURATION.fade,
+          easing: EASE_OUT,
+          reduceMotion: ReduceMotion.Never,
+        }),
+      ),
+    );
+    if (!reduceMotion) {
+      scale.set(withDelay(delayMs, withSpring(1, SPRING.pop)));
+    }
+  }, [delayMs, reduceMotion, scale, shown]);
+
+  const style = useAnimatedStyle(() => ({ opacity: shown.get(), transform: [{ scale: scale.get() }] }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 /**
  * The streak over the week: 🔥 `3 weeks` (gray until this week's goal is reached, then
  * orange; hidden before the first full week), the seven day circles, and on a complete week
@@ -278,12 +454,14 @@ function WeekHeader({
   secured,
   marks,
   summary,
+  moment,
   onPress,
 }: {
   streak: number;
   secured: boolean;
   marks: ReturnType<typeof weekDayMarks>;
   summary: { liftsUp: number; records: number } | null;
+  moment: WeekMoment | null;
   onPress: () => void;
 }) {
   const { colors, type } = useTheme();
@@ -313,25 +491,26 @@ function WeekHeader({
       })}>
       {streak > 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }} testID="home-streak">
-          <SymbolView
-            name="flame.fill"
-            size={flameSize}
-            tintColor={secured ? colors.systemOrange : colors.systemGray3}
-            fallback={<Text style={type.tabTitle}>🔥</Text>}
-          />
-          {/*
-            Plain text for now: the count rolling up belongs to the week moment after Done (trim-ui
-            §13 Home week details, not built yet), and NumberFlow mis-measures at large text.
-          */}
-          <Text
-            style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
-            maxFontSizeMultiplier={fontScaleCap.title}>
-            {plural(streak, 'week', 'weeks')}
-          </Text>
+          <Flame size={flameSize} secured={secured} lightKey={moment?.lightsFlame ? moment.key : null} />
+          {fontScale < STACK_FONT_SCALE ? (
+            // The count rolls when the week moment moves it (3 → 4 weeks).
+            <StaggerValue
+              value={streak}
+              suffix={streak === 1 ? ' week' : ' weeks'}
+              style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
+            />
+          ) : (
+            // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
+            <Text
+              style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
+              maxFontSizeMultiplier={fontScaleCap.title}>
+              {plural(streak, 'week', 'weeks')}
+            </Text>
+          )}
         </View>
       ) : null}
       <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        <WeekDays marks={marks} />
+        <WeekDays marks={marks} celebrate={moment?.day ?? null} />
       </View>
       {summary && (summary.liftsUp > 0 || summary.records > 0) ? (
         <View
@@ -368,11 +547,13 @@ function DayChips({
   days,
   selectedIndex,
   doneIds,
+  moment,
   onSelect,
 }: {
   days: WorkoutDay[];
   selectedIndex: number;
   doneIds: string[];
+  moment: WeekMoment | null;
   onSelect: (index: number) => void;
 }) {
   const { colors, type } = useTheme();
@@ -429,7 +610,13 @@ function DayChips({
               {day.title}
             </Text>
             {done ? (
-              <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+              moment?.chipDelays[day.id] != null ? (
+                <PopIn key={moment.key} delayMs={moment.chipDelays[day.id]}>
+                  <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+                </PopIn>
+              ) : (
+                <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+              )
             ) : null}
           </Pressable>
         );
@@ -575,9 +762,10 @@ function ExerciseRows({
   return (
     <View testID="home-exercise-list">
       {exercises.map((exercise, index) => (
-        <ExerciseRow
+        <LiftRow
           key={`${exercise.id}-${index}`}
-          exercise={exercise}
+          name={exercise.name}
+          metric={formatPlanMetricShort(exercise)}
           number={changes ? null : (numbers[index] ?? null)}
           change={changes ? liftChangeFor(changes, exercise.name) : null}
           units={units}
@@ -585,163 +773,5 @@ function ExerciseRows({
         />
       ))}
     </View>
-  );
-}
-
-function ExerciseRow({
-  exercise,
-  number,
-  change,
-  units,
-  showSeparator,
-}: {
-  exercise: ExercisePrescription;
-  number: LiftNumber | null;
-  change: LiftChange | null;
-  units: Units;
-  showSeparator: boolean;
-}) {
-  const { colors, type } = useTheme();
-  const { fontScale } = useWindowDimensions();
-  const stacked = fontScale >= STACK_FONT_SCALE;
-  const metric = formatPlanMetricShort(exercise);
-  const trailing = change ? <ChangeValue change={change} units={units} /> : number ? <LoadValue number={number} units={units} /> : null;
-
-  let spoken: string | null = null;
-  if (change) {
-    spoken =
-      change.kind === 'first'
-        ? formatLoadWithUnit(change.load, units)
-        : change.kind === 'same'
-          ? 'same as last time'
-          : `${change.kind === 'up' ? 'up' : 'down'} ${formatLoadWithUnit(change.delta, units)}`;
-    if (change.record) {
-      spoken += ', personal best';
-    }
-  } else if (number) {
-    spoken = `${formatLoadWithUnit(number.load, units)}${number.loadUp != null ? ', up from last time' : ''}`;
-  }
-
-  const metricText = (
-    <Text
-      style={[
-        type.caption,
-        { fontVariant: ['tabular-nums'] },
-        stacked ? { flex: 1 } : { minWidth: METRIC_LANE * fontScale, textAlign: 'right' },
-      ]}>
-      {metric}
-    </Text>
-  );
-  const trailingLane = (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        justifyContent: 'flex-end',
-        gap: space.tight,
-        flexShrink: 0,
-        minWidth: stacked ? undefined : LOAD_LANE * fontScale,
-      }}>
-      {trailing}
-    </View>
-  );
-
-  return (
-    <View
-      accessible
-      accessibilityLabel={[exercise.name, metric.replace(' × ', ' sets of '), spoken].filter(Boolean).join(', ')}
-      style={{
-        flexDirection: stacked ? 'column' : 'row',
-        alignItems: stacked ? 'stretch' : 'center',
-        gap: stacked ? space.tight : space.inline,
-        minHeight: ROW_HEIGHT,
-        paddingVertical: space.related,
-        justifyContent: 'center',
-        borderBottomWidth: showSeparator ? StyleSheet.hairlineWidth : 0,
-        borderBottomColor: colors.separator,
-      }}>
-      <Text style={[type.row, stacked ? null : { flex: 1, minWidth: 0 }]} numberOfLines={stacked ? 2 : 1}>
-        {exercise.name}
-      </Text>
-      {stacked ? (
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.inline }}>
-          {metricText}
-          {trailingLane}
-        </View>
-      ) : (
-        <>
-          {metricText}
-          {trailingLane}
-        </>
-      )}
-    </View>
-  );
-}
-
-/** A glyph that sits on the number's line: the lane aligns by baseline, a symbol has none. */
-function LaneGlyph({ children }: { children: React.ReactNode }) {
-  return <View style={{ alignSelf: 'center' }}>{children}</View>;
-}
-
-function Amount({ value, units }: { value: number; units: Units }) {
-  const { type } = useTheme();
-  return (
-    <>
-      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} maxFontSizeMultiplier={fontScaleCap.title}>
-        {formatLoad(value)}
-      </Text>
-      <Text style={type.caption} maxFontSizeMultiplier={fontScaleCap.title}>
-        {units}
-      </Text>
-    </>
-  );
-}
-
-/** Today's load; an ink ↑ when the Pro target raises it (change is ink, trim-ui §5). */
-function LoadValue({ number, units }: { number: LiftNumber; units: Units }) {
-  const { colors } = useTheme();
-  return (
-    <>
-      {number.loadUp != null ? (
-        <LaneGlyph>
-          <SymbolView name="arrow.up" size={iconSize.caption} weight="bold" tintColor={colors.label} />
-        </LaneGlyph>
-      ) : null}
-      <Amount value={number.load} units={units} />
-    </>
-  );
-}
-
-/** What a lift did today: ↑ / ↓ and the difference, `same`, or the crown on a record. */
-function ChangeValue({ change, units }: { change: LiftChange; units: Units }) {
-  const { colors, type } = useTheme();
-  if (change.kind === 'first') {
-    return <Amount value={change.load} units={units} />;
-  }
-  const glyph = change.record ? (
-    <LaneGlyph>
-      <PrCrown size={iconSize.caption} />
-    </LaneGlyph>
-  ) : change.kind === 'same' ? null : (
-    <LaneGlyph>
-      <SymbolView
-        name={change.kind === 'up' ? 'arrow.up' : 'arrow.down'}
-        size={iconSize.caption}
-        weight="bold"
-        tintColor={colors.label}
-      />
-    </LaneGlyph>
-  );
-  return (
-    <>
-      {glyph}
-      {change.kind === 'same' ? (
-        <Text style={type.caption} maxFontSizeMultiplier={fontScaleCap.title}>
-          same
-        </Text>
-      ) : (
-        <Amount value={change.delta} units={units} />
-      )}
-    </>
   );
 }
