@@ -25,6 +25,9 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Every touch gets a visible reaction within 100ms, and nothing waits on an animation.
 8. **Everything is a sale.** Making money isn't evil, and helping someone decide isn't either. The sale starts at the first tap, not at the paywall, and every interaction is the store clerk. So the product is the salesperson: every detail gets the same care as the paywall, without plastering CTAs anywhere. We borrow the principles of the best-converting apps and never their dark patterns: real prices, a clear trial timeline, an exit that's always visible, no pressure tricks, and always Trim's own look. Buying Pro is itself a rewarding moment. See `trim-ui` → Selling.
 9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments that feel special: the first open, the first plan, the first workout, the first purchase, a new record, a full week. Never from confetti or copy.
+10. **The moment decides the screen.** Every screen answers why someone opens it right now, and anything that doesn't serve that moment leaves it. Home is opened to start a workout, so it holds the week and the next workout, and plan editing stays in Plans.
+11. **Screens reflect what just happened.** A screen changes with the user's recent history (before a workout, just trained, week complete) instead of showing one static layout. That, not decoration, is what makes Trim feel like a companion.
+12. **Your numbers first, and show the change.** The user's own values lead and the plan's prescription supports them. Wherever there's a previous value, Trim shows the difference. Color is for the rare peaks only: green for done, yellow for a record, orange for a secured week; ordinary progress is an ink ↑.
 
 ### Control
 
@@ -50,6 +53,7 @@ Plan
 - **Day:** one session in the plan (`id`, `title`, `exercises`).
 - **Exercise (prescription):** catalog name and metadata (equipment, muscles, type), tracking mode (strength = sets × reps; cardio = minutes; holds and stretches = seconds), sets and one reps value for every set. Plans store **no weight**; weight is entered while logging.
 - **Logged workout:** a completed day with timestamp, duration, and per exercise the sets actually done (weight, reps and/or duration). Strength sets store an estimated 10RM (Epley: `1RM = weight × (1 + reps/30)`, `10RM = 1RM / (1 + 10/30)`); each logged exercise keeps `bestTenRM` for PRs and progression.
+- **Goal:** a target estimated 1RM for one lift (`exerciseName`, `target`, `pinned`, `createdAt`, `reachedAt`). Any number of lifts can have one; up to 3 are pinned to Progress.
 - **Body check-in:** bodyweight (stored in kg, shown in the user's unit) plus optional circumferences in cm.
 
 The exercise catalog is local-only: about 200 exercises written for Trim, plus the user's custom exercises. Search (with gym shorthand like "RDL" or "OHP") and Alternatives work offline.
@@ -62,9 +66,9 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 
 **Workout, Plans, Progress, History, Settings.**
 
-- **Workout (Home):** the next day as the title with its estimated time, its exercises with prescription and last working weight (`4 × 8 reps at 60 kg`), a black Start (Resume while a session is open), the week amount (`3 of 5 this week` + dots, counting every finished workout, a repeated day too; the dots celebrate a newly finished workout; from two full weeks in a row, `4 weeks in a row` trails the dots), then Other days with a check for days done this week. Tapping a day opens a preview sheet.
+- **Workout (Home):** one job, start the next workout (decision 61). The streak (🔥 `3 weeks`, lit once the week's goal is reached), the week as seven day circles, then `Next workout` as day chips over that day's exercises with your loads (↑ where a Pro target goes up) and Start at the thumb. It changes with what just happened: just trained shows what went up and the next day quietly; a complete week lights the flame and says how many lifts went up and how many records fell. Tapping or swiping a chip shows that day.
 - **Plans:** the active plan and other plans. Plan editor: name, days, add day. Day editor: pick exercises, then sets and reps (or duration).
-- **Progress:** each tracked lift with a sparkline; lift detail shows the estimated 1RM chart and sessions. Free sees the last 3 months; 6M, YTD and All are Pro. Body check-ins (native sheet) chart the same way: 3 months free, longer ranges Pro.
+- **Progress:** pinned goals first (up to 3, green track; decision 63), then each lift and body measurement as one line with a 30-day sparkline (90 as a setting). Long-press a lift to set a goal. Lift detail: goal block, range chips (1M and 3M free; 6M, 1Y and All Pro), the estimated 1RM with its change and the chart as one object, sessions. Body check-ins (native sheet) chart the same way.
 - **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.
 - **Settings:** Weight (kg/lbs), Appearance (System/Light/Dark), Trim Pro, Restore purchases; links out to Contact support, Privacy Policy, Terms of Use; Clear history.
 

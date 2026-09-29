@@ -4,21 +4,11 @@ export default function WorkoutStack() {
   return (
     <Stack screenOptions={{ animation: 'none', headerShown: false }}>
       {/*
-        Home's day name is the native large title (trim-ui → Typography), collapsing into the
-        system glass bar on scroll. Transparent so the bar is the system's own material, with
-        the scroll-edge effect between it and the content (trim-ui → Liquid Glass). The title
-        itself comes from the screen.
+        Home v3 has no navigation bar: the streak and the week head the page (trim-ui §13 Home).
+        The classic Home (`screens/workout-tab.tsx`) needs `headerShown`, a large title and a
+        transparent header here to come back.
       */}
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: true,
-          headerLargeTitleEnabled: true,
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerLargeTitleShadowVisible: false,
-        }}
-      />
+      <Stack.Screen name="index" />
     </Stack>
   );
 }

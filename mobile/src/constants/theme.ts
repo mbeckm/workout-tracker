@@ -17,6 +17,10 @@ export type ThemeColors = {
   systemGreen: string;
   systemRed: string;
   systemYellow: string;
+  /** Streak secured: the lit flame on Home, and nothing else (trim-ui §5 Signals). */
+  systemOrange: string;
+  /** The streak flame while this week's goal is still open. */
+  systemGray3: string;
   systemGray4: string;
   systemGray5: string;
   /** Text on blue tint fills. Always white. */
@@ -45,6 +49,8 @@ export const lightColors: ThemeColors = {
   systemGreen: '#34C759',
   systemRed: '#FF3B30',
   systemYellow: '#FFCC00',
+  systemOrange: '#FF9500',
+  systemGray3: '#C7C7CC',
   systemGray4: '#D1D1D6',
   systemGray5: '#E5E5EA',
   onTint: '#ffffff',
@@ -67,6 +73,8 @@ export const darkColors: ThemeColors = {
   systemGreen: '#30D158',
   systemRed: '#FF453A',
   systemYellow: '#FFD60A',
+  systemOrange: '#FF9F0A',
+  systemGray3: '#636366',
   systemGray4: '#48484A',
   systemGray5: '#3A3A3C',
   onTint: '#FFFFFF',

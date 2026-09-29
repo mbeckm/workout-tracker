@@ -161,7 +161,7 @@ export function weekMovedBy(
   return { before, after, total };
 }
 
-function dayIdForPlanWorkout(workout: LoggedWorkout, plan: WorkoutPlan): string | null {
+export function dayIdForPlanWorkout(workout: LoggedWorkout, plan: WorkoutPlan): string | null {
   if (workout.setCount <= 0) {
     return null;
   }

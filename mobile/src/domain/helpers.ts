@@ -115,6 +115,12 @@ export function formatPlanMetric(exercise: ExercisePrescription): string {
   return `${setCount(exercise)} × ${exercise.reps || 8} reps`;
 }
 
+/** `4 × 6`: the prescription in a lane beside a load (Home's rows), where `reps` goes without saying. */
+export function formatPlanMetricShort(exercise: ExercisePrescription): string {
+  const metric = formatPlanMetric(exercise);
+  return metric.endsWith(' reps') ? metric.slice(0, -' reps'.length) : metric;
+}
+
 /**
  * `4 × 8 reps at 15 kg`: the prescription plus the working weight from the last session
  * (its heaviest set). Plans store no weights, so the load comes from history; without
