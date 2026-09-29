@@ -283,7 +283,7 @@ The more often a moment happens, the less it may animate. Delight is spent where
    - A logged set rises from the wells (+8 → 0), because that's where the value came from.
    - Moving to the next exercise comes in from the right, going back from the left, matching the swipe and the strip order. A swipe follows the finger 1:1 and settles with its velocity.
    - A control that changes meaning morphs in place (`Log set` → `Next exercise` → `Finish workout`: the label crossfades, the pill stays).
-   - Numbers that change roll (`StaggerValue`): `Set 2 of 4`, the week count, the 1RM while scrubbing.
+   - Numbers that change roll (`StaggerValue`, `ProgressDelta`): `Set 2 of 4`, the week count, the 1RM and delta while scrubbing, the delta when the chart range changes.
    - A sheet dismisses downward because it came from below. A toast leaves the way it entered.
 7. **Haptic and visual on the same frame.** A haptic fires at the causal moment (the set lands, the detent catches), never when an animation finishes.
 8. **Native navigation only.** Push, modal and sheet transitions are the system's. No custom page transitions, no parallax, no shared-element flourishes.
@@ -306,7 +306,7 @@ The more often a moment happens, the less it may animate. Delight is spent where
 | Sheets | native (preferred), or `SPRING.fling` with gesture velocity | Fluid |
 | Sheet content morphs | A row that opens detail inside a custom sheet (an Alternative in the exercise sheet) changes the sheet in place: its height glides to the new page's height as a native layout transition in the same frame the page mounts (`enter`, the iOS sheet curve `EASE_SHEET`, `AnimatedSheet morph`; never a JS-driven `height`, which starts late and steps), the old page fades out (`exit`) as a layer over the new one (never kept in the column, or the sheet would grow to both pages and shrink back), and the new fades in from 8pt on the side you moved toward (`enter`); Back reverses it. Reduced motion: height snaps, the fade stays. | Fluid |
 | Toast | rise 8pt, `enter`; leave `exit` the same way | Fluid |
-| Chart range change | the line morphs to the new range, `change`, never blocks scrubbing | Fluid |
+| Chart range change | the line morphs to the new range and the delta rolls to it, both `change`, with one selection tick on the tap (not on the selected chip, not on a locked one); never blocks scrubbing. Reduced motion: the line and digits swap, the tick stays. | Fluid |
 | Appearance change | full-screen crossfade, `change` | Fluid |
 | New plan lands in Plans | its row fades in the active card's surface (`enter`-ish 180), holds ~700ms while the toast rises, then dissolves (520). Opacity only, so it stays under Reduce Motion. Once per created plan. | Fluid |
 | Pro lock opens | the tapped chip's `lock.fill` becomes `lock.open.fill` on the frame the purchase lands, holds ~900ms, then fades (`exit`). Once per purchase. | Loveable |
@@ -326,7 +326,7 @@ A haptic confirms something the body did. It's never decoration.
 | Rest reaches 0:00, Finish | success |
 | The log lands from Start (`Log set` lights up) | medium impact |
 | A Pro purchase lands (the `Trim Pro is on` toast) | success |
-| Well −/+, swiping between exercises, picking a paywall option | selection |
+| Well −/+, swiping between exercises, picking a paywall option, picking a chart range | selection |
 | A sheet snapping to a detent | light impact |
 | Scrubbing a chart across a data point | selection |
 
@@ -461,7 +461,7 @@ The Trade Republic part of Trim. A chart answers one question: is this going up?
 3. **Scrub to read.** Touching the chart shows a vertical hairline and a dot on the line. The hero rolls to that point's value, the delta becomes change since the start of the range, and the date appears where the range label was. A selection haptic ticks at each data point. Releasing rolls everything back to now.
 4. **Endpoints.** The latest value gets a small dot. With fewer than 6 points, every point gets a dot, because a line through three sessions implies data that isn't there.
 5. **Y-range fits the data** in the selected window with ~10% padding, and never starts at zero. A line is about change, and zero flattens it.
-6. **Ranges below the chart.** Range chips (`3M 6M YTD All`) sit under the chart, in thumb reach. Pro ranges show a 13pt lock and open the paywall. The chart itself is never blurred or hidden.
+6. **Range first.** Range chips (`3M 6M YTD All`) sit under the title, above the hero, like Health, Fitness and Stocks: the range scopes everything under it (the delta, the line, the sessions), so it's read first, and the hero stays directly on top of its line. Pro ranges show a 13pt lock and open the paywall. The chart itself is never blurred or hidden.
 7. **Changing range** morphs the line (`change`, 280). Scrubbing stays possible during the morph.
 8. **Sparklines** in Progress rows follow the same rules without dots, hero or dates: 1.5pt ink line in the trailing lane.
 9. **One session** shows the value as the hero and a single dot. No sentence explaining that more data is needed.
@@ -554,7 +554,7 @@ Same system, different winner. Don't invent a type size for a screen.
 | **Plans** | Native large title + toolbar `+`. Active plan first, as a `title` row with `6 days` on the left and a green `Active` trailing. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Delete (immediate, with Undo). Swipe left to delete. No icons, no permanent edit chrome. | `Active` |
 | **Plan detail** | Plan name as the native large title, `6 days` under it (+ green `Active` trailing). Days as `row` title + `caption` exercise names in words (`Bench Press, Incline Press and 2 more`, 2 lines max). `Add day` as a quiet row. `Rename plan` (system text prompt; a new plan asks `Name this plan` once). `Use this plan` ink if not active. `Delete plan` red, last. | `Active` |
 | **Progress** | Native large title. Lift rows: `row` name + `caption` latest, sparkline and chevron in the trailing lane. Body row the same. | Up-delta only |
-| **Lift / body detail** | Lift name `title`, 1RM `hero` with unit, delta (lifts: green if up, ink otherwise; body: always ink), chart, range chips below it (3M free, rest Pro-locked), sessions list. Charts follow §11. | Up-delta only |
+| **Lift / body detail** | Lift name `title`, range chips (3M free, rest Pro-locked), 1RM `hero` with unit, delta (lifts: green if up, ink otherwise; body: always ink), chart, sessions list right under the line. Charts follow §11. | Up-delta only |
 | **History** | Native large title. Month as a section caption with its amount in the trailing lane (`August` … `4 sessions`). Session row: `row` title over `caption` when (`Wed 13`), duration trailing (`52 min`), and the PR pill (gray fill, yellow crown, count) beside the duration when there is one. Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, workout title as the native large title, facts on two lines in `caption` (`Wed 13 September, 18:02` / `52 min, 14 sets`), every set of each exercise on its own line (`RecapExercise`: narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set). A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | Native large title. `PaperRow` groups separated by `section` air: (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews Oct 3`, or `On until Oct 3` once renewal is off; dates as elsewhere in Trim). | None |
