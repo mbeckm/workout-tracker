@@ -562,6 +562,10 @@ Same system, different winner. Don't invent a type size for a screen.
 | **Body check-in** | Native `formSheet`: Cancel, title and Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
 | **Onboarding** | Follows §12. One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
 
+### Home exploration: "Your numbers" (PRODUCT-DECISIONS 52)
+
+Built on a branch and pending a decision on device. It replaces the Home spec above only if it's merged: the last session under the title, a `hero` number to beat for the first weighted lift, each row's load in the trailing lane at `title`, a green ↑ where a Pro target raises the load, and the week as seven days with checks. Green means done **or up**, never decoration. Until it's merged, the Home row above is the rule.
+
 ### Home week details
 
 - The week celebrates on Done, where the workout lands (§8 Week dot fills). Home shows the amount without ceremony; a lower count (a deleted workout, a new week) crossfades its dots back to grey.
