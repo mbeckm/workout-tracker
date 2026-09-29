@@ -3,8 +3,10 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
+  LayoutAnimationConfig,
   ReduceMotion,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
@@ -14,7 +16,7 @@ import Animated, {
 import { HeaderActions } from '@/components/button';
 import { PaperEmpty } from '@/components/paper';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
-import { EASE_IN_OUT, EASE_OUT } from '@/motion';
+import { EASE_IN_OUT, EASE_OUT, exitFade, listReflow, rowIn } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
@@ -43,6 +45,7 @@ export function PlansTab() {
   const router = useRouter();
   const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
+  const reduceMotion = useReducedMotion();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
   const otherPlans = plans.filter((plan) => plan.id !== activePlan?.id);
@@ -101,36 +104,51 @@ export function PlansTab() {
             action={{ title: 'Create plan', onPress: createPlan, testID: 'plans-create' }}
           />
         ) : (
-          <>
+          // Delete, Undo and Use this plan move rows in place (trim-ui §8, List reflows);
+          // nothing animates when Plans first appears.
+          <LayoutAnimationConfig skipEntering skipExiting>
             {activePlan ? (
-              <PlanMenuRow
-                plan={activePlan}
-                variant="active"
-                onActivate={() => activatePlan(activePlan)}
-                onDelete={() => confirmDelete(activePlan)}
-              />
+              <Animated.View
+                key={activePlan.id}
+                entering={rowIn(reduceMotion)}
+                exiting={exitFade(reduceMotion)}
+                layout={listReflow(reduceMotion)}>
+                <PlanMenuRow
+                  plan={activePlan}
+                  variant="active"
+                  onActivate={() => activatePlan(activePlan)}
+                  onDelete={() => confirmDelete(activePlan)}
+                />
+              </Animated.View>
             ) : null}
             {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? space.section : 0 }}>
+              <Animated.View
+                layout={listReflow(reduceMotion)}
+                style={{ paddingTop: activePlan ? space.section : 0 }}>
                 {otherPlans.map((plan, index) => (
-                  <PlanMenuRow
+                  <Animated.View
                     key={plan.id}
-                    plan={plan}
-                    variant="row"
-                    proLabel={!isPro}
-                    revealed={plan.id === revealedPlanId}
-                    showSeparator={index < otherPlans.length - 1}
-                    onActivate={async () => {
-                      if (await requirePro('switch_plan')) {
-                        activatePlan(plan);
-                      }
-                    }}
-                    onDelete={() => confirmDelete(plan)}
-                  />
+                    entering={rowIn(reduceMotion)}
+                    exiting={exitFade(reduceMotion)}
+                    layout={listReflow(reduceMotion)}>
+                    <PlanMenuRow
+                      plan={plan}
+                      variant="row"
+                      proLabel={!isPro}
+                      revealed={plan.id === revealedPlanId}
+                      showSeparator={index < otherPlans.length - 1}
+                      onActivate={async () => {
+                        if (await requirePro('switch_plan')) {
+                          activatePlan(plan);
+                        }
+                      }}
+                      onDelete={() => confirmDelete(plan)}
+                    />
+                  </Animated.View>
                 ))}
-              </View>
+              </Animated.View>
             ) : null}
-          </>
+          </LayoutAnimationConfig>
         )}
       </ScrollView>
       {plans.length > 0 ? (

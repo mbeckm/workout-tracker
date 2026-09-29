@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-rout
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
+import Animated, { LayoutAnimationConfig, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EDITOR_ACTIONS_TOP, EDITOR_LIST_TOP, EditorActionRow } from '@/components/editor-chrome';
@@ -11,6 +12,7 @@ import { iconSize, space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { clonePrescription, emptyDay } from '@/domain/helpers';
 import { newId, type WorkoutDay } from '@/domain/types';
+import { exitFade, listReflow, rowIn } from '@/motion';
 import { largeTitleOptions } from '@/navigation/large-title';
 import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
@@ -27,6 +29,7 @@ export function PlanEditorScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReducedMotion();
   const { plans, activePlanId, updatePlan, activatePlan, deletePlan, isPro } =
     useWorkoutStore();
   const { removePlan, removeDay: removeDayWithUndo } = useUndoableDeletes();
@@ -202,26 +205,37 @@ export function PlanEditorScreen() {
               </View>
             ) : null}
           </View>
+          {/* Remove, Undo, Duplicate, Add and Move reflow the days in place (trim-ui §8, List
+              reflows); nothing animates when the editor first appears. */}
           <View style={{ paddingTop: EDITOR_LIST_TOP }}>
-            {plan.days.map((day, index) => (
-              <PlanDetailDayRow
-                key={day.id}
-                day={day}
-                index={index}
-                href={dayHref(day)}
-                isFirst={index === 0}
-                actions={{
-                  onRename: () => renameDay(day.id),
-                  onDuplicate: () => duplicateDay(day.id),
-                  onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
-                  onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
-                  onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
-                }}
-              />
-            ))}
-            <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
+            <LayoutAnimationConfig skipEntering skipExiting>
+              {plan.days.map((day, index) => (
+                <Animated.View
+                  key={day.id}
+                  entering={rowIn(reduceMotion)}
+                  exiting={exitFade(reduceMotion)}
+                  layout={listReflow(reduceMotion)}>
+                  <PlanDetailDayRow
+                    day={day}
+                    index={index}
+                    href={dayHref(day)}
+                    isFirst={index === 0}
+                    actions={{
+                      onRename: () => renameDay(day.id),
+                      onDuplicate: () => duplicateDay(day.id),
+                      onMoveUp: index > 0 ? () => moveDay(day.id, -1) : undefined,
+                      onMoveDown: index < plan.days.length - 1 ? () => moveDay(day.id, 1) : undefined,
+                      onRemove: plan.days.length > 1 ? () => removeDay(day.id) : undefined,
+                    }}
+                  />
+                </Animated.View>
+              ))}
+              <Animated.View layout={listReflow(reduceMotion)}>
+                <EditorActionRow title="Add day" symbol="plus" tone="quiet" onPress={addDay} testID="plan-add-day" />
+              </Animated.View>
+            </LayoutAnimationConfig>
           </View>
-          <View style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
+          <Animated.View layout={listReflow(reduceMotion)} style={{ paddingTop: EDITOR_ACTIONS_TOP }}>
             <EditorActionRow title="Rename plan" symbol="pencil" onPress={renamePlan} testID="plan-rename" />
             {isActive ? null : (
               <EditorActionRow
@@ -247,7 +261,7 @@ export function PlanEditorScreen() {
                 }}
               />
             ) : null}
-          </View>
+          </Animated.View>
         </ScrollView>
         {showDone ? (
           <View

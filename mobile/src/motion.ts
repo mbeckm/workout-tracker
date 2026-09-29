@@ -3,6 +3,7 @@ import {
   FadeIn,
   FadeInUp,
   FadeOut,
+  LinearTransition,
   type EntryOrExitLayoutType,
 } from 'react-native-reanimated';
 
@@ -76,4 +77,24 @@ export function enterUp(reduceMotion: boolean, delayMs = 0): EntryOrExitLayoutTy
 
 export function exitFade(reduceMotion: boolean): EntryOrExitLayoutType {
   return reduceMotion ? EXIT_REDUCED : EXIT;
+}
+
+/**
+ * List reflow (trim-ui §8, "List reflows"): when a row is removed, restored by Undo, added,
+ * duplicated or moved, its neighbours glide to their new places (`enter`, ease-in-out) instead
+ * of jumping. Wrap the list in `<LayoutAnimationConfig skipEntering>` so rows don't animate
+ * when the screen first appears (animate changes, not arrivals). Reduced motion: no glide.
+ */
+const LIST_REFLOW = LinearTransition.duration(DURATION.enter).easing(EASE_IN_OUT);
+
+export function listReflow(reduceMotion: boolean) {
+  return reduceMotion ? undefined : LIST_REFLOW;
+}
+
+/** A row joining a list in place (added, duplicated, back from Undo): a fade, no travel. */
+const ROW_IN = FadeIn.duration(DURATION.enter).easing(EASE_OUT);
+const ROW_IN_REDUCED = FadeIn.duration(DURATION.fade);
+
+export function rowIn(reduceMotion: boolean): EntryOrExitLayoutType {
+  return reduceMotion ? ROW_IN_REDUCED : ROW_IN;
 }

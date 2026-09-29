@@ -13,14 +13,17 @@ import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {
+  LayoutAnimationConfig,
   useAnimatedReaction,
   useAnimatedStyle,
+  useReducedMotion,
   type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { PrCrownCount } from '@/components/pr-crown';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
+import { exitFade, listReflow } from '@/motion';
 import {
   formatHistoryMonth,
   formatHistorySessionMeta,
@@ -230,6 +233,7 @@ export function HistoryTab() {
   const { colors, type } = useTheme();
   const { workoutHistory, deleteWorkout } = useWorkoutStore();
   const groups = useMemo(() => groupByMonth(workoutHistory), [workoutHistory]);
+  const reduceMotion = useReducedMotion();
 
   return (
     <ScrollView
@@ -241,41 +245,53 @@ export function HistoryTab() {
           <Text style={type.title}>No workouts yet</Text>
         </View>
       ) : (
-        <View style={{ gap: space.section }}>
-          {groups.map((group) => (
-            <View key={group.key} style={{ gap: space.related }}>
-              <View
-                accessible
-                accessibilityRole="header"
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  gap: space.inline,
-                  paddingHorizontal: space.gutter,
-                  // The rows below are pulled up into this caption's padding and paint an
-                  // opaque swipe background; drawn above them, the caption never clips.
-                  zIndex: 1,
-                }}>
-                <Text style={[type.caption, { flexShrink: 1 }]}>{group.label}</Text>
-                <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>
-                  {formatSessionsCount(group.workouts.length)}
-                </Text>
-              </View>
-              {/* Rows pad themselves: the caption's 8 is to the row's text, not its edge. */}
-              <View style={{ marginTop: -space.inset }}>
-                {group.workouts.map((workout, index) => (
-                  <SessionRow
-                    key={workout.id}
-                    workout={workout}
-                    prCount={personalBestCount(workout, workoutHistory)}
-                    showDivider={index < group.workouts.length - 1}
-                    onDelete={() => deleteWorkout(workout.id)}
-                  />
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
+        // A deleted workout fades and the sessions below close the gap (trim-ui §8, List
+        // reflows); nothing animates when History first appears.
+        <LayoutAnimationConfig skipEntering skipExiting>
+          <View style={{ gap: space.section }}>
+            {groups.map((group) => (
+              <Animated.View
+                key={group.key}
+                exiting={exitFade(reduceMotion)}
+                layout={listReflow(reduceMotion)}
+                style={{ gap: space.related }}>
+                <View
+                  accessible
+                  accessibilityRole="header"
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    gap: space.inline,
+                    paddingHorizontal: space.gutter,
+                    // The rows below are pulled up into this caption's padding and paint an
+                    // opaque swipe background; drawn above them, the caption never clips.
+                    zIndex: 1,
+                  }}>
+                  <Text style={[type.caption, { flexShrink: 1 }]}>{group.label}</Text>
+                  <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>
+                    {formatSessionsCount(group.workouts.length)}
+                  </Text>
+                </View>
+                {/* Rows pad themselves: the caption's 8 is to the row's text, not its edge. */}
+                <View style={{ marginTop: -space.inset }}>
+                  {group.workouts.map((workout, index) => (
+                    <Animated.View
+                      key={workout.id}
+                      exiting={exitFade(reduceMotion)}
+                      layout={listReflow(reduceMotion)}>
+                      <SessionRow
+                        workout={workout}
+                        prCount={personalBestCount(workout, workoutHistory)}
+                        showDivider={index < group.workouts.length - 1}
+                        onDelete={() => deleteWorkout(workout.id)}
+                      />
+                    </Animated.View>
+                  ))}
+                </View>
+              </Animated.View>
+            ))}
+          </View>
+        </LayoutAnimationConfig>
       )}
     </ScrollView>
   );

@@ -1049,7 +1049,11 @@ export function LogWorkoutScreen() {
             accessibilityRole="button"
             accessibilityLabel="Cancel workout"
             testID="log-cancel"
-            style={{ minHeight: 44, justifyContent: 'center' }}>
+            style={({ pressed }) => ({
+              minHeight: 44,
+              justifyContent: 'center',
+              opacity: pressed ? PRESSED_OPACITY : 1,
+            })}>
             <Text style={[type.body, { color: colors.tertiaryLabel }]}>Cancel</Text>
           </Pressable>
           <Pressable
@@ -1057,12 +1061,13 @@ export function LogWorkoutScreen() {
             accessibilityRole="button"
             accessibilityLabel="Finish workout"
             testID="log-finish"
-            style={{
+            style={({ pressed }) => ({
               minHeight: 44,
               minWidth: 72,
               alignItems: 'flex-end',
               justifyContent: 'center',
-            }}>
+              opacity: pressed ? PRESSED_OPACITY : 1,
+            })}>
             <Text style={type.button}>Finish</Text>
           </Pressable>
         </View>
@@ -1708,7 +1713,7 @@ function ExerciseName({
         onAccessibilityAction={(event: AccessibilityActionEvent) =>
           onOpen?.(event.nativeEvent.actionName === 'openDay' ? 'day' : 'exercise')
         }
-        style={{ alignSelf: 'flex-start' }}>
+        style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? PRESSED_OPACITY : 1 })}>
         {/* Chevron rides inline after the last word (iOS title-menu convention). */}
         <Text style={type.largeTitle} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
           {name}
@@ -2125,7 +2130,14 @@ function DaySheetRow({
         accessibilityLabel={`${name}, ${complete ? 'done' : meta}${current ? ', now' : ''}`}
         accessibilityActions={actions}
         onAccessibilityAction={onAccessibilityAction}
-        style={{ flex: 1, paddingLeft: space.pair, flexDirection: 'row', alignItems: 'center', gap: space.inline }}>
+        style={({ pressed }) => ({
+          flex: 1,
+          paddingLeft: space.pair,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.inline,
+          opacity: pressed ? PRESSED_OPACITY : 1,
+        })}>
         <View style={{ flex: 1, gap: space.pair }}>
           <Text style={type.row}>{name}</Text>
           <Text style={[type.kicker, { fontVariant: ['tabular-nums'] }]}>{meta}</Text>
