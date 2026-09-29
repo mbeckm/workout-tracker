@@ -133,7 +133,7 @@ export function ProgressBodyDetailScreen() {
               locales={PROGRESS_HERO_LOCALE}
               style={type.hero}
             />
-            {deltaRounded != null ? <ProgressDelta percent={deltaRounded} /> : null}
+            {deltaRounded != null ? <ProgressDelta percent={deltaRounded} neutral /> : null}
           </View>
           {/* The scrubbed date takes the range label's place, so nothing jumps (trim-ui → Charts 3). */}
           <Text style={type.caption}>
