@@ -188,8 +188,9 @@ export function PlanEditorScreen() {
         <ScrollView
           style={{ flex: 1 }}
           contentInsetAdjustmentBehavior="automatic"
+          // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
           contentContainerStyle={{
-            paddingHorizontal: space.gutter,
+            paddingHorizontal: space.margin,
             paddingBottom: showDone ? space.gutter : insets.bottom + space.gutter,
           }}>
           <View
@@ -257,7 +258,7 @@ export function PlanEditorScreen() {
         {showDone ? (
           <View
             style={{
-              paddingHorizontal: space.gutter,
+              paddingHorizontal: space.margin,
               paddingTop: space.related,
               paddingBottom: Math.max(insets.bottom, space.inset),
             }}>

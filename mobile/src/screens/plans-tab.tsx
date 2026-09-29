@@ -88,10 +88,13 @@ export function PlansTab() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
+        // Title, active card and plan rows share the title's leading edge, and each section
+        // starts `section` below the last, measured to what you see: the card's edge or a row's
+        // text, whose own 16 padding counts (trim-ui → Layout → Under a large title).
         contentContainerStyle={{
           flexGrow: 1,
-          paddingHorizontal: space.gutter,
-          paddingTop: space.related,
+          paddingHorizontal: space.margin,
+          paddingTop: activePlan || plans.length === 0 ? space.section : space.inset,
           paddingBottom: space.section,
         }}>
         {plans.length === 0 ? (
@@ -111,7 +114,7 @@ export function PlansTab() {
               />
             ) : null}
             {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? space.section : 0 }}>
+              <View style={{ paddingTop: activePlan ? space.inset : 0 }}>
                 {otherPlans.map((plan, index) => (
                   <PlanMenuRow
                     key={plan.id}
@@ -225,9 +228,9 @@ function PlanMenuRow({
 }
 
 /**
- * The row briefly wears the same 16-inset surface as the active plan card, then lets it go.
- * Inset 2pt top and bottom so it never touches a hairline separator. Decorative: VoiceOver
- * hears the toast instead.
+ * The row briefly lights up edge to edge, like a system list row's highlight, then lets it go.
+ * The row's text sits on the title's edge, so a rounded card around it would touch the screen
+ * edge. It stops above the row's hairline. Decorative: VoiceOver hears the toast instead.
  */
 function RevealSurface({ revealed }: { revealed: boolean }) {
   const { colors } = useTheme();
@@ -266,12 +269,10 @@ function RevealSurface({ revealed }: { revealed: boolean }) {
       style={[
         {
           position: 'absolute',
-          top: 2,
-          bottom: 2,
-          left: -16,
-          right: -16,
-          borderRadius: radius.md,
-          borderCurve: 'continuous',
+          top: 0,
+          bottom: 0,
+          left: -space.margin,
+          right: -space.margin,
           backgroundColor: colors.systemGray5,
         },
         style,
