@@ -25,6 +25,12 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 8. **Native and timeless.** System font, SF Symbols, iOS semantic colors, native navigation, sheets, menus and alerts. Trim owns Liquid Glass fully: all system chrome is the system's glass (§5). No trends of our own (gradients, glass imitations in content, neumorphism, custom transitions). Nothing that will look dated in five years.
 9. **The user is in control.** The UI never implies intent the user didn't express (see `PRODUCT.md` → Principles → Control). Slips are forgiven with Undo, not prevented with dialogs.
 10. **Built for the gym.** Every rule is checked against the setting below.
+11. **The moment decides the screen.** Ask why someone opens this screen right now, and cut what doesn't serve that moment. Rare tasks live where they're rare (plan editing in Plans, not on Home).
+12. **Screens reflect what just happened.** A screen has states driven by the user's recent history (before a workout, just trained, week complete), not one static layout.
+13. **Your numbers first, and show the change.** Lead with the user's own values; the plan's prescription is secondary. Where there's a previous value, show the difference (↑, `same`, 👑), in ink (§5).
+14. **Say each fact once.** If a mark already says it (circles, a flame, a check), the words go. Redundancy was the most frequent flaw in review.
+15. **Visible over hidden.** A control you can't see doesn't exist (a ⌄ on a title nobody finds). The same control means the same thing on every screen (chips: selected ink, done ✓ in green).
+16. **Size for the real maximum.** Lay a screen out for the realistic worst case (8 exercises, 6 days), not the demo.
 
 ### The setting
 
@@ -60,7 +66,7 @@ Information lives on exactly one of four layers. Put it on the lowest layer that
 
 | Screen | Job | Winner | Primary action |
 | --- | --- | --- | --- |
-| Workout (Home) | What's next, and start it. How much of the week is done. | Day name (native large title) | Start (ink) |
+| Workout (Home) | Start the next workout. Where the week stands. | The next workout's rows (your loads) | Start (ink, at the thumb) |
 | Log | What this set needs right now. | Exercise name (`displayCompact`) | Log set (green) |
 | Done | What I just finished. | `Done` (`hero`) | Done (green) |
 | Plans | Which plan is active, which others exist. | Native large title | `+` (toolbar) |
@@ -141,7 +147,7 @@ Raw scale (`spacing`): 2, 4, 8, 12, 16, 24, 32, 48, 64. Use `space` first. Any o
 1. **One edge per screen.** Everything on a screen aligns to one leading edge. Under a native large title that edge is the title's own (`space.margin`, iOS's layout margin, where the back button and toolbar items also sit), so the title, its fact line, section captions, row text and surface edges share one x, and trailing lanes end under the toolbar's edge. Screens without a native title (Log, Done, onboarding, paywall, sheets) use the 24 gutter. An object surface insets 16 from whichever edge, so its text sits 16 in: that's the object's padding, not a second grid. Never draw a custom title to meet the gutter.
 2. **Two lanes per row.** Leading lane (text, left-aligned at the page edge or inset) and trailing lane (value, mark or chevron, right-aligned to the same edge). An optional leading tile adds a third lane. All rows in a list use the same lanes.
 3. **Single column.** No grids of cards. The only side-by-side controls are the two wells, chips, and paired header actions.
-4. **Thumb zone.** On tool screens (Log, Done, onboarding, paywall), the primary action sits at the bottom: full width inside the gutter, 16 above the safe area. On read screens (Home), the action sits directly under its object (Start under the exercise list).
+4. **Thumb zone.** On tool screens (Log, Done, onboarding, paywall), the primary action sits at the bottom: full width inside the gutter, 16 above the safe area. Home is a tool screen too: its one job is to start, so Start sits at the thumb above the tab bar. On read screens, the action sits directly under its object.
 5. **Rows.** Vertical padding 16, minimum 44 tall. Hairline separators start at the text lane, never full-bleed inside an object. Between groups, use air, not a thicker line: `section` between sections, but between groups of padded rows (Settings) only `related` on top of the rows' own padding (see Under a large title, rule 3).
 6. **Touch targets** are at least 44×44 (`TOUCH_TARGET`). Small glyphs get `hitSlop`, not a bigger glyph.
 7. **Pinned frames don't jump.** Content that appears (rest, logged sets, errors) takes air from below. It never pushes the subject.
@@ -177,13 +183,15 @@ Captions are always tertiary. Secondary is never a caption color. It's for settl
 
 | Token | Means | Allowed | Never |
 | --- | --- | --- | --- |
-| `systemGreen` (#34C759 / #30D158) | **Done, or go.** | Marks for finished work (set checks, strip checks, completed week dots, `Active` on Plans, PR-up delta on Progress), and `Go` where the rest clock was when rest is over. Fill of the one gym CTA (`Log set`, `Finish workout`, `Done`). | Titles, icons that encode nothing, a second green control on a stage, "success" banners |
+| `systemGreen` (#34C759 / #30D158) | **Done, or go.** Completeness, never improvement. | Marks for finished work (set checks, strip checks, trained days in the week, the ✓ on a done day's chip, `Active` on Plans), and `Go` where the rest clock was when rest is over. Fill of the one gym CTA (`Log set`, `Finish workout`, `Done`). Green *fills* on Home are only the trained days; everything else done is a mark. | Titles, icons that encode nothing, a second green control on a stage, "success" banners, deltas and ↑ (change is ink) |
 | `systemRed` | **Destroys.** | Delete, Remove, Clear history, destructive menu items, an inline error line | Missed workouts, going down on a chart, warnings |
-| `systemYellow` | **Record.** | The PR crown | Anything else |
+| `systemYellow` | **Record.** The rare improvement. | The PR crown. On a row with a change, the crown replaces the ↑ beside the number. | Anything else, and never text (yellow on white can't be read) |
+| `systemOrange` | **Streak secured.** | The streak flame (`flame.fill`) once this week's goal is reached. Until then the flame is `systemGray3`. | Anything else |
 | Ink CTA (`label` fill, `onLabel` text) | **Primary, not gym.** | Start, Resume, Continue, Create plan, Use this plan, paywall CTA | Two on one screen |
 
 - **Budget:** a screen has at most one filled control. Green marks may repeat (checks), but only one green *control* exists on a stage.
 - **No blue in content.** Trim has no link color. Links are `label` with a trailing ↗ (external) or a chevron (in-app). System blue appears only where iOS draws it: alerts, context menus, header toolbar items. The `filled` button variant is deprecated.
+- **Change is ink.** Up, same and down are facts, not signals: a bold ↑ (`arrow.up`) or ↓ in `label` before the number, or `same` in `tertiaryLabel`. Ordinary progress is too common for a color; the colored peaks are the rare ones (a record, a secured week, a finished workout). Motion, not color, makes an ↑ feel earned (it rises into place when a changed row appears).
 - **Down is not red.** Lifting less, missing a day, or a lower bodyweight stays in ink. Trim doesn't scold.
 - **Opacity is never a color.** Don't dim text with opacity. Pick a label tier. Opacity is only for pressed feedback (`PRESSED_OPACITY` 0.6) and the scrim.
 - **Disabled** pills become the quiet gray pill (`secondarySystemBackground` + `tertiaryLabel`). Disabled text buttons go `tertiaryLabel`. Never 40% of a color, which reads as broken.
@@ -241,7 +249,7 @@ Why each part (sprint 2026-09-29, from Marvin's feedback that Trim leaned on tex
 - **Not on content, and not down a list.** A dumbbell before every exercise, or a clock before every History duration, repeats one shape on every line and tells nothing apart; the lane already does that job. A type symbol only earns its place when there are types to tell apart (Apple Fitness' walk vs run), which Trim doesn't have.
 - **Not on titles, captions, CTAs or empty states.** They're read once; a glyph there is decoration. (Tried and dropped: History's `clock` above `No workouts yet`, which read as a third heading and repeated the tab bar one thumb away.)
 
-One icon language: monochrome symbols, never colored tiles, never circled. Commands in `label` (red only on the destructive row), fact glyphs in `secondaryLabel` beside their tertiary text (a 13pt symbol reads lighter than 15pt type in the same grey, so it sits one tier darker; in `label` ink both are `label`), green only for done or go, yellow only for the PR crown.
+One icon language: monochrome symbols, never colored tiles, never circled. Commands in `label` (red only on the destructive row), fact glyphs in `secondaryLabel` beside their tertiary text (a 13pt symbol reads lighter than 15pt type in the same grey, so it sits one tier darker; in `label` ink both are `label`), green only for done or go, yellow only for the PR crown, orange only for the lit streak flame, and change (↑ ↓) always in ink.
 
 ### Fact glyphs
 
@@ -259,7 +267,8 @@ One icon language: monochrome symbols, never colored tiles, never circled. Comma
 | Kind | Symbols | Color |
 | --- | --- | --- |
 | Tab bar | `dumbbell`, `list.bullet`, `chart.line.uptrend.xyaxis`, `clock`, `gearshape` (system-rendered) | tint `label`, inactive `tertiaryLabel` |
-| Status marks | `checkmark` (done), `crown.fill` (PR) | green / yellow |
+| Status marks | `checkmark` (done), `crown.fill` (PR), `flame.fill` (streak) | green / yellow / gray until the week's goal, then orange |
+| Change | `arrow.up`, `arrow.down` before a number (the load goes up, a lift went up) | `label` ink, bold, the number's size |
 | Affordances | `chevron.right` (opens in-app detail), `chevron.down`/`.up` (expand in place), `arrow.up.right` (leaves the app), `line.3.horizontal` (drag handle) | tertiary |
 | Controls | `chevron.left` (back), `plus` (add), `xmark.circle.fill` (clear field), `magnifyingglass` (search field) | `label`; the clear control is tertiary |
 | Command and setting rows (row-glyph lane) | Editors: `plus` (Add day, Add exercise), `pencil` (Rename plan, Rename day), `checkmark` (Use this plan), `trash` (Delete / Remove). Settings: `scalemass` (Weight), `circle.lefthalf.filled` (Appearance), `lock` / `lock.open` (Trim Pro, off / on: the same lock the Pro-locked chips wear), `arrow.clockwise` (Restore purchases), `envelope` (Contact support), `hand.raised` (Privacy Policy), `doc.text` (Terms of Use), `trash` (Clear history). One symbol per meaning: `trash` always deletes, `plus` always adds. | `label`; destructive row `systemRed`; a quiet row (`Add day`) tertiary |
@@ -399,6 +408,10 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Possessives that add nothing: `Your plans`, `My workouts`.
 - Coach marks, tooltips, tours.
 
+### Say each fact once
+
+Before adding a label, check whether a mark on the same screen already says it: `1 of 4 this week` next to four circles, `in a row` next to a streak flame, `Done today` next to a check. Delete the words, keep the mark.
+
 ### The eyebrow test
 
 Keep a caption only if it carries a **fact** the layout doesn't already show: `Today`, `Rest`, `this week` next to `2 of 4`, a month name. Drop it if it only names the layout.
@@ -497,7 +510,7 @@ No custom gestures (double-tap, two-finger, shake) for anything.
 The Trade Republic part of Trim. A chart answers one question: is this going up?
 
 1. **One line, no chrome.** One line in `label` ink, 2.75pt, round caps and joins. No gridlines, no y-axis labels, no legend, no fill, no markers on every point. Straight segments between sessions. No smoothing that invents values between them.
-2. **The number is the axis.** The `hero` above the chart states the value. The delta beside it is green if up and ink if flat or down (never red). Body measurements have no good direction, so their delta is always ink. The x-axis shows only the first and last date (`footnote`).
+2. **The number is the axis.** The `hero` above the chart states the value. The delta beside it is ink with its arrow (↑ 4.5 kg, ↓ 2 kg, or `same`), never colored (§5 Change is ink). Body measurements have no good direction, so their delta is always ink. The x-axis shows only the first and last date (`footnote`).
 3. **Scrub to read.** Touching the chart shows a vertical hairline and a dot on the line. The hero rolls to that point's value, the delta becomes change since the start of the range, and the date appears where the range label was. A selection haptic ticks at each data point. Releasing rolls everything back to now.
 4. **Endpoints.** The latest value gets a small dot. With fewer than 6 points, every point gets a dot, because a line through three sessions implies data that isn't there.
 5. **Y-range fits the data** in the selected window with ~10% padding, and never starts at zero. A line is about change, and zero flattens it.
@@ -528,7 +541,7 @@ Some moments deserve a feeling, not just a result. They're the rare tier (§8), 
 | **First workout logged** | Done carries the fact `First workout` under the hero, and the first week dot fills with the pop as Done lands. |
 | **First Pro purchase** | The lock on whatever they tapped opens (`lock.fill` → `lock.open.fill`, then it fades), the thing they wanted happens, and a toast confirms `Trim Pro is on`, with a success haptic. Settings shows Trim Pro with its renewal date. |
 | **A new personal record** | The crown lands on the PR exercise's line with the pop on Done, and that line reads in `label` ink. |
-| **Week complete** | The week-dot celebration on Done (§8), with the bump across every dot. From two full weeks in a row, `4 weeks in a row` rolls up from 3 beside the dots (it appears when it reaches 2). |
+| **Week complete** | The week-dot celebration on Done (§8), with the bump across every dot. The streak flame lights (gray → orange) and its count rolls up (`3` → `4 weeks`), on Done as it lands and once on Home. |
 | **Milestones** (10th, 50th, 100th workout) | Done states the fact (`100th workout`), with the number rolling up. No badges, no trophy screen. |
 
 Rules for every moment:
@@ -587,15 +600,14 @@ Same system, different winner. Don't invent a type size for a screen.
 
 | Screen | Structure | Green |
 | --- | --- | --- |
-| **Home** | The day name is the screen's native large title (`Push`), collapsing into the glass bar on scroll. The title stands alone: no fact line under it. No `Next workout` heading, no plan name (Plans owns it), no exercise count (the list shows it). Exercise list as one object surface: `row` name + `caption` prescription (`4 × 8 reps at 60 kg`), no thumbnails. After ~4 rows, a peer row `n more exercises` + chevron.down that expands in place and ends with `Show less`. Ink Start sits 16 under the list, and under Start, centered, its one fact in `caption` (`related` apart): the estimated duration (`~55 min`, the median of the last three sessions of this day, else the prescription estimate), what tapping Start costs; `Started 14:02` under Resume mid-workout. An empty day shows only `Add exercises`, `section` under the title. Week (`title` `n of m` + `caption` `this week` + dots, then `4 weeks in a row` once the streak is 2+) one `section` below. Then `Other days` caption + rows (title `row` + first exercise names `caption`; trailing green check if done this week). Tap another day → its preview sheet. The exercise list is read-only (its fold is the only way to see more). | Completed dots + checks |
-| **Day preview** (sheet) | Day `title` + its duration as a `timer` fact (`tight`, §7 Fact glyphs), rows `row` + `caption` (`inset` apart), read-only. Ink Start at the thumb. One inset, `gutter` (24), on every edge and between title, list and Start; under Start only the sheet's own bottom safe area (never add the window's inset again: on iOS 26's floating sheet that doubles it). | None |
+| **Home** | One job: start the next workout (§13 Home states). No native large title: the top of the screen is the streak, 🔥 `flame.fill` + `3 weeks` in 28 Bold (`tabTitle`, kept for this one use) (no `in a row`: the flame says it; hidden before the first full week), then the week as seven day circles (40pt, Monday first, weekday `footnote` under each): green with a check for a day trained, an ink ring for today, grey otherwise. No `n of m this week`: the circles are the count. `section` below, the caption `Next workout` over the plan's days as chips (`Upper`, `Lower ✓`, …; selected ink, others gray fill; a day done this week wears a small green ✓, whether selected or not; tap or swipe to switch, with the content paging). Under the chips, the selected day's exercises as single-line rows on the page (hairlines, no surface): `row` name, the prescription `4 × 6` in `caption`, and the load in the trailing lane in `title` + `kg` `caption` (the Pro target, with an ink ↑ when it goes up; free: last time's heaviest set); up to 8 rows fit above Start without folding. Ink `Start Upper` at the thumb (`inset` above the tab bar). No `Last time`, date, duration line or Other days list. | Trained days + done checks || **Day preview** (sheet) | Day `title` + its duration as a `timer` fact (`tight`, §7 Fact glyphs), rows `row` + `caption` (`inset` apart), read-only. Ink Start at the thumb. One inset, `gutter` (24), on every edge and between title, list and Start; under Start only the sheet's own bottom safe area (never add the window's inset again: on iOS 26's floating sheet that doubles it). | None |
 | **Log** | Header: Cancel (`body`, tertiary) left, Finish (`button`) right. Strip: chips, checks on finished exercises. Exercise name `displayCompact` (tap → exercise sheet), `Set n of m` `title`, then the last-time fact (`clock.arrow.circlepath` + `60 kg × 8`, `caption`; Pro leads with the `target` fact in `label` ink and trails last time, §7 Fact glyphs). Logged sets grow below as `value` lines in `secondaryLabel` with a green check. Footer (flex-end): Rest (`caption` `Rest` + the clock in `value` 28, with −15 / +15 / Skip as `caption` on the baseline; above the wells, eats air; at 0:00 the clock becomes a green `Go`), wells (labels `footnote`, numbers `displayCompact`), green `Log set` (on a fresh Start it lights up as the log lands, §8). Exercise sheet: facts, then Alternatives rows with a chevron that open that exercise's facts in place, with Back and an ink `Use this exercise`; only that swaps. The upper stage never moves (§14). | `Log set`, checks, `Go` |
 | **Done** | A moment, not a report. `Done` `hero`, then the day and its duration on one `caption` line, the `timer` glyph parting them (`Push` + `timer` `52 min`, §7 Fact glyphs), plus a first-time or milestone fact in `label` ink when there is one (`First workout`, `10th workout` rolling up). `pause` below, the week this workout moved (`WeekProgress`: `title` `n of m` + `caption` `this week` + dots; the new dot fills with the pop as Done lands), only when the workout is a day of the active plan and the plan has 2+ days. `section` below, per exercise `row` name + **one** `caption` line in `secondaryLabel` (`DoneExercise`): `4 × 8 reps at 60 kg` when every set matched, else `4 sets, best 85 kg × 8`; a PR line reads in `label` with its crown landing. Every set lives in session detail. Green Done at thumb, live from the first frame. Scrolls, uncapped. No haptic of its own: Finish already gave the success. | Done |
 | **Plans** | Native large title + toolbar `+`. Active plan first, as a `title` row with `6 days` on the left and a green `Active` trailing. Other plans as `row` + `caption`. Long-press: Use this plan (`(Pro)` when locked) / Rename (§10) / Delete (immediate, with Undo). Swipe left to delete. No icons, no permanent edit chrome. | `Active` |
 | **Plan detail** | Plan name as the native large title, `6 days` under it (+ green `Active` trailing). Days as `row` title + `caption` exercise names in words (`Bench Press, Incline Press and 2 more`, 2 lines max). `Add day` as a quiet row. Long-press a day: Rename (the prompt, in place, no push), Duplicate, Move up / down, Remove. `Rename plan` (§10 Rename; a new plan asks `Name this plan` once). `Use this plan` ink if not active. `Delete plan` red, last. | `Active` |
 | **Day editor** | Day name as the native large title, `4 exercises` under it. Exercise rows: `row` name + `caption` prescription; tap one to open its Sets / Reps wells in place. `Add exercise` as a quiet row. Then `Rename day` (§10 Rename) and `Remove day` red, last (only when the plan has more than one day). | None |
-| **Progress** | Native large title. Lift rows: `row` name + `caption` latest, sparkline and chevron in the trailing lane. Body row the same. | Up-delta only |
-| **Lift / body detail** | Lift name `title`, range chips (3M free, rest Pro-locked), 1RM `hero` with unit, delta (lifts: green if up, ink otherwise; body: always ink), chart, sessions list right under the line. Charts follow §11. | Up-delta only |
+| **Progress** | Native large title. Lift rows: `row` name + `caption` latest, sparkline and chevron in the trailing lane. Body row the same. | None |
+| **Lift / body detail** | Lift name `title`, range chips (3M free, rest Pro-locked), 1RM `hero` with unit, delta in ink with its arrow (§5 Change is ink), chart, sessions list right under the line. Charts follow §11. | None |
 | **History** | Native large title. Month as a section caption with its amount in the trailing lane (`August` … `4 sessions`). Session row: `row` title over `caption` when (`Wed 13`), duration trailing (`52 min`), and the PR pill (gray fill, yellow crown, count; the crown stands in for `PRs`) beside the duration when there is one. No glyph on the duration: every row has one, and the lane says what it is. Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, workout title as the native large title, facts on two lines in `caption`: when (`Wed 13 September, 18:02`), then how much as glyph-led facts (`timer` `52 min`, `14 sets`, and a yellow crown with the PR count when there are PRs, §7 Fact glyphs), every set of each exercise on its own line (`RecapExercise`: narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set). A record, not a ceremony: no green, no Done button. | None |
 | **Settings** | Native large title. `PaperRow` groups separated by `related` air on top of the rows' padding (§4 Under a large title, rule 3), each row led by its glyph (§7 command and setting rows): (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews Oct 3`, or `On until Oct 3` once renewal is off; dates as elsewhere in Trim). | None |
@@ -603,15 +615,22 @@ Same system, different winner. Don't invent a type size for a screen.
 | **Body check-in** | Native `formSheet`: Cancel, title and Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
 | **Onboarding** | Follows §12. One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |
 
-### Home exploration: "Your numbers" (PRODUCT-DECISIONS 52)
+### Home states
 
-Built on a branch and pending a decision on device. It replaces the Home spec above only if it's merged: the last session under the title, a `hero` number to beat for the first weighted lift, each row's load in the trailing lane at `title`, a green ↑ where a Pro target raises the load, and the week as seven days with checks. Green means done **or up**, never decoration. Until it's merged, the Home row above is the rule.
+Home reflects what just happened (PRODUCT.md principle 11). Same layout in every state; only the week, the selected chip, the rows and Start change. Paper: page `Your numbers (2026-09-29)`, row V4.
+
+| State | Week | Chips and rows | Start |
+| --- | --- | --- | --- |
+| **Training day** (the default) | Flame gray; today ringed | `Next workout`; the next day selected, rows with today's loads (↑ where the target rises) | Ink `Start Upper` |
+| **Just trained** (a workout finished today) | Today green | `Today`; the finished day selected (ink, green ✓); rows show what changed: ↑ `2.5 kg` in ink, `same` in tertiary, the crown instead of the ↑ on a PR | Gray pill `Start Lower` (the next day): possible, not pushed |
+| **Week complete** (the plan's goal reached) | Flame lit orange, the count rolls up; under the circles `↑ 9 lifts went up` and 👑 `2 new records` | `Next workout`, rows with the next loads | Ink `Start Upper`: another workout always stays one tap away |
+| **Mid-workout** | as it was | the running day | Ink `Resume` |
 
 ### Home week details
 
-- The week celebrates on Done, where the workout lands (§8 Week dot fills). Home shows the amount without ceremony; a lower count (a deleted workout, a new week) crossfades its dots back to grey.
-- Week progress is an **amount**, not a sequence. Every finished workout counts, a repeated day too; Other days' checks say which days. `n of m` + dots, never a day-name checklist, and one progress language per section.
-- **Streak:** full weeks in a row trail the dots as a `caption` fact (`4 weeks in a row`, `inline` after the last dot), from two weeks up, on Home and Done. A week in progress doesn't break it. No flame, badge or streak screen (PRODUCT-DECISIONS 51).
+- The week celebrates on Done, where the workout lands (§8 Week dot fills). Home shows the new state without ceremony, except the flame lighting, once, the first time Home appears after the week's goal is reached.
+- Week progress is the **circles**: one per weekday, green where a workout was finished (a repeated day counts). Missed days stay grey, like future ones: Trim doesn't scold.
+- **Streak:** full weeks in a row, counted as before (PRODUCT-DECISIONS 51): 🔥 + `n weeks` heads Home from one full week up. The flame is gray while this week's goal is open and orange once it's reached. No badge, streak screen, freeze or reminder. Supersedes 51's and 57's "no flame" (PRODUCT-DECISIONS 61).
 
 ---
 
@@ -660,6 +679,9 @@ Before a screen ships, check it in light **and** dark, at default and at the lar
 **Status (28 Sep 2026, after PR #46 and `v2-migration-2`).** Already on v2: Home, day preview, Weeks, History, session detail, Done, Progress and lift/body detail, the paywall's purchase moment, restore toasts, native large titles on Plans, plan detail and Settings (`navigation/large-title.ts`), the system glass tab bar, native bars on Progress detail and the paywall, and the day preview as a native `formSheet`. No ` · ` separators or gesture hints are left in `src`. Plan, day and exercise deletes are immediate with an Undo toast (`useUndoableDeletes`, `Toast` with `onUndo`). The progress chart draws straight segments with ~10% y-padding, and its dots ride the line through a range change. Don't redo them; fix only what's listed below. The per-file counts of what the script can see are in `mobile/design-tokens-baseline.json` (6 violations in 6 files).
 
 Still to do. Fix it when touching a screen, or in a dedicated pass with simulator QA:
+
+- **Home v3 (PRODUCT-DECISIONS 61, designed, not built):** the Home spec in §13 and Home states are the target; the shipped Home is still the classic layout. Build from Paper page `Your numbers (2026-09-29)`, row V4. Draft PR #57's first "Your numbers" Home is superseded and gets rebuilt, not polished.
+- **Change is ink (61):** Progress and lift detail still paint the up-delta green (`progress-delta.tsx`); it turns ink with its arrow. The log's green-up target and Done still need the same pass.
 
 - **Tokens (script-checked):** 6 left: the check-in sheet header's 600 weight (no 17 Bold non-button role fits a sheet header yet), `button.tsx`'s compact label, and optical offsets to check on device (the log's chevron fallback, the rest controls' baseline, the strike-through and lock-fallback radii).
 - **Liquid Glass:** the log's day and exercise sheets still use `AnimatedSheet`; making them native `formSheet` routes means moving their state (reorder, jump, swap) out of `log-workout.tsx`. Tab bar, Progress detail bars, the paywall's Not now and the day preview are native.
