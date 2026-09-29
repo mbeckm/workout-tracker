@@ -122,6 +122,19 @@ export function completedPlanDayIdsSince(
   return completed;
 }
 
+/**
+ * Workouts toward the week (PRODUCT-DECISIONS 51): every finished workout since `since` counts,
+ * a repeated day too (training Push twice because legs need the rest is still a workout).
+ * Callers cap it at the plan's goal. Which days are done (Home's checks) is
+ * `completedPlanDayIdsSince`.
+ */
+export function workoutsSince(history: LoggedWorkout[], since: Date): number {
+  const sinceMs = since.getTime();
+  return history.filter(
+    (workout) => workout.setCount > 0 && new Date(workout.completedAt).getTime() >= sinceMs,
+  ).length;
+}
+
 export type WeekMove = { before: number; after: number; total: number };
 
 /**
@@ -143,11 +156,8 @@ export function weekMovedBy(
     return null;
   }
   const others = history.filter((item) => item.id !== workout.id);
-  const before = Math.min(completedPlanDayIdsSince(plan, others, weekStart).length, total);
-  const after = Math.min(
-    completedPlanDayIdsSince(plan, [workout, ...others], weekStart).length,
-    total,
-  );
+  const before = Math.min(workoutsSince(others, weekStart), total);
+  const after = Math.min(workoutsSince([workout, ...others], weekStart), total);
   return { before, after, total };
 }
 

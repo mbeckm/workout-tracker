@@ -19,7 +19,12 @@ import {
   spokenEstimateMinutes,
 } from '@/domain/day-facts';
 import { emptyPlan, formatPlanMetricWithLoad } from '@/domain/helpers';
-import { completedPlanDayIdsSince, startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
+import {
+  completedPlanDayIdsSince,
+  startOfLocalWeek,
+  trainableDays,
+  workoutsSince,
+} from '@/domain/plan-loop';
 import type { ExercisePrescription, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { formatWeekStreak, STREAK_MIN, weekStreak } from '@/domain/weeks';
 import { useStartDay } from '@/navigation/start-day';
@@ -76,7 +81,8 @@ export function WorkoutTab() {
   const weekStart = startOfLocalWeek();
   const doneIds = completedPlanDayIdsSince(activePlan, workoutHistory, weekStart);
   const total = activePlan ? trainableDays(activePlan).length : 0;
-  const done = Math.min(doneIds.length, total);
+  // Every workout counts toward the week, a repeated day too; the checks show which days.
+  const done = Math.min(workoutsSince(workoutHistory, weekStart), total);
   const streak = weekStreak(activePlan, workoutHistory);
 
   // One fact under the title (trim-ui → Copy → Separating facts): how long the day takes, or,

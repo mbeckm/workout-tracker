@@ -565,7 +565,7 @@ Same system, different winner. Don't invent a type size for a screen.
 ### Home week details
 
 - The week celebrates on Done, where the workout lands (§8 Week dot fills). Home shows the amount without ceremony; a lower count (a deleted workout, a new week) crossfades its dots back to grey.
-- Week progress is an **amount**, not a sequence. `n of m` + dots, never a day-name checklist, and one progress language per section.
+- Week progress is an **amount**, not a sequence. Every finished workout counts, a repeated day too; Other days' checks say which days. `n of m` + dots, never a day-name checklist, and one progress language per section.
 - **Streak:** full weeks in a row trail the dots as a `caption` fact (`4 weeks in a row`, `inline` after the last dot), from two weeks up, on Home and Done. A week in progress doesn't break it. No flame, badge or streak screen (PRODUCT-DECISIONS 51).
 
 ---
