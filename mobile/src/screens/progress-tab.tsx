@@ -193,9 +193,10 @@ export function ProgressTab() {
         testID="progress-tab"
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
+        // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
         contentContainerStyle={{
-          paddingTop: space.related,
-          paddingHorizontal: space.gutter,
+          paddingTop: space.section,
+          paddingHorizontal: space.margin,
           paddingBottom: space.section,
         }}>
         <SectionCaption title="Lifts" />

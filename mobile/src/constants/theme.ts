@@ -1,3 +1,5 @@
+import { Dimensions } from 'react-native';
+
 /** iOS semantic colors as hex so Expo Go cannot crash on dynamic Color tokens. */
 
 export type AppearancePreference = 'system' | 'light' | 'dark';
@@ -93,6 +95,13 @@ export const spacing = {
   xxxl: 64,
 } as const;
 
+/**
+ * iOS's own layout margin: where UIKit puts the native large title, the back button and
+ * toolbar items. 16 on 6.1–6.3" iPhones, 20 from 414pt wide (Plus, Max, Air). Trim is
+ * portrait-only, so the window width is fixed for the app's life.
+ */
+const SYSTEM_MARGIN = Dimensions.get('window').width >= 414 ? 20 : spacing.md;
+
 /** What each step of the spacing scale is for. See trim-ui → Spacing. */
 export const space = {
   /** Name → its meta line inside one row (17 over 15). */
@@ -105,8 +114,13 @@ export const space = {
   inline: spacing.s,
   /** Inside an object surface (list surface, well, tile), and a row's vertical padding. */
   inset: spacing.md,
-  /** Page left/right margin on every screen; page top below the safe area. */
+  /** Page left/right margin on screens without a native large title; page top below the safe area. */
   gutter: spacing.lg,
+  /**
+   * Page left/right margin under a native large title (tab roots, plan and session detail):
+   * the system's own margin, so content shares the title's leading edge (trim-ui → Layout).
+   */
+  margin: SYSTEM_MARGIN,
   /** Between sections of a screen. */
   section: spacing.xl,
   /** The pause after the winner, and above the thumb CTA when content allows. */

@@ -101,7 +101,13 @@ export function SettingsTab() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.section }}>
+        // Content shares the title's leading edge; the first row's text sits `section` under the
+        // title (its own 16 padding counts), like every tab (trim-ui → Layout → Under a large title).
+        contentContainerStyle={{
+          paddingHorizontal: space.margin,
+          paddingTop: space.inset,
+          paddingBottom: space.section,
+        }}>
         <View>
           <PaperRow
             title="Weight"

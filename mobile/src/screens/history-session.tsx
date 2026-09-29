@@ -82,7 +82,8 @@ export function HistorySessionScreen() {
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.gutter }}>
+        // Content shares the title's leading edge (trim-ui → Layout → Under a large title).
+        contentContainerStyle={{ paddingHorizontal: space.margin, paddingBottom: space.gutter }}>
         <View testID="session-facts" accessible accessibilityLabel={`${when}, ${amount}`}>
           <Text style={type.caption}>{when}</Text>
           <Text style={type.caption}>{amount}</Text>

@@ -117,9 +117,10 @@ export function WorkoutTab() {
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
-        // Insets for the large title bar and the tab bar come from the system.
+        // Insets for the large title bar and the tab bar come from the system. Content shares
+        // the title's leading edge (trim-ui → Layout → Under a large title).
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ paddingHorizontal: space.gutter, paddingBottom: space.pause }}
+        contentContainerStyle={{ paddingHorizontal: space.margin, paddingBottom: space.pause }}
         testID="home-scroll">
         {activePlan ? (
           <View testID="home-next-day">
@@ -132,8 +133,9 @@ export function WorkoutTab() {
               </Text>
             ) : null}
 
+            {/* The title block (title + its one fact) is a section of its own: `section` air to the list. */}
             {day && hasExercises ? (
-              <View style={{ paddingTop: space.gutter }}>
+              <View style={{ paddingTop: space.section }}>
                 <ExerciseList key={day.id} exercises={day.exercises} />
               </View>
             ) : null}
@@ -153,7 +155,7 @@ export function WorkoutTab() {
 
               {day && !hasExercises ? (
                 // H-2: an empty next day gets a way forward instead of a dead end.
-                <View style={{ paddingTop: space.gutter }}>
+                <View style={{ paddingTop: space.section }}>
                   <Button
                     title="Add exercises"
                     variant="black"
@@ -201,7 +203,7 @@ export function WorkoutTab() {
           </View>
         ) : (
           // Empty: the fact is the large title, and the one action sits under it.
-          <View testID="home-empty">
+          <View testID="home-empty" style={{ paddingTop: space.section }}>
             <Button
               title="Create plan"
               variant="black"
