@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
+import { Fact } from '@/components/fact';
 import { HomeDayRow } from '@/components/home-day-row';
 import { WeekProgress } from '@/components/week-progress';
 import { iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
@@ -85,9 +86,9 @@ export function WorkoutTab() {
   const done = Math.min(workoutsSince(workoutHistory, weekStart), total);
   const streak = weekStreak(activePlan, workoutHistory);
 
-  // One fact, under Start (G3, PRODUCT-DECISIONS 58): what tapping it costs, how long the day
+  // One fact, under Start (PRODUCT-DECISIONS 58): what tapping it costs, how long the day
   // takes, or, mid-workout, when it started. An empty day has no fact: `Add exercises` says it.
-  let fact: { text: string; spoken?: string } | null = null;
+  let fact: { text: string; spoken?: string; duration?: boolean } | null = null;
   if (activePlan && day && hasExercises) {
     if (resuming && session) {
       fact = { text: `Started ${formatClockTime(session.startedAt)}` };
@@ -95,7 +96,7 @@ export function WorkoutTab() {
       const minutes = estimateDayMinutes(activePlan, day, workoutHistory);
       fact =
         minutes != null
-          ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes) }
+          ? { text: formatEstimateMinutes(minutes), spoken: spokenEstimateMinutes(minutes), duration: true }
           : null;
     }
   }
@@ -140,7 +141,14 @@ export function WorkoutTab() {
                     onPress={() => startDay(activePlan, day)}
                   />
                   {/* The note under a full-width CTA, centered like the paywall's price note. */}
-                  {fact ? (
+                  {fact?.duration ? (
+                    // The estimate leads with the duration glyph (trim-ui §7: a fact's glyph).
+                    <View style={{ paddingTop: space.related }}>
+                      <Fact kind="duration" centered spoken={fact.spoken} testID="home-day-meta">
+                        {fact.text}
+                      </Fact>
+                    </View>
+                  ) : fact ? (
                     <Text
                       style={[
                         type.caption,

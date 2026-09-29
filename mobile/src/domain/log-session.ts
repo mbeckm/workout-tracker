@@ -404,9 +404,23 @@ export function lastTimeSetFor(
 
 /**
  * `Last time 72.5 kg × 8` for the set on the stage (0-based), or `Last time 4 sets, best 80 kg × 8`
- * for the whole last session (`'all'`, exercise done). Null when there is no history.
+ * for the whole last session (`'all'`, exercise done). Null when there is no history. The
+ * stage shows `lastTimeValue` behind the last-time glyph; this full text is what VoiceOver reads.
  */
 export function lastTimeText(
+  previousSets: readonly LoggedSet[] | null | undefined,
+  setIndex: number | 'all',
+  options?: SetLineOptions,
+): string | null {
+  const value = lastTimeValue(previousSets, setIndex, options);
+  return value ? `Last time ${value}` : null;
+}
+
+/**
+ * The last-time fact without its name (`72.5 kg × 8`, `4 sets, best 80 kg × 8`): on the stage
+ * the `clock.arrow.circlepath` glyph stands in for `Last time` (trim-ui §7 Fact glyphs).
+ */
+export function lastTimeValue(
   previousSets: readonly LoggedSet[] | null | undefined,
   setIndex: number | 'all',
   options?: SetLineOptions,
@@ -418,7 +432,7 @@ export function lastTimeText(
     return lastTimeSummary(previousSets, options);
   }
   const set = lastTimeSetFor(previousSets, setIndex);
-  return set ? `Last time ${formatLoggedSetLine(set, options)}` : null;
+  return set ? formatLoggedSetLine(set, options) : null;
 }
 
 /** `80 kg × 8, 8, 7` when the load is constant, else `80 kg × 8, 85 kg × 6`. */
@@ -444,7 +458,8 @@ export function formatSetsCompact(
 }
 
 /**
- * One glanceable fact for a finished exercise: `Last time 4 sets, best 15 kg × 10`.
+ * One glanceable fact for a finished exercise: `4 sets, best 15 kg × 10` (behind the
+ * last-time glyph).
  * Best = heaviest load, then most reps. Sets without a load fall back to the compact list.
  */
 export function lastTimeSummary(
@@ -455,14 +470,14 @@ export function lastTimeSummary(
   const sets = `${count} ${count === 1 ? 'set' : 'sets'}`;
   const loaded = previousSets.filter((set) => (set.weight ?? set.counterweight) != null && set.reps != null);
   if (loaded.length === 0) {
-    return `Last time ${formatSetsCompact(previousSets, options)}`;
+    return formatSetsCompact(previousSets, options);
   }
   const best = loaded.reduce((top, set) => {
     const load = set.weight ?? set.counterweight ?? 0;
     const topLoad = top.weight ?? top.counterweight ?? 0;
     return load > topLoad || (load === topLoad && (set.reps ?? 0) > (top.reps ?? 0)) ? set : top;
   });
-  return `Last time ${sets}, best ${formatLoggedSetLine(best, options)}`;
+  return `${sets}, best ${formatLoggedSetLine(best, options)}`;
 }
 
 export type BestSet = { set: LoggedSet; completedAt: string };

@@ -2,6 +2,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { Fact } from '@/components/fact';
+import { PaperGrabber } from '@/components/paper';
 import { space } from '@/constants/theme';
 import { useTheme } from '@/theme/theme-context';
 import { estimateDayMinutes, formatEstimateMinutes, spokenEstimateMinutes } from '@/domain/day-facts';
@@ -44,17 +46,15 @@ export function DayPreviewBody({
     <View
       collapsable={false}
       style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter }}>
+      <PaperGrabber overlay />
       <View style={{ gap: space.tight }}>
         <Text style={type.title} accessibilityRole="header" numberOfLines={2}>
           {day.title}
         </Text>
         {fact ? (
-          <Text
-            style={[type.caption, { fontVariant: ['tabular-nums'] }]}
-            accessibilityLabel={fact.spoken}
-            testID="preview-meta">
+          <Fact kind="duration" spoken={fact.spoken} testID="preview-meta">
             {fact.text}
-          </Text>
+          </Fact>
         ) : null}
       </View>
       <ScrollView

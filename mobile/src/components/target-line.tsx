@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
+import { Fact } from '@/components/fact';
 import { LastTimeLine } from '@/components/last-time-line';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
 import { formatLoggedSetLine } from '@/domain/helpers';
@@ -27,9 +28,11 @@ export type TargetLineProps = {
 };
 
 /**
- * The 15pt caption under `Set n of m`. Pro: `Target 87.5 kg × 8` in label ink, with
- * `Last time 85 kg × 8` in the trailing lane. Free: `Last time 85 kg × 8`, with a trailing
- * `Target ›` when a target exists. Always one line, so the upper stage never jumps.
+ * The 15pt caption under `Set n of m`. Pro: the target glyph + `87.5 kg × 8` in label ink,
+ * with the last-time glyph + `85 kg × 8` in the trailing lane: two numbers on one line, told
+ * apart by their glyphs instead of two labels (trim-ui §7 Fact glyphs). Free: the last-time
+ * fact, with a trailing `Target ›` when a target exists (a command, so it keeps its word).
+ * Always one line, so the upper stage never jumps.
  */
 export function TargetLine({
   previousSets,
@@ -51,14 +54,12 @@ export function TargetLine({
         testID="log-target"
         accessible
         accessibilityLabel={spokenTargetLine(target, last, units)}
-        style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
-        <Text numberOfLines={1} style={[caption, { color: colors.label, flexShrink: 1 }]}>
-          {`Target ${formatLoggedSetLine(target, { minutes, unit: units })}`}
-        </Text>
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.inline }}>
+        <Fact kind="target" ink="label">
+          {formatLoggedSetLine(target, { minutes, unit: units })}
+        </Fact>
         {last ? (
-          <Text numberOfLines={1} style={[caption, { color: colors.tertiaryLabel, flexShrink: 1 }]}>
-            {`Last time ${formatLoggedSetLine(last, { minutes, unit: units })}`}
-          </Text>
+          <Fact kind="lastTime">{formatLoggedSetLine(last, { minutes, unit: units })}</Fact>
         ) : null}
       </View>
     );
@@ -66,7 +67,7 @@ export function TargetLine({
 
   if (!unlocked && onStage && onUnlock) {
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.inline }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.inline }}>
         <View style={{ flexShrink: 1 }}>
           <LastTimeLine previousSets={previousSets} setIndex={setIndex} minutes={minutes} units={units} />
         </View>
