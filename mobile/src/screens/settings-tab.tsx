@@ -111,11 +111,13 @@ export function SettingsTab() {
         <View>
           <PaperRow
             title="Weight"
+            symbol="scalemass"
             trailing={<Text style={[type.row, { color: colors.tertiaryLabel }]}>{units}</Text>}
             onPress={pickUnits}
           />
           <PaperRow
             title="Appearance"
+            symbol="circle.lefthalf.filled"
             testID="settings-appearance"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
@@ -128,6 +130,8 @@ export function SettingsTab() {
         <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Trim Pro"
+            // The same lock the Pro-locked chips wear; it opens once Pro is on.
+            symbol={isPro ? 'lock.open' : 'lock'}
             testID="settings-pro"
             trailing={
               <Text style={[type.row, { color: colors.tertiaryLabel }]}>
@@ -144,6 +148,7 @@ export function SettingsTab() {
           />
           <PaperRow
             title={restoring ? 'Restoring…' : 'Restore purchases'}
+            symbol="arrow.clockwise"
             meta={restoreError ?? undefined}
             testID="settings-restore"
             onPress={restoring ? undefined : () => void restore()}
@@ -151,13 +156,30 @@ export function SettingsTab() {
         </View>
         {/* Rows that leave the app sit in their own group and carry the ↗ arrow. */}
         <View style={{ paddingTop: GROUP_GAP }}>
-          <PaperRow link title="Contact support" testID="settings-support" onPress={contactSupport} />
-          <PaperRow link title="Privacy Policy" onPress={() => openLegal(LEGAL_URLS.privacyPolicy)} />
-          <PaperRow link title="Terms of Use" onPress={() => openLegal(LEGAL_URLS.termsOfUse)} />
+          <PaperRow
+            link
+            title="Contact support"
+            symbol="envelope"
+            testID="settings-support"
+            onPress={contactSupport}
+          />
+          <PaperRow
+            link
+            title="Privacy Policy"
+            symbol="hand.raised"
+            onPress={() => openLegal(LEGAL_URLS.privacyPolicy)}
+          />
+          <PaperRow
+            link
+            title="Terms of Use"
+            symbol="doc.text"
+            onPress={() => openLegal(LEGAL_URLS.termsOfUse)}
+          />
         </View>
         <View style={{ paddingTop: GROUP_GAP }}>
           <PaperRow
             title="Clear history"
+            symbol="trash"
             destructive
             onPress={() =>
               Alert.alert(

@@ -227,7 +227,9 @@ Always `borderCurve: 'continuous'`. Nested shapes are concentric: inner radius =
 
 ## 7. Icons
 
-SF Symbols via `expo-symbols`, with a text-glyph fallback only for non-iOS. **An icon must encode something the text doesn't.** No decorative icons, no plan or exercise icons, no icon beside a title.
+SF Symbols via `expo-symbols`, with a text-glyph fallback only for non-iOS. **An icon must encode something the text doesn't:** a state (done, PR, locked), where a tap goes (chevron, ↗), or which command or setting a row is. One icon language: monochrome outline symbols in label ink (red only on the destructive row, green only for done, yellow only for the PR crown), never colored tiles.
+
+**Commands and settings get a glyph; content never does.** A row that does something or sets something (Settings, the plan and day editors, Delete workout) leads with its glyph in the row-glyph lane, like the iOS Settings idiom without its colored tiles. A row that *is* something (a plan, a day, a session, an exercise, a lift, a body metric) leads with its name: the name is its identity, and a glyph per row would repeat the same dumbbell on every line. No icon beside a title, on a section caption, on a CTA pill, or on an empty state.
 
 ### Where icons are allowed
 
@@ -237,6 +239,7 @@ SF Symbols via `expo-symbols`, with a text-glyph fallback only for non-iOS. **An
 | Status marks | `checkmark` (done), `crown.fill` (PR) | green / yellow |
 | Affordances | `chevron.right` (opens in-app detail), `chevron.down`/`.up` (expand in place), `arrow.up.right` (leaves the app), `line.3.horizontal` (drag handle) | tertiary |
 | Controls | `chevron.left` (back), `plus` (add), `xmark.circle.fill` (clear field), `magnifyingglass` (search field) | `label`; the clear control is tertiary |
+| Command and setting rows (row-glyph lane) | Editors: `plus` (Add day, Add exercise), `pencil` (Rename plan), `checkmark` (Use this plan), `trash` (Delete / Remove). Settings: `scalemass` (Weight), `circle.lefthalf.filled` (Appearance), `lock` / `lock.open` (Trim Pro, off / on: the same lock the Pro-locked chips wear), `arrow.clockwise` (Restore purchases), `envelope` (Contact support), `hand.raised` (Privacy Policy), `doc.text` (Terms of Use), `trash` (Clear history). One symbol per meaning: `trash` always deletes, `plus` always adds. | `label`; destructive row `systemRed`; a quiet row (`Add day`) tertiary |
 | Paywall benefits | One `*.fill` symbol per benefit tile, `lock.open.fill` / `creditcard.fill` timeline nodes | `label` |
 | Context menus | System symbols per action | system |
 
@@ -248,7 +251,7 @@ SF Symbols via `expo-symbols`, with a text-glyph fallback only for non-iOS. **An
 | `row` | 17 | Beside 17 text: checks, crowns, `+` in a list | semibold |
 | `control` | 22 | Standalone tap targets: back, clear, drag handle, header glyphs | medium |
 
-A symbol next to text takes that text's size. Plain glyphs, not circled (`checkmark`, not `checkmark.circle.fill`). The only exception is the system's clear-field control. Chevrons appear only where tapping opens something. A row that performs an action has no chevron.
+A symbol next to text takes that text's size, and grows with Dynamic Type like it: the row-glyph lane is `ROW_GLYPH_SLOT` (22) wide with a `row` (17) glyph at medium weight, both scaled by the font scale up to the `text` cap (`useRowGlyph` in `components/paper.tsx`, used by `PaperRow symbol` and `EditorActionRow`), so every row's text starts on one edge. Plain glyphs, not circled (`checkmark`, not `checkmark.circle.fill`). The only exception is the system's clear-field control. Chevrons appear only where tapping opens something. A row that performs an action has no chevron.
 
 ---
 
@@ -414,7 +417,7 @@ Use these. Don't rebuild them per screen.
 | `Button` | `components/button.tsx` | Variants: `black` (ink CTA), `green` (gym CTA), `gray` (secondary pill), `plain` (text action, `body`), `destructive` (red text). Pill height ≥ 52, `button` label. `compact` (32) only for inline chips. `filled` (blue) is deprecated. At most one filled pill per screen. |
 | `HeaderActions` | `components/button.tsx` | Header items are native toolbar buttons. Never a custom pill in a header. |
 | `PaperScreen` | `components/paper.tsx` | Page scaffold for screens without a native large title: 24 gutter, safe-area top + 24, scroll. |
-| `PaperRow` | `components/paper.tsx` | `row` + optional `caption` meta. The trailing lane holds a value, mark, ↗ or chevron. Pressed = `PRESSED_OPACITY`. A `link` row (leaves the app) gets link role + ↗. |
+| `PaperRow` | `components/paper.tsx` | `row` + optional `caption` meta, and an optional leading `symbol` for command and setting rows only (§7). The trailing lane holds a value, mark, ↗ or chevron. Pressed = `PRESSED_OPACITY`. A `link` row (leaves the app) gets link role + ↗. |
 | Object surface | per screen | `secondarySystemBackground`, `radius.md`, 16 inset. Only when its contents form one unit (exercise list). Not on every row. |
 | Section caption | — | `caption`, 8 above its content, 32 above from the previous section. Only if it passes the eyebrow test. |
 | `PaperEmpty` | `components/paper.tsx` | Under the native large title: the fact in `title` (`No plans yet`) + one ink action if one exists. No caption. |
@@ -569,7 +572,7 @@ Same system, different winner. Don't invent a type size for a screen.
 | **Lift / body detail** | Lift name `title`, range chips (3M free, rest Pro-locked), 1RM `hero` with unit, delta (lifts: green if up, ink otherwise; body: always ink), chart, sessions list right under the line. Charts follow §11. | Up-delta only |
 | **History** | Native large title. Month as a section caption with its amount in the trailing lane (`August` … `4 sessions`). Session row: `row` title over `caption` when (`Wed 13`), duration trailing (`52 min`), and the PR pill (gray fill, yellow crown, count) beside the duration when there is one. Hairlines within a month, `section` air between months. Swipe left or long-press → Delete (confirms: a workout can't come back). | None (yellow crown) |
 | **Session detail** | Back, workout title as the native large title, facts on two lines in `caption` (`Wed 13 September, 18:02` / `52 min, 14 sets`), every set of each exercise on its own line (`RecapExercise`: narrow tertiary set-number lane + `60 kg × 8`, crown on the PR set). A record, not a ceremony: no green, no Done button. | None |
-| **Settings** | Native large title. `PaperRow` groups separated by `section` air: (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews Oct 3`, or `On until Oct 3` once renewal is off; dates as elsewhere in Trim). | None |
+| **Settings** | Native large title. `PaperRow` groups separated by `section` air, each row led by its glyph (§7 command and setting rows): (Weight, Appearance), (Trim Pro, Restore purchases), (Contact support ↗, Privacy Policy ↗, Terms of Use ↗), (Clear history, red). Values trail in `caption` (`On, renews Oct 3`, or `On until Oct 3` once renewal is off; dates as elsewhere in Trim). | None |
 | **Paywall** | Follows §12. `Not now` top right as a native toolbar item on glass, content scrolling under it with the system scroll-edge effect. Headline `displayCompact`, no subheading. Benefit rows: 36pt tile (`radius.sm`, symbol) + `row` title + one `caption` line (≤ 45 chars), all titles on one text edge. Plan options, then the trial timeline (ink `lock.open.fill` today, grey `creditcard.fill` on the charge day). Footer: ink CTA, price note `footnote`, then Restore, Terms and Privacy as three quiet `footnote` links separated by air (no dots). All above the fold on a 6.3" phone. | None |
 | **Body check-in** | Native `formSheet`: Cancel, title and Save in one header row (Save disabled until a value). Fields scroll with the keyboard inset. Save closes and toasts `Check-in saved`. | Dot on fields that will save |
 | **Onboarding** | Follows §12. One question per screen: `displayCompact` question, choices as rows or a `hero` number, ink Continue at the thumb. Welcome: `hero` wordmark + `lede` `A plan. Then the gym.` Always ends with a real plan the user picked. | None |

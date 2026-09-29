@@ -159,6 +159,12 @@ export const iconSize = {
 } as const;
 
 /**
+ * The leading glyph lane on command and setting rows (Settings, plan and day editors): a `row`
+ * glyph centred in a `control`-wide slot, so every row's text starts on one edge.
+ */
+export const ROW_GLYPH_SLOT = iconSize.control;
+
+/**
  * Dynamic Type caps (`maxFontSizeMultiplier`). Large type on fixed stages is capped so the
  * layout holds; text at 17 and below is never capped below `text`.
  */
