@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Extrapolation,
+  interpolate,
   ReduceMotion,
+  type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -14,6 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button } from '@/components/button';
@@ -66,6 +70,8 @@ const MOMENT_DONE_MS = MOMENT_WEEK_MS + DURATION.celebrate * 2;
 const PAN_SLOP = 14;
 const SWIPE_DISTANCE = 56;
 const EDGE_RESISTANCE = 0.22;
+/** A neighbour one page away; it brightens as it arrives. */
+const NEIGHBOUR_OPACITY = 0.5;
 
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
@@ -235,10 +241,14 @@ export function Home() {
       <ScrollView
         style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={{ paddingTop: insets.top + space.gutter, paddingBottom: scrollBottom }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingTop: insets.top + space.gutter,
+          paddingBottom: scrollBottom,
+        }}
         testID="home-scroll">
         {activePlan && days.length > 0 ? (
-          <View testID="home-next-day">
+          <View style={{ flex: 1 }} testID="home-next-day">
             <WeekHeader
               streak={week.streak}
               secured={week.weekComplete}
@@ -265,7 +275,8 @@ export function Home() {
               </View>
             </View>
 
-            <View style={{ paddingTop: space.inline }}>
+            {/* The pager runs down to Start, so the whole lower screen swipes between days. */}
+            <View style={{ flex: 1, paddingTop: space.inline }}>
               <DayPager
                 days={days}
                 selectedIndex={selectedIndex}
@@ -446,7 +457,7 @@ function PopIn({ delayMs, children }: { delayMs: number; children: ReactNode }) 
 
 /**
  * The streak over the week: 🔥 `3 weeks` (gray until this week's goal is reached, then
- * orange; hidden before the first full week), the seven day circles, and on a complete week
+ * orange; `0 weeks` before the first full week, so Home always has its head), the seven day circles, and on a complete week
  * `↑ 9 lifts went up` and 👑 `2 new records`. The block opens Weeks.
  */
 function WeekHeader({
@@ -469,7 +480,7 @@ function WeekHeader({
   const flameSize = type.tabTitle.fontSize * Math.min(fontScale, fontScaleCap.title);
   const trained = marks.filter((mark) => mark.done).length;
   const spoken = [
-    streak > 0 ? plural(streak, 'week', 'weeks') + ' in a row' : null,
+    plural(streak, 'week', 'weeks') + ' in a row',
     `${trained} ${trained === 1 ? 'day' : 'days'} trained this week`,
     summary && summary.liftsUp > 0 ? plural(summary.liftsUp, 'lift went up', 'lifts went up') : null,
     summary && summary.records > 0 ? plural(summary.records, 'new record', 'new records') : null,
@@ -489,26 +500,24 @@ function WeekHeader({
         gap: space.inset,
         opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      {streak > 0 ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }} testID="home-streak">
-          <Flame size={flameSize} secured={secured} lightKey={moment?.lightsFlame ? moment.key : null} />
-          {fontScale < STACK_FONT_SCALE ? (
-            // The count rolls when the week moment moves it (3 → 4 weeks).
-            <StaggerValue
-              value={streak}
-              suffix={streak === 1 ? ' week' : ' weeks'}
-              style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
-            />
-          ) : (
-            // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
-            <Text
-              style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
-              maxFontSizeMultiplier={fontScaleCap.title}>
-              {plural(streak, 'week', 'weeks')}
-            </Text>
-          )}
-        </View>
-      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }} testID="home-streak">
+        <Flame size={flameSize} secured={secured} lightKey={moment?.lightsFlame ? moment.key : null} />
+        {fontScale < STACK_FONT_SCALE ? (
+          // The count rolls when the week moment moves it (3 → 4 weeks).
+          <StaggerValue
+            value={streak}
+            suffix={streak === 1 ? ' week' : ' weeks'}
+            style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
+          />
+        ) : (
+          // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
+          <Text
+            style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
+            maxFontSizeMultiplier={fontScaleCap.title}>
+            {plural(streak, 'week', 'weeks')}
+          </Text>
+        )}
+      </View>
       <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <WeekDays marks={marks} celebrate={moment?.day ?? null} />
       </View>
@@ -541,7 +550,7 @@ function WeekHeader({
 /**
  * The plan's days as chips: selected ink, others gray fill, and a small green ✓ on a day done
  * this week, selected or not (trim-ui §1 rule 15). They scroll sideways when a plan has more
- * than fit, keeping the selected chip in view.
+ * than fit, keeping the selected chip in view, and fade out at the screen's edges.
  */
 function DayChips({
   days,
@@ -569,65 +578,94 @@ function DayChips({
   }, [selectedIndex]);
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentInsetAdjustmentBehavior="never"
-      contentContainerStyle={{ gap: space.related, paddingHorizontal: space.gutter }}
-      testID="home-day-chips">
-      {days.map((day, index) => {
-        const selected = index === selectedIndex;
-        const done = doneIds.includes(day.id);
-        return (
-          <Pressable
-            key={day.id}
-            testID={`home-chip-${index}`}
-            onLayout={(event) => {
-              chipX.current[index] = event.nativeEvent.layout.x;
-            }}
-            onPress={() => onSelect(index)}
-            accessibilityRole="tab"
-            accessibilityLabel={done ? `${day.title}, done this week` : day.title}
-            accessibilityState={{ selected }}
-            // Chips are 36pt tall; extend the touch target to 44pt.
-            hitSlop={{ top: space.tight, bottom: space.tight }}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space.tight,
-              paddingVertical: space.related,
-              paddingHorizontal: space.inset,
-              borderRadius: radius.full,
-              borderCurve: 'continuous',
-              backgroundColor: selected ? colors.label : colors.secondarySystemBackground,
-              opacity: pressed && !selected ? PRESSED_OPACITY : 1,
-            })}>
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={fontScaleCap.title}
-              style={[type.row, { color: selected ? colors.onLabel : colors.label }]}>
-              {day.title}
-            </Text>
-            {done ? (
-              moment?.chipDelays[day.id] != null ? (
-                <PopIn key={moment.key} delayMs={moment.chipDelays[day.id]}>
+    <View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{ gap: space.related, paddingHorizontal: space.gutter }}
+        testID="home-day-chips">
+        {days.map((day, index) => {
+          const selected = index === selectedIndex;
+          const done = doneIds.includes(day.id);
+          return (
+            <Pressable
+              key={day.id}
+              testID={`home-chip-${index}`}
+              onLayout={(event) => {
+                chipX.current[index] = event.nativeEvent.layout.x;
+              }}
+              onPress={() => onSelect(index)}
+              accessibilityRole="tab"
+              accessibilityLabel={done ? `${day.title}, done this week` : day.title}
+              accessibilityState={{ selected }}
+              // Chips are 36pt tall; extend the touch target to 44pt.
+              hitSlop={{ top: space.tight, bottom: space.tight }}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space.tight,
+                paddingVertical: space.related,
+                paddingHorizontal: space.inset,
+                borderRadius: radius.full,
+                borderCurve: 'continuous',
+                backgroundColor: selected ? colors.label : colors.secondarySystemBackground,
+                opacity: pressed && !selected ? PRESSED_OPACITY : 1,
+              })}>
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={fontScaleCap.title}
+                style={[type.row, { color: selected ? colors.onLabel : colors.label }]}>
+                {day.title}
+              </Text>
+              {done ? (
+                moment?.chipDelays[day.id] != null ? (
+                  <PopIn key={moment.key} delayMs={moment.chipDelays[day.id]}>
+                    <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+                  </PopIn>
+                ) : (
                   <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
-                </PopIn>
-              ) : (
-                <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
-              )
-            ) : null}
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+                )
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+      <EdgeFade side="left" />
+      <EdgeFade side="right" />
+    </View>
   );
 }
 
 /**
- * The days' exercise lists side by side, one page per chip: a swipe follows the finger 1:1
- * with each neighbour already drawn, commits on distance or a flick and settles with the
+ * A chip scrolled past the gutter dissolves into the page instead of being sliced by the
+ * screen edge, so a cut chip reads as "more this way". At rest it covers only empty gutter.
+ */
+function EdgeFade({ side }: { side: 'left' | 'right' }) {
+  const { colors } = useTheme();
+  const id = `home-chip-fade-${side}`;
+  return (
+    <Svg
+      pointerEvents="none"
+      width={space.gutter}
+      height="100%"
+      style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0 }}>
+      <Defs>
+        <LinearGradient id={id} x1={side === 'left' ? 0 : 1} y1={0} x2={side === 'left' ? 1 : 0} y2={0}>
+          <Stop offset={0} stopColor={colors.systemBackground} stopOpacity={1} />
+          <Stop offset={1} stopColor={colors.systemBackground} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={0} y={0} width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
+}
+
+/**
+ * The days' exercise lists side by side, one page per chip, filling the screen down to Start so
+ * a swipe anywhere below the chips pages: it follows the finger 1:1 with each neighbour already
+ * drawn (at half opacity, brightening as it arrives), commits on distance or a flick and settles with the
  * finger's velocity, as the log stage does. A chip tap pages there in `enter`. Only the
  * selected page is read by VoiceOver.
  */
@@ -721,24 +759,44 @@ function DayPager({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={{ width, overflow: 'hidden' }} testID="home-exercise-pager">
-        <Animated.View style={[{ flexDirection: 'row', alignItems: 'flex-start' }, trackStyle]}>
-          {days.map((day, dayIndex) => {
-            const current = dayIndex === selectedIndex;
-            return (
-              <View
-                key={day.id}
-                style={{ width, paddingHorizontal: space.gutter }}
-                accessibilityElementsHidden={!current}
-                importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
-                pointerEvents={current ? 'auto' : 'none'}>
-                {renderPage(day, dayIndex)}
-              </View>
-            );
-          })}
+      <View style={{ flex: 1, width, overflow: 'hidden' }} testID="home-exercise-pager">
+        <Animated.View style={[{ flex: 1, flexDirection: 'row', alignItems: 'flex-start' }, trackStyle]}>
+          {days.map((day, dayIndex) => (
+            <PagerPage key={day.id} index={dayIndex} pos={pos} width={width} current={dayIndex === selectedIndex}>
+              {renderPage(day, dayIndex)}
+            </PagerPage>
+          ))}
         </Animated.View>
       </View>
     </GestureDetector>
+  );
+}
+
+/** A day's page: a neighbour one page away sits at half opacity and brightens as it arrives. */
+function PagerPage({
+  index,
+  pos,
+  width,
+  current,
+  children,
+}: {
+  index: number;
+  pos: SharedValue<number>;
+  width: number;
+  current: boolean;
+  children: ReactNode;
+}) {
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(Math.abs(pos.get() - index), [0, 1], [1, NEIGHBOUR_OPACITY], Extrapolation.CLAMP),
+  }));
+  return (
+    <Animated.View
+      style={[{ width, paddingHorizontal: space.gutter }, style]}
+      accessibilityElementsHidden={!current}
+      importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
+      pointerEvents={current ? 'auto' : 'none'}>
+      {children}
+    </Animated.View>
   );
 }
 

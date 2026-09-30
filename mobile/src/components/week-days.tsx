@@ -20,7 +20,7 @@ import { useTheme } from '@/theme/theme-context';
 
 /** One day's circle (trim-ui §13 Home: 40pt): read at arm's length, seven fit a 320pt phone. */
 const DAY = 40;
-/** Today's ring, the same weight as the focused well's ring (trim-ui → States). */
+/** Today's ring: gray, so a trained day's green stays the strongest mark in the week. */
 const RING = 2;
 /** The soft rings leave 140ms apart and grow to this much of the circle (trim-ui §8 Week dot fills). */
 const RING_STAGGER_MS = 140;
@@ -32,7 +32,7 @@ export type DayCelebration = { index: number; key: string };
 
 /**
  * The current week as seven days, Monday first (Home v3). A day with a finished workout is a
- * green circle with a check; today is an ink ring; every other day is an empty grey circle.
+ * green circle with a check; today is a gray ring over its ink weekday; every other day is an empty grey circle.
  * A missed day stays grey like a future one: Trim doesn't scold.
  *
  * `celebrate`: the day a workout just finished fills with `SPRING.pop` and two soft green
@@ -78,7 +78,7 @@ export function WeekDays({
                     ? colors.systemBackground
                     : colors.secondarySystemBackground,
                 borderWidth: mark.isToday && !mark.done ? RING : 0,
-                borderColor: colors.label,
+                borderColor: colors.systemGray3,
               }}>
               {mark.done ? (
                 <SymbolView name="checkmark" tintColor={colors.onGreen} size={iconSize.caption} weight="bold" />
@@ -97,7 +97,7 @@ export function WeekDays({
 }
 
 /**
- * Today's circle filling as the week moment plays: from the ink ring to green with its check,
+ * Today's circle filling as the week moment plays: from the gray ring to green with its check,
  * popping from half size, with two soft green rings leaving it.
  */
 function FillingDay({ celebrateKey }: { celebrateKey: string }) {
@@ -161,7 +161,7 @@ function FillingDay({ celebrateKey }: { celebrateKey: string }) {
             width: DAY,
             height: DAY,
             borderRadius: radius.full,
-            borderColor: colors.label,
+            borderColor: colors.systemGray3,
             alignItems: 'center',
             justifyContent: 'center',
           },
