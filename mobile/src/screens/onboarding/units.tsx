@@ -13,7 +13,7 @@ const UNITS = [
   { value: 'lbs', label: 'lbs', spoken: 'Pounds' },
 ] as const;
 
-/** Step 2: the unit every set is logged in. Preset from the locale; saved on tap. */
+/** Step 3: the unit every set is logged in. Preset from the locale; saved on tap. */
 export function OnboardingUnits() {
   const { colors, type } = useTheme();
   const router = useRouter();

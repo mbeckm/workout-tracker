@@ -19,7 +19,7 @@ import { track } from '@/analytics/analytics';
  */
 export function useFinishOnboarding() {
   const router = useRouter();
-  const { savePlan, completeOnboarding, isPro } = useWorkoutStore();
+  const { savePlan, completeOnboarding, isPro, userName } = useWorkoutStore();
   const finished = useRef(false);
 
   /** Template path: Home with Day 1 ready, then the soft `onboarding` paywall. */
@@ -31,13 +31,17 @@ export function useFinishOnboarding() {
       finished.current = true;
       savePlan(plan, { activate: true });
       completeOnboarding();
-      track('onboarding_completed', { path: 'template', days_per_week: plan.days.length });
+      track('onboarding_completed', {
+        path: 'template',
+        days_per_week: plan.days.length,
+        has_name: userName !== '',
+      });
       router.replace('/');
       if (!isPro) {
         void openPaywall('onboarding');
       }
     },
-    [completeOnboarding, isPro, router, savePlan],
+    [completeOnboarding, isPro, router, savePlan, userName],
   );
 
   /**
@@ -53,11 +57,11 @@ export function useFinishOnboarding() {
       const plan = emptyPlanWithDays(daysPerWeek);
       savePlan(plan, { activate: true });
       completeOnboarding();
-      track('onboarding_completed', { path: 'own', days_per_week: daysPerWeek });
+      track('onboarding_completed', { path: 'own', days_per_week: daysPerWeek, has_name: userName !== '' });
       router.replace('/');
       router.push(`/plan/${plan.id}?new=1`);
     },
-    [completeOnboarding, router, savePlan],
+    [completeOnboarding, router, savePlan, userName],
   );
 
   return { finishWithPlan, finishBuildingOwn };

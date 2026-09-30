@@ -20,7 +20,7 @@ const DAYS_FACT: Record<StarterDayCount, string> = {
   6: 'Push, pull and legs, twice each.',
 };
 
-/** Step 3: the weekly target, which picks the split. */
+/** Step 4: the weekly target, which picks the split. */
 export function OnboardingDays() {
   const { colors, type } = useTheme();
   const router = useRouter();

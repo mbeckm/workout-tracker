@@ -20,7 +20,7 @@ export function OnboardingWelcome() {
   const next = () => {
     // Preset from the device locale and persist now; the Units step confirms or changes it.
     setUnits(localeUnits());
-    router.push('/onboarding/units');
+    router.push('/onboarding/name');
   };
 
   return (

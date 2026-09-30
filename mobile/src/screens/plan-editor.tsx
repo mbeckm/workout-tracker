@@ -22,7 +22,7 @@ import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
 
 /**
- * Plan detail v2 (trim-ui §13 Plan detail; PRODUCT-DECISIONS 68): the whole plan on one page,
+ * Plan detail v2 (trim-ui §13 Plan detail; PRODUCT-DECISIONS 69): the whole plan on one page,
  * built like Home. The plan's name is the native large title; the days are Home's chips, with a
  * `+` chip that adds one; under them the selected day's exercises as single-line rows with the
  * prescription in the trailing lane, tapped open to edit Sets / Reps in place. The selected

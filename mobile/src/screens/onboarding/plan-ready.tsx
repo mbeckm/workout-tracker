@@ -12,7 +12,7 @@ import { OnboardingFrame } from './frame';
 import { joinNames } from './join-names';
 import { space } from '@/constants/theme';
 
-/** Step 5: the reveal. The exact plan the user is about to own, then one tap to use it. */
+/** Step 6: the reveal. The exact plan the user is about to own, then one tap to use it. */
 export function OnboardingPlanReady() {
   const params = useLocalSearchParams<{ template?: string }>();
   const template = starterTemplateById(params.template);

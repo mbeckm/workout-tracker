@@ -254,6 +254,14 @@ export function makeType(themeColors: ThemeColors) {
     letterSpacing: -0.02 * 28,
     color: themeColors.label,
   };
+  // `lede`'s metrics with a different job: a number that sits quietly in a row's trailing lane.
+  const valueCompact = {
+    fontSize: 22,
+    fontWeight: '500' as const,
+    lineHeight: 28,
+    letterSpacing: -0.02 * 22,
+    color: themeColors.label,
+  };
   const title = {
     fontSize: 22,
     fontWeight: '700' as const,
@@ -305,6 +313,11 @@ export function makeType(themeColors: ThemeColors) {
     tabTitle,
     /** Quiet large numbers: logged set lines, onboarding counts. */
     value,
+    /**
+     * Quiet numbers in a row's trailing lane: Home's loads, Done's and a trained day's changes
+     * (`62.5` beside its `kg`). A load is read, not announced, so Medium, not `title`'s Bold.
+     */
+    valueCompact,
     /** Status and sheet titles: `Set 2 of 4`, `3 of 5`, a sheet's day name. */
     title,
     /** The one line under the welcome hero. Nowhere else. */

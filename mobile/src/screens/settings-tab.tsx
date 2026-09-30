@@ -8,6 +8,7 @@ import { PaperRow } from '@/components/paper';
 import { showToast } from '@/components/toast';
 import { LEGAL_URLS } from '@/constants/legal';
 import { formatMonthDay } from '@/domain/dates';
+import { promptRename } from '@/navigation/rename-prompt';
 import { appearanceLabel, space, type AppearancePreference } from '@/constants/theme';
 import { openPaywall } from '@/purchases/pro-gate';
 import { PURCHASE_COPY, manageSubscription, restorePurchases } from '@/purchases/purchases';
@@ -32,8 +33,10 @@ function versionLabel(): string {
 }
 
 export function SettingsTab() {
-  const { colors, type } = useTheme();
+  const { colors, type, scheme } = useTheme();
   const {
+    userName,
+    setUserName,
     units,
     setUnits,
     appearance,
@@ -81,6 +84,10 @@ export function SettingsTab() {
     );
   };
 
+  // The same system prompt as renaming a plan; an empty name clears it.
+  const editName = () =>
+    promptRename({ title: 'Name', current: userName, scheme, clearable: true, onSave: setUserName });
+
   const pickUnits = () => {
     // Switching relabels; it does not convert what was logged.
     Alert.alert('Weight', 'Past workouts keep their numbers.', [
@@ -114,6 +121,19 @@ export function SettingsTab() {
           paddingBottom: space.section,
         }}>
         <View>
+          <PaperRow
+            title="Name"
+            symbol="person"
+            testID="settings-name"
+            trailing={
+              userName ? (
+                <Text style={[type.row, { color: colors.tertiaryLabel }]} numberOfLines={1}>
+                  {userName}
+                </Text>
+              ) : undefined
+            }
+            onPress={editName}
+          />
           <PaperRow
             title="Weight"
             symbol="scalemass"

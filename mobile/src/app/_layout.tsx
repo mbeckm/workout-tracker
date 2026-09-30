@@ -308,6 +308,19 @@ function RootNav() {
         }}
       />
       <Stack.Screen
+        name="day-workout"
+        options={{
+          // A trained day from Home's week: a record, read-only, sized to its content like Day
+          // preview, with Trim's grabber (trim-ui §10 Sheets).
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: false,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.systemBackground },
+          title: 'Workout',
+        }}
+      />
+      <Stack.Screen
         name="exercises"
         options={{
           // A step in the editor stack: a push, so the back chevron and edge swipe agree.
