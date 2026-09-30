@@ -1716,7 +1716,7 @@ function ExerciseName({
         }
         style={{ alignSelf: 'flex-start' }}>
         {/* Chevron rides inline after the last word (iOS title-menu convention). */}
-        <Text style={type.largeTitle} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
+        <Text style={type.displayCompact} numberOfLines={2} maxFontSizeMultiplier={DISPLAY_TEXT_MAX_SCALE}>
           {name}
           {' '}
           <View style={{ width: 17, height: 17, transform: [{ translateY: -3 }] }}>
