@@ -26,7 +26,7 @@ type Units = 'kg' | 'lbs';
  */
 export const STACK_FONT_SCALE = 1.3;
 
-/** A single-line row: a 44pt touch target plus the air a `title` load needs (Paper V4: 48). */
+/** A single-line row: a 44pt touch target plus the air a 22pt load needs (Paper V4: 48). */
 const ROW_HEIGHT = TOUCH_TARGET + space.tight;
 /**
  * Lanes, so every row's prescription and load line up (Paper V4; the load lane fits
@@ -41,11 +41,16 @@ function formatLoad(value: number): string {
 }
 
 /**
- * One lift as a single-line row on the page (hairlines, no surface), shared by Home and Done
- * (trim-ui §13): `row` name, the prescription `4 × 6` in `caption`, and the trailing lane in
- * `title` + unit. `number`: the load for today (Pro: the target, with an ink ↑ when it rises;
- * free: last heaviest set). `change`: what the lift just did, ↑ / ↓ `2.5 kg`, `same`, or the
- * crown instead of the ↑ on a record.
+ * One lift as a row on the page (hairlines, no surface), shared by Home, Done and a trained
+ * day's sheet (trim-ui §13): `row` name and the trailing lane in `valueCompact` + unit.
+ * `number`: the load for today (Pro: the target, with an ink ↑ when it rises; free: last
+ * heaviest set). `change`: what the lift just did, ↑ / ↓ `2.5 kg`, `same`, or the crown
+ * instead of the ↑ on a record.
+ *
+ * `metric` (Done): the prescription `4 × 6` in `caption`, on the name's line in its own lane.
+ * Home leaves it out: the rows say what to lift, the day editor says how many.
+ * `detail` (a trained day's sheet): a `caption` line under the name (`80 kg × 8`), making it
+ * a two-line row.
  *
  * `landed` (Done): the ↑ waits, then rises 8pt into place `delayMs` after the screen lands,
  * and a record's crown pops in (trim-ui §8). Leave it out for a still row.
@@ -53,6 +58,7 @@ function formatLoad(value: number): string {
 export function LiftRow({
   name,
   metric,
+  detail,
   number = null,
   change = null,
   units,
@@ -62,7 +68,8 @@ export function LiftRow({
   testID,
 }: {
   name: string;
-  metric: string;
+  metric?: string;
+  detail?: string;
   number?: LiftNumber | null;
   change?: LiftChange | null;
   units: Units;
@@ -96,7 +103,7 @@ export function LiftRow({
     spoken = `${formatLoadWithUnit(number.load, units)}${number.loadUp != null ? ', up from last time' : ''}`;
   }
 
-  const metricText = (
+  const metricText = metric ? (
     <Text
       style={[
         type.caption,
@@ -105,8 +112,9 @@ export function LiftRow({
       ]}>
       {metric}
     </Text>
-  );
-  const trailingLane = (
+  ) : null;
+  // Every row keeps the lane, even empty, so the names in a list wrap at one edge (trim-ui §4).
+  const trailingLane = trailing || !stacked ? (
     <View
       style={{
         flexDirection: 'row',
@@ -114,16 +122,37 @@ export function LiftRow({
         justifyContent: 'flex-end',
         gap: space.tight,
         flexShrink: 0,
+        // Stacked with no metric beside it, the lane still ends on the row's trailing edge.
+        flexGrow: stacked && !metric ? 1 : 0,
         minWidth: stacked ? undefined : LOAD_LANE * fontScale,
       }}>
       {trailing}
     </View>
+  ) : null;
+  const nameText = (
+    <Text
+      style={[type.row, stacked || detail ? null : { flex: 1, minWidth: 0 }]}
+      numberOfLines={stacked || detail ? 2 : 1}>
+      {name}
+    </Text>
   );
+  const lead = detail ? (
+    <View style={stacked ? { gap: space.pair } : { flex: 1, minWidth: 0, gap: space.pair }}>
+      {nameText}
+      <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]} numberOfLines={2}>
+        {detail}
+      </Text>
+    </View>
+  ) : (
+    nameText
+  );
+  const spokenMetric = metric ? metric.replace(' × ', ' sets of ') : null;
+  const spokenDetail = detail ? detail.replace(' × ', ' for ') : null;
 
   return (
     <View
       accessible
-      accessibilityLabel={[name, metric.replace(' × ', ' sets of '), spoken].filter(Boolean).join(', ')}
+      accessibilityLabel={[name, spokenMetric, spokenDetail, spoken].filter(Boolean).join(', ')}
       testID={testID}
       style={{
         flexDirection: stacked ? 'column' : 'row',
@@ -135,14 +164,14 @@ export function LiftRow({
         borderBottomWidth: showSeparator ? StyleSheet.hairlineWidth : 0,
         borderBottomColor: colors.separator,
       }}>
-      <Text style={[type.row, stacked ? null : { flex: 1, minWidth: 0 }]} numberOfLines={stacked ? 2 : 1}>
-        {name}
-      </Text>
+      {lead}
       {stacked ? (
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.inline }}>
-          {metricText}
-          {trailingLane}
-        </View>
+        metricText || trailingLane ? (
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.inline }}>
+            {metricText}
+            {trailingLane}
+          </View>
+        ) : null
       ) : (
         <>
           {metricText}
@@ -206,7 +235,7 @@ function Amount({ value, units }: { value: number; units: Units }) {
   const { type } = useTheme();
   return (
     <>
-      <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} maxFontSizeMultiplier={fontScaleCap.title}>
+      <Text style={[type.valueCompact, { fontVariant: ['tabular-nums'] }]} maxFontSizeMultiplier={fontScaleCap.title}>
         {formatLoad(value)}
       </Text>
       <Text style={type.caption} maxFontSizeMultiplier={fontScaleCap.title}>

@@ -1,5 +1,5 @@
 import { formatDoneWhen } from '@/domain/day-facts';
-import { personalBestCount } from '@/domain/helpers';
+import { formatLoggedSetLine, personalBestCount } from '@/domain/helpers';
 import { dayIdForPlanWorkout } from '@/domain/plan-loop';
 import { workoutPersonalBests } from '@/domain/set-lines';
 import { exerciseTargets, recentSessionSets, type TargetPrescription, type TargetUnits } from '@/domain/targets';
@@ -121,8 +121,30 @@ export function formatLastSession(workout: Pick<LoggedWorkout, 'completedAt' | '
   return minutes > 0 ? `Last time ${when}, ${minutes} min` : `Last time ${when}`;
 }
 
-/** One weekday of the current week: whether a workout was finished on it. */
-export type WeekDayMark = { date: Date; done: boolean; isToday: boolean; isFuture: boolean };
+/**
+ * One weekday of the current week: whether a workout was finished on it, and the latest one
+ * (its id opens the day's workout from Home's week, its title names it for VoiceOver).
+ */
+export type WeekDayMark = {
+  date: Date;
+  done: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+  latest: { id: string; title: string } | null;
+};
+
+/** The workouts finished on `date`'s calendar day, newest first (history is newest first). */
+export function workoutsOnDay(history: readonly LoggedWorkout[], date: Date): LoggedWorkout[] {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const end = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
+  return history.filter((workout) => {
+    if (workout.setCount <= 0) {
+      return false;
+    }
+    const at = new Date(workout.completedAt).getTime();
+    return at >= start && at < end;
+  });
+}
 
 /** Monday to Sunday of the week that starts at `weekStart`, each marked done or not. */
 export function weekDayMarks(
@@ -133,16 +155,40 @@ export function weekDayMarks(
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + index);
-    const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-    const done = history.some((workout) => {
-      if (workout.setCount <= 0) {
-        return false;
-      }
-      const at = new Date(workout.completedAt).getTime();
-      return at >= date.getTime() && at < next.getTime();
-    });
-    return { date, done, isToday: date.getTime() === today, isFuture: date.getTime() > today };
+    const [latest] = workoutsOnDay(history, date);
+    return {
+      date,
+      done: latest != null,
+      isToday: date.getTime() === today,
+      isFuture: date.getTime() > today,
+      latest: latest ? { id: latest.id, title: latest.title } : null,
+    };
   });
+}
+
+/**
+ * An exercise's best set in a finished workout as one line (`80 kg × 8`): the heaviest, the
+ * set its change is measured by, more reps breaking a tie; unweighted work, the most reps or
+ * the longest hold.
+ */
+export function heaviestSetLine(sets: readonly LoggedSet[], unit: TargetUnits): string | null {
+  const top = heaviest(sets);
+  let best: LoggedSet | null = null;
+  if (top?.weight != null) {
+    for (const set of sets) {
+      if (set.weight === top.weight && (best == null || (set.reps ?? 0) > (best.reps ?? 0))) {
+        best = set;
+      }
+    }
+  } else {
+    const score = (set: LoggedSet) => set.reps ?? set.durationSeconds ?? -1;
+    for (const set of sets) {
+      if (best == null || score(set) > score(best)) {
+        best = set;
+      }
+    }
+  }
+  return best ? formatLoggedSetLine(best, { unit }) : null;
 }
 
 function startOfDay(date: Date): number {

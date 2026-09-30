@@ -279,6 +279,7 @@ export function homeDemoSnapshot(base: WorkoutSnapshot, mode: HomeDemoMode): Wor
   return {
     ...base,
     hasCompletedOnboarding: true,
+    userName: 'Marvin',
     activePlanId: plan.id,
     plans: [plan],
     units: 'kg',

@@ -43,7 +43,7 @@ import { setProCache, type ProReason } from '@/purchases/pro-gate';
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { homeDemoMode, homeDemoSnapshot } from './home-demo';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
-import { defaultSnapshot, type WorkoutSnapshot } from './snapshot';
+import { defaultSnapshot, normalizeUserName, type WorkoutSnapshot } from './snapshot';
 
 export type PreviousExerciseLog = {
   completedAt: string;
@@ -91,6 +91,8 @@ type WorkoutStoreState = {
   appearance: AppearancePreference;
   systemScheme: ColorScheme;
   hasCompletedOnboarding: boolean;
+  /** First name for Home's greeting. Empty when the user gave none. */
+  userName: string;
   postWorkoutPaywallShownAt: string | null;
   /** Cached entitlement; written only by `applyEntitlement`. */
   isPro: boolean;
@@ -129,6 +131,8 @@ type WorkoutStoreState = {
   setUnits: (units: 'kg' | 'lbs') => void;
   setAppearance: (appearance: AppearancePreference) => void;
   setSystemScheme: (systemScheme: ColorScheme) => void;
+  /** Trimmed and capped; an empty name clears it. */
+  setUserName: (name: string) => void;
   completeOnboarding: () => void;
   /** Call once the paywall has rendered offers. Only `post_workout` is recorded. */
   markPaywallShown: (reason: ProReason) => void;
@@ -613,6 +617,11 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const setUserName = useCallback((name: string) => {
+    const userName = normalizeUserName(name);
+    setSnapshot((current) => (current.userName === userName ? current : { ...current, userName }));
+  }, []);
+
   const completeOnboarding = useCallback(() => {
     setSnapshot((current) => ({
       ...current,
@@ -703,6 +712,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       appearance: snapshot.appearance,
       systemScheme: snapshot.systemScheme,
       hasCompletedOnboarding: snapshot.hasCompletedOnboarding,
+      userName: snapshot.userName,
       postWorkoutPaywallShownAt: snapshot.postWorkoutPaywallShownAt,
       isPro: snapshot.isPro,
       proPeriod: snapshot.isPro ? proPeriod : null,
@@ -731,6 +741,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setUnits,
       setAppearance,
       setSystemScheme,
+      setUserName,
       completeOnboarding,
       markPaywallShown,
       applyEntitlement,
@@ -771,6 +782,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setUnits,
     setAppearance,
     setSystemScheme,
+    setUserName,
     completeOnboarding,
     markPaywallShown,
     applyEntitlement,

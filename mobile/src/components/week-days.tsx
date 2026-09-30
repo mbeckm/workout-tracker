@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, {
   interpolateColor,
   ReduceMotion,
@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { fontScaleCap, iconSize, radius, space } from '@/constants/theme';
+import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { weekdayLong, weekdayShort } from '@/domain/dates';
 import type { WeekDayMark } from '@/domain/home-numbers';
 import { DURATION, EASE_OUT, SPRING } from '@/motion';
@@ -37,61 +37,93 @@ export type DayCelebration = { index: number; key: string };
  *
  * `celebrate`: the day a workout just finished fills with `SPRING.pop` and two soft green
  * rings, once (trim-ui §13 Home week details). Reduce Motion: its color crossfades.
+ *
+ * `onOpenDay`: a trained day is a button that opens that day's workout (a record, as a sheet).
+ * Only trained days press; a gray, future or untrained today has no press and no feedback.
  */
 export function WeekDays({
   marks,
   celebrate = null,
+  onOpenDay,
 }: {
   marks: WeekDayMark[];
   celebrate?: DayCelebration | null;
+  onOpenDay?: (mark: WeekDayMark) => void;
 }) {
   const { colors, type } = useTheme();
   return (
     <View
       style={{ flexDirection: 'row', justifyContent: 'space-between' }}
       testID="home-week-days">
-      {marks.map((mark, index) => (
-        <View
-          key={mark.date.toISOString()}
-          accessible
-          accessibilityLabel={[
-            weekdayLong(mark.date),
-            mark.isToday ? 'today' : null,
-            mark.done ? 'trained' : null,
-          ]
-            .filter(Boolean)
-            .join(', ')}
-          style={{ alignItems: 'center', gap: space.related }}>
-          {celebrate?.index === index && mark.done ? (
-            <FillingDay celebrateKey={celebrate.key} />
-          ) : (
-            <View
-              style={{
-                width: DAY,
-                height: DAY,
-                borderRadius: radius.full,
+      {marks.map((mark, index) => {
+        const day = (
+          <>
+            {celebrate?.index === index && mark.done ? (
+              <FillingDay celebrateKey={celebrate.key} />
+            ) : (
+              <View
+                style={{
+                  width: DAY,
+                  height: DAY,
+                  borderRadius: radius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: mark.done
+                    ? colors.systemGreen
+                    : mark.isToday
+                      ? colors.systemBackground
+                      : colors.secondarySystemBackground,
+                  borderWidth: mark.isToday && !mark.done ? RING : 0,
+                  borderColor: colors.systemGray3,
+                }}>
+                {mark.done ? (
+                  <SymbolView name="checkmark" tintColor={colors.onGreen} size={iconSize.caption} weight="bold" />
+                ) : null}
+              </View>
+            )}
+            <Text
+              style={[type.footnote, mark.isToday ? { color: colors.label } : null]}
+              maxFontSizeMultiplier={fontScaleCap.title}>
+              {weekdayShort(mark.date)}
+            </Text>
+          </>
+        );
+        const latest = mark.done ? mark.latest : null;
+        if (onOpenDay && latest) {
+          return (
+            <Pressable
+              key={mark.date.toISOString()}
+              onPress={() => onOpenDay(mark)}
+              testID={`home-week-day-${index}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${weekdayLong(mark.date)}, ${latest.title}, open workout`}
+              // The circles are 40 wide: a little slop toward their neighbours makes 44.
+              hitSlop={{ left: space.pair, right: space.pair }}
+              style={({ pressed }) => ({
                 alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: mark.done
-                  ? colors.systemGreen
-                  : mark.isToday
-                    ? colors.systemBackground
-                    : colors.secondarySystemBackground,
-                borderWidth: mark.isToday && !mark.done ? RING : 0,
-                borderColor: colors.systemGray3,
-              }}>
-              {mark.done ? (
-                <SymbolView name="checkmark" tintColor={colors.onGreen} size={iconSize.caption} weight="bold" />
-              ) : null}
-            </View>
-          )}
-          <Text
-            style={[type.footnote, mark.isToday ? { color: colors.label } : null]}
-            maxFontSizeMultiplier={fontScaleCap.title}>
-            {weekdayShort(mark.date)}
-          </Text>
-        </View>
-      ))}
+                gap: space.related,
+                opacity: pressed ? PRESSED_OPACITY : 1,
+              })}>
+              {day}
+            </Pressable>
+          );
+        }
+        return (
+          <View
+            key={mark.date.toISOString()}
+            accessible
+            accessibilityLabel={[
+              weekdayLong(mark.date),
+              mark.isToday ? 'today' : null,
+              mark.done ? 'trained' : null,
+            ]
+              .filter(Boolean)
+              .join(', ')}
+            style={{ alignItems: 'center', gap: space.related }}>
+            {day}
+          </View>
+        );
+      })}
     </View>
   );
 }

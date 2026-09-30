@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { KeyboardStickyView } from '@/keyboard';
 import { useTheme } from '@/theme/theme-context';
 import { iconSize, PRESSED_OPACITY, space } from '@/constants/theme';
 
@@ -44,7 +45,6 @@ export function OnboardingFrame({
         flex: 1,
         backgroundColor: colors.systemBackground,
         paddingTop: insets.top + 16,
-        paddingBottom: Math.max(insets.bottom, 12),
       }}>
       <View style={{ paddingHorizontal: space.gutter, minHeight: 44, justifyContent: 'center' }}>
         {back ? <OnboardingBack onPress={() => router.back()} /> : null}
@@ -66,14 +66,22 @@ export function OnboardingFrame({
         ) : null}
         {children}
       </ScrollView>
-      <View style={{ paddingHorizontal: space.gutter, paddingTop: space.related }}>
+      {/* Rides the keyboard on a step with a field (Name), so Continue stays at the thumb. */}
+      <KeyboardStickyView
+        offset={{ closed: 0, opened: 0 }}
+        style={{
+          paddingHorizontal: space.gutter,
+          paddingTop: space.related,
+          paddingBottom: Math.max(insets.bottom, 12),
+          backgroundColor: colors.systemBackground,
+        }}>
         <Button
           title={action.title}
           variant="black"
           onPress={action.onPress}
           testID={action.testID ?? 'onboarding-continue'}
         />
-      </View>
+      </KeyboardStickyView>
     </View>
   );
 }

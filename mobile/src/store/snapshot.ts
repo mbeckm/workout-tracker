@@ -24,6 +24,8 @@ export type WorkoutSnapshot = {
   /** Last observed OS light/dark — used when Appearance is poisoned by a prior override. */
   systemScheme: ColorScheme;
   hasCompletedOnboarding: boolean;
+  /** First name for Home's greeting, asked in onboarding and set in Settings. Empty = no name. */
+  userName: string;
   /** When the one-time post-workout Pro offer actually rendered prices. Null = not yet. */
   postWorkoutPaywallShownAt: string | null;
   /** Cold-start cache of the RevenueCat entitlement. Only definite answers write it. */
@@ -53,6 +55,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   appearance: 'system',
   systemScheme: 'light',
   hasCompletedOnboarding: false,
+  userName: '',
   postWorkoutPaywallShownAt: null,
   isPro: false,
   activeSession: null,
@@ -77,6 +80,16 @@ function normalizeMilestones(value: unknown): Record<string, string> {
       (entry): entry is [string, string] => typeof entry[1] === 'string',
     ),
   );
+}
+
+/** Longest name kept; a greeting has no room for more. */
+export const USER_NAME_MAX_LENGTH = 40;
+
+export function normalizeUserName(value: unknown): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+  return value.trim().slice(0, USER_NAME_MAX_LENGTH).trim();
 }
 
 function normalizeSystemScheme(value: unknown): ColorScheme {
@@ -153,6 +166,8 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     appearance: normalizeAppearance(data.appearance),
     systemScheme: normalizeSystemScheme(data.systemScheme),
     hasCompletedOnboarding: data.hasCompletedOnboarding ?? false,
+    // Snapshots from before the name have none.
+    userName: normalizeUserName(data.userName),
     postWorkoutPaywallShownAt: normalizePostWorkoutPaywallShownAt(data, now),
     isPro: data.isPro === true,
     // Only live plans: a session for a deleted or archived plan/day is dropped.

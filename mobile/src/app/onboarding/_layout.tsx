@@ -18,6 +18,7 @@ export default function OnboardingLayout() {
         contentStyle: { backgroundColor: colors.systemBackground },
       }}>
       <Stack.Screen name="index" options={{ title: 'Welcome', gestureEnabled: false }} />
+      <Stack.Screen name="name" options={{ title: 'Name' }} />
       <Stack.Screen name="units" options={{ title: 'Units' }} />
       <Stack.Screen name="days" options={{ title: 'Days a week' }} />
       <Stack.Screen name="plan" options={{ title: 'Pick a plan' }} />
