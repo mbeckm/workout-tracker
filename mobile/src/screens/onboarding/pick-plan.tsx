@@ -14,7 +14,7 @@ import { joinNames } from './join-names';
 
 const BUILD_OWN = 'build-own';
 
-/** Step 4: a ready plan for the chosen days, or build one from empty days. */
+/** Step 5: a ready plan for the chosen days, or build one from empty days. */
 export function OnboardingPickPlan() {
   const { colors } = useTheme();
   const router = useRouter();

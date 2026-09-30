@@ -11,7 +11,11 @@ import PostHog from 'posthog-react-native';
  */
 
 export type AnalyticsEvent =
-  | { name: 'onboarding_completed'; props: { path: 'template' | 'own'; days_per_week: number } }
+  | {
+      name: 'onboarding_completed';
+      /** `has_name`: whether a name was given. The name itself never leaves the device. */
+      props: { path: 'template' | 'own'; days_per_week: number; has_name: boolean };
+    }
   | { name: 'workout_started'; props: { exercises: number; resumed: boolean } }
   | { name: 'set_logged'; props: { set_number: number } }
   | {
