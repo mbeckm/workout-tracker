@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { AppState, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
@@ -35,7 +35,9 @@ import {
   space,
   TOUCH_TARGET,
 } from '@/constants/theme';
-import { emptyPlan, formatPlanMetricShort } from '@/domain/helpers';
+import { formatDayParam } from '@/domain/dates';
+import { dayPartAt, formatGreeting, msUntilNextDayPart, type DayPart } from '@/domain/greeting';
+import { emptyPlan } from '@/domain/helpers';
 import {
   liftChangeFor,
   liftChanges,
@@ -45,6 +47,7 @@ import {
   workoutFinishedToday,
   type LiftChange,
   type LiftNumber,
+  type WeekDayMark,
 } from '@/domain/home-numbers';
 import {
   completedPlanDayIdsSince,
@@ -93,9 +96,10 @@ function plural(count: number, one: string, many: string): string {
 
 /**
  * Home v3 (trim-ui §13 Home, Home states; PRODUCT-DECISIONS 61, 66). One job: start the next
- * workout. The streak as the head, drawn where the other tabs' large titles sit, the week as
- * seven circles, then `Next workout` as day chips over the selected day's exercises with your
- * load, and Start at the thumb. What just happened decides
+ * workout. The greeting as the head, drawn where the other tabs' large titles sit, with the
+ * streak in its trailing lane, the week as seven circles (a trained day opens its workout),
+ * then `Next workout` as day chips over the selected day's exercises with your load, and Start
+ * at the thumb. What just happened decides
  * the state: training day, just trained (what changed), week complete, mid-workout (Resume).
  */
 export function Home() {
@@ -103,8 +107,9 @@ export function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { activePlan, nextDayIndex, savePlan, workoutHistory, activeSession, isPro, units } =
+  const { activePlan, nextDayIndex, savePlan, workoutHistory, activeSession, isPro, units, userName } =
     useWorkoutStore();
+  const greeting = formatGreeting(useDayPart(), userName);
   const startDay = useStartDay();
 
   const days = useMemo(() => activePlan?.days ?? [], [activePlan]);
@@ -262,12 +267,16 @@ export function Home() {
         {activePlan && days.length > 0 ? (
           <View style={{ flex: 1 }} testID="home-next-day">
             <WeekHeader
+              greeting={greeting}
               streak={week.streak}
               secured={week.weekComplete}
               marks={week.marks}
               summary={summary}
               moment={moment}
-              onPress={() => router.push('/weeks')}
+              onOpenWeeks={() => router.push('/weeks')}
+              onOpenDay={(mark) =>
+                router.push({ pathname: '/day-workout', params: { date: formatDayParam(mark.date) } })
+              }
             />
 
             <View style={{ paddingTop: space.section }}>
@@ -333,7 +342,7 @@ export function Home() {
 type WeekState = {
   weekComplete: boolean;
   streak: number;
-  marks: ReturnType<typeof weekDayMarks>;
+  marks: WeekDayMark[];
   /** Days wearing their ✓: the days done this week, or every day once the week is complete. */
   doneIds: string[];
 };
@@ -429,7 +438,7 @@ function Flame({ size, secured, lightKey }: { size: number; secured: boolean; li
 
   const flicker = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const orange = useAnimatedStyle(() => ({ opacity: lit.get() }));
-  const fallback = <Text style={type.largeTitle}>🔥</Text>;
+  const fallback = <Text style={type.title}>🔥</Text>;
 
   return (
     <Animated.View style={flicker}>
@@ -468,84 +477,128 @@ function PopIn({ delayMs, children }: { delayMs: number; children: ReactNode }) 
 }
 
 /**
- * The streak over the week: 🔥 `3 weeks` (gray until this week's goal is reached, then
- * orange; `0 weeks` before the first full week, so Home always has its head), the seven day circles, and on a complete week
- * `↑ 9 lifts went up` and 👑 `2 new records`. The block opens Weeks.
+ * The greeting's part of the day (`morning`, `afternoon`, `evening`). It moves on at the next
+ * boundary while Home is open, and catches up when Trim comes back to the foreground or Home
+ * back into focus, so a phone left on Home over lunch doesn't still say `Morning`.
+ */
+function useDayPart(): DayPart {
+  const [part, setPart] = useState<DayPart>(() => dayPartAt(new Date()));
+  const refresh = useCallback(() => setPart(dayPartAt(new Date())), []);
+
+  useEffect(() => {
+    // A second past the boundary, so the clock has surely crossed it when the timer fires.
+    const timer = setTimeout(refresh, msUntilNextDayPart(new Date()) + BOUNDARY_SLACK_MS);
+    return () => clearTimeout(timer);
+  }, [part, refresh]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refresh();
+      }
+    });
+    return () => subscription.remove();
+  }, [refresh]);
+  useFocusEffect(refresh);
+
+  return part;
+}
+
+const BOUNDARY_SLACK_MS = 1000;
+
+/** The greeting shrinks this far to stay on one line, then the name truncates (never wraps). */
+const GREETING_MIN_SCALE = 0.75;
+
+/**
+ * Home's head and its fact line (trim-ui §13 Home): the greeting (`Morning, Marvin`) at the
+ * native large title's metrics, with the streak in its trailing lane (the flame, gray until this
+ * week's goal is reached, then orange, and the count; `0` before the first full week), then the
+ * seven day circles, and on a complete week `↑ 9 lifts went up` and 👑 `2 new records`. The
+ * streak opens Weeks; a trained day's circle opens that day's workout.
  */
 function WeekHeader({
+  greeting,
   streak,
   secured,
   marks,
   summary,
   moment,
-  onPress,
+  onOpenWeeks,
+  onOpenDay,
 }: {
+  greeting: string;
   streak: number;
   secured: boolean;
-  marks: ReturnType<typeof weekDayMarks>;
+  marks: WeekDayMark[];
   summary: { liftsUp: number; records: number } | null;
   moment: WeekMoment | null;
-  onPress: () => void;
+  onOpenWeeks: () => void;
+  onOpenDay: (mark: WeekDayMark) => void;
 }) {
   const { colors, type } = useTheme();
   const { fontScale } = useWindowDimensions();
-  // The head holds the native large title's size at every text size, as the navigation bar
-  // does, so it never drifts from the other tabs' titles (trim-ui §3 rule 9). NumberFlow can't
-  // take `allowFontScaling`, so its size is divided by the scale the system multiplies it by.
-  const flameSize = type.largeTitle.fontSize;
-  const headStyle = [
-    type.largeTitle,
-    { fontSize: type.largeTitle.fontSize / fontScale, fontVariant: ['tabular-nums' as const] },
+  // The head line holds its size at every text size, as the navigation bar's title does, so
+  // it never drifts from the other tabs' titles (trim-ui §3 rule 9); the streak beside it holds
+  // with it. NumberFlow can't take `allowFontScaling`, so its size is divided by the scale the
+  // system multiplies it by.
+  const countStyle = [
+    type.title,
+    { fontSize: type.title.fontSize / fontScale, fontVariant: ['tabular-nums' as const] },
   ];
-  const trained = marks.filter((mark) => mark.done).length;
-  const spoken = [
-    plural(streak, 'week', 'weeks') + ' in a row',
-    `${trained} ${trained === 1 ? 'day' : 'days'} trained this week`,
-    summary && summary.liftsUp > 0 ? plural(summary.liftsUp, 'lift went up', 'lifts went up') : null,
-    summary && summary.records > 0 ? plural(summary.records, 'new record', 'new records') : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
 
   return (
-    <Pressable
-      onPress={onPress}
-      testID="home-week"
-      accessibilityRole="button"
-      accessibilityLabel={spoken}
-      accessibilityHint="Shows past weeks"
-      style={({ pressed }) => ({
-        paddingHorizontal: space.margin,
-        opacity: pressed ? PRESSED_OPACITY : 1,
-      })}>
-      {/* The head: the streak at the native large title's metrics, on the title's edge, with the
-          bar's own air under it; the circles follow as its fact line (trim-ui §4). */}
+    <View style={{ paddingHorizontal: space.margin }}>
+      {/* The head: the greeting at the native large title's metrics, on the title's edge, with
+          the bar's own air under it; the circles follow as its fact line (trim-ui §4). */}
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: space.related,
+          gap: space.inline,
           paddingBottom: LARGE_TITLE_BOTTOM,
         }}
-        testID="home-streak">
-        <Flame size={flameSize} secured={secured} lightKey={moment?.lightsFlame ? moment.key : null} />
-        {fontScale < STACK_FONT_SCALE ? (
-          // The count rolls when the week moment moves it (3 → 4 weeks).
-          <StaggerValue
-            value={streak}
-            suffix={streak === 1 ? ' week' : ' weeks'}
-            style={headStyle}
+        testID="home-head">
+        <Text
+          style={[type.largeTitle, { flex: 1 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={GREETING_MIN_SCALE}
+          allowFontScaling={false}
+          accessibilityRole="header"
+          testID="home-greeting">
+          {greeting}
+        </Text>
+        <Pressable
+          onPress={onOpenWeeks}
+          testID="home-streak"
+          accessibilityRole="button"
+          accessibilityLabel={`${streak} week streak`}
+          accessibilityHint="Shows past weeks"
+          // The streak is 28 tall; the slop makes it a 44pt target without moving the line.
+          hitSlop={{ top: space.related, bottom: space.related, left: space.related }}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.tight,
+            flexShrink: 0,
+            opacity: pressed ? PRESSED_OPACITY : 1,
+          })}>
+          <Flame
+            size={type.title.fontSize}
+            secured={secured}
+            lightKey={moment?.lightsFlame ? moment.key : null}
           />
-        ) : (
-          // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
-          <Text style={[type.largeTitle, { fontVariant: ['tabular-nums'] }]} allowFontScaling={false}>
-            {plural(streak, 'week', 'weeks')}
-          </Text>
-        )}
+          {fontScale < STACK_FONT_SCALE ? (
+            // The count rolls when the week moment moves it (3 → 4).
+            <StaggerValue value={streak} style={countStyle} />
+          ) : (
+            // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
+            <Text style={[type.title, { fontVariant: ['tabular-nums'] }]} allowFontScaling={false}>
+              {String(streak)}
+            </Text>
+          )}
+        </Pressable>
       </View>
-      <View importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
-        <WeekDays marks={marks} celebrate={moment?.day ?? null} />
-      </View>
+      <WeekDays marks={marks} celebrate={moment?.day ?? null} onOpenDay={onOpenDay} />
       {summary && (summary.liftsUp > 0 || summary.records > 0) ? (
         <View
           style={{
@@ -574,7 +627,7 @@ function WeekHeader({
           ) : null}
         </View>
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 
@@ -832,8 +885,9 @@ function PagerPage({
 }
 
 /**
- * The day's exercises as single-line rows on the page (hairlines, no surface): `row` name, the
- * prescription `4 × 6` in `caption`, and the trailing load in `title` + unit. Before a workout
+ * The day's exercises as single-line rows on the page (hairlines, no surface): `row` name and
+ * the trailing load in `valueCompact` + unit. No prescription: Home says what to lift, the
+ * log says how many sets (`Set n of m`) and the day editor holds the plan. Before a workout
  * the load is today's (Pro: the target, with an ink ↑ when it rises; free: last heaviest set).
  * Just trained, the lane says what changed: ↑ `2.5 kg`, `same`, or the crown on a record.
  */
@@ -854,7 +908,6 @@ function ExerciseRows({
         <LiftRow
           key={`${exercise.id}-${index}`}
           name={exercise.name}
-          metric={formatPlanMetricShort(exercise)}
           number={changes ? null : (numbers[index] ?? null)}
           change={changes ? liftChangeFor(changes, exercise.name) : null}
           units={units}
