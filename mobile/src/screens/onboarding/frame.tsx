@@ -60,7 +60,7 @@ export function OnboardingFrame({
           justifyContent: centered ? 'center' : 'flex-start',
         }}>
         {title ? (
-          <Text accessibilityRole="header" style={type.largeTitle} maxFontSizeMultiplier={1.4}>
+          <Text accessibilityRole="header" style={type.displayCompact} maxFontSizeMultiplier={1.4}>
             {title}
           </Text>
         ) : null}

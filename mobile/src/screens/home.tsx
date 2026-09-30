@@ -25,7 +25,16 @@ import { LiftRow, STACK_FONT_SCALE } from '@/components/lift-row';
 import { PrCrown } from '@/components/pr-crown';
 import { StaggerValue } from '@/components/stagger-value';
 import { WeekDays, type DayCelebration } from '@/components/week-days';
-import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
+import {
+  fontScaleCap,
+  iconSize,
+  LARGE_TITLE_BOTTOM,
+  LARGE_TITLE_TOP,
+  PRESSED_OPACITY,
+  radius,
+  space,
+  TOUCH_TARGET,
+} from '@/constants/theme';
 import { emptyPlan, formatPlanMetricShort } from '@/domain/helpers';
 import {
   liftChangeFor,
@@ -83,9 +92,10 @@ function plural(count: number, one: string, many: string): string {
 }
 
 /**
- * Home v3 (trim-ui §13 Home, Home states; PRODUCT-DECISIONS 61). One job: start the next
- * workout. The streak and the week as seven circles, then `Next workout` as day chips over the
- * selected day's exercises with your load, and Start at the thumb. What just happened decides
+ * Home v3 (trim-ui §13 Home, Home states; PRODUCT-DECISIONS 61, 66). One job: start the next
+ * workout. The streak as the head, drawn where the other tabs' large titles sit, the week as
+ * seven circles, then `Next workout` as day chips over the selected day's exercises with your
+ * load, and Start at the thumb. What just happened decides
  * the state: training day, just trained (what changed), week complete, mid-workout (Resume).
  */
 export function Home() {
@@ -243,7 +253,9 @@ export function Home() {
         contentInsetAdjustmentBehavior="never"
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + space.gutter,
+          // The head lands where the other tabs' native large titles do: the bar's toolbar row
+          // under the safe area, then the title's line box (trim-ui §4 Under a large title).
+          paddingTop: insets.top + LARGE_TITLE_TOP,
           paddingBottom: scrollBottom,
         }}
         testID="home-scroll">
@@ -260,7 +272,7 @@ export function Home() {
 
             <View style={{ paddingTop: space.section }}>
               <Text
-                style={[type.caption, { paddingHorizontal: space.gutter }]}
+                style={[type.caption, { paddingHorizontal: space.margin }]}
                 accessibilityRole="header">
                 {selected && selected.id === trainedDayId ? 'Today' : 'Next workout'}
               </Text>
@@ -304,7 +316,7 @@ export function Home() {
           right: 0,
           bottom: 0,
           paddingTop: space.inset,
-          paddingHorizontal: space.gutter,
+          paddingHorizontal: space.margin,
           paddingBottom: footerBottom,
           backgroundColor: colors.systemBackground,
         }}>
@@ -417,7 +429,7 @@ function Flame({ size, secured, lightKey }: { size: number; secured: boolean; li
 
   const flicker = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const orange = useAnimatedStyle(() => ({ opacity: lit.get() }));
-  const fallback = <Text style={type.tabTitle}>🔥</Text>;
+  const fallback = <Text style={type.largeTitle}>🔥</Text>;
 
   return (
     <Animated.View style={flicker}>
@@ -477,7 +489,14 @@ function WeekHeader({
 }) {
   const { colors, type } = useTheme();
   const { fontScale } = useWindowDimensions();
-  const flameSize = type.tabTitle.fontSize * Math.min(fontScale, fontScaleCap.title);
+  // The head holds the native large title's size at every text size, as the navigation bar
+  // does, so it never drifts from the other tabs' titles (trim-ui §3 rule 9). NumberFlow can't
+  // take `allowFontScaling`, so its size is divided by the scale the system multiplies it by.
+  const flameSize = type.largeTitle.fontSize;
+  const headStyle = [
+    type.largeTitle,
+    { fontSize: type.largeTitle.fontSize / fontScale, fontVariant: ['tabular-nums' as const] },
+  ];
   const trained = marks.filter((mark) => mark.done).length;
   const spoken = [
     plural(streak, 'week', 'weeks') + ' in a row',
@@ -496,24 +515,30 @@ function WeekHeader({
       accessibilityLabel={spoken}
       accessibilityHint="Shows past weeks"
       style={({ pressed }) => ({
-        paddingHorizontal: space.gutter,
-        gap: space.inset,
+        paddingHorizontal: space.margin,
         opacity: pressed ? PRESSED_OPACITY : 1,
       })}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related }} testID="home-streak">
+      {/* The head: the streak at the native large title's metrics, on the title's edge, with the
+          bar's own air under it; the circles follow as its fact line (trim-ui §4). */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.related,
+          paddingBottom: LARGE_TITLE_BOTTOM,
+        }}
+        testID="home-streak">
         <Flame size={flameSize} secured={secured} lightKey={moment?.lightsFlame ? moment.key : null} />
         {fontScale < STACK_FONT_SCALE ? (
           // The count rolls when the week moment moves it (3 → 4 weeks).
           <StaggerValue
             value={streak}
             suffix={streak === 1 ? ' week' : ' weeks'}
-            style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
+            style={headStyle}
           />
         ) : (
           // NumberFlow mis-measures at large Dynamic Type: plain text there, no roll.
-          <Text
-            style={[type.tabTitle, { fontVariant: ['tabular-nums'] }]}
-            maxFontSizeMultiplier={fontScaleCap.title}>
+          <Text style={[type.largeTitle, { fontVariant: ['tabular-nums'] }]} allowFontScaling={false}>
             {plural(streak, 'week', 'weeks')}
           </Text>
         )}
@@ -523,7 +548,13 @@ function WeekHeader({
       </View>
       {summary && (summary.liftsUp > 0 || summary.records > 0) ? (
         <View
-          style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.inset, rowGap: space.tight }}
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            columnGap: space.inset,
+            rowGap: space.tight,
+            paddingTop: space.inset,
+          }}
           testID="home-week-summary">
           {summary.liftsUp > 0 ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
@@ -574,7 +605,7 @@ function DayChips({
     if (x == null) {
       return;
     }
-    scrollRef.current?.scrollTo({ x: Math.max(0, x - space.gutter), animated: true });
+    scrollRef.current?.scrollTo({ x: Math.max(0, x - space.margin), animated: true });
   }, [selectedIndex]);
 
   return (
@@ -584,7 +615,7 @@ function DayChips({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={{ gap: space.related, paddingHorizontal: space.gutter }}
+        contentContainerStyle={{ gap: space.related, paddingHorizontal: space.margin }}
         testID="home-day-chips">
         {days.map((day, index) => {
           const selected = index === selectedIndex;
@@ -639,8 +670,8 @@ function DayChips({
 }
 
 /**
- * A chip scrolled past the gutter dissolves into the page instead of being sliced by the
- * screen edge, so a cut chip reads as "more this way". At rest it covers only empty gutter.
+ * A chip scrolled past the margin dissolves into the page instead of being sliced by the
+ * screen edge, so a cut chip reads as "more this way". At rest it covers only empty margin.
  */
 function EdgeFade({ side }: { side: 'left' | 'right' }) {
   const { colors } = useTheme();
@@ -648,7 +679,7 @@ function EdgeFade({ side }: { side: 'left' | 'right' }) {
   return (
     <Svg
       pointerEvents="none"
-      width={space.gutter}
+      width={space.margin}
       height="100%"
       style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0 }}>
       <Defs>
@@ -791,7 +822,7 @@ function PagerPage({
   }));
   return (
     <Animated.View
-      style={[{ width, paddingHorizontal: space.gutter }, style]}
+      style={[{ width, paddingHorizontal: space.margin }, style]}
       accessibilityElementsHidden={!current}
       importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
       pointerEvents={current ? 'auto' : 'none'}>

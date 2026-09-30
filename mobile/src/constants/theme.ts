@@ -154,6 +154,15 @@ export const PRESSED_OPACITY = 0.6;
 export const TOUCH_TARGET = 44;
 
 /**
+ * Where the native large title sits, for the one head Trim draws itself (Home's streak,
+ * trim-ui §4 Under a large title): the navigation bar's toolbar row between the safe area and
+ * the title's line box, and the bar's own air under that line box. Measured on iOS 26 against
+ * Plans, so Home's head lands on the other tabs' title to the point.
+ */
+export const LARGE_TITLE_TOP = 57;
+export const LARGE_TITLE_BOTTOM = 8;
+
+/**
  * SF Symbol point sizes. A symbol next to text takes that text's size so it sits on the
  * same optical line; standalone controls use `control`.
  */
@@ -208,6 +217,15 @@ export function makeType(themeColors: ThemeColors) {
     fontWeight: '700' as const,
     lineHeight: 41,
     letterSpacing: -0.03 * 34,
+    color: themeColors.label,
+  };
+  // The native large title's own metrics (UIKit `.largeTitle`, bold). SF's size-specific
+  // tracking comes from the font itself, as in the navigation bar, so no letterSpacing here:
+  // Trim's −3% would make Home's head visibly tighter than the other tabs' titles.
+  const largeTitle = {
+    fontSize: 34,
+    fontWeight: '700' as const,
+    lineHeight: 41,
     color: themeColors.label,
   };
   const tabTitle = {
@@ -266,7 +284,12 @@ export function makeType(themeColors: ThemeColors) {
     display,
     /** A subject that can run long on a fixed stage: log exercise name, onboarding and paywall headlines. */
     displayCompact,
-    /** @deprecated Tab roots use the native large title (trim-ui → Typography). Migrating screens only. */
+    /**
+     * The native large title's metrics, for the one head Trim draws itself: Home's streak, which
+     * must land exactly where the other tabs' native titles do (trim-ui §3, §4).
+     */
+    largeTitle,
+    /** @deprecated Tab roots use the native large title; Home's head uses `largeTitle`. */
     tabTitle,
     /** Quiet large numbers: logged set lines, onboarding counts. */
     value,
@@ -287,8 +310,6 @@ export function makeType(themeColors: ThemeColors) {
 
     /** @deprecated Use `tabTitle`. */
     planTitle: tabTitle,
-    /** @deprecated Use `displayCompact`. */
-    largeTitle: displayCompact,
     /** @deprecated Use `display`. */
     displayDay: display,
     /** @deprecated Use `value`. */
