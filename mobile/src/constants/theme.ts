@@ -13,6 +13,13 @@ export type ThemeColors = {
   systemBackground: string;
   secondarySystemBackground: string;
   tertiarySystemBackground: string;
+  /**
+   * Trim's one brand hue (iOS systemIndigo): the primary action and the current selection
+   * (Start, selected chips, the active tab, Finish, the focused well). trim-ui §5 Brand.
+   */
+  brand: string;
+  /** Text and glyphs on `brand` fills. White in both schemes (5.7:1 light, 5.1:1 dark). */
+  onBrand: string;
   systemBlue: string;
   systemGreen: string;
   systemRed: string;
@@ -38,45 +45,50 @@ export type ThemeColors = {
 
 export const lightColors: ThemeColors = {
   label: '#000000',
-  secondaryLabel: '#3C3C43',
-  // #8E8E93 was 3.3:1 on white / 2.9:1 on #F2F2F7. #6C6C70 is 5.2:1 / 4.7:1 (AA for 15pt meta).
-  tertiaryLabel: '#6C6C70',
-  separator: '#C6C6C8',
+  secondaryLabel: '#3E3E4F',
+  // Grays carry ~5–10% of the brand hue (trim-ui §5 Brand). Tertiary is 5.6:1 on white and
+  // 4.7:1 on the secondary fill (AA for 15pt meta).
+  tertiaryLabel: '#666678',
+  separator: '#BFBFCA',
   systemBackground: '#FFFFFF',
-  secondarySystemBackground: '#F2F2F7',
+  secondarySystemBackground: '#EAEAF2',
   tertiarySystemBackground: '#FFFFFF',
+  brand: '#5856D6',
+  onBrand: '#FFFFFF',
   systemBlue: '#007AFF',
   systemGreen: '#34C759',
   systemRed: '#FF3B30',
   systemYellow: '#FFCC00',
   systemOrange: '#FF9500',
-  systemGray3: '#C7C7CC',
-  systemGray4: '#D1D1D6',
-  systemGray5: '#E5E5EA',
+  systemGray3: '#C0C0CD',
+  systemGray4: '#C9C9D6',
+  systemGray5: '#DCDCE8',
   onTint: '#ffffff',
   onGreen: '#ffffff',
   onLabel: '#ffffff',
   scrim: '#00000047',
 };
 
-/** Inky dark: black ground, elevated lists, Apple dark green. */
+/** Inky dark: an indigo-black ground, elevated lists, Apple dark green. */
 export const darkColors: ThemeColors = {
   label: '#FFFFFF',
-  secondaryLabel: '#98989F',
-  // #636366 was 3.5:1 on black / 2.8:1 on #1C1C1E. #8E8E93 is 6.4:1 / 5.2:1.
-  tertiaryLabel: '#8E8E93',
-  separator: '#38383A',
-  systemBackground: '#000000',
-  secondarySystemBackground: '#1C1C1E',
-  tertiarySystemBackground: '#2C2C2E',
+  secondaryLabel: '#9292A6',
+  // Tinted toward the brand hue like every gray. 5.9:1 on the ground / 4.6:1 on the secondary fill.
+  tertiaryLabel: '#88889D',
+  separator: '#3B3A49',
+  systemBackground: '#030308',
+  secondarySystemBackground: '#20202D',
+  tertiarySystemBackground: '#2F2F3D',
+  brand: '#5E5CE6',
+  onBrand: '#FFFFFF',
   systemBlue: '#0A84FF',
   systemGreen: '#30D158',
   systemRed: '#FF453A',
   systemYellow: '#FFD60A',
   systemOrange: '#FF9F0A',
-  systemGray3: '#636366',
-  systemGray4: '#48484A',
-  systemGray5: '#3A3A3C',
+  systemGray3: '#626172',
+  systemGray4: '#494958',
+  systemGray5: '#3C3C4B',
   onTint: '#FFFFFF',
   onGreen: '#000000',
   onLabel: '#000000',

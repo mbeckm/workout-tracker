@@ -76,7 +76,7 @@ export function PlanOption({
         borderRadius: radius.md,
         borderCurve: 'continuous',
         borderWidth: 2,
-        borderColor: selected ? colors.label : 'transparent',
+        borderColor: selected ? colors.brand : 'transparent',
         backgroundColor: selected ? colors.systemBackground : colors.secondarySystemBackground,
         opacity: pressed && !selected ? PRESSED_OPACITY : 1,
       })}>
@@ -108,12 +108,12 @@ function RadioMark({ selected }: { selected: boolean }) {
         borderRadius: radius.full,
         borderWidth: selected ? 0 : 2,
         borderColor: colors.systemGray4,
-        backgroundColor: selected ? colors.label : 'transparent',
+        backgroundColor: selected ? colors.brand : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
       {selected ? (
-        <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.onLabel }} />
+        <View style={{ width: 8, height: 8, borderRadius: radius.full, backgroundColor: colors.onBrand }} />
       ) : null}
     </View>
   );

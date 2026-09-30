@@ -55,7 +55,7 @@ export function Button({
     : waiting
       ? colors.label
     : variant === 'black'
-      ? colors.onLabel
+      ? colors.onBrand
       : variant === 'green'
         ? colors.onGreen
         : variant === 'filled'
@@ -70,7 +70,7 @@ export function Button({
     : variant === 'green'
       ? colors.systemGreen
       : variant === 'black'
-        ? colors.label
+        ? colors.brand
         : variant === 'filled'
           ? colors.systemBlue
           : variant === 'gray'

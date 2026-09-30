@@ -49,13 +49,13 @@ export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTr
                   borderRadius: NODE / 2,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: step.now ? colors.label : colors.systemGray5,
+                  backgroundColor: step.now ? colors.brand : colors.systemGray5,
                 }}>
                 <SymbolView
                   name={step.now ? 'lock.open.fill' : 'creditcard.fill'}
                   size={iconSize.caption}
                   weight="semibold"
-                  tintColor={step.now ? colors.onLabel : colors.secondaryLabel}
+                  tintColor={step.now ? colors.onBrand : colors.secondaryLabel}
                 />
               </View>
               {last ? null : (

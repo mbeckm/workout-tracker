@@ -81,7 +81,7 @@ export function WindowChips({
       {PROGRESS_WINDOWS.map((window) => {
         const isLocked = locked?.(window) ?? false;
         const selected = !isLocked && window === value;
-        const ink = selected ? colors.systemBackground : colors.secondaryLabel;
+        const ink = selected ? colors.onBrand : colors.secondaryLabel;
         return (
           <Pressable
             key={window}
@@ -102,7 +102,7 @@ export function WindowChips({
               paddingVertical: space.related,
               borderRadius: radius.full,
               borderCurve: 'continuous',
-              backgroundColor: selected ? colors.label : colors.systemGray5,
+              backgroundColor: selected ? colors.brand : colors.systemGray5,
               opacity: pressed ? PRESSED_OPACITY : 1,
             })}>
             <Text style={[type.caption, { color: ink }]}>{window}</Text>
@@ -119,7 +119,7 @@ export function WindowChips({
                 <SymbolView
                   name="lock.open.fill"
                   size={iconSize.caption}
-                  tintColor={selected ? colors.systemBackground : colors.tertiaryLabel}
+                  tintColor={selected ? colors.onBrand : colors.tertiaryLabel}
                   fallback={<LockFallback color={colors.tertiaryLabel} />}
                 />
               </Animated.View>
