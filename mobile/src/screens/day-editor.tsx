@@ -310,7 +310,7 @@ function RowAction({
   color: string;
   onPress: () => void;
 }) {
-  const { type } = useTheme();
+  const { colors, type } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -358,6 +358,7 @@ function PrescribeField({
       <Text style={type.kicker}>{label}</Text>
       <TextInput
         value={text}
+        selectionColor={colors.brand}
         keyboardType="number-pad"
         selectTextOnFocus
         accessibilityLabel={`${exerciseName}, ${field.a11yLabel}`}

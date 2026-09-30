@@ -1064,7 +1064,7 @@ export function LogWorkoutScreen() {
               alignItems: 'flex-end',
               justifyContent: 'center',
             }}>
-            <Text style={type.button}>Finish</Text>
+            <Text style={[type.button, { color: colors.brand }]}>Finish</Text>
           </Pressable>
         </View>
 
@@ -1469,7 +1469,7 @@ function DayStrip({
               backgroundColor: selected
                 ? complete
                   ? colors.systemGreen
-                  : colors.secondarySystemBackground
+                  : colors.brand
                 : 'transparent',
             }}>
             <Text
@@ -1478,9 +1478,11 @@ function DayStrip({
                 ...type.caption,
                 color: selectedComplete
                   ? colors.onGreen
-                  : selected || complete
-                    ? colors.label
-                    : colors.tertiaryLabel,
+                  : selected
+                    ? colors.onBrand
+                    : complete
+                      ? colors.label
+                      : colors.tertiaryLabel,
               }}>
               {label}
             </Text>
@@ -1977,7 +1979,7 @@ function LogWell({
           overflow: 'hidden',
           backgroundColor: focused ? colors.systemBackground : colors.secondarySystemBackground,
           borderWidth: 2,
-          borderColor: focused ? colors.label : 'transparent',
+          borderColor: focused ? colors.brand : 'transparent',
           transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: `${DURATION.exit}ms`,
           transitionTimingFunction: 'ease',
@@ -1985,6 +1987,7 @@ function LogWell({
         <TextInput
           ref={inputRef}
           testID={testID}
+          selectionColor={colors.brand}
           value={value}
           onChangeText={onChange}
           onFocus={onFocus}

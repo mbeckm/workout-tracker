@@ -146,7 +146,7 @@ export function GoalSheetScreen() {
               keyboardType="decimal-pad"
               selectTextOnFocus
               accessibilityLabel={`Goal, ${unit === 'lbs' ? 'pounds' : 'kilograms'}`}
-              selectionColor={colors.label}
+              selectionColor={colors.brand}
               maxFontSizeMultiplier={fontScaleCap.display}
               testID="goal-target"
               // No lineHeight on a TextInput (AGENTS.md): the placeholder and typed text differ.
@@ -187,7 +187,7 @@ export function GoalSheetScreen() {
                   setReplaceId(others[0]?.id ?? null);
                 }
               }}
-              trackColor={{ true: colors.systemGreen }}
+              trackColor={{ true: colors.brand }}
               testID="goal-pin"
             />
           </View>
@@ -213,7 +213,7 @@ export function GoalSheetScreen() {
                     <SymbolView
                       name={chosen ? 'checkmark.circle.fill' : 'circle'}
                       size={iconSize.row}
-                      tintColor={chosen ? colors.label : colors.tertiaryLabel}
+                      tintColor={chosen ? colors.brand : colors.tertiaryLabel}
                     />
                     <Text style={[type.row, { flex: 1 }]} numberOfLines={1}>
                       {goal.exerciseName}

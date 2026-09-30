@@ -88,7 +88,7 @@ function ThemedNavigation() {
       ...base,
       colors: {
         ...base.colors,
-        primary: themeColors.systemBlue,
+        primary: themeColors.brand,
         background: themeColors.systemBackground,
         card: themeColors.systemBackground,
         text: themeColors.label,

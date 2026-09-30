@@ -137,7 +137,7 @@ export function BodyGoalSheetScreen() {
               keyboardType="decimal-pad"
               selectTextOnFocus
               accessibilityLabel={`Goal, ${unit === 'lbs' ? 'pounds' : unit === 'kg' ? 'kilograms' : 'centimeters'}`}
-              selectionColor={colors.label}
+              selectionColor={colors.brand}
               maxFontSizeMultiplier={fontScaleCap.display}
               testID="body-goal-target"
               // No lineHeight on a TextInput (AGENTS.md): the placeholder and typed text differ.

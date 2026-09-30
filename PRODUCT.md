@@ -27,7 +27,7 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments that feel special: the first open, the first plan, the first workout, the first purchase, a new record, a full week. Never from confetti or copy.
 10. **The moment decides the screen.** Every screen answers why someone opens it right now, and anything that doesn't serve that moment leaves it. Home is opened to start a workout, so it holds the week and the next workout, and plan editing stays in Plans.
 11. **Screens reflect what just happened.** A screen changes with the user's recent history (before a workout, just trained, week complete) instead of showing one static layout. That, not decoration, is what makes Trim feel like a companion.
-12. **Your numbers first, and show the change.** The user's own values lead and the plan's prescription supports them. Wherever there's a previous value, Trim shows the difference. Color is for the rare peaks only: green for done, yellow for a record, orange for a secured week; ordinary progress is an ink ↑.
+12. **Your numbers first, and show the change.** The user's own values lead and the plan's prescription supports them. Wherever there's a previous value, Trim shows the difference. Color is for the rare peaks only: green for done, yellow for a record, orange for a secured week; ordinary progress is an ink ↑. The one brand hue (indigo) marks what you act on next and what's selected, never a result.
 
 ### Control
 

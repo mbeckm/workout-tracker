@@ -9,11 +9,11 @@ export default function TabsLayout() {
     // turns clear at the scroll edge. Light and dark are JS-only, so the material follows
     // Trim's scheme instead of the OS appearance.
     <NativeTabs
-      tintColor={colors.label}
-      iconColor={{ default: colors.tertiaryLabel, selected: colors.label }}
+      tintColor={colors.brand}
+      iconColor={{ default: colors.tertiaryLabel, selected: colors.brand }}
       labelStyle={{
         default: { color: colors.tertiaryLabel },
-        selected: { color: colors.label },
+        selected: { color: colors.brand },
       }}
       blurEffect={scheme === 'dark' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'}
       minimizeBehavior="never"

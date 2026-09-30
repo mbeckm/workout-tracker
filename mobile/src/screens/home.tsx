@@ -641,22 +641,22 @@ function DayChips({
                 paddingHorizontal: space.inset,
                 borderRadius: radius.full,
                 borderCurve: 'continuous',
-                backgroundColor: selected ? colors.label : colors.secondarySystemBackground,
+                backgroundColor: selected ? colors.brand : colors.secondarySystemBackground,
                 opacity: pressed && !selected ? PRESSED_OPACITY : 1,
               })}>
               <Text
                 numberOfLines={1}
                 maxFontSizeMultiplier={fontScaleCap.title}
-                style={[type.row, { color: selected ? colors.onLabel : colors.label }]}>
+                style={[type.row, { color: selected ? colors.onBrand : colors.label }]}>
                 {day.title}
               </Text>
               {done ? (
                 moment?.chipDelays[day.id] != null ? (
                   <PopIn key={moment.key} delayMs={moment.chipDelays[day.id]}>
-                    <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+                    <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={selected ? colors.onBrand : colors.systemGreen} />
                   </PopIn>
                 ) : (
-                  <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={colors.systemGreen} />
+                  <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={selected ? colors.onBrand : colors.systemGreen} />
                 )
               ) : null}
             </Pressable>

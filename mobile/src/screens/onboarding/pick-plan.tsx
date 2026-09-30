@@ -126,7 +126,7 @@ function PlanOption({
         </View>
         <View style={{ width: iconSize.control, alignItems: 'center', flexShrink: 0 }}>
           {selected ? (
-            <SymbolView name={SYMBOL_CHECK} tintColor={colors.label} size={iconSize.row} weight="semibold" />
+            <SymbolView name={SYMBOL_CHECK} tintColor={colors.brand} size={iconSize.row} weight="semibold" />
           ) : null}
         </View>
       </View>
