@@ -378,7 +378,7 @@ export function ExercisePickerScreen() {
             {inDay ? null : (
               <SymbolView
                 name={isOn ? 'checkmark.circle.fill' : 'circle'}
-                tintColor={isOn ? colors.label : colors.systemGray4}
+                tintColor={isOn ? colors.brand : colors.systemGray4}
                 size={iconSize.control}
                 weight="regular"
               />
