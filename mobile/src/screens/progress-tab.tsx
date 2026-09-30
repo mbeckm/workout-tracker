@@ -7,6 +7,7 @@ import { HeaderActions } from '@/components/button';
 import { ProgressSparkline } from '@/components/progress-sparkline';
 import { showToast } from '@/components/toast';
 import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space, spacing, TOUCH_TARGET } from '@/constants/theme';
+import { bodyGoalFor } from '@/domain/body-goals';
 import { PROGRESS_INDEX_BODY_METRICS } from '@/domain/check-in';
 import { goalForLift, goalProgress, pinnedGoals, type Goal } from '@/domain/goals';
 import {
@@ -253,11 +254,12 @@ function MenuRow({
 export function ProgressTab() {
   const { colors, type } = useTheme();
   const router = useRouter();
-  const { activePlan, bodyCheckIns, units, workoutHistory, goals, removeGoal, restoreGoal, setGoalPinned } =
+  const { activePlan, bodyCheckIns, bodyGoals, units, workoutHistory, goals, removeGoal, restoreGoal, setGoalPinned } =
     useWorkoutStore();
   const openCheckIn = () => router.push('/check-in');
   const openGoal = (exerciseName: string) =>
     router.push({ pathname: '/goal', params: { name: exerciseName } });
+  const openBodyGoal = (metric: string) => router.push({ pathname: '/goal', params: { metric } });
   const [liftsExpanded, setLiftsExpanded] = useState(false);
 
   useEffect(() => {
@@ -428,7 +430,18 @@ export function ProgressTab() {
             <MenuRow
               key={row.key}
               href={{ pathname: '/progress-body', params: { metric: row.key } }}
-              testID={`progress-body-row-${row.key}`}>
+              testID={`progress-body-row-${row.key}`}
+              menu={
+                row.value != null ? (
+                  <Link.Menu>
+                    <Link.MenuAction
+                      title={bodyGoalFor(bodyGoals, row.key) ? 'Edit goal' : 'Set a goal'}
+                      icon={bodyGoalFor(bodyGoals, row.key) ? 'pencil' : 'scope'}
+                      onPress={() => openBodyGoal(row.key)}
+                    />
+                  </Link.Menu>
+                ) : undefined
+              }>
               <MetricRow
                 title={row.label}
                 value={row.value}
