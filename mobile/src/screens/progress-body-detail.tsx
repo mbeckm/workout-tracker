@@ -1,12 +1,20 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { formatGoalValue, GoalBlock } from '@/components/goal-block';
 import { PaperScreen } from '@/components/paper';
 import { space } from '@/constants/theme';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressReadout } from '@/components/progress-readout';
 import { StaggerValue } from '@/components/stagger-value';
 import { useProgressWindow, WindowChips } from '@/components/window-chips';
+import {
+  bodyGoalFor,
+  bodyGoalForDisplay,
+  bodyGoalProgress,
+  bodyGoalRemaining,
+  latestBodyValue,
+} from '@/domain/body-goals';
 import { BODY_METRICS, type BodyMetricKey } from '@/domain/check-in';
 import {
   bodyMetricSeries,
@@ -53,10 +61,11 @@ function bodyHeroFormat(key: BodyMetricKey): Intl.NumberFormatOptions | undefine
 
 export function ProgressBodyDetailScreen() {
   const { colors, type } = useTheme();
+  const router = useRouter();
   const { metric } = useLocalSearchParams<{ metric: BodyMetricKey }>();
   const metricKey = (metric ?? 'waistCm') as BodyMetricKey;
   const metricMeta = BODY_METRICS.find((item) => item.key === metricKey) ?? BODY_METRICS[1];
-  const { bodyCheckIns, units, isPro } = useWorkoutStore();
+  const { bodyCheckIns, bodyGoals, units, isPro } = useWorkoutStore();
   // Body works exactly like lifts: `1M` and `3M` free, longer ranges Pro, behind the same gate
   // and paywall placement as lift detail, and the range carries over between them.
   const [window, setPicked] = useProgressWindow(isPro);
@@ -94,6 +103,15 @@ export function ProgressBodyDetailScreen() {
     [series, window],
   );
 
+  // The goal compares stored values (kg, cm); the block and the line read in the user's unit.
+  const goal = bodyGoalFor(bodyGoals, metricKey);
+  const stored = latestBodyValue(bodyCheckIns, metricKey);
+  const unit = bodyHeroSuffix(metricKey, units).trim();
+  const goalTarget = goal ? bodyGoalForDisplay(metricKey, goal.target, units) : null;
+  const remaining = goal ? bodyGoalRemaining(goal, stored) : null;
+  const openGoal = (next = false) =>
+    router.push({ pathname: '/goal', params: next ? { metric: metricKey, next: '1' } : { metric: metricKey } });
+
   const chartLabel = formatProgressChartSummary(metricMeta.label, filtered, (value) =>
     formatBodyValue(value, metricKey, units),
   );
@@ -107,6 +125,30 @@ export function ProgressBodyDetailScreen() {
           accessibilityRole="header">
           {metricMeta.label}
         </Text>
+
+        {/* A goal needs a measurement to start from. */}
+        {goal || stored != null ? (
+          <View style={{ paddingTop: space.inset }}>
+            <GoalBlock
+              goal={
+                goal && goalTarget != null
+                  ? {
+                      target: `${formatGoalValue(goalTarget)} ${unit}`,
+                      toGo:
+                        remaining != null
+                          ? `${formatGoalValue(bodyGoalForDisplay(metricKey, remaining, units))} ${unit} to go`
+                          : null,
+                      progress: bodyGoalProgress(goal, stored),
+                      reachedAt: goal.reachedAt,
+                    }
+                  : null
+              }
+              testID="body-goal"
+              onEdit={() => openGoal()}
+              onNext={() => openGoal(true)}
+            />
+          </View>
+        ) : null}
 
         {/* The range scopes everything under it: the delta, the line and the check-ins (trim-ui → Charts 6). */}
         <View style={{ paddingTop: space.inset }}>
@@ -140,6 +182,8 @@ export function ProgressBodyDetailScreen() {
             emptyText={series.length === 0 ? 'No check-ins yet' : 'No check-ins in this range'}
             onScrub={setScrubbed}
             accessibilityLabel={chartLabel}
+            goal={goalTarget}
+            goalLabel={goalTarget != null ? formatGoalValue(goalTarget) : undefined}
             firstLabel={filtered.length > 1 ? formatBodyValue(filtered[0].value, metricKey, units).split(' ')[0] : undefined}
           />
         </View>

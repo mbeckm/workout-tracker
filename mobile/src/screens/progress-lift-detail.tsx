@@ -1,17 +1,17 @@
-import { SymbolView } from 'expo-symbols';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { formatGoalValue, GoalBlock } from '@/components/goal-block';
 import { PaperScreen } from '@/components/paper';
 import { PrCrown } from '@/components/pr-crown';
 import { ProgressDelta } from '@/components/progress-delta';
 import { ProgressReadout } from '@/components/progress-readout';
 import { StaggerValue } from '@/components/stagger-value';
 import { useProgressWindow, WindowChips } from '@/components/window-chips';
-import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space, spacing, TOUCH_TARGET } from '@/constants/theme';
+import { fontScaleCap, iconSize, space } from '@/constants/theme';
 import { formatDoneWhen } from '@/domain/day-facts';
-import { goalForLift, goalProgress, type Goal } from '@/domain/goals';
+import { goalForLift, goalProgress } from '@/domain/goals';
 import { formatLoggedSetLine } from '@/domain/helpers';
 import {
   filterPointsByWindow,
@@ -29,130 +29,6 @@ import {
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
-
-/** The goal track (trim-ui §13 Goals: 8pt, green). */
-const TRACK = spacing.sm;
-
-/** `100`, `102.5`. */
-function formatValue(value: number): string {
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
-
-function Track({ progress }: { progress: number }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ height: TRACK, borderRadius: radius.full, backgroundColor: colors.systemGray5, overflow: 'hidden' }}>
-      <View
-        style={{
-          width: `${Math.round(progress * 1000) / 10}%`,
-          height: TRACK,
-          borderRadius: radius.full,
-          backgroundColor: colors.systemGreen,
-        }}
-      />
-    </View>
-  );
-}
-
-/**
- * The goal block on top of lift detail (trim-ui §13 Lift / body detail, PRODUCT-DECISIONS 63):
- * `scope` + `Goal 100 kg` with `18 kg to go` and a chevron (→ the goal sheet), an 8pt green
- * track under it. Reached: 🎯 `Goal 100 kg reached` with its date, a full track and a gray
- * `+ Set next goal` pill. No goal: a quiet `Set a goal` row in its place.
- */
-function GoalBlock({
-  goal,
-  current,
-  units,
-  onEdit,
-  onNext,
-}: {
-  goal: Goal | null;
-  current: number | null;
-  units: 'kg' | 'lbs';
-  onEdit: () => void;
-  onNext: () => void;
-}) {
-  const { colors, type } = useTheme();
-  const rowStyle = ({ pressed }: { pressed: boolean }) => ({
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: space.related,
-    minHeight: TOUCH_TARGET,
-    opacity: pressed ? PRESSED_OPACITY : 1,
-  });
-
-  if (!goal) {
-    return (
-      <Pressable accessibilityRole="button" onPress={onEdit} testID="lift-goal-set" style={rowStyle}>
-        <SymbolView name="scope" size={iconSize.row} weight="medium" tintColor={colors.tertiaryLabel} />
-        <Text style={[type.row, { flex: 1, color: colors.tertiaryLabel }]}>Set a goal</Text>
-        <SymbolView name="chevron.right" size={iconSize.caption} weight="semibold" tintColor={colors.tertiaryLabel} />
-      </Pressable>
-    );
-  }
-
-  const target = `${formatValue(goal.target)} ${units}`;
-  if (goal.reachedAt) {
-    return (
-      <View style={{ gap: space.related }} testID="lift-goal-reached">
-        <View
-          accessible
-          accessibilityLabel={`Goal ${target} reached, ${formatProgressShortDate(goal.reachedAt)}`}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: space.related, minHeight: TOUCH_TARGET }}>
-          <SymbolView name="scope" size={iconSize.row} weight="medium" tintColor={colors.systemGreen} />
-          <Text style={[type.row, { flex: 1 }]} numberOfLines={2}>
-            {`Goal ${target} reached`}
-          </Text>
-          <Text style={type.caption}>{formatProgressShortDate(goal.reachedAt)}</Text>
-        </View>
-        <Track progress={1} />
-        <View style={{ flexDirection: 'row', paddingTop: space.related }}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onNext}
-            testID="lift-goal-next"
-            hitSlop={{ top: space.tight, bottom: space.tight }}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space.tight,
-              paddingVertical: space.related,
-              paddingHorizontal: space.inset,
-              borderRadius: radius.full,
-              borderCurve: 'continuous',
-              backgroundColor: colors.secondarySystemBackground,
-              opacity: pressed ? PRESSED_OPACITY : 1,
-            })}>
-            <SymbolView name="plus" size={iconSize.caption} weight="semibold" tintColor={colors.label} />
-            <Text style={type.row}>Set next goal</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  const toGo = current != null ? Math.max(0, Math.round(goal.target - current)) : null;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Goal ${target}${toGo != null ? `, ${toGo} ${units} to go` : ''}`}
-      onPress={onEdit}
-      testID="lift-goal"
-      style={({ pressed }) => ({ gap: space.related, opacity: pressed ? PRESSED_OPACITY : 1 })}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.related, minHeight: TOUCH_TARGET }}>
-        <SymbolView name="scope" size={iconSize.row} weight="medium" tintColor={colors.label} />
-        <Text style={[type.row, { flex: 1 }]} numberOfLines={2}>
-          {`Goal ${target}`}
-        </Text>
-        {toGo != null ? <Text style={type.caption}>{`${toGo} ${units} to go`}</Text> : null}
-        <SymbolView name="chevron.right" size={iconSize.caption} weight="semibold" tintColor={colors.tertiaryLabel} />
-      </View>
-      <Track progress={goalProgress(goal, current)} />
-    </Pressable>
-  );
-}
 
 /**
  * Lift detail v5 (trim-ui §13 Lift / body detail, §11; PRODUCT-DECISIONS 63): the lift, its
@@ -220,9 +96,20 @@ export function ProgressLiftDetailScreen() {
 
         <View style={{ paddingTop: space.inset }}>
           <GoalBlock
-            goal={goal}
-            current={latestOneRM}
-            units={units}
+            goal={
+              goal
+                ? {
+                    target: `${formatGoalValue(goal.target)} ${units}`,
+                    toGo:
+                      latestOneRM != null
+                        ? `${Math.max(0, Math.round(goal.target - latestOneRM))} ${units} to go`
+                        : null,
+                    progress: goalProgress(goal, latestOneRM),
+                    reachedAt: goal.reachedAt,
+                  }
+                : null
+            }
+            testID="lift-goal"
             onEdit={() => openGoal()}
             onNext={() => openGoal(true)}
           />
@@ -257,7 +144,7 @@ export function ProgressLiftDetailScreen() {
             onScrub={setScrubbed}
             accessibilityLabel={chartLabel}
             goal={goal?.target ?? null}
-            goalLabel={goal ? formatValue(goal.target) : undefined}
+            goalLabel={goal ? formatGoalValue(goal.target) : undefined}
             firstLabel={filtered.length > 1 ? String(Math.round(filtered[0].value)) : undefined}
           />
         </View>

@@ -1,5 +1,6 @@
 import type { AppearancePreference, ColorScheme } from '@/constants/theme';
 import { migrateLegacyThigh, type BodyCheckIn } from '@/domain/check-in';
+import { normalizeBodyGoals, type BodyGoal } from '@/domain/body-goals';
 import { normalizeGoals, type Goal } from '@/domain/goals';
 import { normalizeLogSession, type LogSession } from '@/domain/log-session';
 import type {
@@ -36,6 +37,8 @@ export type WorkoutSnapshot = {
   milestonesShown: Record<string, string>;
   /** Lift goals (PRODUCT-DECISIONS 63): one per lift, up to 3 pinned to Progress. */
   goals: Goal[];
+  /** Body goals (PRODUCT-DECISIONS 65): one per measurement, on its body detail. */
+  bodyGoals: BodyGoal[];
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -55,6 +58,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   activeSession: null,
   milestonesShown: {},
   goals: [],
+  bodyGoals: [],
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -156,5 +160,6 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     milestonesShown: normalizeMilestones(data.milestonesShown),
     // Snapshots from before goals have none.
     goals: normalizeGoals(data.goals),
+    bodyGoals: normalizeBodyGoals(data.bodyGoals),
   };
 }

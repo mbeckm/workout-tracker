@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PaperGrabber } from '@/components/paper';
 import { showToast } from '@/components/toast';
+import { bodyGoalsReachedBy } from '@/domain/body-goals';
 import {
+  BODY_METRICS,
   bodyMetricForDisplay,
   bodyweightToKg,
   checkInMetrics,
@@ -57,7 +59,7 @@ export function CheckInScreen() {
   const { colors, type } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { bodyCheckIns, saveCheckIn, units } = useWorkoutStore();
+  const { bodyCheckIns, bodyGoals, saveCheckIn, units } = useWorkoutStore();
   const fields = useMemo(() => checkInMetrics(units), [units]);
   const latest = useMemo(() => latestCheckIn(bodyCheckIns), [bodyCheckIns]);
   const [draft, setDraft] = useState<Partial<Record<BodyMetricKey, string>>>({});
@@ -83,10 +85,15 @@ export function CheckInScreen() {
     }
     saving.current = true;
     Keyboard.dismiss();
-    saveCheckIn(parsed);
+    const saved = saveCheckIn(parsed);
     track('check_in_saved', { fields: count });
+    // A goal this check-in reaches is the news; otherwise the plain confirmation.
+    const reached = bodyGoalsReachedBy(saved, bodyGoals)[0];
+    const title = reached
+      ? `${BODY_METRICS.find((metric) => metric.key === reached.metric)?.label ?? 'Body'} goal reached`
+      : 'Check-in saved';
     router.back();
-    setTimeout(() => showToast({ title: 'Check-in saved' }), TOAST_DELAY_MS);
+    setTimeout(() => showToast({ title }), TOAST_DELAY_MS);
   };
 
   const focusNext = () => {

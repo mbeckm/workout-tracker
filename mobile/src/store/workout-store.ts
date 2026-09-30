@@ -13,6 +13,12 @@ import { AppState } from 'react-native';
 
 import { withLoggedTenRM, workoutMilestone } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
+import {
+  withBodyGoal,
+  withReachedBodyGoals,
+  type BodyGoal,
+  type BodyGoalInput,
+} from '../domain/body-goals';
 import { MAX_PINNED_GOALS, withGoal, withReachedGoals, type Goal, type GoalInput } from '../domain/goals';
 import {
   clearedSession,
@@ -141,9 +147,17 @@ type WorkoutStoreState = {
   restoreGoal: (removed: RemovedGoal) => void;
   /** Unpin keeps the goal on its lift's detail. Pinning needs a free slot. */
   setGoalPinned: (id: string, pinned: boolean) => void;
+  /** Body goals (PRODUCT-DECISIONS 65). Selectors live in `domain/body-goals.ts`. */
+  bodyGoals: BodyGoal[];
+  /** Creates a measurement's goal or changes its target (goal sheet). */
+  setBodyGoal: (input: BodyGoalInput) => void;
+  /** Removes a body goal at once; pass the result to `restoreBodyGoal` for Undo. */
+  removeBodyGoal: (id: string) => RemovedBodyGoal | null;
+  restoreBodyGoal: (removed: RemovedBodyGoal) => void;
 };
 
 export type RemovedGoal = { goal: Goal; index: number };
+export type RemovedBodyGoal = { goal: BodyGoal; index: number };
 
 const WorkoutStoreContext = createContext<WorkoutStoreState | null>(null);
 
@@ -478,6 +492,39 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setBodyGoal = useCallback((input: BodyGoalInput) => {
+    setSnapshot((current) => ({ ...current, bodyGoals: withBodyGoal(current.bodyGoals, input) }));
+  }, []);
+
+  const removeBodyGoal = useCallback(
+    (id: string): RemovedBodyGoal | null => {
+      const index = snapshot.bodyGoals.findIndex((goal) => goal.id === id);
+      if (index === -1) {
+        return null;
+      }
+      const removed = { goal: snapshot.bodyGoals[index], index };
+      setSnapshot((current) => ({
+        ...current,
+        bodyGoals: current.bodyGoals.filter((goal) => goal.id !== id),
+      }));
+      return removed;
+    },
+    [snapshot.bodyGoals],
+  );
+
+  const restoreBodyGoal = useCallback(({ goal, index }: RemovedBodyGoal) => {
+    setSnapshot((current) => {
+      if (current.bodyGoals.some((item) => item.id === goal.id || item.metric === goal.metric)) {
+        return current;
+      }
+      const at = Math.min(index, current.bodyGoals.length);
+      return {
+        ...current,
+        bodyGoals: [...current.bodyGoals.slice(0, at), goal, ...current.bodyGoals.slice(at)],
+      };
+    });
+  }, []);
+
   const deleteWorkout = useCallback((id: string) => {
     setSnapshot((current) => ({
       ...current,
@@ -518,6 +565,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         return {
           ...current,
           bodyCheckIns,
+          // A body goal is reached by the check-in that first meets it.
+          bodyGoals: withReachedBodyGoals(current.bodyGoals, checkIn),
         };
       });
 
@@ -692,6 +741,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       removeGoal,
       restoreGoal,
       setGoalPinned,
+      bodyGoals: snapshot.bodyGoals,
+      setBodyGoal,
+      removeBodyGoal,
+      restoreBodyGoal,
     };
   }, [
     snapshot,
@@ -729,6 +782,9 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     removeGoal,
     restoreGoal,
     setGoalPinned,
+    setBodyGoal,
+    removeBodyGoal,
+    restoreBodyGoal,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

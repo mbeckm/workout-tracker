@@ -55,6 +55,7 @@ Plan
 - **Logged workout:** a completed day with timestamp, duration, and per exercise the sets actually done (weight, reps and/or duration). Strength sets store an estimated 10RM (Epley: `1RM = weight × (1 + reps/30)`, `10RM = 1RM / (1 + 10/30)`); each logged exercise keeps `bestTenRM` for PRs and progression.
 - **Goal:** a target estimated 1RM for one lift (`exerciseName`, `target`, `pinned`, `createdAt`, `reachedAt`). Any number of lifts can have one; up to 3 are pinned to Progress.
 - **Body check-in:** bodyweight (stored in kg, shown in the user's unit) plus optional circumferences in cm.
+- **Body goal:** a target for one body measurement (`metric`, `target`, `start`, `createdAt`, `reachedAt`), stored like check-ins. The direction follows from `start`: a target under it aims down. One per measurement.
 
 The exercise catalog is local-only: about 200 exercises written for Trim, plus the user's custom exercises. Search (with gym shorthand like "RDL" or "OHP") and Alternatives work offline.
 
@@ -68,7 +69,7 @@ Welcome → Units → Days a week → Pick a plan (free starter templates, or Bu
 
 - **Workout (Home):** one job, start the next workout (decision 61). The streak (🔥 `3 weeks`, lit once the week's goal is reached), the week as seven day circles, then `Next workout` as day chips over that day's exercises with your loads (↑ where a Pro target goes up) and Start at the thumb. It changes with what just happened: just trained shows what went up and the next day quietly; a complete week lights the flame and says how many lifts went up and how many records fell. Tapping or swiping a chip shows that day.
 - **Plans:** the active plan and other plans. Plan editor: name, days, add day. Day editor: pick exercises, then sets and reps (or duration).
-- **Progress:** pinned goals first (up to 3, green track; decision 63), then each lift and body measurement as one line with a 30-day sparkline (90 as a setting). Long-press a lift to set a goal. Lift detail: goal block, range chips (1M and 3M free; 6M, 1Y and All Pro), the estimated 1RM with its change and the chart as one object, sessions. Body check-ins (native sheet) chart the same way.
+- **Progress:** pinned goals first (up to 3, green track; decision 63), then each lift and body measurement as one line with a 30-day sparkline (90 as a setting). Long-press a lift to set a goal. Lift detail: goal block, range chips (1M and 3M free; 6M, 1Y and All Pro), the estimated 1RM with its change and the chart as one object, sessions. Body check-ins (native sheet) chart the same way, and each measurement can have a goal (long-press a Body row, or body detail's goal block).
 - **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.
 - **Settings:** Weight (kg/lbs), Appearance (System/Light/Dark), Trim Pro, Restore purchases; links out to Contact support, Privacy Policy, Terms of Use; Clear history.
 
