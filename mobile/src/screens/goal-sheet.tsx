@@ -146,7 +146,7 @@ export function GoalSheetScreen() {
               keyboardType="decimal-pad"
               selectTextOnFocus
               accessibilityLabel={`Goal, ${unit === 'lbs' ? 'pounds' : 'kilograms'}`}
-              selectionColor={colors.label}
+              selectionColor={colors.brand}
               maxFontSizeMultiplier={fontScaleCap.display}
               testID="goal-target"
               // No lineHeight on a TextInput (AGENTS.md): the placeholder and typed text differ.

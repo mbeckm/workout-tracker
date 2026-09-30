@@ -1987,6 +1987,7 @@ function LogWell({
         <TextInput
           ref={inputRef}
           testID={testID}
+          selectionColor={colors.brand}
           value={value}
           onChangeText={onChange}
           onFocus={onFocus}

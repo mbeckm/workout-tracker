@@ -418,6 +418,7 @@ export function ExercisePickerScreen() {
           />
           <TextInput
             value={query}
+            selectionColor={colors.brand}
             onChangeText={setQuery}
             placeholder="Search exercises"
             placeholderTextColor={colors.tertiaryLabel}
@@ -481,16 +482,14 @@ export function ExercisePickerScreen() {
                     borderRadius: radius.full,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: isActive
-                      ? colors.systemGray5
-                      : colors.secondarySystemBackground,
+                    backgroundColor: isActive ? colors.brand : colors.secondarySystemBackground,
                     opacity: pressed ? PRESSED_OPACITY : 1,
                   })}>
                   <Text
                     style={[
                       type.kicker,
                       {
-                        color: isActive ? colors.secondaryLabel : colors.tertiaryLabel,
+                        color: isActive ? colors.onBrand : colors.tertiaryLabel,
                         fontWeight: isActive ? '600' : '400',
                       },
                     ]}>

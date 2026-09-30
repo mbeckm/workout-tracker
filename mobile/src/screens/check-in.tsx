@@ -187,7 +187,7 @@ export function CheckInScreen() {
                 accessibilityHint={stored == null ? undefined : `Last ${placeholder}`}
                 placeholder={placeholder}
                 placeholderTextColor={colors.tertiaryLabel}
-                selectionColor={colors.label}
+                selectionColor={colors.brand}
                 style={[
                   type.body,
                   {

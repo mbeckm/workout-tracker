@@ -17,7 +17,7 @@ const TabButton = forwardRef<ComponentRef<typeof Pressable>, TabTriggerSlotProps
         accessibilityState={{ selected: Boolean(isFocused) }}
         style={{ minHeight: TOUCH_TARGET, justifyContent: 'center', paddingHorizontal: space.tight }}>
         <Text
-          style={[type.caption, { color: isFocused ? colors.label : colors.tertiaryLabel }]}>
+          style={[type.caption, { color: isFocused ? colors.brand : colors.tertiaryLabel }]}>
           {title}
         </Text>
       </Pressable>
