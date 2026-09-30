@@ -5,8 +5,7 @@ import { useTheme } from '@/theme/theme-context';
 import { useRowGlyph } from '@/components/paper';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
 
-/** Shared plan / day editor rhythm: list hangs 32 under the hero; destructive group at 48. */
-export const EDITOR_LIST_TOP = 32;
+/** The plan editor's rhythm: the plan's own actions start a `pause` below the day's. */
 export const EDITOR_ACTIONS_TOP = 48;
 
 

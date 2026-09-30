@@ -295,12 +295,14 @@ export function ExercisePickerScreen() {
       void recordExerciseSelection(exercise);
     }
 
-    if (from === 'prescribe') {
+    // From the plan editor: back to it, on the day it was opened for. From elsewhere (Home's
+    // empty day): on to that plan's editor with the day selected.
+    if (from === 'plan') {
       router.back();
       return;
     }
 
-    router.replace(`/prescribe?planId=${plan.id}&dayId=${day.id}`);
+    router.replace(`/plan/${plan.id}?day=${day.id}`);
   };
 
   const createCustom = (kind: CustomKind) => {

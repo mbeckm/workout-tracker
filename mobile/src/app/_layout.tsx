@@ -295,15 +295,6 @@ function RootNav() {
         }}
       />
       <Stack.Screen
-        name="prescribe"
-        options={{
-          headerShown: false,
-          title: 'Day',
-          headerBackButtonDisplayMode: 'minimal',
-          keyboardHandlingEnabled: false,
-        }}
-      />
-      <Stack.Screen
         name="day-preview"
         options={{
           // Native sheet: system glass, detent and drag-to-dismiss (trim-ui §5). Every sheet

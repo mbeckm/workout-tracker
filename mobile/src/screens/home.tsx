@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -17,21 +17,19 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button } from '@/components/button';
+import { DayChips } from '@/components/day-chips';
 import { LiftRow, STACK_FONT_SCALE } from '@/components/lift-row';
 import { PrCrown } from '@/components/pr-crown';
 import { StaggerValue } from '@/components/stagger-value';
 import { WeekDays, type DayCelebration } from '@/components/week-days';
 import {
-  fontScaleCap,
   iconSize,
   LARGE_TITLE_BOTTOM,
   LARGE_TITLE_TOP,
   PRESSED_OPACITY,
-  radius,
   space,
   TOUCH_TARGET,
 } from '@/constants/theme';
@@ -280,9 +278,32 @@ export function Home() {
                 <DayChips
                   days={days}
                   selectedIndex={selectedIndex}
-                  doneIds={week.doneIds}
-                  moment={moment}
                   onSelect={select}
+                  testID="home-chip"
+                  accessibilityLabelFor={(day) =>
+                    week.doneIds.includes(day.id) ? `${day.title}, done this week` : day.title
+                  }
+                  renderMark={(day, isSelected) => {
+                    if (!week.doneIds.includes(day.id)) {
+                      return null;
+                    }
+                    const mark = (
+                      <SymbolView
+                        name="checkmark"
+                        size={iconSize.caption}
+                        weight="bold"
+                        tintColor={isSelected ? colors.onBrand : colors.systemGreen}
+                      />
+                    );
+                    const delay = moment?.chipDelays[day.id];
+                    return delay != null && moment ? (
+                      <PopIn key={moment.key} delayMs={delay}>
+                        {mark}
+                      </PopIn>
+                    ) : (
+                      mark
+                    );
+                  }}
                 />
               </View>
             </View>
@@ -575,121 +596,6 @@ function WeekHeader({
         </View>
       ) : null}
     </Pressable>
-  );
-}
-
-/**
- * The plan's days as chips: selected ink, others gray fill, and a small green ✓ on a day done
- * this week, selected or not (trim-ui §1 rule 15). They scroll sideways when a plan has more
- * than fit, keeping the selected chip in view, and fade out at the screen's edges.
- */
-function DayChips({
-  days,
-  selectedIndex,
-  doneIds,
-  moment,
-  onSelect,
-}: {
-  days: WorkoutDay[];
-  selectedIndex: number;
-  doneIds: string[];
-  moment: WeekMoment | null;
-  onSelect: (index: number) => void;
-}) {
-  const { colors, type } = useTheme();
-  const scrollRef = useRef<ScrollView>(null);
-  const chipX = useRef<number[]>([]);
-
-  useEffect(() => {
-    const x = chipX.current[selectedIndex];
-    if (x == null) {
-      return;
-    }
-    scrollRef.current?.scrollTo({ x: Math.max(0, x - space.margin), animated: true });
-  }, [selectedIndex]);
-
-  return (
-    <View>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={{ gap: space.related, paddingHorizontal: space.margin }}
-        testID="home-day-chips">
-        {days.map((day, index) => {
-          const selected = index === selectedIndex;
-          const done = doneIds.includes(day.id);
-          return (
-            <Pressable
-              key={day.id}
-              testID={`home-chip-${index}`}
-              onLayout={(event) => {
-                chipX.current[index] = event.nativeEvent.layout.x;
-              }}
-              onPress={() => onSelect(index)}
-              accessibilityRole="tab"
-              accessibilityLabel={done ? `${day.title}, done this week` : day.title}
-              accessibilityState={{ selected }}
-              // Chips are 36pt tall; extend the touch target to 44pt.
-              hitSlop={{ top: space.tight, bottom: space.tight }}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: space.tight,
-                paddingVertical: space.related,
-                paddingHorizontal: space.inset,
-                borderRadius: radius.full,
-                borderCurve: 'continuous',
-                backgroundColor: selected ? colors.brand : colors.secondarySystemBackground,
-                opacity: pressed && !selected ? PRESSED_OPACITY : 1,
-              })}>
-              <Text
-                numberOfLines={1}
-                maxFontSizeMultiplier={fontScaleCap.title}
-                style={[type.row, { color: selected ? colors.onBrand : colors.label }]}>
-                {day.title}
-              </Text>
-              {done ? (
-                moment?.chipDelays[day.id] != null ? (
-                  <PopIn key={moment.key} delayMs={moment.chipDelays[day.id]}>
-                    <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={selected ? colors.onBrand : colors.systemGreen} />
-                  </PopIn>
-                ) : (
-                  <SymbolView name="checkmark" size={iconSize.caption} weight="bold" tintColor={selected ? colors.onBrand : colors.systemGreen} />
-                )
-              ) : null}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-      <EdgeFade side="left" />
-      <EdgeFade side="right" />
-    </View>
-  );
-}
-
-/**
- * A chip scrolled past the margin dissolves into the page instead of being sliced by the
- * screen edge, so a cut chip reads as "more this way". At rest it covers only empty margin.
- */
-function EdgeFade({ side }: { side: 'left' | 'right' }) {
-  const { colors } = useTheme();
-  const id = `home-chip-fade-${side}`;
-  return (
-    <Svg
-      pointerEvents="none"
-      width={space.margin}
-      height="100%"
-      style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0 }}>
-      <Defs>
-        <LinearGradient id={id} x1={side === 'left' ? 0 : 1} y1={0} x2={side === 'left' ? 1 : 0} y2={0}>
-          <Stop offset={0} stopColor={colors.systemBackground} stopOpacity={1} />
-          <Stop offset={1} stopColor={colors.systemBackground} stopOpacity={0} />
-        </LinearGradient>
-      </Defs>
-      <Rect x={0} y={0} width="100%" height="100%" fill={`url(#${id})`} />
-    </Svg>
   );
 }
 
