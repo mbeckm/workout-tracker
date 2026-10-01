@@ -295,15 +295,6 @@ function RootNav() {
         }}
       />
       <Stack.Screen
-        name="prescribe"
-        options={{
-          headerShown: false,
-          title: 'Day',
-          headerBackButtonDisplayMode: 'minimal',
-          keyboardHandlingEnabled: false,
-        }}
-      />
-      <Stack.Screen
         name="day-preview"
         options={{
           // Native sheet: system glass, detent and drag-to-dismiss (trim-ui §5). Every sheet
@@ -314,6 +305,18 @@ function RootNav() {
           headerShown: false,
           contentStyle: { backgroundColor: themeColors.systemBackground },
           title: 'Day',
+        }}
+      />
+      <Stack.Screen
+        name="edit"
+        options={{
+          // A plan's or a day's name, and a day's actions (trim-ui §10 Rename).
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: false,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.systemBackground },
+          title: 'Edit',
         }}
       />
       <Stack.Screen

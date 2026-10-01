@@ -138,7 +138,7 @@ export type WeekSlot = { id: string; title: string; date: Date } | null;
 
 /**
  * The week as the plan's goal (`goal` slots, one per trainable day), filled in the order the
- * workouts were finished this week, whichever days they were (PRODUCT-DECISIONS 69). A workout
+ * workouts were finished this week, whichever days they were (PRODUCT-DECISIONS 72). A workout
  * past the goal still counts toward nothing more: the slots cap at the goal, as the streak does.
  */
 export function weekSlots(history: readonly LoggedWorkout[], weekStart: Date, goal: number): WeekSlot[] {

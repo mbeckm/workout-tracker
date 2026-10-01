@@ -16,7 +16,6 @@ import { PaperEmpty } from '@/components/paper';
 import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
-import { promptRename } from '@/navigation/rename-prompt';
 import { useTheme } from '@/theme/theme-context';
 import { emptyPlan } from '@/domain/helpers';
 import type { WorkoutPlan } from '@/domain/types';
@@ -40,9 +39,9 @@ const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
 export function PlansTab() {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, updatePlan, activatePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
@@ -84,14 +83,8 @@ export function PlansTab() {
 
   const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
 
-  // The same rename as the plan editor's Rename row and a day's context menu.
-  const renamePlan = (plan: WorkoutPlan) =>
-    promptRename({
-      title: 'Rename plan',
-      current: plan.name,
-      scheme,
-      onSave: (name) => updatePlan({ ...plan, name }),
-    });
+  // The same name sheet as the plan editor's Rename plan (trim-ui §10 Rename).
+  const renamePlan = (plan: WorkoutPlan) => router.push(`/edit?planId=${plan.id}&focus=1`);
 
   return (
     <>

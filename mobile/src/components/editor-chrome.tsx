@@ -5,12 +5,11 @@ import { useTheme } from '@/theme/theme-context';
 import { useRowGlyph } from '@/components/paper';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
 
-/** Shared plan / day editor rhythm: list hangs 32 under the hero; destructive group at 48. */
-export const EDITOR_LIST_TOP = 32;
+/** A screen's destructive group starts a `pause` below its list. */
 export const EDITOR_ACTIONS_TOP = 48;
 
-
-type ActionTone = 'quiet' | 'default' | 'destructive';
+/** `brand`: the action you take next (a day's Add exercise), in the brand hue (trim-ui §5). */
+type ActionTone = 'quiet' | 'default' | 'brand' | 'destructive';
 
 export function EditorActionRow({
   title,
@@ -32,7 +31,9 @@ export function EditorActionRow({
       ? colors.systemRed
       : tone === 'quiet'
         ? colors.tertiaryLabel
-        : colors.label;
+        : tone === 'brand'
+          ? colors.brand
+          : colors.label;
 
   return (
     <Pressable

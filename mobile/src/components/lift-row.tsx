@@ -54,7 +54,7 @@ function formatLoad(value: number): string {
  *
  * `riseBelow` (Home): the Pro target's rise goes on its own line under the load, `↑ 2.5 kg`,
  * level with the prescription under the name, instead of a bare ↑ beside the load: the amount
- * says what the arrow means (PRODUCT-DECISIONS 69).
+ * says what the arrow means (PRODUCT-DECISIONS 72).
  *
  * `landed` (Done): the ↑ waits, then rises 8pt into place `delayMs` after the screen lands,
  * and a record's crown pops in (trim-ui §8). Leave it out for a still row.

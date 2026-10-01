@@ -21,7 +21,7 @@ const BAR = 8;
 export type SlotCelebration = { index: number; key: string };
 
 /**
- * The week as the plan's goal, one slot per workout it asks for (PRODUCT-DECISIONS 69). Slots
+ * The week as the plan's goal, one slot per workout it asks for (PRODUCT-DECISIONS 72). Slots
  * fill green left to right in the order you trained, whichever days: each filled one names the
  * workout and the weekday under its bar, and opens that day's workout. Open slots are a gray
  * bar with nothing under it. No weekdays to miss: the week is a count, not a calendar.
