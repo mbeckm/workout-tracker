@@ -50,7 +50,11 @@ function formatLoad(value: number): string {
  * `metric` (Done): the prescription `4 × 6` in `caption`, on the name's line in its own lane.
  * Home leaves it out: the rows say what to lift, the day editor says how many.
  * `detail` (a trained day's sheet): a `caption` line under the name (`80 kg × 8`), making it
- * a two-line row.
+ * a two-line row. `detailSpoken` replaces how VoiceOver reads it (Home's prescription line).
+ *
+ * `riseBelow` (Home): the Pro target's rise goes on its own line under the load, `↑ 2.5 kg`,
+ * level with the prescription under the name, instead of a bare ↑ beside the load: the amount
+ * says what the arrow means (PRODUCT-DECISIONS 72).
  *
  * `landed` (Done): the ↑ waits, then rises 8pt into place `delayMs` after the screen lands,
  * and a record's crown pops in (trim-ui §8). Leave it out for a still row.
@@ -59,10 +63,12 @@ export function LiftRow({
   name,
   metric,
   detail,
+  detailSpoken,
   number = null,
   change = null,
   units,
   showSeparator,
+  riseBelow = false,
   landed,
   delayMs = 0,
   testID,
@@ -70,10 +76,12 @@ export function LiftRow({
   name: string;
   metric?: string;
   detail?: string;
+  detailSpoken?: string;
   number?: LiftNumber | null;
   change?: LiftChange | null;
   units: Units;
   showSeparator: boolean;
+  riseBelow?: boolean;
   landed?: boolean;
   delayMs?: number;
   testID?: string;
@@ -85,7 +93,7 @@ export function LiftRow({
   const trailing = change ? (
     <ChangeValue change={change} units={units} motion={motion} />
   ) : number ? (
-    <LoadValue number={number} units={units} />
+    <LoadValue number={number} units={units} riseBelow={riseBelow} />
   ) : null;
 
   let spoken: string | null = null;
@@ -147,7 +155,7 @@ export function LiftRow({
     nameText
   );
   const spokenMetric = metric ? metric.replace(' × ', ' sets of ') : null;
-  const spokenDetail = detail ? detail.replace(' × ', ' for ') : null;
+  const spokenDetail = detailSpoken ?? (detail ? detail.replace(' × ', ' for ') : null);
 
   return (
     <View
@@ -245,9 +253,29 @@ function Amount({ value, units }: { value: number; units: Units }) {
   );
 }
 
-/** Today's load; an ink ↑ when the Pro target raises it (change is ink, trim-ui §5). */
-function LoadValue({ number, units }: { number: LiftNumber; units: Units }) {
-  const { colors } = useTheme();
+/**
+ * Today's load; an ink ↑ when the Pro target raises it (change is ink, trim-ui §5), beside the
+ * load or, with `riseBelow`, as `↑ 2.5 kg` on a line under it.
+ */
+function LoadValue({ number, units, riseBelow }: { number: LiftNumber; units: Units; riseBelow: boolean }) {
+  const { colors, type } = useTheme();
+  if (riseBelow && number.loadUp != null) {
+    return (
+      <View style={{ alignItems: 'flex-end', gap: space.pair }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.tight }}>
+          <Amount value={number.load} units={units} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
+          <SymbolView name="arrow.up" size={iconSize.caption} weight="bold" tintColor={colors.label} />
+          <Text
+            style={[type.caption, { color: colors.label, fontVariant: ['tabular-nums'] }]}
+            maxFontSizeMultiplier={fontScaleCap.title}>
+            {formatLoadWithUnit(number.loadUp, units)}
+          </Text>
+        </View>
+      </View>
+    );
+  }
   return (
     <>
       {number.loadUp != null ? (

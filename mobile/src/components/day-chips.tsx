@@ -7,10 +7,14 @@ import { fontScaleCap, iconSize, PRESSED_OPACITY, radius, space } from '@/consta
 import type { WorkoutDay } from '@/domain/types';
 import { useTheme } from '@/theme/theme-context';
 
+/** The ring on `ringedId`'s chip; every chip carries its width, so the ringed one is no bigger. */
+const RING = 2;
+
 /**
  * A plan's days as chips, on Home and in the plan editor (trim-ui §1 rule 15: the same control
  * means the same thing everywhere): selected in the brand hue, others gray fill. `renderMark`
- * adds a trailing mark (Home's green ✓ on a day done this week). With `onAdd`, a last `+` chip
+ * adds a trailing mark (Home's green done badge). `ringedId`: a day that keeps a 2pt brand ring
+ * while it isn't selected (Home's suggested day, PRODUCT-DECISIONS 72). With `onAdd`, a last `+` chip
  * adds a day. They scroll sideways when a plan has more than fit, keeping the selected chip in
  * view, and fade out at the screen's edges.
  */
@@ -20,6 +24,7 @@ export function DayChips({
   onSelect,
   renderMark,
   accessibilityLabelFor,
+  ringedId = null,
   onAdd,
   testID,
 }: {
@@ -28,6 +33,7 @@ export function DayChips({
   onSelect: (index: number) => void;
   renderMark?: (day: WorkoutDay, selected: boolean) => ReactNode;
   accessibilityLabelFor?: (day: WorkoutDay) => string;
+  ringedId?: string | null;
   onAdd?: () => void;
   testID: string;
 }) {
@@ -54,6 +60,8 @@ export function DayChips({
         testID={testID}>
         {days.map((day, index) => {
           const selected = index === selectedIndex;
+          const ringed = !selected && day.id === ringedId;
+          const label = accessibilityLabelFor?.(day) ?? day.title;
           return (
             <Pressable
               key={day.id}
@@ -63,7 +71,7 @@ export function DayChips({
               }}
               onPress={() => onSelect(index)}
               accessibilityRole="tab"
-              accessibilityLabel={accessibilityLabelFor?.(day) ?? day.title}
+              accessibilityLabel={ringed ? `${label}, suggested` : label}
               accessibilityState={{ selected }}
               // Chips are 36pt tall; extend the touch target to 44pt.
               hitSlop={{ top: space.tight, bottom: space.tight }}
@@ -71,8 +79,10 @@ export function DayChips({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: space.tight,
-                paddingVertical: space.related,
-                paddingHorizontal: space.inset,
+                paddingVertical: space.related - RING,
+                paddingHorizontal: space.inset - RING,
+                borderWidth: RING,
+                borderColor: ringed ? colors.brand : 'transparent',
                 borderRadius: radius.full,
                 borderCurve: 'continuous',
                 backgroundColor: selected ? colors.brand : colors.secondarySystemBackground,
