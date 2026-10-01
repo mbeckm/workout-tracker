@@ -31,6 +31,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 14. **Say each fact once.** If a mark already says it (circles, a flame, a check), the words go. Redundancy was the most frequent flaw in review.
 15. **Visible over hidden.** A control you can't see doesn't exist (a ⌄ on a title nobody finds). The same control means the same thing on every screen (chips: selected in the brand hue, done ✓ in green).
 16. **Size for the real maximum.** Lay a screen out for the realistic worst case (8 exercises, 6 days), not the demo.
+17. **Flows, not screens.** A screen is a step in something the user is doing. Judge it in its flow: where they came from, what they decide here, where they land next, and the edge states on the way (empty, gated, unnamed, deleted). Each step should make the next one obvious, a control means the same thing and sits in the same place across the flow, and every action ends somewhere the user can see its result. Design and review a change as the whole flow, in order (AGENTS.md → Design first, rule 5).
 
 ### The setting
 

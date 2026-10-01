@@ -7,6 +7,7 @@ description: Implements a Trim screen in mobile/ from trim-ui and the agreed Cla
 
 ## Workflow
 
+0. Name the flow the screen belongs to (entry points, steps, exits, where the user lands, edge states) and check the agreed design covers all of it (AGENTS.md → Design first, rule 5; `trim-ui` §1 rule 17). If a step of the flow isn't designed, design it before building.
 1. Read `.cursor/skills/trim-ui/SKILL.md`: principles (§1), the screen job table (§2), then the foundations you'll touch (type, spacing, color, icons, motion, copy) and the screen's row in §11.
 2. Work from the variation Marvin picked in Claude Design and the screen's current code. In a local session with Paper open, the matching artboard (page **Deliberate empty**, or Family loop) is an extra, possibly outdated reference; in a cloud session skip it.
 3. Product rules come from `PRODUCT.md` and `PRODUCT-DECISIONS.md`. Domain logic lives in `mobile/src/domain/`.

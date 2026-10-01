@@ -27,6 +27,7 @@ New features, new screens and any real change to how something looks or works st
 2. **Always show several variations** side by side (at least three), never a single proposal.
 3. **Go broad.** Cover a wide conceptual range: the obvious solution, plus ones that solve the problem a different way (another flow, another place in the app, removing the need altogether). Spend time thinking before drawing; at least one variation should be a bold, out-of-the-box take.
 4. Each variation gets a name and one line on the idea and its trade-off, plus a recommendation.
+5. **Design the flow, not the screen.** A screen is one step of something the user is doing. Before drawing, write down the whole flow it belongs to: how people arrive (every entry point), each step and what the user decides there, the exits (Back, Done, a swipe down), where they land and what they see there, and the edge states along the way (first time / empty, a free user hitting a Pro gate, nothing named yet, deleting the thing you're on). Sketch the flow end to end as a row of frames in that order, then read it as the user would, in sequence, and fix what only shows up in sequence: a choice asked twice, a dead end, a control that lives in one place on one screen and another on the next, a result the user never sees. Variations are variations of the flow. A screen change is done only when its flow still reads right. (Plans v2 added information screen by screen and made the flow harder; PRODUCT-DECISIONS 73.)
 
 Skip this only for bugs, copy fixes and polish inside an existing `trim-ui` pattern.
 
