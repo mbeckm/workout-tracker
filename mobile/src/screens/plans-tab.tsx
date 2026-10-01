@@ -1,7 +1,7 @@
 import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -17,7 +17,10 @@ import { iconSize, PRESSED_OPACITY, radius, space } from '@/constants/theme';
 import { EASE_IN_OUT, EASE_OUT } from '@/motion';
 import { takeRevealedPlan } from '@/navigation/plan-created';
 import { useTheme } from '@/theme/theme-context';
+import { STARTER_TEMPLATES, planFromStarterTemplate, type StarterTemplate } from '@/catalog/templates';
+import { formatDoneWhen, formatExerciseNames } from '@/domain/day-facts';
 import { emptyPlan } from '@/domain/helpers';
+import { completedPlanDayIdsSince, startOfLocalWeek } from '@/domain/plan-loop';
 import type { WorkoutPlan } from '@/domain/types';
 import { requirePro } from '@/purchases/pro-gate';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
@@ -25,6 +28,20 @@ import { useWorkoutStore } from '@/store/workout-store';
 
 function formatDaysCount(count: number): string {
   return count === 1 ? '1 day' : `${count} days`;
+}
+
+/** `Push, Pull and Legs`: what a plan holds, in its days' own words. */
+function dayNames(plan: WorkoutPlan): string {
+  return formatExerciseNames(
+    plan.days.map((day) => day.title.trim() || 'Day'),
+    3,
+  );
+}
+
+/** `trained today`, `last Thu 17`: when a plan last saw a workout. */
+function lastTrained(iso: string): string {
+  const when = formatDoneWhen(iso);
+  return when === 'Today' || when === 'Yesterday' ? `trained ${when.toLowerCase()}` : `last ${when}`;
 }
 
 /**
@@ -38,10 +55,18 @@ const REVEAL_HOLD_MS = 700;
 const REVEAL_OUT_MS = 520;
 const REVEAL_TOTAL_MS = REVEAL_DELAY_MS + REVEAL_IN_MS + REVEAL_HOLD_MS + REVEAL_OUT_MS;
 
+/**
+ * Plans v2 (trim-ui §13 Plans; PRODUCT-DECISIONS 72). Which plan you're on and what's in it,
+ * the others you have, and where a new one can start. The active plan is the hero: its name, a
+ * fact line from your own history (`4 days a week, 12 workouts`), and its days with what each
+ * holds, a green ✓ on the ones done this week (Home's meaning). Other plans say what they are
+ * in their days' names and when you last trained them. Templates close the page: the free
+ * starter plans, one tap from a copy of your own.
+ */
 export function PlansTab() {
-  const { colors } = useTheme();
+  const { colors, type } = useTheme();
   const router = useRouter();
-  const { plans, activePlanId, savePlan, activatePlan, isPro } = useWorkoutStore();
+  const { plans, activePlanId, savePlan, activatePlan, isPro, workoutHistory } = useWorkoutStore();
   const { removePlan } = useUndoableDeletes();
   const gating = useRef(false);
   const activePlan = plans.find((plan) => plan.id === activePlanId) ?? null;
@@ -63,161 +88,308 @@ export function PlansTab() {
     }, []),
   );
 
-  const createPlan = async () => {
-    if (gating.current) {
-      return;
-    }
-    if (plans.length > 0) {
-      gating.current = true;
-      const allowed = await requirePro('second_plan').finally(() => {
-        gating.current = false;
-      });
-      if (!allowed) {
-        return;
+  const doneThisWeek = useMemo(
+    () => new Set(completedPlanDayIdsSince(activePlan, workoutHistory, startOfLocalWeek())),
+    [activePlan, workoutHistory],
+  );
+
+  const history = useMemo(() => {
+    const byPlan = new Map<string, { count: number; last: string | null }>();
+    for (const workout of workoutHistory) {
+      if (!workout.planId || workout.setCount <= 0) {
+        continue;
       }
+      const entry = byPlan.get(workout.planId) ?? { count: 0, last: null };
+      entry.count += 1;
+      if (!entry.last || workout.completedAt > entry.last) {
+        entry.last = workout.completedAt;
+      }
+      byPlan.set(workout.planId, entry);
+    }
+    return byPlan;
+  }, [workoutHistory]);
+
+  // A second plan is Pro, whether it's built from scratch or from a template.
+  const mayAddPlan = async () => {
+    if (gating.current) {
+      return false;
+    }
+    if (plans.length === 0) {
+      return true;
+    }
+    gating.current = true;
+    return requirePro('second_plan').finally(() => {
+      gating.current = false;
+    });
+  };
+
+  const createPlan = async () => {
+    if (!(await mayAddPlan())) {
+      return;
     }
     const plan = emptyPlan();
     savePlan(plan, { activate: plans.length === 0 });
     router.push(`/plan/${plan.id}?new=1`);
   };
 
+  const startFromTemplate = async (template: StarterTemplate) => {
+    if (!(await mayAddPlan())) {
+      return;
+    }
+    const plan = planFromStarterTemplate(template);
+    savePlan(plan, { activate: plans.length === 0 });
+    router.push(`/plan/${plan.id}?new=1`);
+  };
+
   const confirmDelete = (plan: WorkoutPlan) => removePlan(plan);
+
+  // A template you already have as a plan (same name, same days) isn't offered again.
+  const templates = STARTER_TEMPLATES.filter(
+    (template) =>
+      !plans.some((plan) => plan.name.trim() === template.name && plan.days.length === template.daysPerWeek),
+  );
 
   // The same name sheet as the plan editor's Rename plan (trim-ui §10 Rename).
   const renamePlan = (plan: WorkoutPlan) => router.push(`/edit?planId=${plan.id}&focus=1`);
+
+  const activeFacts = activePlan
+    ? [
+        `${activePlan.days.length} ${activePlan.days.length === 1 ? 'day' : 'days'} a week`,
+        (() => {
+          const count = history.get(activePlan.id)?.count ?? 0;
+          return count === 0 ? null : count === 1 ? '1 workout' : `${count} workouts`;
+        })(),
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : '';
 
   return (
     <>
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
-        // Title, active card and plan rows share the title's leading edge, and each section
-        // starts `section` below the last, measured to what you see: the card's edge or a row's
-        // text, whose own 16 padding counts (trim-ui → Layout → Under a large title).
+        // Everything shares the title's leading edge; each section starts `section` below the
+        // last, measured to what you see (trim-ui → Layout → Under a large title).
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: space.margin,
-          paddingTop: activePlan || plans.length === 0 ? space.section : space.inset,
+          paddingTop: space.section,
           paddingBottom: space.section,
         }}>
         {plans.length === 0 ? (
           <PaperEmpty
             testID="plans-empty"
             subject="No plans yet"
-            action={{ title: 'Create plan', onPress: createPlan, testID: 'plans-create' }}
+            action={{
+              title: 'Create plan',
+              onPress: createPlan,
+              testID: 'plans-create',
+            }}
           />
-        ) : (
-          <>
-            {activePlan ? (
-              <PlanMenuRow
-                plan={activePlan}
-                variant="active"
-                onActivate={() => activatePlan(activePlan)}
-                onRename={() => renamePlan(activePlan)}
-                onDelete={() => confirmDelete(activePlan)}
-              />
-            ) : null}
-            {otherPlans.length > 0 ? (
-              <View style={{ paddingTop: activePlan ? space.inset : 0 }}>
-                {otherPlans.map((plan, index) => (
-                  <PlanMenuRow
-                    key={plan.id}
-                    plan={plan}
-                    variant="row"
-                    proLabel={!isPro}
-                    revealed={plan.id === revealedPlanId}
-                    showSeparator={index < otherPlans.length - 1}
-                    onActivate={async () => {
-                      if (await requirePro('switch_plan')) {
-                        activatePlan(plan);
-                      }
-                    }}
-                    onRename={() => renamePlan(plan)}
-                    onDelete={() => confirmDelete(plan)}
+        ) : null}
+
+        {activePlan ? (
+          <PlanLink
+            plan={activePlan}
+            proLabel={false}
+            isActive
+            onActivate={() => activatePlan(activePlan)}
+            onRename={() => renamePlan(activePlan)}
+            onDelete={() => confirmDelete(activePlan)}>
+            <View
+              testID="plans-active"
+              style={{
+                padding: space.inset,
+                gap: space.inline,
+                borderRadius: radius.lg,
+                borderCurve: 'continuous',
+                backgroundColor: colors.secondarySystemBackground,
+              }}>
+              <View style={{ gap: space.tight }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.tight,
+                  }}>
+                  <SymbolView
+                    name="checkmark"
+                    tintColor={colors.systemGreen}
+                    size={iconSize.caption}
+                    weight="semibold"
                   />
-                ))}
+                  <Text style={[type.caption, { color: colors.systemGreen }]}>Active</Text>
+                </View>
+                <Text style={type.title} numberOfLines={2}>
+                  {activePlan.name.trim() || 'Untitled plan'}
+                </Text>
+                <Text style={type.caption}>{activeFacts}</Text>
               </View>
-            ) : null}
-          </>
-        )}
+              <View>
+                {activePlan.days.map((day, index) => {
+                  const names = formatExerciseNames(
+                    day.exercises.map((exercise) => exercise.name),
+                    1,
+                  );
+                  const done = doneThisWeek.has(day.id);
+                  return (
+                    <View
+                      key={day.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: space.inline,
+                        paddingVertical: space.related + space.tight,
+                        borderTopWidth: StyleSheet.hairlineWidth,
+                        borderTopColor: colors.separator,
+                      }}>
+                      <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+                        <Text style={type.row} numberOfLines={1}>
+                          {day.title.trim() || `Day ${index + 1}`}
+                        </Text>
+                        <Text style={type.caption} numberOfLines={1}>
+                          {names || 'No exercises yet'}
+                        </Text>
+                      </View>
+                      {done ? (
+                        <SymbolView
+                          name="checkmark"
+                          tintColor={colors.systemGreen}
+                          size={iconSize.row}
+                          weight="semibold"
+                          accessibilityLabel="Done this week"
+                        />
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </PlanLink>
+        ) : null}
+
+        {otherPlans.length > 0 ? (
+          <View style={{ paddingTop: activePlan ? space.section : 0 }}>
+            {otherPlans.map((plan, index) => {
+              const last = history.get(plan.id)?.last;
+              const meta = [
+                dayNames(plan) || formatDaysCount(plan.days.length),
+                last ? lastTrained(last) : null,
+              ]
+                .filter(Boolean)
+                .join(', ');
+              return (
+                <PlanLink
+                  key={plan.id}
+                  plan={plan}
+                  proLabel={!isPro}
+                  isActive={false}
+                  onActivate={async () => {
+                    if (await requirePro('switch_plan')) {
+                      activatePlan(plan);
+                    }
+                  }}
+                  onRename={() => renamePlan(plan)}
+                  onDelete={() => confirmDelete(plan)}>
+                  <View
+                    style={{
+                      paddingVertical: space.inset,
+                      gap: space.pair,
+                      borderBottomWidth: index < otherPlans.length - 1 ? StyleSheet.hairlineWidth : 0,
+                      borderBottomColor: colors.separator,
+                    }}>
+                    <RevealSurface revealed={plan.id === revealedPlanId} />
+                    <Text style={type.row} numberOfLines={1}>
+                      {plan.name.trim() || 'Untitled plan'}
+                    </Text>
+                    <Text style={type.caption} numberOfLines={1}>
+                      {meta}
+                    </Text>
+                  </View>
+                </PlanLink>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {/* Templates close the page, and fill an empty one: a plan is one tap away. */}
+        <View style={{ paddingTop: space.section }} testID="plans-templates">
+          <Text style={[type.caption, { paddingBottom: space.tight }]} accessibilityRole="header">
+            Templates
+          </Text>
+          {templates.map((template, index) => (
+            <Pressable
+              key={template.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${template.name}, ${template.daysPerWeek} days a week`}
+              accessibilityHint="Starts a new plan from this template"
+              onPress={() => startFromTemplate(template)}
+              testID={`plans-template-${template.id}`}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space.inline,
+                paddingVertical: space.inset,
+                borderBottomWidth: index < templates.length - 1 ? StyleSheet.hairlineWidth : 0,
+                borderBottomColor: colors.separator,
+                opacity: pressed ? PRESSED_OPACITY : 1,
+              })}>
+              <View style={{ flex: 1, minWidth: 0, gap: space.pair }}>
+                <Text style={type.row} numberOfLines={1}>
+                  {template.name}
+                </Text>
+                <Text style={type.caption} numberOfLines={1}>
+                  {`${template.daysPerWeek} days a week`}
+                </Text>
+              </View>
+              <SymbolView name="plus" tintColor={colors.brand} size={iconSize.row} weight="semibold" />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
       {plans.length > 0 ? (
-        <HeaderActions right={{ title: 'Create plan', icon: 'plus', variant: 'plain', onPress: createPlan }} />
+        <HeaderActions
+          right={{
+            title: 'Create plan',
+            icon: 'plus',
+            variant: 'plain',
+            onPress: createPlan,
+          }}
+        />
       ) : null}
     </>
   );
 }
 
-function PlanMenuRow({
+/** A plan you can open (tap), with Use / Rename / Delete on a long press. */
+function PlanLink({
   plan,
-  variant,
-  showSeparator = false,
-  proLabel = false,
-  revealed = false,
+  isActive,
+  proLabel,
   onActivate,
   onRename,
   onDelete,
+  children,
 }: {
   plan: WorkoutPlan;
-  variant: 'active' | 'row';
-  showSeparator?: boolean;
+  isActive: boolean;
   /** Free users: say the switch is Pro so the paywall isn't a surprise (PL-2). */
-  proLabel?: boolean;
-  /** Just created: light the row once so the eye finds where the plan went. */
-  revealed?: boolean;
+  proLabel: boolean;
   onActivate: () => void;
   onRename: () => void;
   onDelete: () => void;
+  children: ReactNode;
 }) {
-  const { colors, type } = useTheme();
   const name = plan.name.trim() || 'Untitled plan';
-  const days = formatDaysCount(plan.days.length);
-  const isActive = variant === 'active';
-
   return (
     <Link href={`/plan/${plan.id}`} asChild>
       <Link.Trigger>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={isActive ? `${name}, ${days}, Active` : `${name}, ${days}`}
+          accessibilityLabel={isActive ? `${name}, active, ${dayNames(plan)}` : `${name}, ${dayNames(plan)}`}
           style={({ pressed }) => ({ opacity: pressed ? PRESSED_OPACITY : 1 })}>
-          {isActive ? (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: space.inline,
-                padding: space.inset,
-                borderRadius: radius.md,
-                borderCurve: 'continuous',
-                backgroundColor: colors.secondarySystemBackground,
-              }}>
-              <View style={{ flex: 1, gap: space.tight, minWidth: 0 }}>
-                <Text style={type.title} numberOfLines={1}>
-                  {name}
-                </Text>
-                <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{days}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight, flexShrink: 0 }}>
-                <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
-                <Text style={[type.kickerMedium, { color: colors.systemGreen }]}>Active</Text>
-              </View>
-            </View>
-          ) : (
-            <View
-              style={{
-                paddingVertical: space.inset,
-                gap: space.pair,
-                borderBottomWidth: showSeparator ? 0.5 : 0,
-                borderBottomColor: colors.separator,
-              }}>
-              <RevealSurface revealed={revealed} />
-              <Text style={type.row} numberOfLines={1}>
-                {name}
-              </Text>
-              <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{days}</Text>
-            </View>
-          )}
+          {children}
         </Pressable>
       </Link.Trigger>
       <Link.Menu>
