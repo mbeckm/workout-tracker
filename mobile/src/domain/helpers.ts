@@ -632,3 +632,23 @@ export function ordinal(value: number): string {
       return `${value}th`;
   }
 }
+
+const DEFAULT_DAY_TITLE = /^Day \d+$/;
+
+/**
+ * A name for an unnamed plan, from its days (`Push, Pull and Legs`), once every day has a name
+ * of its own; otherwise null and the plan stays `New plan` (PRODUCT-DECISIONS 71).
+ */
+export function suggestedPlanName(plan: WorkoutPlan): string | null {
+  const titles = plan.days.map((day) => day.title.trim());
+  if (titles.length === 0 || titles.some((title) => !title || DEFAULT_DAY_TITLE.test(title))) {
+    return null;
+  }
+  const unique = [...new Set(titles)];
+  if (unique.length <= 3) {
+    return unique.length === 1
+      ? unique[0]
+      : `${unique.slice(0, -1).join(', ')} and ${unique[unique.length - 1]}`;
+  }
+  return `${unique.slice(0, 2).join(', ')} and ${unique.length - 2} more`;
+}
