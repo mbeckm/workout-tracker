@@ -7,7 +7,7 @@ description: Trim's design system - principles, typography, spacing, color, shap
 
 Trim is a tool you use between sets, in a gym, for years. Think Trade Republic for workouts: very little on screen, big confident numbers, black and white with one signal color, and the essential action always one tap away.
 
-This file is the rulebook. Product rules are in `PRODUCT.md` (principles first) and `PRODUCT-DECISIONS.md`. Tokens live in `mobile/src/constants/theme.ts` (type, spacing, radius, color, icons) and `mobile/src/motion.ts` (durations, springs, easings). **If Paper and this file disagree, this file wins** and the artboard gets updated. Paper is [Scratch workout new](https://app.paper.design/file/01M0FJ7CD2XE6GM8BGDAPR9QP5), page **Deliberate empty** (the file name predates the rename).
+This file is the rulebook. Product rules are in `PRODUCT.md` (principles first) and `PRODUCT-DECISIONS.md`. Tokens live in `mobile/src/constants/theme.ts` (type, spacing, radius, color, icons) and `mobile/src/motion.ts` (durations, springs, easings). New design work happens in Claude Design (AGENTS.md → *Design first*). Paper ([Scratch workout new](https://app.paper.design/file/01M0FJ7CD2XE6GM8BGDAPR9QP5), page **Deliberate empty**; the file name predates the rename) is frozen: an optional reference, reachable only in local sessions, and partly out of date. **If Paper and this file disagree, this file wins**; nobody updates the artboard.
 
 Every rule has a reason. When a case isn't covered, apply the reason, then add the rule here.
 
