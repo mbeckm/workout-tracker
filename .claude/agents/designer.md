@@ -25,7 +25,9 @@ Before designing:
 - Load at most the one or two skills that fit the item: `apple-design`, `animate-expo`, `better-interface` / `better-*`, `make-interfaces-feel-better`, `emil-design-eng`.
 
 Decide, then build:
-- Using the research, work out 2-3 directions in your head. Pick one and say why in one or two sentences. Build only the one you picked.
+- Explore before you pick (AGENTS.md → *Think absurd, every time*). Come up with at least five directions: the obvious one, a few that solve it another way, and at least two absurd ones that ignore trim-ui on purpose (break a rule, remove the screen, move the job off-screen, steal from another domain, push one idea to its extreme). Write them all down; don't filter in your head.
+- Pick one and say why. Pull the best move out of the absurd ideas into it where it fits. The obvious direction may win, but only after beating the others. What you build must respect trim-ui; what you explore doesn't have to.
+- If an absurd direction looks genuinely better than anything trim-ui allows, don't build it. Build your best compliant pick and flag the absurd one as an open taste question for Marvin.
 - Build real states and interactions, not a static look. Cover empty, loading, long text, dark mode, large Dynamic Type and reduced motion.
 - No custom screen transitions (AGENTS.md: do not ship). Keep motion purposeful and interruptible.
 - Touch only the files in your brief, plus any that are clearly part of the same change. List them all.
@@ -34,10 +36,10 @@ Decide, then build:
 
 Before reporting, run `cd mobile && npm run check && npm run lint`.
 
-Report back in this shape, in under ~300 words (the orchestrator reads the diff itself; don't paste code):
+Report back in this shape, in under ~400 words (the orchestrator reads the diff itself; don't paste code):
 1. **Status**: done / partial / blocked
 2. **Research**: the apps and screens you looked at and your takeaways, or for polish, the trim-ui rule / artboard / screen you matched
-3. **Decision**: the direction you chose, what you rejected, and why. Tie it back to the research
+3. **Decision**: every direction you explored, one line each (absurd ones included), the one you chose, what it took from the others, and why. Tie it back to the research
 4. **Files changed**
 5. **QA script**: the shortest path in the simulator to reach the change, and what to see or tap to confirm it's there and works
 6. **For Marvin to check**: one or two lines on what to look at on device (the feel, timing, haptic, dark mode or large text where it matters)

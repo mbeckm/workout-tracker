@@ -28,6 +28,15 @@ New features, new screens and any real change to how something looks or works st
 3. **Go broad.** Cover a wide conceptual range: the obvious solution, plus ones that solve the problem a different way (another flow, another place in the app, removing the need altogether). Spend time thinking before drawing; at least one variation should be a bold, out-of-the-box take.
 4. Each variation gets a name and one line on the idea and its trade-off, plus a recommendation.
 
+### Think absurd, every time
+
+The obvious answer is where everyone else already is. Every design or product problem, big or small, gets absurd ideas too, and they get shown, not filtered out in your head.
+
+- **Rules decide what ships, not what you explore.** `trim-ui`, `PRODUCT.md` and the 1.0 scope constrain the final pick. While exploring, ignore them on purpose: break a rule, remove the screen, move the job somewhere else (Lock Screen, a haptic, a sound, no UI at all), steal from a non-fitness app or the physical world, take one idea to its extreme.
+- **Absurd ideas are raw material.** Most won't ship. Look for the one move in each that's worth keeping, and say what it is.
+- **The obvious solution can still win**, but only after it has beaten real alternatives. Say what it beat.
+- Never present only safe options. If every idea fits the existing rules, you haven't explored yet.
+
 Skip this only for bugs, copy fixes and polish inside an existing `trim-ui` pattern.
 
 ### Where design lives

@@ -11,6 +11,8 @@ This file is the rulebook. Product rules are in `PRODUCT.md` (principles first) 
 
 Every rule has a reason. When a case isn't covered, apply the reason, then add the rule here.
 
+These rules govern what ships, not what you explore. When designing, break them on purpose first and look for absurd ideas (AGENTS.md → *Think absurd, every time*); the rules then decide the pick. A rule that keeps losing to a better idea should change, with Marvin.
+
 ---
 
 ## 1. Principles
