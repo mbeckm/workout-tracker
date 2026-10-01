@@ -133,6 +133,26 @@ export type WeekDayMark = {
   latest: { id: string; title: string } | null;
 };
 
+/** One of this week's slots: the workout that filled it, or null while it's open. */
+export type WeekSlot = { id: string; title: string; date: Date } | null;
+
+/**
+ * The week as the plan's goal (`goal` slots, one per trainable day), filled in the order the
+ * workouts were finished this week, whichever days they were (PRODUCT-DECISIONS 69). A workout
+ * past the goal still counts toward nothing more: the slots cap at the goal, as the streak does.
+ */
+export function weekSlots(history: readonly LoggedWorkout[], weekStart: Date, goal: number): WeekSlot[] {
+  const since = weekStart.getTime();
+  const done = history
+    .filter((workout) => workout.setCount > 0 && new Date(workout.completedAt).getTime() >= since)
+    .reverse()
+    .slice(0, Math.max(0, goal));
+  return Array.from({ length: Math.max(0, goal) }, (_, index) => {
+    const workout = done[index];
+    return workout ? { id: workout.id, title: workout.title, date: new Date(workout.completedAt) } : null;
+  });
+}
+
 /** The workouts finished on `date`'s calendar day, newest first (history is newest first). */
 export function workoutsOnDay(history: readonly LoggedWorkout[], date: Date): LoggedWorkout[] {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
