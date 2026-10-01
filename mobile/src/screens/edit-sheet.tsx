@@ -1,15 +1,18 @@
 import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { EditorActionRow } from '@/components/editor-chrome';
 import { PaperGrabber } from '@/components/paper';
-import { radius, space, TOUCH_TARGET } from '@/constants/theme';
+import { fontScaleCap, PRESSED_OPACITY, radius, space, TOUCH_TARGET } from '@/constants/theme';
 import { clonePrescription, withDay } from '@/domain/helpers';
 import { newId, type WorkoutDay, type WorkoutPlan } from '@/domain/types';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
 import { useWorkoutStore } from '@/store/workout-store';
 import { useTheme } from '@/theme/theme-context';
+
+/** The usual split names, offered under a day's name field. */
+const DAY_NAMES = ['Push', 'Pull', 'Legs', 'Upper', 'Lower', 'Full body'];
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -125,11 +128,11 @@ export function EditSheetScreen() {
   };
 
   const dayCount = plan.days.length;
+  const takenNames = new Set(plan.days.filter((item) => item.id !== dayId).map((item) => item.title.trim()));
 
   return (
     <View collapsable={false} style={{ paddingHorizontal: space.gutter, paddingTop: space.gutter }}>
       <PaperGrabber overlay />
-      <Text style={[type.caption, { paddingBottom: space.related }]}>{isDay ? 'Day name' : 'Plan name'}</Text>
       <TextInput
         value={name}
         onChangeText={setName}
@@ -156,6 +159,37 @@ export function EditSheetScreen() {
           color: colors.label,
         }}
       />
+      {isDay ? (
+        // Most lifters name a day by its split: one tap instead of typing (PRODUCT-DECISIONS 71).
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.related, paddingTop: space.inline }}>
+          {DAY_NAMES.filter((suggestion) => suggestion === name || !takenNames.has(suggestion)).map((suggestion) => {
+            const chosen = suggestion === name;
+            return (
+              <Pressable
+                key={suggestion}
+                accessibilityRole="button"
+                accessibilityState={{ selected: chosen }}
+                onPress={() => setName(suggestion)}
+                hitSlop={{ top: space.tight, bottom: space.tight }}
+                testID={`day-name-${suggestion}`}
+                style={({ pressed }) => ({
+                  paddingVertical: space.related,
+                  paddingHorizontal: space.inset,
+                  borderRadius: radius.full,
+                  borderCurve: 'continuous',
+                  backgroundColor: chosen ? colors.brand : colors.secondarySystemBackground,
+                  opacity: pressed && !chosen ? PRESSED_OPACITY : 1,
+                })}>
+                <Text
+                  maxFontSizeMultiplier={fontScaleCap.title}
+                  style={[type.row, { color: chosen ? colors.onBrand : colors.label }]}>
+                  {suggestion}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
       {isDay ? (
         <View style={{ paddingTop: space.inset }}>
           <EditorActionRow title="Duplicate day" symbol="plus.square.on.square" onPress={duplicate} testID="day-duplicate" />

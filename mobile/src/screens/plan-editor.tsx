@@ -1,16 +1,18 @@
-import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/button';
 import { EditorActionRow } from '@/components/editor-chrome';
 import { LIST_LAYOUT, PrescriptionRow } from '@/components/prescription-row';
 import { iconSize, PRESSED_OPACITY, space, TOUCH_TARGET } from '@/constants/theme';
-import { emptyDay, withDay } from '@/domain/helpers';
+import { emptyDay, suggestedPlanName, withDay } from '@/domain/helpers';
 import type { ExercisePrescription, WorkoutDay } from '@/domain/types';
 import { largeTitleOptions } from '@/navigation/large-title';
+import { rememberPickerDay, takePickerDay } from '@/navigation/picker-return';
 import { confirmPlanCreated } from '@/navigation/plan-created';
 import { requirePro } from '@/purchases/pro-gate';
 import { useUndoableDeletes } from '@/store/undoable-deletes';
@@ -43,6 +45,12 @@ export function PlanEditorScreen() {
   const deletedRef = useRef(false);
   const [openedUnnamed] = useState(() => plan != null && !plan.name.trim());
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Rows that just came back from the picker light up once (trim-ui §8).
+  const [arrivedIds, setArrivedIds] = useState<Set<string>>(() => new Set());
+  const scrollRef = useRef<ScrollView>(null);
+  const dayY = useRef<Record<string, number>>({});
+  // A new plan without a name is asked for one once, at Done (PRODUCT-DECISIONS 71).
+  const askedNameRef = useRef(false);
 
   useEffect(() => {
     planRef.current = plan;
@@ -59,13 +67,39 @@ export function PlanEditorScreen() {
         deletePlan(current, { archive: false });
         return;
       }
+      // An unnamed plan whose days all have names leaves named after them, as its title showed.
+      const suggested = current.name.trim() ? null : suggestedPlanName(current);
+      if (suggested) {
+        updatePlan({ ...current, name: suggested });
+      }
       // Done, Back and the edge swipe all keep a new plan with work in it, so all of them
       // confirm it. Only a plan that isn't active lands on Plans, where its row lights up.
       if (isNew && hasWork) {
         confirmPlanCreated(current.id, { reveal: current.id !== activePlanId });
       }
     });
-  }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed]);
+  }, [activePlanId, deletePlan, isNew, navigation, openedUnnamed, updatePlan]);
+
+  // Back from the picker: scroll to the day it filled and light up what arrived.
+  useFocusEffect(
+    useCallback(() => {
+      const picked = takePickerDay();
+      const current = planRef.current;
+      const day = current?.days.find((item) => item.id === picked?.dayId);
+      if (!picked || !day) {
+        return;
+      }
+      const fresh = day.exercises.filter((exercise) => !picked.knownIds.has(exercise.id));
+      if (fresh.length === 0) {
+        return;
+      }
+      setArrivedIds(new Set(fresh.map((exercise) => exercise.id)));
+      const y = dayY.current[day.id];
+      if (y != null) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - space.inset), animated: true });
+      }
+    }, []),
+  );
 
   if (!plan) {
     return <View style={{ flex: 1, backgroundColor: colors.systemBackground }} />;
@@ -78,6 +112,11 @@ export function PlanEditorScreen() {
 
   const openPicker = (day: WorkoutDay) => {
     collapseEditor();
+    setArrivedIds(new Set());
+    rememberPickerDay(
+      day.id,
+      day.exercises.map((exercise) => exercise.id),
+    );
     router.push(
       `/exercises?planId=${plan.id}&dayId=${day.id}&dayTitle=${encodeURIComponent(day.title)}&from=plan`,
     );
@@ -91,6 +130,12 @@ export function PlanEditorScreen() {
   const renamePlan = () => {
     collapseEditor();
     router.push(`/edit?planId=${plan.id}&focus=1`);
+  };
+
+  const usePlan = async () => {
+    if (await requirePro('switch_plan')) {
+      activatePlan(plan);
+    }
   };
 
   const addDay = () => {
@@ -132,10 +177,17 @@ export function PlanEditorScreen() {
   };
 
   const named = plan.name.trim().length > 0;
+  const suggested = named ? null : suggestedPlanName(plan);
   const isActive = plan.id === activePlanId;
   const hasExercises = plan.days.some((item) => item.exercises.length > 0);
 
   const finish = () => {
+    // Unnamed and nothing to name it after: ask once, with the sheet; Done again leaves as is.
+    if (!named && !suggested && !askedNameRef.current) {
+      askedNameRef.current = true;
+      renamePlan();
+      return;
+    }
     // No haptic (trim-ui §8 Haptics): the toast (and the Plans row) follow from
     // `beforeRemove` once the editor leaves.
     // The plan Home shows: land there, ready to press Start. Another plan: back to Plans.
@@ -151,6 +203,7 @@ export function PlanEditorScreen() {
       {/* The ScrollView is the screen's first view, not wrapped, so the native large title
           finds it and collapses into the bar on scroll. */}
       <ScrollView
+        ref={scrollRef}
         style={{ flex: 1, backgroundColor: colors.systemBackground }}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
@@ -164,10 +217,21 @@ export function PlanEditorScreen() {
           paddingBottom: insets.bottom + space.gutter,
         }}>
         <Pressable accessible={false} onPress={collapseEditor} style={{ flexGrow: 1 }}>
+          {/* Where the plan stands, in one place: `Active`, or the action that makes it so. */}
           {isActive ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.tight }}>
               <SymbolView name="checkmark" tintColor={colors.systemGreen} size={iconSize.caption} weight="medium" />
               <Text style={[type.caption, { color: colors.systemGreen }]}>Active</Text>
+            </View>
+          ) : hasExercises ? (
+            <View style={{ alignSelf: 'flex-start' }}>
+              <Button
+                title={isPro ? 'Use this plan' : 'Use this plan (Pro)'}
+                variant="black"
+                size="compact"
+                testID="plan-use"
+                onPress={usePlan}
+              />
             </View>
           ) : null}
 
@@ -175,7 +239,12 @@ export function PlanEditorScreen() {
             <Fragment key={day.id}>
               <Animated.View
                 layout={reduceMotion ? undefined : LIST_LAYOUT}
-                style={{ paddingTop: dayIndex === 0 && !isActive ? space.inset : space.section }}
+                style={{
+                  paddingTop: dayIndex === 0 && !isActive && !hasExercises ? space.inset : space.section,
+                }}
+                onLayout={(event) => {
+                  dayY.current[day.id] = event.nativeEvent.layout.y;
+                }}
                 testID={`plan-day-${dayIndex}`}>
                 <DayHeader
                   title={day.title.trim() || `Day ${dayIndex + 1}`}
@@ -189,6 +258,7 @@ export function PlanEditorScreen() {
                     expanded={exercise.id === editingId}
                     reduceMotion={reduceMotion}
                     showSeparator
+                    arrived={arrivedIds.has(exercise.id)}
                     testID={`plan-day-${dayIndex}-exercise-${index}`}
                     onToggle={() => {
                       if (editingId != null) {
@@ -210,7 +280,8 @@ export function PlanEditorScreen() {
                 <EditorActionRow
                   title={day.exercises.length === 0 ? 'Add exercises' : 'Add exercise'}
                   symbol="plus"
-                  tone="brand"
+                  // The brand hue marks the one next step: an empty day's first exercises.
+                  tone={day.exercises.length === 0 ? 'brand' : 'quiet'}
                   onPress={() => openPicker(day)}
                   testID={`plan-day-${dayIndex}-add`}
                 />
@@ -236,16 +307,6 @@ export function PlanEditorScreen() {
             {named ? 'Rename plan' : 'Name plan'}
           </Stack.Toolbar.MenuAction>
           <Stack.Toolbar.MenuAction
-            icon="checkmark.circle"
-            hidden={isActive}
-            onPress={async () => {
-              if (await requirePro('switch_plan')) {
-                activatePlan(plan);
-              }
-            }}>
-            {isPro ? 'Use this plan' : 'Use this plan (Pro)'}
-          </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction
             icon="trash"
             destructive
             hidden={!hasExercises}
@@ -261,7 +322,7 @@ export function PlanEditorScreen() {
       </Stack.Toolbar>
       <Stack.Screen
         options={{
-          ...largeTitleOptions(colors, named ? plan.name.trim() : 'New plan'),
+          ...largeTitleOptions(colors, named ? plan.name.trim() : (suggested ?? 'New plan')),
           headerBackTitle: 'Plans',
         }}
       />
