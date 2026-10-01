@@ -81,7 +81,7 @@ Then:
   - Write acceptance criteria QA can check literally ("tapping Skip moves to set 2 of 3"), not taste ("feels lighter").
   - Spawn one `qa-tester` for the first wave and **SendMessage it** for later waves; it keeps the app running and its context. Send it the batch of items with their QA scripts and criteria.
   - Send failures back to the original worker through SendMessage, with QA's repro text. Don't open the screenshots yourself unless the failure report is unclear.
-- **Design check (you, from text).** For `designer` items, check that the report's **Decision** follows from its **Research** (or the trim-ui rule it cites) and that the diff respects trim-ui (system font, semantic colors, green only for completed work and the one gym CTA). Don't judge rendered screens; add the item to Marvin's look-and-feel list instead.
+- **Design check (you, from text).** For `designer` items, check that the report's **Decision** lists the directions explored, absurd ones included (send it back if they're all safe), that the pick follows from its **Research** (or the trim-ui rule it cites) and that the diff respects trim-ui (system font, semantic colors, green only for completed work and the one gym CTA). Don't judge rendered screens; add the item to Marvin's look-and-feel list instead.
 - **Commit per item** once it passes. Stage only that item's files (`git add <paths>`, never `git add -A`). Message in the repo's style: one sentence describing the user-facing change, e.g. "Keep the rest timer visible when the keyboard opens."
 
 ## Phase 4: Wrap up
