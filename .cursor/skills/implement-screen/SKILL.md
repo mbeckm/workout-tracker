@@ -19,4 +19,4 @@ description: Implements a Trim screen in mobile/ from the Paper design file. Use
 - Visual source of truth is `trim-ui`, then the Paper artboard for that screen. If they disagree, `trim-ui` wins; note the artboard for updating.
 - Haptics and motion: only what `trim-ui` §8 lists. A new animation needs a purpose (faster, fluid, loveable), a spec and a row in the approved list.
 - Behavior: never act on the user's behalf (`PRODUCT.md` → Principles → Control).
-- Never skip Paper: critique → Paper → judge → then `mobile/`.
+- Never skip design: critique → Claude Design (several variations, broad conceptual range; see AGENTS.md → Design first) → Marvin picks → then `mobile/`.

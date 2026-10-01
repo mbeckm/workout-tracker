@@ -19,9 +19,20 @@ Ships: plan-first Home (next day, week progress, other days), plan creation (pic
 
 Does not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, accounts or cloud sync.
 
+## Design first, in Claude Design
+
+New features, new screens and any real change to how something looks or works start in **Claude Design**, not in `mobile/`. Sketching is cheaper in tokens, faster to iterate, and keeps the app untouched until we know what we're building.
+
+1. **Sketch before code.** Work the idea out as designs first. Touch `mobile/` only once Marvin has picked a direction.
+2. **Always show several variations** side by side (at least three), never a single proposal.
+3. **Go broad.** Cover a wide conceptual range: the obvious solution, plus ones that solve the problem a different way (another flow, another place in the app, removing the need altogether). Spend time thinking before drawing; at least one variation should be a bold, out-of-the-box take.
+4. Each variation gets a name and one line on the idea and its trade-off, plus a recommendation.
+
+Skip this only for bugs, copy fixes and polish inside an existing `trim-ui` pattern.
+
 ## How to implement UI
 
-1. Read `PRODUCT.md` → Principles, then `.cursor/skills/trim-ui/SKILL.md` (the design system), then `.cursor/skills/implement-screen/SKILL.md`.
+1. Design it first (see above). Then read `PRODUCT.md` → Principles, then `.cursor/skills/trim-ui/SKILL.md` (the design system), then `.cursor/skills/implement-screen/SKILL.md`.
 2. Use tokens only: `type`, `space`, `radius`, `colors`, `iconSize` (`mobile/src/constants/theme.ts`) and `DURATION` / `SPRING` (`mobile/src/motion.ts`). No raw font sizes, hex colors or off-scale spacing.
 3. Match the Paper artboard for the screen; where it disagrees with `trim-ui`, `trim-ui` wins.
 4. No helper text, no action on the user's behalf, and motion only when it makes Trim faster, more fluid or more loveable.
