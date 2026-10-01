@@ -5,11 +5,11 @@ import { useTheme } from '@/theme/theme-context';
 import { useRowGlyph } from '@/components/paper';
 import { PRESSED_OPACITY, space } from '@/constants/theme';
 
-/** The plan editor's rhythm: the plan's own actions start a `pause` below the day's. */
+/** A screen's destructive group starts a `pause` below its list. */
 export const EDITOR_ACTIONS_TOP = 48;
 
-
-type ActionTone = 'quiet' | 'default' | 'destructive';
+/** `brand`: the action you take next (a day's Add exercise), in the brand hue (trim-ui §5). */
+type ActionTone = 'quiet' | 'default' | 'brand' | 'destructive';
 
 export function EditorActionRow({
   title,
@@ -31,7 +31,9 @@ export function EditorActionRow({
       ? colors.systemRed
       : tone === 'quiet'
         ? colors.tertiaryLabel
-        : colors.label;
+        : tone === 'brand'
+          ? colors.brand
+          : colors.label;
 
   return (
     <Pressable

@@ -308,6 +308,18 @@ function RootNav() {
         }}
       />
       <Stack.Screen
+        name="edit"
+        options={{
+          // A plan's or a day's name, and a day's actions (trim-ui §10 Rename).
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: false,
+          headerShown: false,
+          contentStyle: { backgroundColor: themeColors.systemBackground },
+          title: 'Edit',
+        }}
+      />
+      <Stack.Screen
         name="day-workout"
         options={{
           // A trained day from Home's week: a record, read-only, sized to its content like Day
