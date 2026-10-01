@@ -7,7 +7,7 @@
 - **App:** `mobile/`, Expo + Expo Router, iPhone only, light and dark iOS-native UI.
 - **Legal pages:** `legal/`, deployed to https://scratch-legal.vercel.app (support, privacy policy).
 - **Docs:** `PRODUCT.md` is the product model. `PRODUCT-DECISIONS.md` records decisions that changed it. `APP_STORE_RELEASE_GUIDE.md` covers store setup and shipping builds.
-- **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md` plus the Paper design file.
+- **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md`, then the shipped code. New design work happens in Claude Design; Paper is a frozen, optional reference (see *Where design lives*).
 
 EAS project: `@mbeckms-team/workout-app` (ID `88024391-8ffd-4a6d-923d-18c766972365`). App Store Connect app ID: `6805436799`.
 
@@ -30,11 +30,18 @@ New features, new screens and any real change to how something looks or works st
 
 Skip this only for bugs, copy fixes and polish inside an existing `trim-ui` pattern.
 
+### Where design lives
+
+- **New work:** always Claude Design, in every session, local or cloud.
+- **How an existing screen should look**, in this order: `trim-ui` (always available, always wins), then the current code in `mobile/`, then Paper.
+- **Paper is frozen and optional.** It only works in a local session with the Paper desktop app open, and parts of it are out of date. Use it as a reference when it's there; if it disagrees with `trim-ui` or the code, they win. Nobody updates it anymore. Paper pages named in `PRODUCT-DECISIONS.md` stay valid as history.
+- **Cloud sessions** don't try to reach Paper, don't block on it, and don't mention its absence.
+
 ## How to implement UI
 
 1. Design it first (see above). Then read `PRODUCT.md` → Principles, then `.cursor/skills/trim-ui/SKILL.md` (the design system), then `.cursor/skills/implement-screen/SKILL.md`.
 2. Use tokens only: `type`, `space`, `radius`, `colors`, `iconSize` (`mobile/src/constants/theme.ts`) and `DURATION` / `SPRING` (`mobile/src/motion.ts`). No raw font sizes, hex colors or off-scale spacing.
-3. Match the Paper artboard for the screen; where it disagrees with `trim-ui`, `trim-ui` wins.
+3. Match the agreed Claude Design variation, `trim-ui` and the existing screens. Paper is an optional, possibly outdated reference (see *Where design lives*).
 4. No helper text, no action on the user's behalf, and motion only when it makes Trim faster, more fluid or more loveable.
 5. When a change alters a product or design rule, update `PRODUCT-DECISIONS.md` and `trim-ui` in the same change.
 
@@ -132,7 +139,7 @@ Read this before your first command. Each item cost real time once.
 - **RevenueCat:** project "Scratch" (`5a59d39e`), app `app80da402380`.
 - **PostHog:** EU cloud, project `285218`. Product analytics only; session replay and web analytics off; client IP discarded.
 - **Vercel:** `legal/` deploys to team `mbeckms-projects`, project `scratch-legal`. The Vercel MCP connector has no access to that team; use the CLI (`cd legal && vercel deploy --prod --yes`, needs `vercel login`).
-- **Paper:** app design in "Scratch workout new"; icon artwork in "Trim Logo". Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
+- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo". Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
 
 ### Steps only Marvin can do
 - Apple ID sign-in and two-factor codes, `sudo` commands, creating accounts (sandbox testers), and `vercel login`.
