@@ -1202,3 +1202,157 @@ export const progressColors = {
   /** An unticked round tick's ring. */
   tickRing: '#4A4945',
 } as const;
+
+/* ----------------------------------------------------------------------------------------- *
+ * Plans: the rack, the editor and the add lifts sheet (Phase 6; SPEC §6 Plans rack, Editor,
+ * Add lifts; prototype `.shelf`, `.cart`, `.ptitle`, `.dh`, `.erow`, `.num`, `.addl`,
+ * `.addday`, `.search`, `.mus`, `.pickrow`, `.tick`).
+ * ----------------------------------------------------------------------------------------- */
+
+/** Plans colours beyond the sheet palette. */
+export const plansColors = {
+  /** A shelf (`.shelf`). */
+  shelf: '#1C1C1A',
+  /** The shelf's flash as cartridges file in (`@keyframes flash`). */
+  shelfFlash: '#2A2622',
+  /** A cartridge's top highlight (`inset 0 2px 0 #fff`). */
+  cartHighlight: '#FFFFFF',
+  /** The cartridge's grip ridges (`.cart u`). */
+  grip: '#B9B4AA',
+  /** The sets × reps chip's inner shade (`.num` inset 0 2 4). */
+  numShade: 'rgba(0,0,0,0.6)',
+  /** A dragged lift's lift-off shadow. */
+  dragShadow: 'rgba(0,0,0,0.45)',
+} as const;
+
+/** Plans type roles (prototype CSS). */
+export const plansType = {
+  /** A shelf's plan name (`.shelf .sn b`). */
+  shelfName: { ...roundedRole(19, 23, weight.heavy), color: sheetColors.ink },
+  /** `4 days, 12 lifts` (`.shelf .ss`). */
+  shelfSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
+  /** The `Active` badge (`.act`). */
+  badge: { ...roundedRole(11, 13, weight.heavy), color: sheetColors.onOrange },
+  /** A cartridge's label window (`.cart i`, Doto 9 on a 24 line). */
+  cartLabel: lcdRole(9, 24),
+  /** The editor's plan name (`.ptitle b`); a TextInput while renaming (no line height). */
+  planTitleInput: { fontFamily: fontFamily.rounded, fontSize: 28, fontWeight: weight.heavy, letterSpacing: -0.5 },
+  /** A day header (`.dh b`). */
+  dayTitle: { ...roundedRole(20, 24, weight.heavy), color: sheetColors.ink },
+  dayTitleInput: { fontFamily: fontFamily.rounded, fontSize: 20, fontWeight: weight.heavy },
+  /** `3 lifts`, the day's `…` (`.dh span`). */
+  dayCount: { ...roundedRole(13, 16, weight.bold), color: sheetColors.muted },
+  /** A lift row's name, `Add lift` (`.erow`). */
+  row: { ...roundedRole(16, 19, weight.bold), color: sheetColors.ink },
+  /** The sets × reps chip (`.num`, Doto 15). */
+  num: lcdRole(15, 18),
+  /** `Add day` (`.addday`). */
+  addDay: { ...roundedRole(16, 19, weight.heavy), color: sheetColors.ink },
+  /** The search field (`.search`); a TextInput, so no line height. */
+  search: { fontFamily: fontFamily.rounded, fontSize: 16, fontWeight: weight.bold },
+  /** The search glyph (`⌕`). */
+  searchGlyph: { ...roundedRole(16, 19, weight.bold), color: sheetColors.muted },
+  /** Muscle chips (`.mus .mchip`). */
+  muscleChip: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.inkSoft },
+  /** A picker row (`.pickrow b`, `.pickrow .s`). */
+  pickName: { ...roundedRole(16, 19, weight.bold), color: sheetColors.ink },
+  pickSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
+  /** The tick's ✓ (`.tick`). */
+  tick: { ...roundedRole(15, 18, weight.heavy), color: sheetColors.onOrange },
+} as const;
+
+/** Plans geometry (prototype CSS; SPEC §6). */
+export const plansGeometry = {
+  // The rack (`.shelf`, `.cart`)
+  shelfHeight: 150,
+  shelfPadY: 14,
+  shelfPadX: 18,
+  shelfGap: 12,
+  shelfOutline: 3,
+  nameGap: 8,
+  subTop: 2,
+  badgeHeight: 22,
+  badgePadX: 9,
+  badgeRadius: 11,
+  cartWidth: 48,
+  cartHeight: 64,
+  cartRadius: 10,
+  cartGap: 8,
+  cartHighlight: 2,
+  labelInset: 5,
+  labelTop: 8,
+  labelHeight: 24,
+  labelRadius: 4,
+  gripInsetX: 10,
+  gripBottom: 8,
+  gripHeight: 10,
+  /** Ridges: 2 on, 2 off. */
+  gripLine: 2,
+  gripPitch: 4,
+  /** Filing: each cartridge drops from 120 above, tilted −8° (SPEC §7). */
+  fileFrom: -120,
+  fileTilt: -8,
+  /** The flash holds its colour for the first 40% (`@keyframes flash`). */
+  flashHold: 0.4,
+  /** The empty rack's fact sits this far below the header. */
+  emptyTop: 48,
+  // The editor (`.ptitle`, `.dh`, `.erow`, `.num`, `.addday`, `.usebar`)
+  titleTop: -6,
+  titleX: 16,
+  titleGap: 10,
+  titleHeight: 32,
+  dayTop: 20,
+  dayX: 16,
+  dayBottom: 8,
+  dayHeight: 24,
+  /** The day header's `…`: a 44 target around a short glyph. */
+  dayMore: 44,
+  rowPadY: 10,
+  rowPadLeft: 18,
+  rowPadRight: 12,
+  rowGap: 12,
+  numRadius: 10,
+  numPadX: 10,
+  numPadY: 6,
+  numShadowY: 2,
+  numShadowBlur: 4,
+  addDayTop: 6,
+  addDayX: 4,
+  addDayHeight: 56,
+  addDayRadius: 20,
+  addDayRing: 2,
+  /** `Use plan` and `Add N lifts` hug their words (`padding: 0 28px`). */
+  pillPadX: 28,
+  /** Room under the last card: 20, or 100 above a sticky pill. */
+  tail: 20,
+  tailOverPill: 100,
+  /** Swipe a lift left past this to remove it (a flick projects 0.1 s ahead), then it slides away. */
+  removeWidth: 96,
+  swipeSlop: 12,
+  swipeProjection: 0.1,
+  swipeAway: 4,
+  /** Day name suggestions while renaming a day (the old name sheet's chips). */
+  suggestionTop: 2,
+  dragScale: 1.03,
+  dragShadowY: 8,
+  dragShadowBlur: 18,
+  dragLongPress: 300,
+  // Add lifts (`.search`, `.mus`, `.pickrow`, `.tick`)
+  searchHeight: 46,
+  searchRadius: 23,
+  searchPadX: 16,
+  searchX: 4,
+  searchGap: 8,
+  chipsTop: 12,
+  chipsBottom: 12,
+  chipsPadX: 16,
+  chipGap: 8,
+  chipHeight: 32,
+  chipPadX: 14,
+  chipRadius: 14,
+  pickPadY: 12,
+  pickPadX: 18,
+  pickGap: 12,
+  tick: 30,
+  tickRing: 2,
+} as const;

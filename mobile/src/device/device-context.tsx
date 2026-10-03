@@ -34,6 +34,8 @@ type DeviceContextValue = {
   markJustFinished: (dayId: string) => void;
   /** Home calls this once it has started the stamp. */
   clearJustFinished: (finished: JustFinished) => void;
+  /** Leaves device edit (`open({mode: 'edit', …})`) and puts the editor sheet back. */
+  leaveEdit: () => void;
 };
 
 const DeviceContext = createContext<DeviceContextValue | null>(null);
@@ -70,6 +72,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
     (finished: JustFinished) => dispatch({ type: 'clearJustFinished', id: finished.id }),
     [],
   );
+  const leaveEdit = useCallback(() => dispatch({ type: 'leaveEdit' }), []);
   const open = useCallback((command: DeviceCommand) => {
     if ('sheet' in command) {
       trackSheet(command.sheet);
@@ -89,6 +92,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,
+      leaveEdit,
     }),
     [
       state,
@@ -100,6 +104,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,
+      leaveEdit,
     ],
   );
 

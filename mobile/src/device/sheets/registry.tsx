@@ -1,11 +1,14 @@
 import type { OpenSheet, SheetKind } from '@/device/device-state';
 
+import { AddLiftsSheet } from './add-sheet';
 import { CheckInSheet } from './check-in-sheet';
 import { BodySheet, LiftSheet } from './detail-sheets';
+import { EditorSheet } from './editor-sheet';
 import { EmptySheet } from './empty-sheet';
 import { FinishesSheet } from './finishes-sheet';
 import { HistorySheet } from './history-sheet';
 import { MenuSheet } from './menu-sheet';
+import { PlansSheet } from './plans-sheet';
 import { ReceiptSheet } from './receipt-sheet';
 import { GoalSheet } from './goal-sheet';
 import { ProgressSheet } from './progress-sheet';
@@ -47,6 +50,12 @@ export function SheetContent({ sheet }: { sheet: OpenSheet }) {
       return <FinishesSheet key={sheet.key} />;
     case 'settings':
       return <SettingsSheet key={sheet.key} fromMenu={sheet.params.from === 'menu'} />;
+    case 'plans':
+      return <PlansSheet key={sheet.key} params={sheet.params} />;
+    case 'editor':
+      return <EditorSheet key={sheet.key} params={sheet.params} />;
+    case 'add':
+      return <AddLiftsSheet key={sheet.key} params={sheet.params} />;
     case 'history':
       return <HistorySheet key={sheet.key} params={sheet.params} />;
     case 'receipt':

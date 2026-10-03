@@ -54,8 +54,10 @@ export function DeviceScreen() {
   const { finish } = useFinish();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const { openSheet } = useDevice();
+  const { mode, openSheet, leaveEdit } = useDevice();
   const home = useHome();
+  // Device edit (PA2) is drawn by a later pass; until then its only key is Done, back to the editor.
+  const editing = mode === 'edit';
   useDeviceParams();
 
   if (!fontsReady) {
@@ -104,10 +106,10 @@ export function DeviceScreen() {
             </View>
             <View style={[styles.centered, { top: BIG_KEY_Y }]}>
               <BigKey
-                label={home.startLabel}
-                variant={home.model.kind === 'empty' ? 'metal' : 'primary'}
-                accessibilityLabel={home.startAccessibilityLabel}
-                onPress={home.start}
+                label={editing ? 'Done' : home.startLabel}
+                variant={editing || home.model.kind === 'empty' ? 'metal' : 'primary'}
+                accessibilityLabel={editing ? 'Done' : home.startAccessibilityLabel}
+                onPress={editing ? leaveEdit : home.start}
               />
             </View>
             <Wheel

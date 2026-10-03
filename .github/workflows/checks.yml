@@ -27,5 +27,7 @@ jobs:
         run: npx tsx scripts/check-device-logic.ts
       - name: Receipt, History and moments logic (PLAN Phase 5)
         run: npx tsx scripts/check-receipt-logic.ts
+      - name: Plans logic
+        run: npx tsx scripts/check-plans-logic.ts
       - name: Progress logic
         run: npx tsx scripts/check-progress-logic.ts
