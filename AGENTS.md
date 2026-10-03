@@ -4,7 +4,7 @@
 
 **Trim** ("Trim Workout" on the App Store) is a plan-first iPhone workout logger. The project started as "Scratch", which is why some identifiers still carry that name (see *Names that must not change*).
 
-- **App:** `mobile/`, Expo + Expo Router, iPhone only, light and dark iOS-native UI.
+- **App:** `mobile/`, Expo + Expo Router, iPhone only. During the gadget redesign the device look is the user's finish and sheets are always dark (decision 73); on `main` it is still the light and dark iOS-native UI.
 - **Legal pages:** `legal/`, deployed to https://scratch-legal.vercel.app (support, privacy policy).
 - **Docs:** `PRODUCT.md` is the product model. `PRODUCT-DECISIONS.md` records decisions that changed it. `APP_STORE_RELEASE_GUIDE.md` covers store setup and shipping builds.
 - **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md`, then the shipped code. New design work happens in Claude Design; Paper is a frozen, optional reference (see *Where design lives*).
@@ -13,7 +13,7 @@ EAS project: `@mbeckms-team/workout-app` (ID `88024391-8ffd-4a6d-923d-18c7669723
 
 ## 1.0 product
 
-Tabs: Workout, Plans, Progress, History, Settings.
+Device and menu: one persistent device screen (Home, logging, rest, finish), and the menu key opens a menu sheet with Plans, Progress, History, Settings and the finishes, plus End workout during a session. No tab bar (see *Gadget redesign*).
 
 Ships: plan-first Home (next day, week progress, other days), plan creation (pick exercises, then sets and reps per set; no per-set rows, no weights), one-set-at-a-time logging (exercise strip, `Set n of m`, last time, rest timer, auto-advance), bundled and custom exercises, Progress (estimated 1RM per lift, body check-ins), five-screen onboarding that ends with a real plan (free starter templates in `mobile/src/catalog/templates.ts`, or Build my own), Trim Pro (paywall at the end of onboarding on the template path, once after the first completed workout, and at feature gates), restore purchases, local persistence.
 
@@ -28,6 +28,11 @@ Trim is being rebuilt as a "device" app: one persistent metal device with a dot-
 - `screens/`, `frames/`, `boards/`, `fonts/`: visual targets, board history and font files
 
 During the redesign, `PLAN.md` and the prototype take precedence over the current `trim-ui` skill and over Paper for anything UI.
+
+- **Obsolete for UI:** Paper and the old screenshots of the tabbed app describe the old interface. Don't use them as a reference for gadget work. The design is decided (decision 73 in `PRODUCT-DECISIONS.md`): screens without a prototype state are built from their board or by analogy (`PLAN.md` §0), without a new Claude Design round.
+- **Branches:** gadget work lives on `gadget/main`. Each phase or independent task gets its own branch `gadget/<phase>-<slug>` with a PR into `gadget/main`; only the final PR goes from `gadget/main` into `main`.
+- **Shipping to Marvin's phone:** gadget JS goes only to the EAS channel `gadget`, built with the `testflight-gadget` profile: `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"`, and `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit` for native changes. Never publish gadget JS to `preview` or `production`.
+- **Self-check:** on gadget branches the web smoke test is `node scripts/web-smoke.mjs /tmp/trim-web /` (the `/settings` route is deleted; Settings is a sheet).
 
 ## Design first, in Claude Design
 
@@ -66,7 +71,7 @@ npx expo start --dev-client
 
 - Native dependency changes (a new Expo module, `app.json` plugins, icon or splash) need a new dev build: `npx expo prebuild --platform ios` then `npx expo run:ios`. `mobile/ios/` is generated and gitignored.
 - The repo path contains spaces; `mobile/plugins/with-quoted-bundle-script.js` keeps the iOS bundle phase working. Keep it in `app.json`.
-- CocoaPods: this Mac uses a user-level install (`~/.gem/ruby/2.6.0/bin`). Put it on `PATH` before prebuild.
+- CocoaPods: this Mac uses a user-level install (`~/.gem/ruby/2.6.0/bin`). Put it on `PATH` before prebuild, and export `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` (without it `pod install` crashes with "Unicode Normalization not appropriate for ASCII-8BIT").
 - Official Expo skills live in `.agents/skills/`.
 - Checks: `npm run check` in `mobile/` (tsc + the design-token ratchet, also run by `.github/workflows/checks.yml` on every PR) and `npx eas-cli metadata:lint`. There is no unit test target yet. If you remove raw values, run `node scripts/check-design-tokens.mjs --update` to lower the baseline; never raise it.
 
@@ -95,8 +100,8 @@ The Scratch-era SwiftUI prototype and its docs were removed; they are preserved 
 Cloud sessions (claude.ai/code) can't run the iOS Simulator. Marvin tests on his iPhone instead, with JS changes delivered over the air by EAS Update.
 
 - **Setup:** `npm ci` in `mobile/`. The environment needs `EXPO_TOKEN` and network access to `expo.dev` / `api.expo.dev` / `u.expo.dev`.
-- **Self-check:** `npm run check`, then a web smoke test: `npx expo export --platform web --output-dir /tmp/trim-web && node scripts/web-smoke.mjs /tmp/trim-web / /settings`. It catches crashes and broken flows; iOS-native UI (SwiftUI, glass, SF Symbols, sheets) doesn't render faithfully on web, so it says nothing about look and feel.
-- **Ship to Marvin's phone:** `npx eas-cli update --channel preview --platform ios --environment production --message "<what changed>"`. Marvin closes and reopens Trim (the update downloads on launch and applies on the next launch, so sometimes twice).
+- **Self-check:** `npm run check`, then a web smoke test: `npx expo export --platform web --output-dir /tmp/trim-web && node scripts/web-smoke.mjs /tmp/trim-web /` (`/ /settings` on branches that still have the tabs). It catches crashes and broken flows; iOS-native UI (SwiftUI, glass, SF Symbols, sheets) doesn't render faithfully on web, so it says nothing about look and feel.
+- **Ship to Marvin's phone:** `npx eas-cli update --channel preview --platform ios --environment production --message "<what changed>"` (gadget work uses the `gadget` channel instead; see *Gadget redesign*). Marvin closes and reopens Trim (the update downloads on launch and applies on the next launch, so sometimes twice).
 - **Native changes** (new native module, `app.json` plugins, icon, splash, Expo SDK) change the runtime fingerprint, and old builds ignore the update. Build a new preview binary: `npx eas-cli build --platform ios --profile testflight-preview --auto-submit`.
 - **Agent QA on a real iOS Simulator** (optional, paid, limited access): EAS Simulator runs one on Expo's servers; see `.agents/skills/eas-simulator/SKILL.md`. Check `simulator:availability` first, and always stop the session.
 - **Channels:** `testflight-preview` builds listen on `preview`; `production` builds (App Store) listen on `production`. Never publish to `production` unless Marvin asks for a hotfix.
