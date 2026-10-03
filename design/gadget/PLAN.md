@@ -181,7 +181,7 @@ Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's
   - remove indigo and the light/dark `ThemeColors` once nothing uses them
   - keep `space`, `radius`, `spacing` and `iconSize`, extended where SPEC needs (radius 22, 24, 28, 38)
 - Add to `src/motion.ts`: `DEVICE` durations and easings from SPEC §7 (`KEY_PRESS: 80`, `SHEET: 380` with `EASE_SHEET_GADGET: bezier(.2,.9,.3,1)`, `DRUM: 160`, `HOLD: 1100`, `FEED: 1800`, and so on).
-- Fonts: copy `design/gadget/fonts/*.ttf` to `mobile/assets/fonts/`, register them with the `expo-font` config plugin in `app.json` (Doto-Black and IBMPlexMono Medium/Bold), and use `fontFamily: 'Doto-Black'`, `'IBMPlexMono-Medium'` and `'IBMPlexMono-Bold'`. For SF Rounded use `fontFamily: 'ui-rounded'`, which React Native supports on iOS; verify in the gallery. The fallback is `System` with `fontVariant`.
+- Fonts: copy `design/gadget/fonts/*.ttf` to `mobile/assets/fonts/`, register them with the `expo-font` config plugin in `app.json` (Doto-Black and IBMPlexMono Medium/Bold), and use `fontFamily: 'Doto-Black'`, `'IBMPlexMono-Medium'` and `'IBMPlexMono-Bold'`. For SF Rounded use `fontFamily: 'ui-rounded'`; verify in the gallery on the iOS Simulator that the glyphs really are rounded (compare the `a` and `1` against SF Pro). If React Native does not resolve it, add `roundedFontName()` to the `TrimDevice` module. It returns the PostScript name of `UIFont.systemFont(ofSize:weight:)` with `.withDesign(.rounded)` for weights 600, 700 and 800, and the tokens use those names. Never bundle SF font files.
 - The design-token ratchet: new code uses tokens only. When old files are deleted, run `node scripts/check-design-tokens.mjs --update` to lower the baseline. **Never raise it.** Add rules for the new palettes if useful (for example, forbid raw `#FF6A1A`).
 
 ---
@@ -256,7 +256,7 @@ Each phase lists tasks, files and **acceptance checks**. A task is done only whe
    - `Wheel`: pan gesture on the UI thread, a notch every 16 pt, ridge texture offset following the finger, and an `onNotch(±1)` callback through `runOnJS`; it also accepts accessibility increment and decrement
    - `EngravedLabel`
 3. **`TrimDevice` module** (haptics and sounds) with the JS fallback, and a `useHaptics()` hook exposing the named patterns from SPEC §8. Sounds rendered into `assets/sounds/`.
-4. **A dev-only gallery route** `src/app/__gallery.tsx`, visible only when `__DEV__`. It shows every primitive in every state and finish next to each other at 390 × 844 for screenshot comparison.
+4. **A dev-only gallery route** `src/app/dev-gallery.tsx`. It redirects to `/` unless `__DEV__`. Expo Router treats files starting with `_` or `+` specially, so the name has neither. It shows every primitive in every state and finish next to each other at 390 × 844 for screenshot comparison.
 5. **Native build 1** (local `expo run:ios`, and a `testflight-preview` build for Marvin once Phases 2–4 are in).
 
 **Accept when:**
