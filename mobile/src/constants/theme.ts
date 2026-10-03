@@ -419,6 +419,9 @@ export type FinishColors = {
   statusBar: 'dark' | 'light';
   /** Swatch name. */
   name: string;
+  /** Text on this finish's swatch (finishes sheet): number and name. */
+  swatchInk: string;
+  swatchSub: string;
 };
 
 export const finishColors: Record<FinishId, FinishColors> = {
@@ -436,6 +439,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'dark',
     name: 'Aluminium',
+    swatchInk: '#1C1B18',
+    swatchSub: '#6E6B64',
   },
   '101': {
     body1: '#3A3936',
@@ -451,6 +456,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'light',
     name: 'Graphite',
+    swatchInk: '#F3F2EE',
+    swatchSub: '#8C8A84',
   },
   '305': {
     body1: '#FF7A35',
@@ -467,6 +474,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(0,0,0,0.3)',
     statusBar: 'light',
     name: 'Signal',
+    swatchInk: '#FFFFFF',
+    swatchSub: '#FFE2CF',
   },
   '408': {
     body1: '#EFE6D3',
@@ -482,6 +491,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'dark',
     name: 'Bone',
+    swatchInk: '#3A3326',
+    swatchSub: '#7A6F5C',
   },
 };
 
@@ -495,11 +506,13 @@ export const deviceColors = {
   keyHighlight: '#FFFFFF',
   /** 0 6 10 cast shadow under a raised key. */
   keyDrop: 'rgba(0,0,0,0.1)',
-  // Body overlays
-  sheenTop: 'rgba(255,255,255,0.35)',
-  sheenBottom: 'rgba(255,255,255,0)',
-  brushLight: 'rgba(255,255,255,0.06)',
-  brushDark: 'rgba(0,0,0,0.02)',
+  // Body overlays. SVG stops ignore rgba alpha on iOS, so SVG paints take a colour + opacity.
+  sheen: '#FFFFFF',
+  sheenOpacity: 0.35,
+  brushLight: '#FFFFFF',
+  brushLightOpacity: 0.06,
+  brushDark: '#000000',
+  brushDarkOpacity: 0.02,
   /** The body's inner rim: inset 0 2 0, and a 1.5 inner outline. */
   bodyRim: 'rgba(255,255,255,0.65)',
   bodyRimOutline: 'rgba(255,255,255,0.35)',
@@ -509,8 +522,8 @@ export const deviceColors = {
   // Wheel
   wheelLight: '#F2F1ED',
   wheelDark: '#C4C1B9',
-  wheelShade: 'rgba(0,0,0,0.22)',
-  wheelShadeClear: 'rgba(0,0,0,0)',
+  /** The wheel's inner shadows (inset 0 ±16 16), a boxShadow colour. */
+  wheelInset: 'rgba(0,0,0,0.22)',
   wheelDrop: 'rgba(0,0,0,0.08)',
   // Well around the big key
   well: 'rgba(0,0,0,0.14)',
@@ -586,6 +599,27 @@ export const sheetColors = {
   shadow: 'rgba(0,0,0,0.35)',
   scrim: 'rgba(20,18,15,0.4)',
   toast: '#2A2925',
+  /** The finish card's warm glow behind the mini device. */
+  finishGlowHi: '#3A2A20',
+  finishGlowLo: '#1E1915',
+  /** The selected swatch's ring. */
+  ring: '#FFFFFF',
+  swatchShadow: 'rgba(0,0,0,0.5)',
+} as const;
+
+/** The menu's 3D object icons (knob, gauge, receipt, toggles, cartridge). */
+export const objectColors = {
+  ridgeDark: '#BDB8AD',
+  ridgeLight: '#E4E0D7',
+  lip: '#6E6B64',
+  capHi: '#FAF9F6',
+  capLo: '#D9D6CF',
+  gaugeRim: '#CFCBC3',
+  paper: '#FFFEFA',
+  paperInk: '#2A2925',
+  paperLine: '#B9B6AE',
+  plasticHi: '#ECEAE4',
+  plasticLo: '#C9C5BC',
 } as const;
 
 /** Signals (SPEC §2): orange acts, green is done, yellow is a record. */
@@ -700,6 +734,18 @@ export const gadgetType = {
   receipt: { fontFamily: fontFamily.receipt, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptBold: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptMini: { fontFamily: fontFamily.receipt, fontSize: 9, lineHeight: 13, color: receiptColors.inkMini },
+  /** Menu item titles (`.item b`). */
+  itemTitle: { ...roundedRole(20, 24, weight.heavy, -0.3), color: sheetColors.ink },
+  /** Round sheet controls (‹, ✕, Done). */
+  control: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.controlInk },
+  /** Pill buttons. */
+  pill: roundedRole(18, 22, weight.heavy),
+  chip: roundedRole(13, 16, weight.heavy),
+  /** Segmented control labels. */
+  seg: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.muted },
+  swatchNumber: lcdRole(22, 26),
+  swatchName: roundedRole(13, 16, weight.bold),
+  toast: { ...roundedRole(15, 20, weight.heavy), color: deviceColors.bigKeyInk },
 } as const;
 
 /** Radii the gadget adds (SPEC §4, §6). Always `borderCurve: 'continuous'`. */
@@ -713,6 +759,59 @@ export const gadgetRadius = {
   key: 28,
   display: 28,
   sheet: 38,
+  control: 20,
+  chip: 13,
+  seg: 16,
+  segButton: 12,
+  swatch: 20,
+  toast: 16,
+  miniDevice: 22,
+  miniScreen: 10,
+} as const;
+
+/** Sheet geometry (SPEC §6, prototype CSS). */
+export const sheetGeometry = {
+  headerHeight: 68,
+  control: 40,
+  controlTop: 14,
+  controlInset: 16,
+  controlPadX: 14,
+  sidePad: 12,
+  bottomPad: 40,
+  cardGap: 10,
+  itemPadX: 18,
+  itemPadY: 16,
+  itemGap: 16,
+  object: 56,
+  sectionTop: 18,
+  sectionX: 16,
+  sectionBottom: 10,
+  pillHeight: 56,
+  pillWidth: 200,
+  pillTop: 18,
+  usebarTop: 20,
+  usebarBottom: 34,
+  chipHeight: 26,
+  chipPadX: 10,
+  segPad: 4,
+  segHeight: 32,
+  swatchW: 112,
+  swatchH: 92,
+  swatchPadX: 14,
+  swatchPadY: 12,
+  swatchGap: 10,
+  swatchTilt: -4,
+  swatchLift: 4,
+  swatchRing: 3,
+  finishCard: 200,
+  miniDeviceW: 128,
+  miniDeviceH: 104,
+  miniDeviceTilt: -6,
+  toastTop: 60,
+  toastPadX: 16,
+  toastPadY: 10,
+  /** Sheet top edges: most, tall, Today, finishes. */
+  tops: { default: 96, tall: 60, today: 200, finishes: 430 },
 } as const;
 
 /** Device geometry at the 390 × 844 reference (SPEC §4). Keys keep these sizes on every phone. */
@@ -792,6 +891,13 @@ export const device = {
   /** Display header top and footer bottom. */
   displayHeaderY: 20,
   displayFooterY: 22,
+  /**
+   * The log footer (`×8` and `LAST 80×8`). Doto at 56/56 sits 6pt higher in RN than in CSS, so
+   * the row's bottom is 16, not 22, and the `lcdSmall` text beside it is lifted 11 to share the
+   * baseline (measured against screen 04 on iOS).
+   */
+  repsFooterY: 16,
+  lcdSmallBesideReps: 11,
   /** The PR stamp on a done row. */
   stampPadX: 6,
   stampPadY: 1,

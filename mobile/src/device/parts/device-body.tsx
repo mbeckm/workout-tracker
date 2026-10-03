@@ -41,21 +41,29 @@ export function DeviceBody({
             <Stop offset="1" stopColor={palette.body2} />
           </LinearGradient>
           <LinearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={deviceColors.sheenTop} />
-            <Stop offset={SHEEN_END} stopColor={deviceColors.sheenBottom} />
+            <Stop offset="0" stopColor={deviceColors.sheen} stopOpacity={deviceColors.sheenOpacity} />
+            <Stop offset={SHEEN_END} stopColor={deviceColors.sheen} stopOpacity={0} />
           </LinearGradient>
           <Pattern
             id={`${id}-brush`}
             width={BRUSH_PERIOD}
             height={BRUSH_PERIOD}
             patternUnits="userSpaceOnUse">
-            <Rect x={0} y={0} width={BRUSH_LIGHT} height={BRUSH_PERIOD} fill={deviceColors.brushLight} />
+            <Rect
+              x={0}
+              y={0}
+              width={BRUSH_LIGHT}
+              height={BRUSH_PERIOD}
+              fill={deviceColors.brushLight}
+              fillOpacity={deviceColors.brushLightOpacity}
+            />
             <Rect
               x={BRUSH_LIGHT}
               y={0}
               width={BRUSH_PERIOD - BRUSH_LIGHT}
               height={BRUSH_PERIOD}
               fill={deviceColors.brushDark}
+              fillOpacity={deviceColors.brushDarkOpacity}
             />
           </Pattern>
         </Defs>
