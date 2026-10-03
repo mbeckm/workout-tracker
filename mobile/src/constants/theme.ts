@@ -773,6 +773,11 @@ export const device = {
   drumFrameY: 112,
   drumFadeY: 50,
   drumFadeHeight: 60,
+  /**
+   * The clear space a drum row keeps from the `×8` footer. Short displays (iPhone SE) drop the
+   * step below, then the step above, and centre the frame between the header and the footer.
+   */
+  drumClear: 8,
   /** Display header top and footer bottom. */
   displayHeaderY: 20,
   displayFooterY: 22,
@@ -880,14 +885,21 @@ export const logGeometry = {
   restRingBox: 230,
   restRingTop: 74,
   restRingDash: '3 7',
-  /** The rest footer sits 20 from the bottom; the ring shrinks to keep this much above it. */
+  /** The rest footer sits 20 from the bottom. */
   restFooterY: 20,
-  restFooterRoom: 52,
+  /** Short displays (iPhone SE): the ring and its clock shrink to fit this far inside the header and footer. */
+  restRingClear: 8,
   /** Finish: the title, the set grid (120 clear on the right) and the stats. */
   finishTitleY: 64,
   finishGridY: 150,
   finishGridRight: 120,
   finishStatsY: 220,
+  /**
+   * The set grid keeps this clear above the stats: 4 rows of 9 fit at full size. Longer days
+   * compress the lamps (8 tall, 4 apart, the rocker's rule), then add columns so it never
+   * reaches the stats.
+   */
+  finishGridClear: 6,
 } as const;
 
 /** Today (M3, screen 07; prototype `.lift`, `.bars`, `.info`). */
@@ -1229,6 +1241,10 @@ export const editGeometry = {
   frameStroke: 2,
   /** Footer bottom (prototype 20). */
   footerY: 20,
+  /** The lift name keeps two lines only with this much clear above the numbers (else one, shrunk). */
+  nameClear: 8,
+  /** The smallest a one-line lift name shrinks to. */
+  nameMinScale: 0.6,
   /** The footer and the room the numbers keep above it. */
   footerRoom: 44,
   /** Value lengths (sets + value characters) that fit at 104, then 88; longer ones go to 56. */

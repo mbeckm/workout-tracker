@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -13,7 +13,7 @@ import Animated, {
 import Svg, { Circle } from 'react-native-svg';
 
 import { device, gadgetType, lcd, logGeometry } from '@/constants/theme';
-import { Drum, type DrumNudge } from '@/device/parts';
+import { Drum, drumLayout, useDisplayHeight, type DrumLayout, type DrumNudge } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { sessionDurationMinutes } from '@/domain/log-session';
 import { DEVICE } from '@/motion';
@@ -50,6 +50,15 @@ function LiftName({
   );
 }
 
+const HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
+
+/** `ASSIST` rides the step above; without it (short displays) it sits midway to the frame. */
+function assistY(layout: DrumLayout): number {
+  return layout.above
+    ? device.drumAboveY + layout.offset
+    : Math.round((HEADER_BOTTOM + layout.frameY - gadgetType.lcdSmall.lineHeight) / 2);
+}
+
 /**
  * Log (V2, screens 04, 05, 09): the lift name ▾ and the set label, the drum (the wheel's value),
  * the keys' value (`×8`) and the reference fact (`LAST 80×8`, `TARGET 87.5×8`, `TARGET ›`).
@@ -67,6 +76,7 @@ export function LogDisplay({
   onKeypad: () => void;
 }) {
   const { current, drum, keysText, setLabel, footer, controls, unlockTargets } = useLogSession();
+  const layout = drumLayout(useDisplayHeight());
   if (!current || !drum || !controls) {
     return null;
   }
@@ -82,11 +92,12 @@ export function LogDisplay({
         nudge={nudge}
         flash={flash}
         compact={drum.text.length >= COMPACT_FROM}
+        layout={layout}
       />
       <Pressable
         accessible={false}
         onLongPress={onKeypad}
-        style={styles.drumHit}
+        style={[styles.drumHit, { top: layout.frameY }]}
       />
       <View style={styles.header} pointerEvents="box-none">
         <LiftName name={current.prescription.name} onPress={onName} />
@@ -95,7 +106,7 @@ export function LogDisplay({
         </Text>
       </View>
       {drum.header ? (
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim, styles.assist]}>
+        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim, styles.assist, { top: assistY(layout) }]}>
           {drum.header}
         </Text>
       ) : null}
@@ -133,7 +144,7 @@ export function LogDisplay({
 export function RestDisplay({ onName }: { onName: () => void }) {
   const { current, stage, setLabel } = useLogSession();
   const rest = useRest();
-  const [height, setHeight] = useState(0);
+  const height = useDisplayHeight();
 
   // The ring measures against the longest this rest has been (the prototype's
   // `restTotal = max(restTotal, rest)`): −15 takes a visible bite, +15 grows the whole.
@@ -150,9 +161,7 @@ export function RestDisplay({ onName }: { onName: () => void }) {
     progress.set(withTiming(fraction, { duration: DEVICE.REST_TICK, easing: Easing.linear }));
   }, [progress, fraction]);
 
-  const box = height
-    ? Math.min(logGeometry.restRingBox, height - logGeometry.restRingTop - logGeometry.restFooterRoom)
-    : logGeometry.restRingBox;
+  const { box, top } = restRingLayout(height);
   const scale = box / logGeometry.restRingBox;
   const r = device.restRingRadius * scale;
   const stroke = device.restRingStroke * scale;
@@ -166,9 +175,14 @@ export function RestDisplay({ onName }: { onName: () => void }) {
   }
   const next = restNextText(stage.values, durationIsMinutes(current.prescription));
   const center = box / 2;
+  // The clock shrinks with the ring, so it keeps screen 08's margin inside the stroke.
+  const clockSize =
+    scale < 1
+      ? { fontSize: Math.round(gadgetType.lcdBig.fontSize * scale), lineHeight: Math.round(gadgetType.lcdBig.lineHeight * scale) }
+      : null;
 
   return (
-    <View style={StyleSheet.absoluteFill} onLayout={(event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height)}>
+    <View style={StyleSheet.absoluteFill}>
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
           REST
@@ -179,7 +193,7 @@ export function RestDisplay({ onName }: { onName: () => void }) {
           </Text>
         ) : null}
       </View>
-      <View style={[styles.ring, { top: logGeometry.restRingTop, height: box }]}>
+      <View style={[styles.ring, { top, height: box }]}>
         <Svg width={box} height={box} viewBox={`0 0 ${box} ${box}`}>
           <Circle
             cx={center}
@@ -205,12 +219,12 @@ export function RestDisplay({ onName }: { onName: () => void }) {
         <View style={[StyleSheet.absoluteFill, styles.centered]}>
           {rest.go ? (
             <Blink>
-              <Text maxFontSizeMultiplier={1} style={gadgetType.lcdBig}>
+              <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdBig, clockSize]}>
                 GO
               </Text>
             </Blink>
           ) : (
-            <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdBig, styles.tabular]}>
+            <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdBig, clockSize, styles.tabular]}>
               {rest.clock}
             </Text>
           )}
@@ -224,6 +238,18 @@ export function RestDisplay({ onName }: { onName: () => void }) {
       </View>
     </View>
   );
+}
+
+/**
+ * The ring's box and top in a display `height` tall: screen 08's 230 at y74 wherever it fits,
+ * else as big as fits between the header and the footer (iPhone SE), centred.
+ */
+function restRingLayout(height: number): { box: number; top: number } {
+  if (height <= 0) return { box: logGeometry.restRingBox, top: logGeometry.restRingTop };
+  const footerTop = logGeometry.restFooterY + gadgetType.lcdSmall.lineHeight;
+  const room = height - HEADER_BOTTOM - footerTop - 2 * logGeometry.restRingClear;
+  const box = Math.min(logGeometry.restRingBox, room);
+  return { box, top: Math.min(logGeometry.restRingTop, Math.round((height - box) / 2)) };
 }
 
 /** Blinking display text (`GO`): on for half the period, dim for the other half, as CSS steps(1). */
@@ -256,6 +282,25 @@ function useMinutes(startedAt: string | undefined): number {
 }
 
 /**
+ * The finish grid for `count` sets, always clear of the stats: 9 a row with 10-pt lamps 8 apart
+ * up to 4 rows (36 sets, screen 11); then 8-pt lamps 4 apart (the rocker's compression); then
+ * more columns, as many rows as fit.
+ */
+function finishGrid(count: number): { columns: number; lamp: number; gap: number } {
+  const room = logGeometry.finishStatsY - logGeometry.finishGridY - logGeometry.finishGridClear;
+  const fits = (rows: number, lamp: number, gap: number) => rows * lamp + (rows - 1) * gap <= room;
+  const rows = Math.ceil(count / device.gridColumns);
+  if (fits(rows, device.gridLamp, device.gridGap)) {
+    return { columns: device.gridColumns, lamp: device.gridLamp, gap: device.gridGap };
+  }
+  const lamp = device.lampCompact;
+  const gap = device.lampGapCompact;
+  if (fits(rows, lamp, gap)) return { columns: device.gridColumns, lamp, gap };
+  const maxRows = Math.floor((room + gap) / (lamp + gap));
+  return { columns: Math.ceil(count / maxRows), lamp, gap };
+}
+
+/**
  * Finish (screens 11, 12): the day / `N MIN`, `ALL DONE` or `END EARLY?`, the set lamps (9 a
  * row), then `n OF m SETS` and the volume, or `NOTHING LOGGED`. No `HOLD TO FINISH`: the big
  * key's VoiceOver label carries it (SPEC §10).
@@ -266,10 +311,12 @@ export function FinishDisplay() {
   if (!finishSummary) {
     return null;
   }
+  const grid = finishGrid(finishSummary.grid.length);
   const rows: boolean[][] = [];
-  for (let index = 0; index < finishSummary.grid.length; index += device.gridColumns) {
-    rows.push(finishSummary.grid.slice(index, index + device.gridColumns));
+  for (let index = 0; index < finishSummary.grid.length; index += grid.columns) {
+    rows.push(finishSummary.grid.slice(index, index + grid.columns));
   }
+  const cellSize = { height: grid.lamp, borderRadius: grid.lamp / 2 };
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -284,15 +331,15 @@ export function FinishDisplay() {
       <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdTitle, styles.finishTitle]}>
         {finishSummary.headline}
       </Text>
-      <View style={styles.grid}>
+      <View style={[styles.grid, { gap: grid.gap }]}>
         {rows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.gridRow}>
-            {Array.from({ length: device.gridColumns }, (_, column) => {
+          <View key={rowIndex} style={[styles.gridRow, { gap: grid.gap }]}>
+            {Array.from({ length: grid.columns }, (_, column) => {
               const lit = row[column];
               return (
                 <View
                   key={column}
-                  style={[styles.gridCell, lit === undefined ? styles.gridEmpty : lit ? styles.gridOn : styles.gridOff]}
+                  style={[styles.gridCell, cellSize, lit === undefined ? styles.gridEmpty : lit ? styles.gridOn : styles.gridOff]}
                 />
               );
             })}
@@ -341,10 +388,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: device.drumFrameInset,
     right: device.drumFrameInset,
-    top: device.drumFrameY,
     height: device.drumFrameHeight,
   },
-  assist: { position: 'absolute', right: device.displayPad, top: device.drumAboveY },
+  assist: { position: 'absolute', right: device.displayPad },
   footer: {
     position: 'absolute',
     left: device.displayPad,
@@ -365,10 +411,9 @@ const styles = StyleSheet.create({
     left: device.displayPad,
     right: logGeometry.finishGridRight,
     top: logGeometry.finishGridY,
-    gap: device.gridGap,
   },
-  gridRow: { flexDirection: 'row', gap: device.gridGap },
-  gridCell: { flex: 1, height: device.gridLamp, borderRadius: device.gridLamp / 2 },
+  gridRow: { flexDirection: 'row' },
+  gridCell: { flex: 1 },
   gridOff: { backgroundColor: lcd.amberOff },
   gridOn: { backgroundColor: lcd.amber, boxShadow: `0 0 6px ${lcd.amber}` },
   gridEmpty: { backgroundColor: 'transparent' },

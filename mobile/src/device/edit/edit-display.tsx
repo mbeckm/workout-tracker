@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { device, editGeometry as geo, gadgetType, lcd } from '@/constants/theme';
+import { useDisplayHeight } from '@/device/parts';
 import { DEVICE, EASE_DISPLAY_FN } from '@/motion';
 
 import type { EditController } from './use-edit-device';
@@ -42,17 +43,17 @@ function SteppingNumber({ value, text, style }: { value: number; text: string; s
  * SETS × REPS (104 each) with the wheel's value framed in amber, and the plan / `N REPS`.
  */
 export function EditDisplay({ edit }: { edit: EditController }) {
-  const [height, setHeight] = useState(0);
+  const height = useDisplayHeight();
   const { face } = edit;
   const role = numberRole(face.setsText.length + face.valueText.length);
   const numbersY = height
     ? Math.max(geo.nameY, Math.min(geo.numbersY, height - geo.footerRoom - geo.numbersHeight))
     : geo.numbersY;
+  // On short displays (iPhone SE) the numbers move up into the name's second line: keep it to one, shrunk.
+  const nameLines = numbersY - geo.nameY >= 2 * gadgetType.lcdName.lineHeight + geo.nameClear ? 2 : 1;
 
   return (
-    <View
-      style={StyleSheet.absoluteFill}
-      onLayout={(event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height)}>
+    <View style={StyleSheet.absoluteFill}>
       <View style={styles.header}>
         <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
           {`${edit.dayName.toUpperCase()}  EDIT`}
@@ -61,7 +62,12 @@ export function EditDisplay({ edit }: { edit: EditController }) {
           {`${edit.index + 1} OF ${edit.count}`}
         </Text>
       </View>
-      <Text maxFontSizeMultiplier={1} numberOfLines={2} style={[gadgetType.lcdName, styles.name]}>
+      <Text
+        maxFontSizeMultiplier={1}
+        numberOfLines={nameLines}
+        adjustsFontSizeToFit={nameLines === 1}
+        minimumFontScale={geo.nameMinScale}
+        style={[gadgetType.lcdName, styles.name]}>
         {edit.exercise.name.toUpperCase()}
       </Text>
       <View style={[styles.numbers, { top: numbersY }]}>

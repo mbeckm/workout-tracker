@@ -1,8 +1,8 @@
 /** Device primitives (PLAN Phase 1, SPEC §4). Layout is the caller's; these draw and press. */
 export { BigKey, type BigKeyVariant } from './big-key';
 export { DeviceBody } from './device-body';
-export { Display } from './display';
-export { Drum, type DrumNudge } from './drum';
+export { Display, useDisplayHeight } from './display';
+export { Drum, drumLayout, type DrumLayout, type DrumNudge } from './drum';
 export { EngravedLabel } from './engraved-label';
 export { HistoryGlyph, ListGlyph, MenuGlyph, MinusGlyph, PlusGlyph, UndoGlyph } from './glyphs';
 export { HoldRing } from './hold-ring';
