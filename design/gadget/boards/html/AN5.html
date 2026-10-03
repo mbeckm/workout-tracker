@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>A5 Ladder and target dial</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.disp{border-radius:24px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;position:absolute;overflow:hidden}
+.dim{color:#7A3E1C}
+.lab{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7);position:absolute;white-space:nowrap}
+.mut{color:#8E8B83}
+.dock{border-radius:40px 40px 0 0;box-shadow:0 -1px 0 #fff,0 -12px 30px rgba(60,50,30,.16)}
+.rung{position:absolute;left:16px;right:16px;height:58px;border-radius:20px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:17px;font-weight:800;background:#FBFAF7;box-shadow:inset 0 1px 0 #fff,0 4px 12px rgba(60,50,30,.08)}
+.rung .p{color:#8E8B83;font-size:15px}
+.knob{border-radius:50%;background:repeating-conic-gradient(#BDB8AD 0 2deg,#E4E0D7 2deg 4deg);box-shadow:0 6px 0 #A9A69E,0 14px 24px rgba(0,0,0,.2);position:absolute}
+.cap{position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#FAF9F6,#D9D6CF);box-shadow:inset 0 1px 0 #fff,0 2px 4px rgba(0,0,0,.15)}
+.ptr{position:absolute;left:50%;top:6px;width:5px;height:22px;margin-left:-2.5px;border-radius:3px;background:#FF6A1A}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(242,85,15,.18),0 8px 18px rgba(200,70,10,.25)}}
+</style>
+</head><body style="margin:0">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F2EE; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<div style="position: absolute; top: 62px; left: 24px; right: 24px">
+<div class="mut" style="font-size: 15px; font-weight: 800">Bench Press, men 80 to 85 kg</div>
+<div style="font-size: 30px; line-height: 34px; font-weight: 800; letter-spacing: -0.5px">Stronger than 64% of lifters your weight</div>
+</div>
+<div class="rung" style="top: 172px; color: #B9B6AE"><span>Elite</span><span class="p">140 kg</span></div>
+<div class="rung" style="top: 238px; color: #B9B6AE"><span>Advanced</span><span class="p">118 kg</span></div>
+<div class="rung" style="top: 304px; background: transparent; box-shadow: inset 0 0 0 2px #F2550F; color: #C2410C"><span>Your target, 75%</span><span class="p" style="color: #C2410C">100 kg</span></div>
+<div class="rung" style="top: 370px; background: #F2550F; color: #fff; animation: pulse 2s ease-in-out infinite"><span>You, 64%</span><span class="p" style="color: #FFE7D9">92.5 kg</span></div>
+<div class="rung" style="top: 436px"><span>Intermediate</span><span class="p">80 kg</span></div>
+<div class="rung" style="top: 502px"><span>Novice</span><span class="p">55 kg</span></div>
+<div class="alu dock" style="position: absolute; left: 0; right: 0; bottom: 0; height: 240px">
+<div class="disp" style="top: 24px; left: 16px; width: 214px; height: 182px; padding: 16px 18px; box-sizing: border-box">
+<div class="dim" style="font-size: 14px">TARGET</div>
+<div style="font-size: 50px; line-height: 54px; margin-top: 4px">100</div>
+<div style="font-size: 16px; margin-top: 4px">TOP 25%</div>
+<div class="dim" style="position: absolute; left: 18px; bottom: 14px; font-size: 14px">~9 WEEKS AT YOUR PACE</div>
+</div>
+<span class="lab" style="left: 280px; top: 28px">TARGET</span>
+<div class="knob" style="left: 250px; top: 54px; width: 124px; height: 124px"><div class="cap" style="transform: rotate(40deg)"><div class="ptr"></div></div></div>
+</div>
+</div>
+</body></html>

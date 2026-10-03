@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>H1 Friendly top, gadget docked</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.disp{border-radius:24px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;position:relative;overflow:hidden}
+.dim{color:#7A3E1C}
+.lab{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.key{border-radius:18px;background:linear-gradient(180deg,#F4F3EF,#E1DFD9);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E,0 6px 10px rgba(0,0,0,.08);font-weight:800;color:#2A2925}
+.go{border-radius:26px;background:radial-gradient(ellipse at 50% 15%,#FF8A45,#F2550F 75%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 0 #B83A05,0 12px 20px rgba(200,70,10,.25);color:#fff;font-weight:800}
+.card{background:#FBFAF7;border-radius:28px;box-shadow:inset 0 1px 0 #fff,0 10px 24px rgba(60,50,30,.12),0 1px 2px rgba(60,50,30,.1)}
+.mut{color:#8E8B83}
+.dock{border-radius:40px 40px 0 0;box-shadow:0 -1px 0 #fff,0 -12px 30px rgba(60,50,30,.16)}
+.wk{flex-grow:1;height:64px;border-radius:18px;background:#EFEDE8;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:13px;font-weight:800;color:#8E8B83}
+.wk.done{background:#2A2925;color:#fff}
+.ex{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid #ECEAE4;font-size:17px;font-weight:700}
+</style>
+</head><body style="margin:0">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F2EE; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<div style="position: absolute; top: 62px; left: 24px; right: 24px">
+<div class="mut" style="font-size: 15px; font-weight: 800">Thursday, week 12</div>
+<div style="font-size: 34px; line-height: 38px; font-weight: 800; letter-spacing: -0.6px">2 of 4 done</div>
+</div>
+<div style="position: absolute; top: 152px; left: 16px; right: 16px; display: flex; gap: 8px">
+<div class="wk done"><span style="font-size: 18px">✓</span>Pull 1</div>
+<div class="wk done"><span style="font-size: 18px">✓</span>Legs 1</div>
+<div class="wk" style="background: #FFE7D9; color: #C2410C; box-shadow: inset 0 0 0 2px #F2550F"><span style="font-size: 18px">●</span>Push 1</div>
+<div class="wk"><span style="font-size: 18px">○</span>Legs 2</div>
+</div>
+<div class="card" style="position: absolute; top: 236px; left: 16px; right: 16px; padding: 18px 20px 6px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 22px; font-weight: 800">Push 1</span><span class="mut" style="font-size: 15px; font-weight: 800">6 lifts</span></div>
+<div style="margin-top: 8px">
+<div class="ex"><span>Bench Press</span><span class="mut">3 × 8</span></div>
+<div class="ex"><span>Cable Fly</span><span class="mut">3 × 12</span></div>
+<div class="ex"><span>Overhead Press</span><span class="mut">3 × 8</span></div>
+<div class="ex mut"><span>3 more</span><span></span></div>
+</div>
+</div>
+<div class="alu dock" style="position: absolute; left: 0; right: 0; bottom: 0; height: 268px">
+<div class="disp" style="position: absolute; top: 22px; left: 16px; right: 16px; height: 100px; padding: 16px 20px; box-sizing: border-box">
+<div class="dim" style="display: flex; justify-content: space-between; font-size: 14px"><span>READY</span><span>~52 MIN</span></div>
+<div style="margin-top: 8px; display: flex; justify-content: space-between; font-size: 34px"><span>PUSH 1</span><span>16 SETS</span></div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; bottom: 34px; display: flex; gap: 10px">
+<button class="key" style="width: 84px; height: 84px; font-size: 13px; line-height: 16px">Other<br>day</button>
+<button class="go" style="flex-grow: 1; height: 84px; font-size: 22px">Start Push 1</button>
+</div>
+</div>
+</div>
+</body></html>

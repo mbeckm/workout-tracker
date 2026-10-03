@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>QB2 B: set a goal on the device</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}button{font:inherit;color:inherit;border:0;background:none;padding:0}.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}.disp{position:absolute;border-radius:28px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;overflow:hidden;box-sizing:border-box}.dim{color:#7A3E1C}.rk{position:absolute;width:56px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E,0 6px 10px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;color:#2A2925;font-weight:800;font-size:22px}.rock{position:absolute;left:96px;top:56px;width:198px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E,0 6px 10px rgba(0,0,0,.1);display:flex;align-items:center}.rock .e{width:46px;text-align:center;font-size:24px;font-weight:800;color:#2A2925}.rock .m{flex:1;height:30px;border-radius:15px;background:#C9C6BE;box-shadow:inset 0 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;gap:7px}.lamp{width:10px;height:10px;border-radius:5px;background:#8E8A80}.lamp.on{background:#FF6A1A;box-shadow:0 0 6px #FF6A1A}.jog{position:absolute;right:22px;top:588px;width:64px;height:180px;border-radius:24px;background:repeating-linear-gradient(180deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 0 16px 16px rgba(0,0,0,.22),inset 0 -16px 16px rgba(0,0,0,.22),0 3px 0 #A9A69E}.well{position:absolute;left:110px;top:590px;width:170px;height:170px;border-radius:50%;background:#C4C1B9;box-shadow:inset 0 4px 10px rgba(0,0,0,.28),0 1px 0 #fff}.big{position:absolute;left:122px;top:600px;width:146px;height:146px;border-radius:50%;background:radial-gradient(ellipse at 50% 22%,#FF8A45,#F2550F 70%);box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -6px 12px rgba(150,40,0,.25),0 6px 0 #B83A05,0 16px 26px rgba(200,70,10,.3);color:#fff;font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center}.lab{position:absolute;font-size:10px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7);white-space:nowrap;text-align:center}
+.fade{position:absolute;left:0;right:0;height:60px;z-index:1}
+@keyframes vroll{from{background-position:0 0}to{background-position:0 28px}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<button class="rk" style="left: 20px; top: 56px">‹</button>
+<div class="rock"><span class="e">‹</span><span class="m"><i class="lamp on"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i></span><span class="e">›</span></div>
+<div class="disp" style="top: 140px; left: 20px; right: 20px; height: 420px">
+<div class="dim" style="position: absolute; left: 22px; right: 22px; top: 20px; display: flex; justify-content: space-between; font-size: 15px"><span style="color: #FF6A1A">BENCH GOAL</span><span>NOW 92.5</span></div>
+<div class="fade" style="top: 50px; background: linear-gradient(180deg, #121211, rgba(18,18,17,0))"></div>
+<div class="dim" style="position: absolute; left: 22px; top: 64px; font-size: 40px">102.5</div>
+<div style="position: absolute; left: 22px; top: 122px; font-size: 104px; line-height: 104px">100.0</div>
+<div class="dim" style="position: absolute; left: 22px; top: 240px; font-size: 40px">97.5</div>
+<div style="position: absolute; left: 10px; right: 10px; top: 112px; height: 124px; border-radius: 20px; box-shadow: inset 0 0 0 2px #FF6A1A"></div>
+<div style="position: absolute; left: 22px; right: 22px; bottom: 22px; font-size: 16px; line-height: 26px">+7.5 KG  TOP 25%<br><span class="dim">~9 WEEKS AT YOUR PACE</span></div>
+</div>
+<div class="well"></div>
+<button class="big">Set goal</button>
+<div class="jog" style="animation: vroll 1.6s ease-in-out infinite alternate"></div>
+<div class="lab" style="right: 22px; top: 774px; width: 64px">KG</div>
+</div>
+</body></html>

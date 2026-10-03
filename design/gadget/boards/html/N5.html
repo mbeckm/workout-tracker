@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Progress sheet</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.rk{position:absolute;width:56px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E}
+.roller{position:absolute;border-radius:18px;background:repeating-linear-gradient(90deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 18px 0 16px rgba(0,0,0,.22),inset -18px 0 16px rgba(0,0,0,.22),0 3px 0 #A9A69E}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:38px 38px 0 0;background:#151514;color:#F3F2EE;box-shadow:0 -10px 30px rgba(0,0,0,.35);overflow:hidden}
+.st{position:absolute;left:0;right:0;top:24px;text-align:center;font-size:18px;font-weight:800}
+.ck{position:absolute;top:14px;width:40px;height:40px;border-radius:20px;background:#262624;display:flex;align-items:center;justify-content:center;color:#C9C6BF;font-size:18px;font-weight:800}
+.dc{background:#232321;border-radius:24px;box-sizing:border-box}
+.sm{color:#8C8A84}
+.sec{font-family:'Doto',monospace;font-weight:900;font-size:13px;letter-spacing:1px;color:#6E6C66}
+.m{padding:14px 18px;border-top:1px solid #2E2E2B}
+.m:first-child{border-top:0}
+.mh{display:flex;justify-content:space-between;align-items:baseline;font-size:17px;font-weight:800}
+.mh em{font-style:normal;font-size:14px;color:#FF6A1A;margin-left:6px}
+.tr{margin-top:9px;height:8px;border-radius:4px;background:#33322F;position:relative}
+.fl{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#F3F2EE}
+.was{position:absolute;top:-3px;width:3px;height:14px;border-radius:2px;background:#6E6C66}
+.seg{display:flex;background:#232321;border-radius:16px;padding:4px}
+.seg span{flex:1;text-align:center;height:32px;line-height:32px;border-radius:12px;font-size:14px;font-weight:800;color:#8C8A84}
+.seg span.on{background:#FF6A1A;color:#1C0E05}
+@keyframes swing{0%{transform:rotate(-70deg)}70%{transform:rotate(18deg)}85%{transform:rotate(10deg)}100%{transform:rotate(13deg)}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="rk" style="left: 20px; top: 56px"></div><div class="roller" style="left: 100px; top: 52px; width: 190px; height: 64px"></div><div class="rk" style="right: 20px; top: 56px"></div>
+<div style="position: absolute; inset: 0; background: rgba(20,18,15,.35)"></div>
+<div class="sheet" style="top: 96px">
+<button class="ck" style="left: 16px">‹</button>
+<div class="st">Progress</div>
+<div style="position: absolute; left: 50%; top: 70px; margin-left: -88px; width: 176px; height: 104px; border-radius: 88px 88px 18px 18px; background: linear-gradient(180deg, #ECEAE4, #C9C5BC); box-shadow: inset 0 2px 0 #fff, 0 8px 0 #6E6B64, 0 18px 30px rgba(0,0,0,.5)">
+<div style="position: absolute; left: 12px; right: 12px; top: 12px; bottom: 12px; border-radius: 76px 76px 10px 10px; background: #121211; box-shadow: inset 0 3px 8px rgba(0,0,0,.9); overflow: hidden">
+<svg width="152" height="80" viewBox="0 0 152 80" style="position: absolute; left: 0; top: 0"><path d="M16 74 A60 60 0 0 1 136 74" fill="none" stroke="#3A2214" stroke-width="3" stroke-dasharray="2 6"></path><path d="M100 22 A60 60 0 0 1 136 74" fill="none" stroke="#FF6A1A" stroke-width="3"></path></svg>
+<i style="position: absolute; left: 75px; bottom: 6px; width: 3px; height: 58px; background: #FF6A1A; border-radius: 2px; transform-origin: 50% 100%; animation: swing 1.4s cubic-bezier(.2,.8,.3,1) forwards; box-shadow: 0 0 8px #FF6A1A"></i>
+</div>
+</div>
+<div style="position: absolute; left: 24px; right: 24px; top: 194px; text-align: center"><div style="font-size: 24px; line-height: 28px; font-weight: 800; letter-spacing: -.4px">Stronger than 64% of lifters your weight</div><div class="sm" style="margin-top: 6px; font-size: 15px; font-weight: 600">Bench Press, 80 to 85 kg</div></div>
+<div class="seg" style="position: absolute; left: 16px; right: 16px; top: 280px"><span>4 wk</span><span class="on">3 mo</span><span>1 yr</span><span>All</span></div>
+<div class="sec" style="position: absolute; left: 28px; top: 340px">ESTIMATED MAX</div>
+<div class="dc" style="position: absolute; left: 12px; right: 12px; top: 364px">
+<div class="m"><div class="mh"><span>Bench Press</span><span>92.5<em>+7.5</em></span></div><div class="tr"><div class="fl" style="width: 62%; background: #FF6A1A"></div><div class="was" style="left: 57%"></div></div></div>
+<div class="m"><div class="mh"><span>Squat</span><span>125<em>+10</em></span></div><div class="tr"><div class="fl" style="width: 84%"></div><div class="was" style="left: 77%"></div></div></div>
+<div class="m"><div class="mh"><span>Deadlift</span><span>148<em>+5</em></span></div><div class="tr"><div class="fl" style="width: 100%"></div><div class="was" style="left: 96%"></div></div></div>
+<div class="m"><div class="mh"><span>Overhead Press</span><span>58<em>+1</em></span></div><div class="tr"><div class="fl" style="width: 39%"></div><div class="was" style="left: 38%"></div></div></div>
+</div>
+<div class="sec" style="position: absolute; left: 28px; top: 622px">BODY</div>
+<div class="dc" style="position: absolute; left: 12px; right: 12px; top: 646px; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-size: 17px; font-weight: 800"><span>81.4 kg</span><span class="sm" style="font-size: 15px">−0.8 in 3 months</span></div>
+</div>
+</div>
+</body></html>

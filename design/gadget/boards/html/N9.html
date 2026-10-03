@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Paywall, the knob turns to Pro</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:38px 38px 0 0;background:linear-gradient(180deg,#2A2018,#151514 45%);color:#F3F2EE;box-shadow:0 -10px 30px rgba(0,0,0,.35);overflow:hidden}
+.sm{color:#8C8A84}
+.knob{position:absolute;left:50%;top:70px;margin-left:-160px;width:320px;height:320px;border-radius:50%;background:repeating-conic-gradient(#BDB8AD 0 2deg,#E8E4DB 2deg 4deg);box-shadow:0 10px 0 #6E6B64,0 30px 60px rgba(0,0,0,.6);animation:turn 3s cubic-bezier(.4,0,.2,1) infinite alternate}
+.cap{position:absolute;inset:34px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#FAF9F6,#CFCBC3);box-shadow:inset 0 2px 0 #fff,0 4px 8px rgba(0,0,0,.25)}
+.ptr{position:absolute;left:50%;top:12px;width:8px;height:40px;margin-left:-4px;border-radius:4px;background:#FF6A1A;box-shadow:0 0 10px #FF6A1A}
+.plan{position:absolute;left:16px;right:16px;height:66px;border-radius:20px;background:rgba(35,35,33,.92);backdrop-filter:blur(10px);box-shadow:inset 0 0 0 2px #3A3936;display:flex;align-items:center;justify-content:space-between;padding:0 18px}
+.plan b{display:block;font-size:17px;font-weight:800}
+.plan span{display:block;font-size:13px;font-weight:600;color:#8C8A84;margin-top:2px}
+.plan.on{box-shadow:inset 0 0 0 3px #FF6A1A}
+@keyframes turn{from{transform:rotate(-35deg)}to{transform:rotate(25deg)}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: ui-rounded, -apple-system, sans-serif">
+<div style="position: absolute; inset: 0; background: rgba(20,18,15,.45)"></div>
+<div class="sheet" style="top: 60px">
+<button style="position: absolute; left: 22px; top: 22px; font-size: 22px; font-weight: 800; color: #8C8A84">✕</button>
+<button style="position: absolute; right: 22px; top: 24px; font-size: 15px; font-weight: 700; color: #8C8A84">Restore</button>
+<svg width="390" height="140" viewBox="0 0 390 140" style="position: absolute; left: 0; top: 34px"><path d="M40 136 A180 180 0 0 1 350 136" fill="none" stroke="#6E5A3A" stroke-width="2"></path><path d="M215 46 A180 180 0 0 1 350 136" fill="none" stroke="#FF6A1A" stroke-width="3"></path></svg>
+<div style="position: absolute; left: 30px; top: 150px; font-family: 'Doto', monospace; font-weight: 900; font-size: 13px; color: #6E5A3A; transform: rotate(-38deg)">FREE</div>
+<div style="position: absolute; left: 0; right: 0; top: 44px; text-align: center; font-family: 'Doto', monospace; font-weight: 900; font-size: 15px; color: #FF6A1A; letter-spacing: 2px">PRO</div>
+<div class="knob"><div class="cap"><div class="ptr"></div></div></div>
+<div style="position: absolute; left: 0; right: 0; top: 300px; height: 120px; background: linear-gradient(180deg, rgba(21,21,20,0), #151514 70%)"></div>
+<div style="position: absolute; left: 24px; right: 24px; top: 344px; text-align: center; font-size: 17px; font-weight: 700; color: #C9C6BF">Unlimited plans, all of Progress, next-session targets and every finish</div>
+<div class="plan on" style="top: 404px"><div><b>$39.99 a year</b><span>Free for 1 week, $3.33 a month</span></div></div>
+<div class="plan" style="top: 480px"><div><b>$6.99 a month</b><span>Cancel any time</span></div></div>
+<button style="position: absolute; left: 50%; bottom: 44px; margin-left: -100px; width: 200px; height: 58px; border-radius: 29px; background: #FBFAF7; color: #1C1B18; font-size: 19px; font-weight: 800">Continue</button>
+</div>
+</div>
+</body></html>

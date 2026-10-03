@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Onboarding: pick your finish</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.grid{background-color:#0E0E0D;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px}
+.part{position:absolute;filter:grayscale(1) brightness(.55);opacity:.7}
+.knob{border-radius:50%;background:repeating-conic-gradient(#BDB8AD 0 3deg,#E8E4DB 3deg 6deg);box-shadow:0 6px 0 #6E6B64}
+.roll{border-radius:14px;background:repeating-linear-gradient(90deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 12px 0 12px rgba(0,0,0,.25),inset -12px 0 12px rgba(0,0,0,.25),0 5px 0 #6E6B64}
+.key{border-radius:50%;background:linear-gradient(180deg,#F4F3EF,#D2CEC6);box-shadow:0 5px 0 #6E6B64}
+.lcd{border-radius:14px;background:#121211;box-shadow:0 0 0 6px #CFCBC3,0 10px 0 6px #6E6B64}
+.sw{border-radius:22px;padding:14px 16px;box-sizing:border-box;font-family:'Doto',monospace;font-weight:900;height:104px;position:relative}
+.sw b{display:block;font-size:24px}
+.sw span{display:block;font-family:ui-rounded,-apple-system,sans-serif;font-size:14px;font-weight:700;margin-top:2px}
+.lock{position:absolute;right:12px;top:12px;width:22px;height:22px;border-radius:11px;background:#FF6A1A;color:#1C0E05;font-size:12px;line-height:22px;text-align:center;font-family:ui-rounded,sans-serif;font-weight:900}
+</style>
+</head><body style="margin:0">
+<div class="grid" style="width: 390px; height: 844px; position: relative; overflow: hidden; color: #F3F2EE; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="part knob" style="left: -30px; top: 40px; width: 110px; height: 110px"></div>
+<div class="part roll" style="left: 250px; top: 30px; width: 170px; height: 56px"></div>
+<div class="part key" style="left: 300px; top: 130px; width: 60px; height: 60px"></div>
+<div class="part lcd" style="left: 20px; top: 760px; width: 150px; height: 70px"></div>
+<div class="part roll" style="left: 320px; top: 700px; width: 56px; height: 150px; background: repeating-linear-gradient(180deg, #F2F1ED 0 5px, #C4C1B9 5px 7px)"></div>
+<div style="position: absolute; left: 0; right: 0; top: 96px; text-align: center; font-size: 34px; line-height: 38px; font-weight: 800; letter-spacing: -.6px">Pick your<br>finish</div>
+<div style="position: absolute; left: 24px; right: 24px; top: 210px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+<div class="sw" style="background: linear-gradient(180deg, #E4E2DC, #CFCBC3); color: #1C1B18; transform: rotate(-4deg); box-shadow: 0 0 0 4px #fff, 0 14px 24px rgba(0,0,0,.5)"><b>212</b><span style="color: #6E6B64">Aluminium</span></div>
+<div class="sw" style="background: linear-gradient(180deg, #3A3936, #22211F); color: #F3F2EE"><b>101</b><span style="color: #8C8A84">Graphite</span></div>
+<div class="sw" style="background: linear-gradient(180deg, #FF7A35, #E04A0C); color: #fff"><b>305</b><span>Signal</span></div>
+<div class="sw" style="background: linear-gradient(180deg, #EFE6D3, #D9CBB0); color: #3A3326"><b>408</b><span style="color: #7A6F5C">Bone</span></div>
+<div class="sw" style="background: linear-gradient(180deg, #9DB0A0, #6E8573); color: #14201A"><b>616</b><span style="color: #2E3F33">Sage</span><i class="lock">+</i></div>
+<div class="sw" style="background: linear-gradient(135deg, #7FD3E8, #C59BFF 50%, #FF9AB5); color: #1C1B18"><b>8106</b><span>Prismatic</span><i class="lock">+</i></div>
+</div>
+<button style="position: absolute; left: 50%; bottom: 54px; margin-left: -90px; width: 180px; height: 58px; border-radius: 29px; background: #2E2D2A; color: #F3F2EE; font-size: 19px; font-weight: 800">Build</button>
+</div>
+</body></html>
