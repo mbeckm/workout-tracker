@@ -108,3 +108,10 @@ export function stopContinuous(): void {
 export function playSound(name: DeviceSound): void {
   native?.playSound(name);
 }
+
+export {
+  CartridgeInsert,
+  isCartridgeInsertAvailable,
+  type CartridgeInsertLayout,
+  type CartridgeInsertProps,
+} from './cartridge-insert';
