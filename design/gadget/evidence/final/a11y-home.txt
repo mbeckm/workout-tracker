@@ -1,0 +1,14 @@
+# home: page.locator(body).ariaSnapshot() (Playwright; page.accessibility was removed), web export (--dev) with EXPO_PUBLIC_HOME_DEMO=gadget
+- img
+- button "Menu":
+  - img
+- text: WEEK 12
+- button "Pull 1, done Monday, 9 sets": PULL 1 ✓ MON 48 MIN 9 SETS
+- button "Legs 1, done Tuesday, 9 sets, squat record": LEGS 1 ✓ TUE 55 MIN 9 SETS SQUAT PR
+- button "Push 1, next, 3 lifts, about 45 minutes": PUSH 1 ~45 MIN BENCH PRESS 3×8 CABLE FLY 3×12 OVERHEAD PRESS 3×8
+- button "Legs 2, 3 lifts, about 45 minutes": LEGS 2 3 LIFTS ~45 MIN
+- button "Start Push 1": Start
+- slider "Weight":
+  - img
+- button "History":
+  - img
