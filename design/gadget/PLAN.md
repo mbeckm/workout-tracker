@@ -15,6 +15,12 @@ You are the orchestrator session. You will rebuild Trim's interface as a "device
 7. `.cursor/skills/trim-ui/SKILL.md`: the current design system. It will be rewritten in Phase 0; keep its copy rules, selling rules, QA ideas and accessibility rules.
 8. `.agents/skills/` (Expo skills): `expo-module` (native module), `expo-animation`, `expo-router`, `eas-simulator`, `expo-ui`.
 
+**No new Claude Design rounds.** Under the redesign exemption (AGENTS.md *Gadget redesign*), screens without a prototype state are built by `designer` directly:
+- from their board: N9 paywall, N10 finish pick, PB1 plan packs, HR2/QC2 week moment
+- otherwise by analogy to the nearest prototype sheet: Welcome, Name, Units, Days, Settings, check-in, goal sheets, body detail, empty states, object icons, D5 figures
+
+Marvin reviews them on his phone. List them in the final PR under "Built without a prototype".
+
 Precedence when sources disagree: **this plan > SPEC.md > prototype > chosen boards > old trim-ui**. PRODUCT.md's Control rules still apply. Where the prototype breaks them, this plan says how to fix it (for example, the rest timer, §6.4).
 
 ---
@@ -68,21 +74,27 @@ Ship the redesigned Trim to Marvin's phone through EAS Update and preview builds
 | # | Question | DEFAULT |
 |---|---|---|
 | D1 | Settings location | A "Settings" row at the bottom of the menu sheet opens a Settings sheet. Contents: Name, Weight units, Sounds (on/off), Trim Pro, Restore purchases, Contact support, Privacy Policy, Terms of Use, Clear history. |
-| D2 | Light/dark appearance | Remove the Appearance setting. Sheets and moments are always dark; the device look is the finish. On first launch after the update, if the stored `appearance` was `dark`, or `system` with a dark system scheme, set the finish to 101 Graphite once. Keep the `appearance` field in the snapshot (unused) so nothing breaks. The status bar is dark text on Aluminium and Bone, light text on Graphite and Signal. |
-| D3 | Are finishes Pro? | 212 and 101 are free; 305 and 408 are Pro. Add the Pro reason `finishes` and the feature row "Every finish". Tapping a locked swatch previews it on the device for as long as the sheet is open, then reverts and opens the paywall when the sheet closes. Ask Marvin in the PR. |
+| D2 | Light/dark appearance | Remove the Appearance setting. Sheets and moments are always dark; the device look is the finish. On first launch after the update, if the stored `appearance` was `dark`, or `system` with a dark system scheme, set the finish to 101 Graphite once. Keep the `appearance` field in the snapshot (unused) so nothing breaks. The status bar is dark text on Aluminium and Bone, light text on Graphite and Signal. Never call `Appearance.setColorScheme` (the warning in `theme/theme-context.tsx`). Set `keyboardAppearance="dark"` on every sheet `TextInput`; alerts and action sheets stay system-styled. Run the migration only when `hasCompletedOnboarding` is true. New installs set `appearanceMigratedToFinish: true` and pick a finish in onboarding. |
+| D3 | Are finishes Pro? | 212 and 101 are free; 305 and 408 are Pro. Add the Pro reason `finishes` and the feature row "Every finish". Tapping a locked swatch previews it on the device and shows a light pill "Get Trim Pro" in the finishes sheet. The paywall opens only from that pill. Closing the sheet reverts the preview silently. During a workout, locked swatches preview only (no pill). In onboarding, locked finishes preview only; if the user isn't Pro after the paywall, the finish falls back to 212. Ask Marvin in the PR. |
 | D4 | Rank gauge and "stronger than X%" | Needs strength-standards data we don't have. Do not ship the gauge or the rank line. Progress opens with GOALS. Leave a `// rank:` TODO and a note in PRODUCT-DECISIONS. |
-| D5 | Exercise illustrations and how-to | No third-party media (AGENTS.md). Draw our own SVG figures for movement patterns: press, squat, hinge, pull, row, fly, curl, extension, raise, carry/hold. Map catalog rows to a pattern with a new optional `figure` field in `bundled.ts`, with fallback by target muscle; with no match, show no figure panel. Add a `howTo: [string, string, string]` field for the 40 most common bundled lifts, written in plain English and marked for Marvin's review; others show no HOW TO section. Search aliases stay catalog-only. |
+| D5 | Exercise illustrations and how-to | No third-party media (AGENTS.md). Draw our own SVG figures for movement patterns: press, squat, hinge, pull, row, fly, curl, extension, raise, carry/hold. Map catalog rows to a pattern in a **side map** in `bundled.ts` (like the aliases), exposed as `bundledExerciseInfo(name)` and keyed by `bundledExerciseId(prescription.name)`, with fallback by target muscle; with no match, show no figure panel. **Never put these fields on `ExercisePrescription`:** `clonePrescription` spreads rows into plans, so they would be persisted. Add `howTo: [string, string, string]` to the same side map for the 40 most common bundled lifts, written in plain English and marked for Marvin's review; others show no HOW TO section. Search aliases stay catalog-only. |
 | D6 | Rest timer reaching zero | PRODUCT Control: "Timers inform, they don't act." At 0:00 the display shows a blinking `GO` with the rest haptic for `REST_GO_MS` (2 s), then the display returns to the log view for the *same* upcoming set. Nothing is logged or advanced. The prototype's auto-return is fine because it only changes the view. |
-| D7 | Workout-complete screen | Replaced by the receipt sheet over Home. The post-workout paywall (first workout, `shouldOfferPostWorkoutPaywall`) opens when the receipt's Done is tapped, as today. Milestones and the week moment move to §8.4. |
+| D7 | Workout-complete screen | Replaced by the receipt sheet over Home. The post-workout paywall (first workout, `shouldOfferPostWorkoutPaywall`) opens when the receipt's Done is tapped, as today. Today's Done also shows milestones and goals reached; both move onto the receipt. It prints the milestone line (`milestoneFor(workout)`, then `claimMilestone` when the receipt is shown) under TRIM, and one `GOAL <LIFT> <target> ✓` line per `goalsReachedIn(workout, goals)`. The week moment is D15. |
 | D8 | Day preview, Weeks and Edit-name routes | Day preview is replaced by Home's expanded row. Weeks is replaced by the History wall. Renaming a plan or day happens in the editor sheet: tap the plan or day title to edit it inline (iOS text field in the sheet). Day actions (rename, duplicate, delete with Undo, reorder) live behind a `…` on the day header. |
 | D9 | Deleting a workout | Long-press a mini receipt on the History wall. An action sheet offers "Delete Push 1 from Thu 2 Oct?" and asks first, as PRODUCT says for completed workouts. |
 | D10 | Tracking modes on the device | See §6.6 for every mode. |
 | D11 | Body check-in | Keep the existing check-in sheet logic and restyle it as a dark sheet. Reach it from Progress, from the "Body weight" row's detail (`+` in the header) or a "Check in" row at the end of LIFTS when there's no body data. |
-| D12 | Onboarding order | Welcome (dark grid, the device fades in), Name, Units, Days, Pick a plan (packs as cartridges, PB1, or Build my own), Pick your finish (N10, free finishes plus locked ones), then the insert animation as "Plan ready", then the paywall (template path only, unchanged rules). Build my own: after the finish, insert an empty plan and open the editor sheet. |
+| D12 | Onboarding order | Welcome (dark grid, the device fades in), Name, Units, Days, Pick a plan (packs as cartridges, PB1, or Build my own), Pick your finish (N10, free finishes plus locked ones), then the insert animation as "Plan ready", then the paywall (template path only, unchanged rules). Build my own: after the finish, insert `emptyPlanWithDays(n)` (n days, no lifts; exempt from the "at least one lift" rule for Use plan) and open the editor sheet. |
 | D13 | Paywall | Keep `paywall` as a full-screen modal with all current RevenueCat and selling logic. Restyle it as a dark ground with the knob hero (N9): the knob turns from FREE to PRO once on appear; plans are pill cards; real prices only (trim-ui Selling). |
 | D14 | Sounds | On by default and silenced by the silent switch (ambient session). A toggle in Settings. |
-| D15 | Week-complete moment | When the last planned day of the week is finished, after the receipt's Done, play the HR2 spike moment with a week report (QC2 content: lifts up, records, volume, best). One Share action (system share sheet with a rendered image is optional; text is fine). It replaces the flame celebration. |
-| D16 | Live Activity | Keep the behaviour; recolour to orange on dark, Doto for the rest timer if `@expo/ui` allows custom fonts (otherwise the system monospaced digits). |
+| D15 | Week-complete moment | When `weekSlots` becomes full (see Phase 3 for the definition), after the receipt's Done, play the HR2 spike moment with a week report (QC2 content: lifts up, records, volume, best). One Share action (system share sheet with a rendered image is optional; text is fine). It replaces the flame celebration. |
+| D16 | Live Activity | Keep the behaviour. Recolour to orange on dark: replace `ACCENT '#007AFF'` in `widgets/WorkoutActivity.tsx`. Use `monospacedDigit()` system digits, not Doto: `expo-font` registers fonts only for the app target, not the widget extension. It's native, so it ships in native build 2 (Phase 9). |
+| D17 | Delivery channel for Marvin's phone | A dedicated channel, so the half-built redesign never reaches the `preview` build that `main` updates (other sessions publish `main` there). Create it with `npx eas-cli channel:create gadget`, and add an `eas.json` build profile `testflight-gadget` (`extends: production`, `channel: gadget`). Every gadget update is `npx eas-cli update --channel gadget --platform ios --environment production --message "…"`. Never publish gadget JS to `preview` or `production`. This means Marvin installs a second TestFlight build; ask him in the first status report. |
+| D18 | Deleting the active plan | The store's behaviour stays: `deletePlan` activates the next plan (`plans[0]`). `INSERT PLAN` shows only when `plans` is empty. |
+| D19 | Weight entry | The wheel steps with `loadIncrement`, `nextLoadUp` and `nextLoadDown` (`domain/targets.ts`). A null weight (no history) shows `--.-`, and the first notch starts at `nextLoadUp(0, loadIncrement(p, units))`. Long-pressing the drum opens a numeric keypad sheet to type a weight (off-grid loads like 81.25, and big jumps). |
+| D20 | Name and streak | The engraved label under the rocker reads `WEEK n`, and when `weekStreak ≥ STREAK_MIN` it adds `  ▲n` in orange (decisions 51/68). The receipt header prints `TRIM` and, when a name is set, the name on the next line. |
+| D21 | Editing an already-logged set | In Today (M3), tapping a logged set chip on a row puts the device in log mode on that set, with the header `EDIT SET n`. Log becomes "Save", and saving doesn't start rest (`beginEdit` / `commitEdit` / `updateSet` logic). |
+| D22 | Skipping long moments | Principle 7, nothing waits on an animation. Tapping the scene skips the insert to its end state. The receipt's Done is live from the first frame, and tapping the paper completes the feed. |
 
 ---
 
@@ -104,7 +116,7 @@ The root route becomes the device. The `(tabs)` group and `NativeTabs` are remov
 | `history-session`, `progress-lift`, `progress-body`, `plan/[id]`, `exercises`, `goal`, `check-in`, `day-workout` | delete the routes | their logic moves into sheets (§4.3); keep any domain code they own |
 | `day-preview`, `edit`, `weeks`, `exercise-sheet` | delete | D8 |
 
-The `SheetHost` is one controller for a single visible sheet with in-place content swaps (the prototype's `openSheet` / `swapSheet` / `closeSheet`). Build it on `react-native-reanimated` and `react-native-gesture-handler`, starting from `components/animated-sheet.tsx`. Requirements:
+The `SheetHost` is one controller for a single visible sheet with in-place content swaps (the prototype's `openSheet` / `swapSheet` / `closeSheet`). It renders in the root view tree as an absolutely positioned Reanimated layer above the device. **Never use RN `Modal`:** a Modal is a separate native window, so toasts would sit under it and the paywall route would fight it. Reuse only the pan, rubber-band and projection math from `components/animated-sheet.tsx`. Mount `ToastHost` above SheetHost. `requirePro` / `openPaywall` push the `paywall` `fullScreenModal` route, which must present above SheetHost; verify this in Phase 2 with the Settings → Trim Pro row. Requirements:
 - top-edge presets from SPEC §6, with swipe-down dismissal and scrim tap
 - `back` swaps the content
 - a keyboard-aware variant for search and the name fields (reuse `src/keyboard.tsx`)
@@ -115,9 +127,11 @@ Don't use the RNScreens `formSheet` for these: the device must stay mounted and 
 ### 4.2 Device state machine
 
 `DeviceMode = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading'`, plus a `sheet: SheetKind | null`.
-- Derived from the store's `logSession`: a session with `rest` set means `rest`, otherwise `log`; no session means `home`. `edit` and `loading` are UI states.
+- Mode comes from the in-memory open log owned by `useLogSession`: `openDay {planId, dayId, startedAt}`, drafts, rest. It does **not** come from the store. Rest running means `rest`; an open day means `log`; nothing open means `home`. `edit` and `loading` are UI states.
+- The persisted `logSession` (snapshot key `activeSession`) is only for restore on launch. It is written as today: debounced 400 ms, and only once a set is logged or the session was restored (`ownsSession` in `log-workout.tsx`). A started workout with 0 sets isn't persisted, so after a kill the app returns to Home, as today.
 - Keep it in a small UI store (`src/device/device-state.ts`, React context with a reducer). Logging data stays in the existing `LogSession` and store actions.
-- Port the prototype's transitions exactly: `setMode`, `logSet`, `undoSet`, `moveLift`, `startEdit` / `leaveEdit`, `activate`, `finishDay`.
+- The prototype defines the visuals and the UI transitions (`setMode`, `startEdit` / `leaveEdit`, `activate`). Logging transitions follow `log-workout.tsx`, not the prototype: `logSet` is `completeSet` (`nextIncompleteIndex(..., {wrap:false})`, `restSecondsForExercise`, no rest after the workout's last set), `undoSet` is `removeLoggedSet`, `moveLift` is `goToExercise`. Finish mode is entered only when `unloggedSetCount(drafts) === 0`, or from the menu's End workout.
+- `src/device/device-state.ts` imports no `react-native` (pure, like `domain/log-session.ts`), so it can be checked with `tsx` (§10).
 
 ### 4.3 Where the old screens' logic goes
 
@@ -127,7 +141,7 @@ Don't use the RNScreens `formSheet` for these: the device must stay mounted and 
 | `screens/home.tsx`, `components/week-slots.tsx`, `domain/home-numbers.ts`, `domain/plan-loop.ts`, `domain/weeks.ts` | domain logic | Home display rows (W1) and week lamps |
 | `screens/plans-tab.tsx`, `screens/plan-editor.tsx`, `components/prescription-row.tsx`, `editor-chrome.tsx`, `navigation/plan-created.ts` | plan CRUD, undo, Pro gates, auto-naming, Use this plan | the rack, editor and add sheets, plus device edit |
 | `screens/exercise-picker.tsx`, `catalog/*` | search, sections, recents, custom exercise creation | the add lifts sheet (and the Swap flow in Today) |
-| `screens/progress-tab.tsx`, `progress-lift`, `progress-body`, `goal-sheet`, `body-goal-sheet`, `check-in`, `components/progress-*`, `goal-block`, `window-chips` | all domain and series code, goal actions, window locks | the progress, lift detail, body detail and goal sheets (and check-in) |
+| `screens/progress-tab.tsx`, `progress-lift-detail.tsx`, `progress-body-detail.tsx`, `goal-sheet`, `body-goal-sheet`, `check-in`, `components/progress-*`, `goal-block`, `window-chips` | all domain and series code, goal actions, window locks | the progress, lift detail, body detail and goal sheets (and check-in) |
 | `screens/history-tab.tsx`, `history-session`, `components/recap-exercise.tsx`, `pr-crown.tsx`, `domain/set-lines.ts` | session data and PR detection | the History wall and receipt |
 | `screens/workout-complete.tsx`, `done-exercise.tsx` | milestone and paywall timing | receipt, week moment |
 | `screens/settings-tab.tsx` | all actions | the Settings sheet |
@@ -135,11 +149,11 @@ Don't use the RNScreens `formSheet` for these: the device must stay mounted and 
 | `components/toast.tsx` | keep | restyle (dark pill, SPEC `toast`) |
 
 **Never touch** (except imports):
-- `src/store/**` (except the new fields in §4.5)
+- `src/store/**` (except the §4.5 fields, their setters `setFinish`, `setSoundsOn`, `markWeekMomentShown`, and their `normalizeSnapshot` defaults)
 - `src/domain/**` (except additions)
-- `src/purchases/**`
+- `src/purchases/**` (except D3's `finishes` reason in `pro-gate.ts`, its `PRO_FEATURES` row in `pro-features.ts`, and the matching `REASON_HEADLINE` entry in `screens/paywall.tsx`)
 - `src/analytics/**` (except the events in §9)
-- `src/catalog/**` (except the D5 fields)
+- `src/catalog/**` (except the D5 side map)
 - `src/live-activity/**` (logic)
 - the persistence keys
 
@@ -151,17 +165,17 @@ Create it with the `expo-module` skill at `mobile/modules/trim-device/`. It is i
 |---|---|
 | `play(pattern: HapticPattern)` | Core Haptics `CHHapticEngine`; patterns from SPEC §8, as AHAP JSON or built in Swift. Restart the engine on reset or stop; respect `CHHapticEngine.capabilitiesForHardware().supportsHaptics`. |
 | `startContinuous(pattern)`, `stopContinuous()` | for hold to finish (ramp) |
-| `playSound(name)` | `AVAudioPlayer` with the session category `.ambient`, mixing with others. Files come from `mobile/assets/sounds/*.wav` (render them with `mobile/scripts/render-sounds.mjs` using the synthesis in SPEC §9). |
+| `playSound(name)` | `AVAudioPlayer` with the session category `.ambient`, mixing with others. The WAVs ship as module resources in `modules/trim-device/ios/sounds/`, listed in the podspec `s.resources`, so they're native and change only with a build. Render them with `mobile/scripts/render-sounds.mjs` using the synthesis in SPEC §9. Load them from the module bundle and preload them at startup. |
 | `CartridgeInsertView` (native view) | SceneKit: a device box with rounded edges and depth ~44 pt equivalent, in the current finish's colours, with the display as a material texture (or a flat dark plane plus an overlay). Then a cartridge with a label texture rendered from props `{planName, days[]}`, the camera move, insertion, overshoot, the click, the swing back. Emits `onSeated` (JS plays the boot and display update) and `onFinished`. Timings from SPEC §7. |
 
 **Fallback.** Ship a pure-JS 2.5D version of the insert first: Reanimated with a perspective transform on stacked views, as in the prototype. RN has no `translateZ`, so fake the depth by stacking 22 offset copies of the body outline, offset by 1 pt diagonally and darkening. Use it on web and as a fallback if the native view fails to load. The prototype's frames are the visual target for both.
 
 Native changes alter the runtime fingerprint, so they need a new build. Group them so there are at most **3 native builds** in the whole project:
 1. fonts, the module (haptics and sounds) and the `expo-font` plugin
-2. the SceneKit view
+2. the SceneKit view and the Live Activity recolour (D16)
 3. any final fix
 
-Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's phone, run `npx eas-cli build --platform ios --profile testflight-preview --auto-submit`, which needs Marvin only if credentials prompt; give him the answers listed in AGENTS.md.
+`development-simulator` builds for EAS Simulator don't count toward this limit. Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's phone, run `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit` (D17), which needs Marvin only if credentials prompt; give him the answers listed in AGENTS.md.
 
 ### 4.5 Data additions (backward compatible)
 
@@ -171,7 +185,7 @@ Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's
   - `appearanceMigratedToFinish: boolean`, for D2
   - `weekMomentsShown: string[]` (ISO week keys), to show the week report once
 - `normalizeSnapshot` must default them, so old snapshots load unchanged.
-- Catalog: the optional `figure` and `howTo` fields (D5). They are never persisted into plans (AGENTS.md: catalog metadata stays in the catalog).
+- Catalog: the D5 side map (`figure`, `howTo`). It is never on `ExercisePrescription`, so it is never persisted into plans.
 - No changes to `WorkoutPlan`, `LoggedWorkout`, `LogSession`, `Goal` or `BodyCheckIn`.
 
 ### 4.6 Tokens and theme
@@ -182,6 +196,8 @@ Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's
   - keep `space`, `radius`, `spacing` and `iconSize`, extended where SPEC needs (radius 22, 24, 28, 38)
 - Add to `src/motion.ts`: `DEVICE` durations and easings from SPEC §7 (`KEY_PRESS: 80`, `SHEET: 380` with `EASE_SHEET_GADGET: bezier(.2,.9,.3,1)`, `DRUM: 160`, `HOLD: 1100`, `FEED: 1800`, and so on).
 - Fonts: copy `design/gadget/fonts/*.ttf` to `mobile/assets/fonts/`, register them with the `expo-font` config plugin in `app.json` (Doto-Black and IBMPlexMono Medium/Bold), and use `fontFamily: 'Doto-Black'`, `'IBMPlexMono-Medium'` and `'IBMPlexMono-Bold'`. For SF Rounded use `fontFamily: 'ui-rounded'`; verify in the gallery on the iOS Simulator that the glyphs really are rounded (compare the `a` and `1` against SF Pro). If React Native does not resolve it, add `roundedFontName()` to the `TrimDevice` module. It returns the PostScript name of `UIFont.systemFont(ofSize:weight:)` with `.withDesign(.rounded)` for weights 600, 700 and 800, and the tokens use those names. Never bundle SF font files.
+- **Drawing without new native dependencies.** Use RN 0.86 `experimental_backgroundImage` (linear and radial gradients) and `boxShadow` (including inset), or `react-native-svg` (installed) for the brushing pattern, receipt zigzags, conic knob ridges, ObjectIcons and figures. Add no native dependency outside native build 1: no `expo-linear-gradient`, no `expo-clipboard`, no `expo-blur`.
+- **Geometry and weights are tokens too.** The ratchet flags raw font weights and off-scale spacing outside `theme.ts`. Add a `device` geometry block (`displayPad: 22`, `edge: 20`, `lampGap: 7`, key sizes, radii 22/24/28/38) and the 600/700/800 weights in `theme.ts`. Keep `PRESSED_OPACITY`, `TOUCH_TARGET` and `fontScaleCap`. `REST_GO_MS = 2000` moves to `motion.ts`. On web the fonts need `useFonts`.
 - The design-token ratchet: new code uses tokens only. When old files are deleted, run `node scripts/check-design-tokens.mjs --update` to lower the baseline. **Never raise it.** Add rules for the new palettes if useful (for example, forbid raw `#FF6A1A`).
 
 ---
@@ -212,7 +228,7 @@ Locally use `npx expo prebuild --platform ios && npx expo run:ios`. For Marvin's
 - **Review:** the orchestrator reviews every diff against SPEC and the screenshots before merging, and sends it back with concrete deltas ("display padding is 18, SPEC says 22").
 - **Ledger:** keep a run log at `.claude/gadget-runs/<date>.md` (add `.claude/gadget-runs/` to `.gitignore`), recording each task, its agent, its status, its verification evidence and any open issues.
 - **Never:**
-  - publish to the `production` EAS channel
+  - publish to the `production` EAS channel, or publish gadget JS to `preview` (D17)
   - rename load-bearing identifiers (AGENTS.md)
   - `git add -A .cursor`
   - raise the token baseline
@@ -229,10 +245,10 @@ Each phase lists tasks, files and **acceptance checks**. A task is done only whe
 
 1. In `mobile/`: `npm ci`, `npm run check` (record the baseline), `npx expo lint` (record the known errors).
 2. Tag `archive/pre-gadget`. Create `gadget/main`.
-3. Write **decision 73 "The device"** in `PRODUCT-DECISIONS.md`. Summarise §2, D1–D16, what it replaces (decisions 59–72 for Home, 67 for the brand hue, 70/71 for the editor surface, the tab model), and link `design/gadget/`.
+3. Write **decision 73 "The device"** in `PRODUCT-DECISIONS.md`. Summarise §2, D1–D22, what it replaces (decisions 59–72 for Home, 67 for the brand hue, 70/71 for the editor surface, the tab model), and link `design/gadget/`.
 4. Update `PRODUCT.md`: Tabs becomes "Device and menu"; update the Workout/Home, Plans, Progress and History sections, Principle 12's colour roles, and onboarding. Keep the Control rules verbatim.
 5. Rewrite `.cursor/skills/trim-ui/SKILL.md` on the same skeleton (Principles, Structure, Typography, Spacing, Color, Shape, Icons, Motion with Haptics, Copy, Components, Charts, Selling, Per screen, Do not, QA, Enforcement). Content comes from SPEC plus this plan. Keep the Copy, Selling and accessibility rules. Remove Liquid Glass, indigo and native tabs. Update `.cursor/skills/implement-screen/SKILL.md` to point at the device and sheet primitives.
-6. Add an AGENTS.md section "Gadget redesign" pointing to `design/gadget/` and stating that Paper and old screenshots are obsolete for UI.
+6. Update the existing AGENTS.md section "Gadget redesign (in progress)": Paper and old screenshots are obsolete for UI, and the cloud self-check becomes `node scripts/web-smoke.mjs /tmp/trim-web /` (`/settings` is deleted).
 
 **Accept when:**
 - The docs are merged into `gadget/main`.
@@ -253,16 +269,16 @@ Each phase lists tasks, files and **acceptance checks**. A task is done only whe
    - `BigKey`: `primary | metal | disabled`, press depth, Signal variant
    - `Well`
    - `HoldRing`
-   - `Wheel`: pan gesture on the UI thread, a notch every 16 pt, ridge texture offset following the finger, and an `onNotch(±1)` callback through `runOnJS`; it also accepts accessibility increment and decrement
+   - `Wheel`: pan gesture on the UI thread, a notch every 16 pt, ridge texture and drum offset driven by shared values, and per notch `scheduleOnRN(onNotch, ±1)` (`runOnJS` is deprecated in Reanimated 4; the code already uses `scheduleOnRN`), with `TrimDevice.play` called on the JS thread. Commit the weight to React state at most once per frame. If the haptic latency is noticeable on device, move the wheel into the module as a Swift view (`UIPanGestureRecognizer` plus haptics, emitting `onNotch`); it also accepts accessibility increment and decrement
    - `EngravedLabel`
 3. **`TrimDevice` module** (haptics and sounds) with the JS fallback, and a `useHaptics()` hook exposing the named patterns from SPEC §8. Sounds rendered into `assets/sounds/`.
 4. **A dev-only gallery route** `src/app/dev-gallery.tsx`. It redirects to `/` unless `__DEV__`. Expo Router treats files starting with `_` or `+` specially, so the name has neither. It shows every primitive in every state and finish next to each other at 390 × 844 for screenshot comparison.
-5. **Native build 1** (local `expo run:ios`, and a `testflight-preview` build for Marvin once Phases 2–4 are in).
+5. **Native build 1:** local `expo run:ios`, and a `testflight-gadget` build (D17) for Marvin once Phases 2–4 are in.
 
 **Accept when:**
 - The gallery renders on the iOS Simulator.
 - Each part is screenshotted next to the matching crop of `screens/04-log-set.jpg`, `01-home.jpg` and `08-rest.jpg`, and differences are listed as zero or justified.
-- Wheel notches fire haptics on a device; Marvin confirms on the TestFlight build.
+- Wheel haptics are confirmed by Marvin after Phase 4's TestFlight build. Record that as pending in the ledger and don't block on it.
 - `npm run check` and the web smoke test are green (the web build must not crash: native module guarded).
 
 ### Phase 2: The shell (builder)
@@ -281,28 +297,40 @@ Each phase lists tasks, files and **acceptance checks**. A task is done only whe
 3. The menu sheet (N4 plus D1): End workout during a session, the finish card, Plans, Progress, History, Settings.
 4. Remove `(tabs)` and NativeTabs. Point the onboarding gate and the paywall at the new root. Keep the `log` route as a deep-link alias (§4.1). Update `scripts/web-smoke.mjs` default routes.
 5. The toast restyled.
+6. **The device command API:** `useDevice().open({mode:'log', planId, dayId, exerciseId?} | {sheet, params})`, plus `/` search params (`?log=1&planId&dayId&exerciseId`, `?sheet=editor&planId&new=1`, `?sheet=progress|lift|body`).
+   - Rewrite on top of it: the Live Activity handler in `_layout.tsx` (today it branches on `segments[0] === 'log'` and pushes `/log`), `useStartDay` (keep `track('workout_started')`), the progress demo redirects, and `finishBuildingOwn` (today it pushes `/plan/<id>?new=1`).
+   - Replace `AppThemeProvider` / `useTheme` / `ThemedNavigation` with `FinishProvider`.
+   - Keep every existing analytics event: `workout_started`, `set_logged`, `workout_completed`, `check_in_saved`, `onboarding_completed`, and the paywall and purchase events.
 
 **Accept when:**
 - The app boots to the device. The menu opens and closes (swipe, scrim, ✕).
 - VoiceOver reads the menu items.
 - The Live Activity URL `scratchworkout:///log?...` opens the device in log mode on the right exercise (manual test with `xcrun simctl openurl`).
 - The web smoke test passes for `/`.
+- The paywall presents above an open sheet (Settings → Trim Pro), and a toast shows above a sheet.
 
 ### Phase 3: Home (designer)
 
 Build W1 exactly as `screens/01-home.jpg` and `14-home-day-stamped.jpg`.
-- **Rows** come from the active plan's days and this week's completions: `planLoopProgress`, `weekSlots`, `startOfLocalWeek` (Monday). Done meta comes from the `LoggedWorkout` (weekday, `durationMinutes`, `setCount`). The PR stamp text comes from `workoutPersonalBests` (first lift name plus `PR`; if several, `2 PRS`).
-- **Selected day:** suggested by `nextDayIndex`; tap a row to pick another. The expanded row shows up to 4 lifts with the prescription. If there are more than 4, the 4th line is `+N MORE`.
-- **Rocker body (week variant):** one lamp per planned day (green for done, orange for selected, off otherwise). WEEK n engraved under it (the ISO week number of the training week, or `WEEK` plus the count since the plan started; DEFAULT: weeks since the plan's `createdAt`, starting at 1).
+- **Definitions (use exactly these):**
+  - Rows are the plan's **trainable** days (`trainableDays`).
+  - A row is **stamped** iff a `LoggedWorkout` with that `dayId` has `completedAt >= startOfLocalWeek(now)`.
+  - **Lamps** are one per trainable day, filled from `weekSlots(history, weekStart, trainableDays.length)` in the order trained (decision 51), so a repeated day lights a lamp.
+  - `WEEK DONE` and D15 fire when `weekSlots` is full.
+- **Rows** come from those definitions. Done meta comes from the `LoggedWorkout` (weekday, `durationMinutes`, `setCount`). The PR stamp text comes from `workoutPersonalBests` (first lift name plus `PR`; if several, `2 PRS`).
+- **Selected day:** `planLoopProgress(...).nextDayIndex`; if that day is stamped this week, the first unstamped trainable day. Tap any row to pick it: stamped rows stay tappable, and Start repeats that day. The expanded row shows up to 4 lifts with the prescription. If there are more than 4, the 4th line is `+N MORE`.
+- **Rocker body (week variant):** lamps as defined above (green for filled, orange for the selected day if it isn't filled, off otherwise). WEEK n engraved under it (the ISO week number of the training week, or `WEEK` plus the count since the plan started; DEFAULT: weeks since the plan's `createdAt`, starting at 1).
 - **Keys:**
   - The big key Start starts the selected day (same logic as `useStartDay`, including the conflict with another day's open session: confirm first).
   - Top right opens the History sheet. The wheel is stowed and there are no left keys.
 - **States:**
   - Mid-workout: Home isn't shown; the device is in log mode. If the user is in the menu during a session, the menu shows End workout.
-  - Week complete: all rows stamped, the big key disabled with the label "Start", the rocker lamps all green, the display footer shows `WEEK DONE` (D15's moment plays once).
-  - No active plan: the display shows `SLOT EMPTY` and `INSERT PLAN` (blinking), and the big key is "Plans" (metal), opening the rack.
+  - Week complete: all rows stamped, the rocker lamps all green; Start stays enabled and repeats the selected day (never disabled while a trainable day exists); the display footer shows `WEEK DONE` (D15's moment plays once).
+  - No plans at all (D18): the display shows `SLOT EMPTY` and `INSERT PLAN` (blinking), and the big key is "Plans" (metal), opening the rack.
   - A day with 0 lifts: the row shows `0 LIFTS`, and Start toasts "Add lifts to this day first" and opens the editor on that day.
   - Rest days and calendar gaps: none (the week is a count, not a calendar; decision 72 stays).
+- **Row meta:** `~N MIN` uses `estimateDayMinutes` / `formatEstimateMinutes` (`domain/day-facts.ts`), not the prototype's 15 minutes per lift.
+- **Fixtures:** use `EXPO_PUBLIC_HOME_DEMO=pro-complete|pro-almost|pro-trained` (`store/home-demo.ts`) for the state screenshots.
 - **Animations:** a day just finished stamps in and its lamp flickers green when Home reappears after the receipt (SPEC §7).
 
 **Accept when:**
@@ -315,8 +343,8 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
 - **The display:**
   - The header shows the exercise name ▾ (tap opens the exercise sheet) and the set label `SET n/m`, or `EXTRA SET` when all prescribed sets are done.
   - The drum shows the weight (step per §6.6) and `×reps`. The footer shows `LAST 80×8`, or for Pro with a target `TARGET 87.5×8`. Free users with targets locked see a dim `TARGET ›`, which opens the paywall `targets`.
-- **Wheel:** changes the weight by one step per notch. Weight below 0 is clamped.
-- **Reps keys:** `+` and `−`, clamped to 1–99. A long press repeats.
+- **Wheel:** changes the weight per D19. Weight below 0 is clamped. Long-pressing the drum opens the keypad sheet (D19).
+- **Reps keys:** `+` and `−`, clamped to 1–50 (everywhere, also in plan edit). A long press repeats.
 - **The big key "Log":** `completeSet` with every existing rule:
   - the first weighted set with no weight: the drum is focused (flash the frame) instead of logging
   - carry-forward
@@ -324,8 +352,15 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
   - `track('set_logged')`
   - rest starts with `restSecondsForExercise`
   - auto-advance to the next incomplete lift when the current one is done (PRODUCT Control: the obvious next step only)
-- **Rocker:** `‹ ›` move between lifts (`goToExercise`); lamps show done / part / on. The middle opens Today (M3): jump, reorder (drag), Swap (alternatives via `alternativesFor`, plus the picker), Add lift (picker, `from=log` semantics), Remove (Undo), "i" opens the exercise sheet.
-- **Top right:** Undo last set (disabled when there's nothing to undo).
+- **Rocker:** `‹ ›` move between lifts (`goToExercise`); lamps show done / part / on. The middle opens Today (M3):
+  - Jump: tap a row.
+  - Reorder: drag. It writes the plan (`persistOrder`), as today.
+  - Swap: alternatives via `alternativesFor`, plus the picker in replace mode (`from=log` today means replace only). It keeps logged sets and writes the plan, exactly as `swapExercise` does; no dialog.
+  - Add lift (DEFAULT, new): appends to the day in the plan and to the session drafts.
+  - Remove (DEFAULT, new): takes the lift out of today's session only (drafts), with an Undo toast. A lift with logged sets stays as an orphan; the plan is untouched.
+  - Edit a logged set (D21).
+  - "i" opens the exercise sheet.
+- **Top right:** Undo last set (disabled when there's nothing to undo). It acts immediately (`removeLoggedSet`) and shows the toast "<Lift> set n undone" with an Undo action that re-logs it. No dialog (today's `confirmUndoSet` goes, per PRODUCT Control).
 - **Rest mode:**
   - The ring shows the time left; ±15 with the keys and with the wheel (2 notches = 15 s); the big key is "Skip" (metal).
   - At 0, show GO, play the haptic and return the view after 2 s (D6).
@@ -335,7 +370,7 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
   - the conflict dialog when starting another day
   - the Live Activity syncs on every exercise and rest change (as today)
   - the deep link focus works
-- **Finish (`11`, `12`):** the menu's End workout, or completing the last set, enters finish mode. Hold the big key 1.1 s (continuous haptic ramp, ring). Releasing early cancels. The left key "Back" returns to the next incomplete lift (only when not all sets are done). Completion runs `finish()` (`completeWorkout`, `clearLogSession`, track, Live Activity end), then the receipt sheet (Phase 5). Discarding a workout with no logged sets: hold to finish with 0 sets shows `NOTHING LOGGED` and the key label "Discard"; it asks first, as the existing discard does.
+- **Finish (`11`, `12`):** the menu's End workout, or completing the last set, enters finish mode. Hold the big key 1.1 s (continuous haptic ramp, ring). Releasing early cancels. In finish mode the top-right key stays Undo last set and the left key "Back" is always shown: it returns to the next incomplete lift, or with all sets done to the last lift, where Log adds an `extra: true` set. Completion runs `finish()` (`completeWorkout`, `clearLogSession`, track, Live Activity end), then the receipt sheet (Phase 5). Discarding: the menu during a workout shows "End workout" and under it "Discard workout". Discard asks first with the existing copy ("Discard workout? N sets logged will not be saved.") and runs the `discardWithoutSaving` logic. With 0 sets logged, finish mode shows `NOTHING LOGGED` and the big key reads "Discard" (the same confirmation). The finish display has no `HOLD TO FINISH` text (a gesture hint); the big key's VoiceOver label is "Finish workout, hold".
 
 **Accept when** these scenarios pass on the simulator (qa-tester) and screenshots match the targets:
 1. A full Push day: 9 sets logged with the wheel and keys.
@@ -348,12 +383,13 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
 8. A timed hold.
 9. Swapping a lift via Today.
 10. Ending early and holding to finish.
-11. Two days in conflict.
+11. Two days in conflict. The conflict can only come from a Live Activity or deep link to a different `dayId` (Home isn't shown mid-workout). Test it with `xcrun simctl openurl` and keep the existing `confirmAction` copy from `log-workout.tsx`.
 
 ### Phase 5: Receipt, History, moments (designer)
 
 1. The receipt sheet (`13`, `03`): the slot, the stepped feed, the thermal paper and the zigzag (SPEC §6). Content from the `LoggedWorkout`: `compressSetLines` for the `w × r, r, r` lines, `workoutPersonalBests` for the PR line, and the estimated max of the first lift via `estimatedOneRM`. The print haptic and sound.
-   - Copy shares the receipt text.
+   - Share (RN core `Share.share({message: receiptText})`) replaces Copy. There's no clipboard dependency.
+   - The feed is skippable (D22).
    - Done closes and triggers, in order: the Home stamp, the week moment (D15) if it applies, then the post-workout paywall (D7) if it applies. Never two modal moments at once; queue them.
 2. The History wall (`02`): `workoutHistory` grouped by training week (Monday start), with the week header showing that week's lamps (done of planned). Mini receipts as in SPEC. Tapping prints the full receipt (with ‹ back to the wall). Long-press deletes (D9) with the existing `deleteWorkout`. Empty state: one blank, torn receipt reading `NO WORKOUTS YET`.
 3. The week moment (D15, HR2 + QC2) as a full-screen moment on the dark grid ground, with a Share action and Done.
@@ -376,10 +412,14 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
    - auto-naming new plans from day names (decision 71); no name prompt on entry
    - "Use plan" for an inactive plan (Pro gate `switch_plan` as today)
    - an empty plan's first state: one day, "Add lift" emphasised in orange
-3. Device edit (`22`): tap a chip and the sheet hides. The device shows `DAY EDIT` with `SETS × REPS`; left keys set sets (1–10), the wheel sets reps (1–50). Duration-mode lifts: the wheel sets seconds in 5 s steps, `SETS × 0:45`. The rocker moves between the day's lifts, and its middle, ‹ or Done return to the editor. Top right removes the lift (Undo toast). Changes save immediately to the plan (store `updatePlan`), matching today's editor.
+   - the editor header `…` holds Rename, Use plan and Delete plan. Delete archives (`deletePlan`) with an Undo toast (`undoable-deletes`); D18 applies to the active plan.
+   - lifts reorder by drag, with Move up and Move down as accessibility actions (`moveExercise`)
+   - leaving a new plan with no name and no lifts discards it silently, without filing (`plan-editor.tsx`)
+   - auto-name per `suggestedPlanName` (decision 71)
+3. Device edit (`22`): tap a chip and the sheet hides. The device shows `DAY EDIT` with `SETS × REPS`; left keys set sets (1–10), the wheel sets reps (1–50). Duration-mode lifts: the wheel sets seconds in 5 s steps, `SETS × 0:45` (minute-based cardio: 1 min steps, `SETS × 20 MIN`). The rocker moves between the day's lifts, and its middle, ‹ or Done return to the editor. Top right removes the lift (Undo toast). Changes save immediately to the plan (store `updatePlan`), matching today's editor.
 4. The add lifts sheet (`23`): search (`searchExercises` with aliases), muscle sections (catalog `sections.ts`), recents, multi-select ticks, "Add N lifts" (sets and reps defaults from the catalog row or 3 × 10), creating a custom exercise (port from `exercise-picker.tsx`).
 5. **Saving (filing):** when the editor closes back to the rack after any change, that plan's cartridges file in (SPEC §7). Creating a plan files it too.
-6. **Activation:** Use plan runs `activatePlan` (store), then plays the insert (Phase 9's native view when available, otherwise the JS 2.5D fallback built here), then Home. Blocked while a session is open, with the toast "Finish your workout first". The week lamps reset to the new plan's days; history is untouched.
+6. **Activation:** Use plan is allowed only if at least one day has a lift (toast "Add a lift first"), except onboarding's Build my own. It runs `activatePlan` (store), then plays the insert (Phase 9's native view when available, otherwise the JS 2.5D fallback built here), then Home. Blocked while a session is open, with the toast "Finish your workout first". The week lamps reset to the new plan's days; history is untouched.
 
 **Accept when:**
 - Screenshots match `20`–`25` and the `frames/` sequence (the JS fallback, frame by frame within reason).
@@ -392,7 +432,7 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
 
 1. The progress sheet (`18`, without the gauge per D4):
    - GOALS (pinned goals, up to 3, as `goal-block`, rings in green; reached goals marked)
-   - LIFTS (tracked lifts via `collectTrackedLifts`; sparkline over 30 days, or 90 as a setting kept from today; value is the estimated max; change versus the window start; record colouring when the last point is a PR)
+   - LIFTS (tracked lifts via `collectTrackedLifts`; sparkline over `PROGRESS_SPARKLINE_DAYS` (30), fixed (decision 62); value is the estimated max; change versus the window start; record colouring when the last point is a PR)
    - BODY rows
    - long-press a lift to set a goal (as today)
    - empty state: `No lifts yet` plus the next day's lifts dim
@@ -431,7 +471,14 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
 
 ### Phase 10: Cleanup and release prep (builder)
 
-1. Delete the unused routes, screens and components (old Home variants, tabs, paper primitives, the old log JSX, `day-preview`, `weeks`, `edit`, `workout-complete`, `exercise-sheet`) after confirming no imports (`tsc` and grep).
+1. Delete everything unreachable after `tsc` and grep. That includes at least:
+   - the `(tabs)` group and the routes listed for deletion in §4.1
+   - `screens/workout-tab.tsx`, `workout-tab-numbers.tsx`, `edit-sheet.tsx`, `day-workout.tsx`, `day-preview.tsx`, `weeks.tsx`, `exercise-sheet.tsx`, and the old `log-workout.tsx` JSX
+   - `components/day-chips`, `home-day-row`, `week-days`, `week-progress`, `week-slots` (the component, not the domain function), `last-time-line`, `target-line`, `residue-set-row`, `log-rest`, `fact`, `lift-row`, `button`, `paper`
+   - `navigation/rename-prompt.ts`, `plan-created.ts`, `picker-return.ts`, `large-title.ts`
+   - `theme/theme-context.tsx`
+
+   Keep the `store/home-demo.ts` and `progress-demo.ts` fixtures (rewire them to the device).
 2. Lower the token baseline (`--update`). Lint: no new errors versus Phase 0's baseline.
 3. The Live Activity recolour (D16).
 4. Docs: PRODUCT.md and trim-ui are final; AGENTS.md "Gadget redesign" now points to the shipped code and keeps `design/gadget/` as history.
@@ -443,10 +490,11 @@ Port all of `log-workout.tsx`'s behaviour into device mode, matching `04`, `05`,
 
 | `trackingMode` | Drum (wheel) | Keys | Footer | Notes |
 |---|---|---|---|---|
-| `weightAndReps` | weight; step by equipment: kg barbell 2.5, dumbbell 2 (pairs; the display shows per-hand weight), machine/cable 2.5 (isolation 1); lbs: 5, isolation 2.5 (from `targets.ts INCREMENTS`) | reps ± | LAST / TARGET | first-set weight rule |
+| `weightAndReps` | weight; step by equipment: kg barbell 2.5, `loadIncrement` / `nextLoadUp` / `nextLoadDown` from `domain/targets.ts` (kg: bar 2.5, dumbbell 2, others 2.5 or 1; lbs: 5 or 2.5). The drum shows the stored value unchanged (no per-hand conversion). D19 for a null weight and the keypad. | reps ± | LAST / TARGET | first-set weight rule |
 | `reps` (bodyweight) | **reps** (`×12` big, 104) | ± reps as well (both work) | LAST 12 | no KG label; the wheel label is REPS |
 | `counterweightAndReps` (assisted) | assistance in kg, shown `−20.0` with an `ASSIST` header | reps ± | LAST | less assistance is progress |
-| `duration` (holds, timers, mobility) | seconds, 5 s per notch, shown `0:45` | ±5 s | LAST 0:40 | the big key can be "Start" (runs a countdown on the display) then "Log". DEFAULT: just Log, no countdown. |
+| `duration` (holds, timers, mobility) | seconds, 5 s per notch, shown `0:45` | ±5 s | LAST 0:40 | DEFAULT: just Log, no countdown. |
+| `duration` where `durationIsMinutes(prescription)` (the custom kind "Cardio (minutes)") | minutes, 1 min per notch, shown `20 MIN` | ±1 min | LAST 20 MIN | |
 | `repsAndDuration` | duration on the wheel | reps ± | | |
 | `distanceAndDuration`, `weightAndDistance` | Not used by bundled exercises (AGENTS.md). If met (custom), show two values on the display; the wheel edits the first, the keys edit the second. | | | |
 
@@ -460,7 +508,7 @@ Units: kg or lb from the store. All conversions use the existing helpers; never 
 - Starting a day while another day's session has logged sets: confirm the dialog (keep the existing text).
 - Starting the same day again: resume.
 - Removing the current lift via Today: move to the next one; if it was the last, go to finish.
-- Swapping a lift with logged sets: ask first (as today).
+- Swapping a lift with logged sets: no dialog. The logged sets stay and the plan is updated, exactly as `swapExercise` does today.
 - Plan edited while a session is open: the open session keeps its drafts (orphans as today, `normalizeLogSession`).
 - The active plan deleted while the app is closed: the session is dropped on launch (existing).
 - Rest running when the app is killed: on launch, if `endsAtMs` has passed, show the log view with no GO.
@@ -480,7 +528,7 @@ Units: kg or lb from the store. All conversions use the existing helpers; never 
 - Home after onboarding with no history: no stamps, the first day selected.
 
 **Plans**
-- Free user: 1 plan. A second one hits the paywall. Switching hits the paywall. Deleting the active plan leaves no active plan (Home shows `INSERT PLAN`).
+- Free user: 1 plan. A second one hits the paywall. Switching hits the paywall. Deleting the active plan activates the next one, as the store does today (D18). Home shows `INSERT PLAN` only when no plans are left.
 - An empty plan or day: Use plan is allowed only if at least one day has a lift (otherwise toast "Add a lift first").
 - Duplicate day names: allowed; cartridge labels may repeat.
 - Names longer than the cartridge label: truncated to 6 characters for the label only.
@@ -548,12 +596,13 @@ Update `legal/privacy.html` only if the collected categories change; these don't
   3. The orchestrator (or `designer`) lists every visible difference: position, size, colour, type, radius, shadow.
   4. Fix, or justify each difference in the ledger. Tolerance: 2 pt layout, exact colours (token values), the same font roles.
 - **Visual (cloud sessions):** the web export gives layout only (no native fonts, no shadows parity). Use EAS Simulator (`.agents/skills/eas-simulator/SKILL.md`; check `simulator:availability`, always stop the session) for iOS screenshots.
+- **No iOS Simulator reachable** (cloud without EAS Simulator access): use the web export screenshots for layout. Mark native-only checks `needs-device` in the ledger and continue. They're batched into Marvin's checklist after the next gadget build. Never stall waiting for a Simulator.
 - **Behaviour:**
   - `qa-tester` runs the Phase 4 scenarios and §7 edge cases on the simulator, one screenshot per criterion.
-  - Add plain TS unit checks for the device state machine and the week rows with `tsx` (there's no test runner): `mobile/scripts/check-device-logic.ts` run in `npm run check`, asserting transitions (log, rest, auto-advance, undo, extra set, finish) on fixtures.
+  - Add plain TS unit checks for the device state machine and the week rows with `tsx` (there's no test runner): `mobile/scripts/check-device-logic.ts`, asserting transitions (log, rest, auto-advance, undo, extra set, finish) and the week definitions (stamps, lamps, selection) on fixtures. Add `tsx` to devDependencies, add the script to `npm run check`, and add a step `npx tsx scripts/check-device-logic.ts` to `.github/workflows/checks.yml` (CI runs `tsc` and the token script directly, not `npm run check`).
 - **Feel (only Marvin):** after Phases 4, 6 and 9, ship to his phone:
-  - JS-only changes: `npx eas-cli update --channel preview --platform ios --environment production --message "<what changed>"`
-  - native changes: a `testflight-preview` build
+  - JS-only changes: `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"` (D17; never `preview` or `production`)
+  - native changes: a `testflight-gadget` build
   - Send him a short look-and-feel checklist: wheel detents, key press depth, the click, the receipt, readability in the gym, one-handed reach.
 
 ## 11. Final QA checklist (all must be ticked in the final PR)
@@ -570,13 +619,13 @@ Update `legal/privacy.html` only if the collected categories change; these don't
 - [ ] The Live Activity: start a workout, lock the phone, rest countdown, tap to open on the right lift.
 - [ ] `npm run check` green, lint has no new errors, web smoke green, the token baseline lowered (never raised).
 - [ ] PRODUCT.md, PRODUCT-DECISIONS (73), trim-ui and AGENTS.md updated.
-- [ ] Nothing published to the `production` channel.
+- [ ] Nothing published to `production`, and no gadget JS published to `preview`.
 
 ## 12. Risks and mitigations
 
 | Risk | Mitigation |
 |---|---|
-| The wheel's gesture feel or haptic latency | Run the pan on the UI thread. Call the haptic directly from the native module through a JSI-friendly sync call if `runOnJS` latency is noticeable. Tune the notch distance (16 pt) with Marvin. |
+| The wheel's gesture feel or haptic latency | Run the pan on the UI thread. If `scheduleOnRN` latency is noticeable, move the wheel into the module as a native Swift view (pan recognizer plus haptics, emitting `onNotch`). Tune the notch distance (16 pt) with Marvin. |
 | SceneKit effort larger than expected | The JS 2.5D fallback ships first (Phase 6). The native view is an upgrade (Phase 9). |
 | Font rendering differences (Doto metrics) | Gallery comparison in Phase 1. Adjust `lineHeight` per role in tokens, not per screen. |
 | Losing logic while splitting `log-workout.tsx` | Port the hooks first, unchanged, behind the old UI; verify; then swap the views. Keep the Phase 4 scenarios as the regression list. |
@@ -599,7 +648,7 @@ Update `legal/privacy.html` only if the collected categories change; these don't
 ## 14. Definition of done
 
 1. All phases 0–10 are merged into `gadget/main`, and the final PR into `main` is open with the §11 checklist fully ticked and evidence attached.
-2. Marvin has used a `testflight-preview` build with the native module and the SceneKit insert, and the preview channel carries the latest JS.
+2. Marvin has used a `testflight-gadget` build with the native module and the SceneKit insert, and the `gadget` channel carries the latest JS.
 3. No old UI remains reachable. Old code is deleted, with the `archive/pre-gadget` tag present.
 4. Docs are updated (decision 73, PRODUCT.md, trim-ui, AGENTS.md).
-5. "Defaults to confirm" (D1–D16 plus anything new) are listed in the final PR description.
+5. "Defaults to confirm" (D1–D22 plus anything new), and "Built without a prototype" (§0), are listed in the final PR description.

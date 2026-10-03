@@ -80,7 +80,7 @@ Receipt paper: #FCFAF4 to #EFEADF, ink #34322D, muted #8E8B83, PR line #C2410C.
 | Role | Font | Size / line height | Notes |
 |---|---|---|---|
 | lcdHero | Doto Black | 104 / 104 | weight on the drum, sets × reps in edit |
-| lcdBig | Doto Black | 54–64 / same | rest time, day name on Home's next row (20 in row) |
+| lcdBig | Doto Black | 54–64 / same | rest time |
 | lcdTitle | Doto Black | 40–46 | ALL DONE, plan name while loading |
 | lcdReps | Doto Black | 56 | ×8 |
 | lcdRow | Doto Black | 18–20 | lists on the display |
@@ -112,7 +112,7 @@ Dynamic Type: display (lcd) text is fixed size (it's a hardware display) and cap
 | Wheel | x(right 22) y588, 64 × 180, r24 | ridges 5 px light + 2 px dark; inner shadows top and bottom 16 px |
 | Wheel label | under the wheel, y774 | KG, TIME, REPS |
 
-Layout rule: the top row sits under the safe area, and the bottom row sits above the home indicator with 34 pt clearance at the reference size. The display takes the remaining height, at least 360 pt. On smaller phones (SE, mini), shrink the display first and keep the key sizes.
+Layout rule: the top row sits under the safe area, and the bottom row sits above the home indicator with 34 pt clearance at the reference size. The display takes the remaining height: at least 360 pt on screens 812 pt tall or more. On iPhone SE (667 pt) it may go down to about 296 pt, with a bottom clearance of 16 instead of 34 (there's no home indicator), and Home's rows scroll inside the display. Keep the key sizes on every phone.
 
 ## 5. Display states (content layout)
 
@@ -134,7 +134,7 @@ Layout rule: the top row sits under the safe area, and the bottom row sits above
   - Footer: the lift name ▾ and the set label.
 - **Finish:**
   - `ALL DONE` or `END EARLY?` (44).
-  - A grid of set lamps (9 columns, 10 tall), `n OF m SETS`, volume, and `HOLD TO FINISH` (dim).
+  - A grid of set lamps (9 columns, 10 tall), `n OF m SETS` and volume. No `HOLD TO FINISH` text: that's a gesture hint (§10). The big key's VoiceOver label carries it.
 - **Edit (plan numbers):**
   - Header: `DAY  EDIT` / `2 OF 4`.
   - Lift name (28), then `SETS 4 × REPS 15` (104 each); reps is framed because the wheel controls it.
@@ -179,7 +179,7 @@ Layout rule: the top row sits under the safe area, and the bottom row sits above
     - TRIM, then the day, then `date  N MIN`
     - per lift: NAME and set count, with an indented `w × r, r, r` line (or `w×r` per set if the weights differ)
     - SETS, VOLUME, the first lift's estimated max, and the PR line
-  - Actions: Copy, and Done when it's the fresh receipt.
+  - Actions: Share (RN core `Share.share` with the receipt text), and Done when it's the fresh receipt. Done is live from the first frame; tapping the paper completes the feed.
 - **Plans rack (PB3):**
   - Shelves 150 tall, radius 24, #1C1C1A; the active shelf is outlined in orange.
   - Name, Active badge, `N days, M lifts`.
@@ -225,6 +225,8 @@ Layout rule: the top row sits under the safe area, and the bottom row sits above
 | Goal ring | fills from 0 over 1 s | |
 | Chart line | draws in over 1 s | |
 
+Skipping: tapping the scene skips the plan insert to its end state, and tapping the receipt completes the feed (Principle 7: nothing waits on an animation).
+
 Reduced motion: replace movement with fades. Skip the receipt feed (show the paper), skip the 3D activation (go straight to the loaded state), and keep haptics and sounds.
 
 ### Plan activation (Game Boy-style insert)
@@ -241,7 +243,7 @@ Reduced motion: replace movement with fades. Skip the receipt feed (show the pap
 
 ## 8. Haptics map
 
-Implementation: Core Haptics patterns in `TrimHaptics` (see PLAN), falling back to `expo-haptics` where Core Haptics isn't available.
+Implementation: Core Haptics patterns in the `TrimDevice` module (see PLAN §4.4), falling back to `expo-haptics` where Core Haptics isn't available.
 
 | Event | Pattern | Fallback |
 |---|---|---|
