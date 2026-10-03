@@ -124,10 +124,16 @@ final class TrimDeviceFeel: @unchecked Sendable {
   }
 
   private func startContinuousPattern(_ name: String) {
-    guard name == "holdFinish", let engine = ensureEngine() else { return }
+    guard let engine = ensureEngine() else { return }
+    let build: () throws -> CHHapticPattern
+    switch name {
+    case "holdFinish": build = Self.holdFinishPattern
+    case "assemblyCharge": build = Self.assemblyChargePattern
+    default: return
+    }
     try? continuousPlayer?.stop(atTime: CHHapticTimeImmediate)
     do {
-      let player = try engine.makeAdvancedPlayer(with: Self.holdFinishPattern())
+      let player = try engine.makeAdvancedPlayer(with: build())
       try player.start(atTime: CHHapticTimeImmediate)
       continuousPlayer = player
     } catch {
@@ -181,6 +187,20 @@ final class TrimDeviceFeel: @unchecked Sendable {
       ],
       "dayTick": [transient(0, 0.4, 0.7)],
       "swatch": [transient(0, 0.5, 0.6)],
+      // The wheel hits 2 or 6 days in onboarding: a dull, heavy end stop.
+      "wheelStop": [transient(0, 0.9, 0.1), transient(0.05, 0.35, 0.1)],
+      // First open: a part snaps onto the body (latch, then a softer seat).
+      "assemblySnap": [transient(0, 0.75, 0.9), transient(0.018, 0.35, 0.4)],
+      // First open: the body settles after floating in.
+      "assemblyArrive": [transient(0, 0.5, 0.3)],
+      // First open: the Start key slams home. A hard hit, a short body of rumble, two aftershocks.
+      "assemblyBang": [
+        transient(0, 1.0, 0.25),
+        transient(0.01, 1.0, 0.8),
+        continuous(0, 0.9, 0.1, duration: 0.16),
+        transient(0.11, 0.4, 0.3),
+        transient(0.19, 0.22, 0.3),
+      ],
     ]
     var built: [String: CHHapticPattern] = [:]
     for (name, list) in events {
@@ -208,12 +228,47 @@ final class TrimDeviceFeel: @unchecked Sendable {
     )
   }
 
+  /// First open: the rumble while the Start key charges, .1 → .85 over 0.7 s, getting sharper.
+  /// It runs out on its own right as the key slams (`assemblyBang` takes over).
+  private static func assemblyChargePattern() throws -> CHHapticPattern {
+    let duration: TimeInterval = 0.7
+    let intensity = CHHapticParameterCurve(
+      parameterID: .hapticIntensityControl,
+      controlPoints: [
+        CHHapticParameterCurve.ControlPoint(relativeTime: 0, value: 0.1),
+        CHHapticParameterCurve.ControlPoint(relativeTime: duration, value: 0.85),
+      ],
+      relativeTime: 0
+    )
+    let sharpness = CHHapticParameterCurve(
+      parameterID: .hapticSharpnessControl,
+      controlPoints: [
+        CHHapticParameterCurve.ControlPoint(relativeTime: 0, value: -0.2),
+        CHHapticParameterCurve.ControlPoint(relativeTime: duration, value: 0.3),
+      ],
+      relativeTime: 0
+    )
+    return try CHHapticPattern(
+      events: [continuous(0, 1.0, 0.2, duration: duration)],
+      parameterCurves: [intensity, sharpness]
+    )
+  }
+
   // MARK: - Sounds
 
   /// `print` is 18 stepper ticks 100 ms apart (one `print-tick` file), in step with the feed.
-  private static let soundFiles = ["cartridge", "print-tick", "stamp", "key"]
-  /// The key click is meant to be barely there (SPEC §9); the WAV itself peaks at −3 dBFS.
-  private static let soundVolumes: [String: Float] = ["key": 0.3]
+  private static let soundFiles = [
+    "cartridge", "print-tick", "stamp", "key",
+    // First open (D74).
+    "arrive", "charge", "bang", "boot",
+    "snap-1", "snap-2", "snap-3", "snap-4", "snap-5", "snap-6", "snap-7",
+  ]
+  /// The key click is meant to be barely there (SPEC §9); every WAV itself peaks at −3 dBFS.
+  /// First open: the bang is the loudest thing in the scene, everything before it builds to it.
+  private static let soundVolumes: [String: Float] = [
+    "key": 0.3, "arrive": 0.45, "charge": 0.55, "boot": 0.4,
+    "snap-1": 0.5, "snap-2": 0.5, "snap-3": 0.5, "snap-4": 0.5, "snap-5": 0.5, "snap-6": 0.5, "snap-7": 0.5,
+  ]
 
   private func prepareAudio() {
     // Ambient: mixes with the user's music and is silenced by the silent switch (D14).

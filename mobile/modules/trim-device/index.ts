@@ -15,12 +15,19 @@ export type HapticPattern =
   | 'stamp'
   | 'cartridgeClick'
   | 'dayTick'
-  | 'swatch';
+  | 'swatch'
+  | 'wheelStop'
+  | 'assemblySnap'
+  | 'assemblyArrive'
+  | 'assemblyBang';
 
-export type ContinuousPattern = 'holdFinish';
+export type ContinuousPattern = 'holdFinish' | 'assemblyCharge';
+
+/** First open (D74): the parts snap on a whole step higher each time. */
+export type SnapSound = 'snap-1' | 'snap-2' | 'snap-3' | 'snap-4' | 'snap-5' | 'snap-6' | 'snap-7';
 
 /** SPEC §9. `print` is 18 stepper ticks 100 ms apart, played natively. */
-export type DeviceSound = 'cartridge' | 'print' | 'stamp' | 'key';
+export type DeviceSound = 'cartridge' | 'print' | 'stamp' | 'key' | 'arrive' | 'charge' | 'bang' | 'boot' | SnapSound;
 
 type TrimDeviceNative = {
   supportsHaptics: boolean;
@@ -58,6 +65,13 @@ const FALLBACK: Record<HapticPattern, () => void> = {
   },
   dayTick: selection,
   swatch: selection,
+  wheelStop: () => impact(Haptics.ImpactFeedbackStyle.Heavy),
+  assemblySnap: () => impact(Haptics.ImpactFeedbackStyle.Rigid),
+  assemblyArrive: () => impact(Haptics.ImpactFeedbackStyle.Soft),
+  assemblyBang: () => {
+    impact(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => impact(Haptics.ImpactFeedbackStyle.Medium), 110);
+  },
 };
 
 /** Hold to finish's ramp length (SPEC §8); the fallback lands its heavy impact here. */
@@ -88,6 +102,8 @@ export function startContinuous(pattern: ContinuousPattern): void {
     native.startContinuous(pattern);
     return;
   }
+  // The charge has no fallback: the bang right after it says it all.
+  if (pattern === 'assemblyCharge') return;
   clearHoldTimer();
   impact(Haptics.ImpactFeedbackStyle.Soft);
   holdTimer = setTimeout(() => {
