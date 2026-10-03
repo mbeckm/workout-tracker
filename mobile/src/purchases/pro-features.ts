@@ -1,6 +1,6 @@
 import type { ProReason } from './pro-gate';
 
-export type ProFeatureId = 'plans' | 'progress' | 'targets';
+export type ProFeatureId = 'plans' | 'progress' | 'targets' | 'finishes';
 
 export type ProFeature = {
   id: ProFeatureId;
@@ -44,6 +44,14 @@ export const PRO_FEATURES: readonly ProFeature[] = [
     symbol: 'scope',
     shipped: true,
     reasons: ['targets'],
+  },
+  {
+    id: 'finishes',
+    title: 'Every finish',
+    detail: 'Signal orange and Bone, on the device.',
+    symbol: 'paintpalette',
+    shipped: true,
+    reasons: ['finishes'],
   },
 ];
 

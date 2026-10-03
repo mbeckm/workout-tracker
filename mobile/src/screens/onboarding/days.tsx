@@ -1,15 +1,15 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 import { STARTER_DAY_COUNTS, type StarterDayCount } from '@/catalog/templates';
+import { fontScaleCap, onboardingType, space } from '@/constants/theme';
+import { Rocker, type LampState } from '@/device/parts';
 import { enterUp, exitFade } from '@/motion';
-import { useTheme } from '@/theme/theme-context';
 
 import { BigChoice } from './choice';
 import { OnboardingFrame } from './frame';
-import { space } from '@/constants/theme';
 
 /** What each weekly count gets you. Facts about the split, not encouragement. */
 const DAYS_FACT: Record<StarterDayCount, string> = {
@@ -20,9 +20,13 @@ const DAYS_FACT: Record<StarterDayCount, string> = {
   6: 'Push, pull and legs, twice each.',
 };
 
-/** Step 4: the weekly target, which picks the split. */
+const lit = (count: number): LampState[] => Array.from({ length: count }, () => 'on' as const);
+
+/**
+ * Step 4: the weekly target, which picks the split. The rocker above the numbers is the device's
+ * own week: one lamp per training day, lit as the count changes.
+ */
 export function OnboardingDays() {
-  const { colors, type } = useTheme();
   const router = useRouter();
   const reduceMotion = Boolean(useReducedMotion());
   const [days, setDays] = useState<StarterDayCount>(3);
@@ -35,10 +39,10 @@ export function OnboardingDays() {
         onPress: () => router.push({ pathname: '/onboarding/plan', params: { days: String(days) } }),
       }}
       testID="onboarding-days">
-      <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel="Days a week"
-        style={{ flexDirection: 'row', paddingTop: space.section }}>
+      <View style={styles.week} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Rocker variant="week" lamps={lit(days)} accessibilityLabel="" />
+      </View>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Days a week" style={styles.row}>
         {STARTER_DAY_COUNTS.map((count) => (
           <BigChoice
             key={count}
@@ -46,18 +50,18 @@ export function OnboardingDays() {
             accessibilityLabel={`${count} days a week`}
             selected={days === count}
             onSelect={() => setDays(count)}
-            fixedHeight
-            style={{ flex: 1, alignItems: 'flex-start' }}
+            style={styles.cell}
             testID={`onboarding-days-${count}`}
           />
         ))}
       </View>
       {/* The invisible copy sizes the line; the visible one crossfades on top so nothing jumps. */}
-      <View style={{ marginTop: space.gutter }}>
+      <View style={styles.factSlot}>
         <Text
           aria-hidden
           importantForAccessibility="no-hide-descendants"
-          style={[type.kicker, { opacity: 0 }]}>
+          maxFontSizeMultiplier={fontScaleCap.text}
+          style={[onboardingType.sub, styles.center, styles.hidden]}>
           {DAYS_FACT[days]}
         </Text>
         <Animated.View
@@ -65,10 +69,22 @@ export function OnboardingDays() {
           entering={enterUp(reduceMotion)}
           exiting={exitFade(reduceMotion)}
           accessibilityLiveRegion="polite"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-          <Text style={[type.kicker, { color: colors.tertiaryLabel }]}>{DAYS_FACT[days]}</Text>
+          style={styles.fact}>
+          <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.sub, styles.center]}>
+            {DAYS_FACT[days]}
+          </Text>
         </Animated.View>
       </View>
     </OnboardingFrame>
   );
 }
+
+const styles = StyleSheet.create({
+  week: { alignItems: 'center', paddingTop: space.section },
+  row: { flexDirection: 'row', alignItems: 'flex-end', paddingTop: space.gutter },
+  cell: { flex: 1 },
+  factSlot: { marginTop: space.gutter },
+  fact: { position: 'absolute', top: 0, left: 0, right: 0 },
+  center: { textAlign: 'center' },
+  hidden: { opacity: 0 },
+});
