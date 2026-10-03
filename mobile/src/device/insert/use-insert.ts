@@ -19,6 +19,7 @@ import { activatedToast, dayDisplayName, planDisplayName } from '@/device/plans-
 import { DEVICE } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
+import { insertDone } from './insert-done';
 import { T } from './timeline';
 
 /** Who draws the scene: the SceneKit view, the JS 2.5D version, or nobody (Reduce Motion). */
@@ -120,7 +121,8 @@ export function useInsert(): InsertController | null {
     cancelAnimation(clock);
     clock.set(0);
     finishLoading(current);
-    if (currentPlan) showToast({ title: activatedToast(currentPlan) });
+    if (currentPlan && !current.quiet) showToast({ title: activatedToast(currentPlan) });
+    insertDone();
   }, [clearTimers, clock, finishLoading]);
 
   /** Face-on: the days tick in, the lamps light, then Home. */

@@ -197,6 +197,8 @@ export const DEVICE = {
   INSERT_SHADOW: 800,
   /** No `onSceneReady` from the native insert by then: the JS insert plays instead. */
   INSERT_NATIVE_TIMEOUT: 1500,
+  /** Whoever awaits the insert (onboarding) stops waiting by then, whatever happened to the device. */
+  INSERT_MAX_WAIT: 15000,
   /** The week moment (D15): the grid ground fades in, then the report drops onto the spike. */
   WEEK_SCENE: 600,
   WEEK_DROP: 700,

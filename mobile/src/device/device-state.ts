@@ -113,7 +113,7 @@ export type EditTarget = {
 };
 
 /** A plan going into the slot (Phase 6, SPEC §7 Plan activation) while `uiMode` is `loading`. */
-export type LoadingTarget = { planId: string; id: number; dev?: InsertDevOptions };
+export type LoadingTarget = { planId: string; id: number; quiet?: boolean; dev?: InsertDevOptions };
 
 /** Development only (`/?insert=js&pause=1200&speed=0.25`): force an engine, freeze or slow the insert. */
 export type InsertDevOptions = { engine?: 'js' | 'native'; pauseAt?: number; speed?: number };
@@ -168,7 +168,7 @@ export type DeviceAction =
   /** Done, ‹ or the rocker's middle in edit: the editor sheet comes back where it was. */
   | { type: 'leaveEdit' }
   /** Use plan: the sheet closes and the device plays the insert (`loading`). */
-  | { type: 'startLoading'; planId: string; dev?: InsertDevOptions }
+  | { type: 'startLoading'; planId: string; quiet?: boolean; dev?: InsertDevOptions }
   /** The insert is over (or skipped, or the app came back): Home. `id` guards a newer one. */
   | { type: 'finishLoading'; id: number };
 
@@ -208,7 +208,19 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
         : state;
     case 'startLoading': {
       const seq = state.seq + 1;
-      return { ...state, seq, sheet: null, uiMode: 'loading', edit: null, loading: { planId: action.planId, id: seq, ...(action.dev ? { dev: action.dev } : {}) } };
+      return {
+        ...state,
+        seq,
+        sheet: null,
+        uiMode: 'loading',
+        edit: null,
+        loading: {
+          planId: action.planId,
+          id: seq,
+          ...(action.quiet ? { quiet: true } : {}),
+          ...(action.dev ? { dev: action.dev } : {}),
+        },
+      };
     }
     case 'finishLoading':
       return state.loading?.id === action.id

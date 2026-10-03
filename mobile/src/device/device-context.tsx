@@ -44,7 +44,8 @@ type DeviceContextValue = {
   /** Device edit's rocker: show another lift of the same day. */
   editLift: (exerciseId: string) => void;
   /** Use plan (`useActivation`): the device enters `loading` and plays the insert. */
-  startLoading: (planId: string, dev?: InsertDevOptions) => void;
+  /** `quiet`: no `<Plan> is your plan` toast (onboarding, where the next moment says it). */
+  startLoading: (planId: string, dev?: InsertDevOptions, quiet?: boolean) => void;
   /** The insert ended: back to Home. */
   finishLoading: (loading: LoadingTarget) => void;
 };
@@ -87,7 +88,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   const leaveEdit = useCallback(() => dispatch({ type: 'leaveEdit' }), []);
   const editLift = useCallback((exerciseId: string) => dispatch({ type: 'editLift', exerciseId }), []);
   const startLoading = useCallback(
-    (planId: string, dev?: InsertDevOptions) => dispatch({ type: 'startLoading', planId, dev }),
+    (planId: string, dev?: InsertDevOptions, quiet?: boolean) => dispatch({ type: 'startLoading', planId, dev, quiet }),
     [],
   );
   const finishLoading = useCallback(
