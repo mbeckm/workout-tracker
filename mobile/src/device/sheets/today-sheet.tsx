@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type AccessibilityActionEvent } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -38,6 +38,8 @@ import { useSheetChrome } from './sheet-context';
 
 /** A row lifts for dragging after this hold (the system's drag-and-drop feel). */
 const DRAG_HOLD_MS = 300;
+/** The horizontal travel that hands a touch to the row's swipe (vertical needs twice that to win). */
+const SWIPE_SLOP = 8;
 /** A flick this fast opens the row's actions even short of halfway. */
 const SWIPE_VELOCITY = 500;
 
@@ -308,8 +310,8 @@ function LiftRow({
   const swipe = useMemo(
     () =>
       Gesture.Pan()
-        .activeOffsetX([-12, 12])
-        .failOffsetY([-10, 10])
+        .activeOffsetX([-SWIPE_SLOP, SWIPE_SLOP])
+        .failOffsetY([-SWIPE_SLOP * 2, SWIPE_SLOP * 2])
         .onStart(() => {
           swipeStart.set(swipeX.get());
         })
@@ -325,7 +327,27 @@ function LiftRow({
     [actionsWidth, onOpen, swipeStart, swipeX],
   );
 
-  const gesture = useMemo(() => Gesture.Race(drag, swipe), [drag, swipe]);
+  // A flick too quick for the pan to take over (down, one move, up) still opens or closes.
+  const flick = useMemo(
+    () =>
+      Gesture.Exclusive(
+        Gesture.Fling()
+          .direction(Directions.LEFT)
+          .onEnd(() => {
+            swipeX.set(withTiming(-actionsWidth, MOVE));
+            scheduleOnRN(onOpen, true);
+          }),
+        Gesture.Fling()
+          .direction(Directions.RIGHT)
+          .onEnd(() => {
+            swipeX.set(withTiming(0, MOVE));
+            scheduleOnRN(onOpen, false);
+          }),
+      ),
+    [actionsWidth, onOpen, swipeX],
+  );
+
+  const gesture = useMemo(() => Gesture.Race(drag, swipe, flick), [drag, flick, swipe]);
 
   const rowStyle = useAnimatedStyle(() => {
     const lifted = dragging.get();

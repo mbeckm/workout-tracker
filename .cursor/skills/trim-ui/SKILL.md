@@ -355,7 +355,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Weight drum step | translateY ±24, then back, 160 ms, bezier(.2,.8,.3,1) | Per wheel notch |
 | Wheel | Ridges follow the finger 1:1. One notch = 16 pt of travel | Weight: one step per notch. Rest: ±15 s per 2 notches. Reps while editing: 1 per notch. |
 | Sheet in / out | 380 ms, bezier(.2,.9,.3,1); scrim 300 ms | |
-| Rocker press | rotateY ±10°, 160 ms | Tilts toward the end pressed |
+| Rocker press | 2D stand-in for rotateY ±10° (scaleX 0.985, rotate ±1.5°), 160 ms | Tilts toward the end pressed (3D layers composite badly on iOS) |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
 | Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms) | Tapping the paper completes it. Plays from the wall too. Reduce Motion: the paper fades in where it ends |
 | Week moment (D15) | the grid ground fades in over 600 ms; 250 ms in, the report drops onto the spike from 120 above, −4° → 1.5°, 700 ms, bezier(.3,1.3,.5,1); Done fades it out over 300 ms | The thud at 315 ms into the drop (where the curve first meets the spike). A tap on the scene skips to the end |
@@ -501,8 +501,8 @@ Use these. Don't rebuild them per screen.
 | `DeviceBody` | The finish's gradient, sheen and brushing (§5). Finish-aware through `FinishProvider`; changes live when the finish changes. |
 | `RoundKey` | 56, r28, key1 → key2 gradient, lip in `keyEdge`, glyph in `keyInk`. Press: down 3, lip collapses, 80 ms, key-press haptic on press-in. |
 | `TallKey` | 64 × 76, r22. Same press as `RoundKey`. Long press repeats (reps, sets, rest). |
-| `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts ±10° toward the pressed end. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
-| `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7; more than 12 lamps compress to 8 with gap 4; beyond 16, the strip shows `n/m` text. |
+| `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts toward the pressed end in 2D (scaleX 0.985, rotate 1.5°): a rotateY with perspective left stale rectangles on iOS. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
+| `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7 while they fit the rocker's 106pt strip (up to 6); then 8 with gap 4 (up to 8); beyond that the strip shows `n/m` text. |
 | `Display` | The lcd panel, r28, inset shadow, 22 padding. Owns the 220 ms content change and the one summary VoiceOver label per mode. |
 | `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |

@@ -1005,11 +1005,16 @@ export const device = {
   rockerStrip: 30,
   rockerTilt: 10,
   rockerPerspective: 300,
+  /** The 2D stand-in for the rocker's rotateY (iOS composites 3D layers badly): 1 − cos 10°, and a 1.5° rock. */
+  rockerTiltSqueeze: 0.015,
+  rockerTiltRock: 1.5,
   lamp: 10,
   lampGap: 7,
   /** Compressed lamps when a day has > 12 lifts (PLAN §7). */
   lampCompact: 8,
   lampGapCompact: 4,
+  /** Clear space inside the rocker strip at each end of the lamps. */
+  lampStripInset: 4,
   /** The recessed lamp plate (finish mode). */
   plateWidth: 190,
   plateHeight: 44,

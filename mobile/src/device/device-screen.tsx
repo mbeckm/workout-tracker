@@ -77,8 +77,12 @@ function DeviceSurface() {
   const home = useHome();
   const work = useLogDevice();
   const { log } = work;
-  /** The mode a big-key press began in: a release after the mode changed (the hold finished) does nothing. */
-  const pressView = useRef<string | null>(null);
+  /**
+   * What the big key meant when the finger landed. The release runs that, even if the mode
+   * changed meanwhile: a fast tap right after Log (before its re-render) still logs or skips,
+   * and the release that closes a finish hold doesn't press Start on Home.
+   */
+  const pressed = useRef<BigKeyAction | null>(null);
   useDeviceParams();
 
   // Readers outside the session (`useDevice().mode`, Home's stamp) see the log's mode too.
@@ -110,7 +114,7 @@ function DeviceSurface() {
         ? home.model.kind
         : view;
 
-  const bigKey = (() => {
+  const bigKey: BigKeyAction = (() => {
     switch (view) {
       case 'log':
         return stage?.kind === 'edit'
@@ -272,17 +276,12 @@ function DeviceSurface() {
                 label={bigKey.label}
                 variant={bigKey.variant}
                 accessibilityLabel={bigKey.accessibilityLabel}
-                onPress={() => {
-                  if (pressView.current !== view) return;
-                  if ('onPress' in bigKey) bigKey.onPress?.();
-                }}
                 onPressIn={() => {
-                  pressView.current = view;
-                  if ('onPressIn' in bigKey) bigKey.onPressIn?.();
+                  pressed.current = bigKey;
+                  bigKey.onPressIn?.();
                 }}
-                onPressOut={() => {
-                  if (pressView.current === view && 'onPressOut' in bigKey) bigKey.onPressOut?.();
-                }}
+                onPressOut={() => pressed.current?.onPressOut?.()}
+                onPress={() => pressed.current?.onPress?.()}
               />
             </View>
             <Wheel
@@ -317,6 +316,15 @@ function DeviceSurface() {
     </View>
   );
 }
+
+type BigKeyAction = {
+  label: string;
+  accessibilityLabel: string;
+  variant: 'primary' | 'metal';
+  onPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
+};
 
 /** The tall keys' VoiceOver names per what they step (§6.6). */
 const KEY_NAMES: Record<NonNullable<KeysKind>, { more: string; fewer: string }> = {
