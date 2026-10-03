@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { type EntryOrExitLayoutType } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -31,6 +32,9 @@ export function OnboardingFrame({
   children,
   stageStyle,
   scroll = true,
+  ground,
+  actionEntering,
+  actionKey,
   testID,
 }: {
   /** The step's question, read as the screen's header. */
@@ -43,6 +47,11 @@ export function OnboardingFrame({
   stageStyle?: StyleProp<ViewStyle>;
   /** Off for a step that lays its stage out to the screen (Welcome, Pick your finish). */
   scroll?: boolean;
+  /** Replaces the grid ground (Welcome draws space, then the grid, D74). */
+  ground?: ReactNode;
+  /** How Continue arrives (Welcome holds it until the machine has landed); a new `actionKey` replays it. */
+  actionEntering?: EntryOrExitLayoutType;
+  actionKey?: string;
   testID?: string;
 }) {
   const insets = useSafeAreaInsets();
@@ -65,7 +74,7 @@ export function OnboardingFrame({
   return (
     <View testID={testID} style={styles.root}>
       <StatusBar style="light" />
-      <GridGround />
+      {ground ?? <GridGround />}
       <View style={[styles.bar, { marginTop: insets.top + space.related }]}>
         {back ? <RoundControl glyph="‹" accessibilityLabel="Back" onPress={() => router.back()} testID="onboarding-back" /> : null}
       </View>
@@ -87,12 +96,14 @@ export function OnboardingFrame({
       <KeyboardStickyView
         offset={{ closed: 0, opened: bottom - space.inline }}
         style={[styles.footer, { paddingBottom: bottom }]}>
-        <WidePill
-          title={action.title}
-          onPress={action.onPress}
-          disabled={action.disabled}
-          testID={action.testID ?? 'onboarding-continue'}
-        />
+        <Animated.View key={actionKey} entering={actionEntering}>
+          <WidePill
+            title={action.title}
+            onPress={action.onPress}
+            disabled={action.disabled}
+            testID={action.testID ?? 'onboarding-continue'}
+          />
+        </Animated.View>
       </KeyboardStickyView>
     </View>
   );
