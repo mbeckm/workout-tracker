@@ -55,7 +55,18 @@
         }
       ],
       "./plugins/with-quoted-bundle-script",
-      "expo-localization"
+      "./plugins/with-quoted-pod-scripts",
+      "expo-localization",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Doto-Black.ttf",
+            "./assets/fonts/IBMPlexMono-Medium.ttf",
+            "./assets/fonts/IBMPlexMono-Bold.ttf"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

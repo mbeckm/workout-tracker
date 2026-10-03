@@ -36,6 +36,10 @@
       "extends": "production",
       "channel": "preview"
     },
+    "testflight-gadget": {
+      "extends": "production",
+      "channel": "gadget"
+    },
     "preview": {
       "distribution": "internal",
       "ios": {
@@ -59,6 +63,9 @@
       }
     },
     "testflight-preview": {
+      "extends": "production"
+    },
+    "testflight-gadget": {
       "extends": "production"
     }
   }
