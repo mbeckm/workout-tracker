@@ -1,27 +1,44 @@
-import { ThemeProvider as NavigationThemeProvider, DefaultTheme, DarkTheme } from 'expo-router/react-navigation';
-import { Stack } from 'expo-router';
-import { usePathname, useRouter, useSegments } from 'expo-router';
+import { ThemeProvider as NavigationThemeProvider, DarkTheme } from 'expo-router/react-navigation';
+import { Stack, usePathname, useRouter, useSegments } from 'expo-router';
 import * as Linking from 'expo-linking';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { Component, useEffect, useMemo, useRef, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { KeyboardProvider } from '@/keyboard';
 
-import { colors, spacing, type } from '@/constants/theme';
-import { peekWorkoutFocus, rememberWorkoutFocus } from '@/live-activity/controller';
-import { parseWorkoutLogUrl, workoutLogHref } from '@/live-activity/url';
+import { colors, darkColors, sheetColors, spacing, type } from '@/constants/theme';
+import { DeviceProvider, useDevice } from '@/device/device-context';
+import { FinishProvider } from '@/device/finish';
+import { logCommandForLink } from '@/device/log-link';
+import { parseWorkoutLogUrl } from '@/live-activity/url';
 import { startEntitlementSync } from '@/purchases/purchases';
 import { progressDemoMode, shouldUseProgressDemo } from '@/store/progress-demo';
 import { WorkoutProvider, useWorkoutStore } from '@/store/workout-store';
 import { ToastHost } from '@/components/toast';
 import { trackScreen } from '@/analytics/analytics';
-import { AppThemeProvider, useTheme } from '@/theme/theme-context';
+import { useTheme } from '@/theme/theme-context';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+/**
+ * The old routes still pushed above the device draw on the navigator's background; sheets and
+ * moments are always dark (D2), so they get the dark one. gadget: delete in Phase 10.
+ */
+const NAVIGATION_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: darkColors.brand,
+    background: darkColors.systemBackground,
+    card: darkColors.systemBackground,
+    text: darkColors.label,
+    border: darkColors.separator,
+    notification: darkColors.systemRed,
+  },
+};
 
 class RootErrorBoundary extends Component<
   { children: ReactNode },
@@ -57,17 +74,18 @@ class RootErrorBoundary extends Component<
   }
 }
 
-function ThemedApp() {
-  const { appearance, systemScheme, setSystemScheme } = useWorkoutStore();
+function DeviceApp() {
   return (
-    <AppThemeProvider
-      appearance={appearance}
-      systemScheme={systemScheme}
-      onSystemSchemeChange={setSystemScheme}>
-      <ThemedNavigation />
-      <ScreenTracker />
-      <ToastHost />
-    </AppThemeProvider>
+    <FinishProvider>
+      <DeviceProvider>
+        <NavigationThemeProvider value={NAVIGATION_THEME}>
+          <RootNav />
+        </NavigationThemeProvider>
+        <ScreenTracker />
+        {/* Above SheetHost (which lives in the device screen); the paywall modal mounts its own. */}
+        <ToastHost />
+      </DeviceProvider>
+    </FinishProvider>
   );
 }
 
@@ -80,46 +98,16 @@ function ScreenTracker() {
   return null;
 }
 
-function ThemedNavigation() {
-  const { colors: themeColors, scheme } = useTheme();
-  const navigationTheme = useMemo(() => {
-    const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
-    return {
-      ...base,
-      colors: {
-        ...base.colors,
-        primary: themeColors.brand,
-        background: themeColors.systemBackground,
-        card: themeColors.systemBackground,
-        text: themeColors.label,
-        border: themeColors.separator,
-        notification: themeColors.systemRed,
-      },
-    };
-  }, [scheme, themeColors]);
-
-  return (
-    <NavigationThemeProvider value={navigationTheme}>
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <RootNav />
-    </NavigationThemeProvider>
-  );
-}
-
 function RootNav() {
+  // gadget: the old routes below still read the (always dark) compatibility theme.
   const { colors: themeColors } = useTheme();
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const segments = useSegments();
+  const { open } = useDevice();
   const { isHydrated, hasCompletedOnboarding, applyEntitlement } = useWorkoutStore();
-  const segmentsRef = useRef(segments);
   const handledInitialUrl = useRef(false);
   const openedProgressDemo = useRef(false);
-  const openedLiftDemo = useRef(false);
-
-  useEffect(() => {
-    segmentsRef.current = segments;
-  }, [segments]);
 
   // Keeps isPro live; a no-op in Expo Go, on web, and without a store key.
   useEffect(
@@ -128,11 +116,11 @@ function RootNav() {
   );
 
   // Onboarding closes its own one-way door: in one tap it saves the plan, completes
-  // onboarding, replaces itself with Home and opens the paywall or plan editor on top.
+  // onboarding, replaces itself with the device and opens the paywall or plan editor on top.
   // Segments can trail that state by a render, so while that exit is in flight a stale
   // `onboarding` segment must not trigger a second replace here (it would remove the
-  // paywall or editor). Once the app has been reached, any way back into onboarding
-  // (a stale link, web history) is sent Home.
+  // paywall). Once the app has been reached, any way back into onboarding (a stale link, web
+  // history) is sent to the device.
   const onboardingExit = useRef<'none' | 'pending' | 'done'>('none');
   useEffect(() => {
     if (!isHydrated) {
@@ -154,79 +142,39 @@ function RootNav() {
     void SplashScreen.hideAsync().catch(() => undefined);
   }, [hasCompletedOnboarding, isHydrated, router, segments]);
 
+  // Dev only (EXPO_PUBLIC_PROGRESS_DEMO): open Progress, or a lift's or body's detail, on the device.
   useEffect(() => {
+    const mode = progressDemoMode();
     if (!isHydrated || !hasCompletedOnboarding || !shouldUseProgressDemo() || openedProgressDemo.current) {
       return;
     }
     openedProgressDemo.current = true;
-    router.replace('/progress');
-  }, [hasCompletedOnboarding, isHydrated, router]);
-
-  useEffect(() => {
-    const mode = progressDemoMode();
-    if (
-      !isHydrated ||
-      !hasCompletedOnboarding ||
-      !mode ||
-      !openedProgressDemo.current ||
-      openedLiftDemo.current ||
-      segments[0] !== '(tabs)' ||
-      (segments as readonly string[])[1] !== 'progress'
-    ) {
-      return;
+    if (mode === 'lift') {
+      open({ sheet: 'lift', params: { name: 'Bench press' } });
+    } else if (mode === 'body') {
+      open({ sheet: 'body', params: { metric: 'waistCm' } });
+    } else {
+      open({ sheet: 'progress' });
     }
-    if (mode !== 'lift' && mode !== 'body') {
-      return;
-    }
-    openedLiftDemo.current = true;
-    const timer = setTimeout(() => {
-      if (mode === 'lift') {
-        router.push({ pathname: '/progress-lift', params: { name: 'Bench press' } });
-        return;
-      }
-      router.push({ pathname: '/progress-body', params: { metric: 'waistCm' } });
-    }, 900);
-    return () => clearTimeout(timer);
-  }, [hasCompletedOnboarding, isHydrated, router, segments]);
+  }, [hasCompletedOnboarding, isHydrated, open]);
 
-  // Live Activity taps open scratchworkout://…/log?planId&dayId&exerciseId.
-  // Navigate here when log is not already up so we don't remount and wipe drafts.
+  // Live Activity taps open scratchworkout://…/log?planId&dayId&exerciseId. `+native-intent`
+  // keeps the router on the device; here the same URL puts the device in log mode.
   useEffect(() => {
     if (!isHydrated || !hasCompletedOnboarding) {
       return;
     }
 
     const openFromLiveActivity = (url: string) => {
-      const segments = segmentsRef.current;
-      const parsed = parseWorkoutLogUrl(url);
-      if (!parsed) {
-        return;
+      const link = parseWorkoutLogUrl(url);
+      if (link) {
+        open(logCommandForLink(link));
       }
-      // Focus tracks the Live Activity card as the workout advances. Prefer it over
-      // a possibly stale ActivityKit start URL that still points at exercise 1.
-      const exerciseId = peekWorkoutFocus(parsed.planId, parsed.dayId) ?? parsed.exerciseId;
-      if (exerciseId) {
-        rememberWorkoutFocus({
-          planId: parsed.planId,
-          dayId: parsed.dayId,
-          exerciseId,
-        });
-      }
-      const link = { planId: parsed.planId, dayId: parsed.dayId, exerciseId };
-      if (segments[0] === 'log') {
-        router.setParams({
-          planId: link.planId,
-          dayId: link.dayId,
-          ...(link.exerciseId ? { exerciseId: link.exerciseId } : {}),
-        });
-        return;
-      }
-      router.push(workoutLogHref(link));
     };
 
     const subscription = Linking.addEventListener('url', ({ url }) => openFromLiveActivity(url));
-    // The launch URL never changes, so consuming it more than once would drag the
-    // user back into /log every time they navigate away from it.
+    // The launch URL never changes, so consuming it more than once would drag the user back
+    // into the log every time this effect re-runs.
     if (!handledInitialUrl.current) {
       handledInitialUrl.current = true;
       void Linking.getInitialURL().then((url) => {
@@ -236,15 +184,16 @@ function RootNav() {
       });
     }
     return () => subscription.remove();
-  }, [hasCompletedOnboarding, isHydrated, router]);
+  }, [hasCompletedOnboarding, isHydrated, open]);
 
   if (!isHydrated) {
-    return <View style={{ flex: 1, backgroundColor: themeColors.systemBackground }} />;
+    return <View style={{ flex: 1, backgroundColor: sheetColors.sheet }} />;
   }
 
   return (
     <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
+      {/* The device (PLAN §4.1): the app's one home. Sheets live inside it. */}
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Trim' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen
         name="paywall"
@@ -255,15 +204,8 @@ function RootNav() {
           title: 'Trim Pro',
         }}
       />
-      <Stack.Screen
-        name="log"
-        options={{
-          presentation: 'fullScreenModal',
-          headerShown: false,
-          title: 'Log',
-          keyboardHandlingEnabled: false,
-        }}
-      />
+      {/* A deep-link alias: it opens the device in log mode and leaves (app/log.tsx). */}
+      <Stack.Screen name="log" options={{ headerShown: false, animation: 'none', title: 'Log' }} />
       <Stack.Screen
         name="workout-complete"
         options={{
@@ -399,7 +341,7 @@ export default function RootLayout() {
       <KeyboardProvider>
         <RootErrorBoundary>
           <WorkoutProvider>
-            <ThemedApp />
+            <DeviceApp />
           </WorkoutProvider>
         </RootErrorBoundary>
       </KeyboardProvider>
