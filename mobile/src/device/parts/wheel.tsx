@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  cubicBezier,
+  type CSSStyle,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -13,7 +14,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { device, gadgetRadius } from '@/constants/theme';
 import { useFinish } from '@/device/finish';
 import { useHaptics } from '@/device/haptics';
-import { DEVICE, EASE_SHEET_GADGET_FN } from '@/motion';
+import { DEVICE } from '@/motion';
 
 import { EngravedLabel } from './engraved-label';
 
@@ -113,42 +114,15 @@ export function Wheel({
   });
 
   /**
-   * The stow (SPEC §7) runs on the UI thread, but its resting state must not depend on it.
-   * Reanimated 4 hands settled animated props back to React only if the JS thread syncs them
-   * within a 1–2 s window (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`); after a long JS stall
-   * (finishing a workout) they're dropped, and the next React commit restores the wheel's
-   * static props: fully visible on Home. So once the stow lands, `parked` hides the wrapper in
-   * React's own props; it lifts a frame after an unstow starts, when the slide owns the frame.
+   * The stow (SPEC §7) is a Reanimated CSS transition, so React's own props always hold the
+   * resting state: hidden and slid out when `stowed`, in place otherwise, on any mount and after
+   * any interruption. A worklet-driven stow can't promise that: Reanimated 4 hands settled
+   * animated props back to React only if the JS thread syncs them within a 1–2 s window
+   * (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`). After a JS stall (starting or finishing a
+   * workout on a phone) the sync is dropped, React keeps the other end's values, and the next
+   * commit (opening a sheet) shows them: the wheel on Home, or no wheel in the log.
    */
-  const [parked, setParked] = useState(stowed);
-  const stowedRef = useRef(stowed);
-  const park = useCallback(() => {
-    if (stowedRef.current) setParked(true);
-  }, []);
-  const stow = useSharedValue(stowed ? 1 : 0);
-  useEffect(() => {
-    stowedRef.current = stowed;
-    stow.set(
-      withTiming(stowed ? 1 : 0, { duration: DEVICE.WHEEL_STOW, easing: EASE_SHEET_GADGET_FN }, (finished) => {
-        if (finished && stowed) scheduleOnRN(park);
-      }),
-    );
-    if (stowed) return;
-    const frame = requestAnimationFrame(() => setParked(false));
-    return () => cancelAnimationFrame(frame);
-  }, [park, stow, stowed]);
-  const stowStyle = useAnimatedStyle(() => {
-    const t = stow.get();
-    return reduceMotion
-      ? { opacity: 1 - t }
-      : {
-          opacity: Math.max(0, 1 - t * (DEVICE.WHEEL_STOW / DEVICE.WHEEL_STOW_FADE)),
-          transform: [
-            { translateX: t * device.wheelStowX },
-            { scale: 1 - t * (1 - device.wheelStowScale) },
-          ],
-        };
-  });
+  const stowStyle = useMemo(() => wheelStow(stowed, reduceMotion), [reduceMotion, stowed]);
 
   const shape = { width: W, height: H, borderRadius: gadgetRadius.wheel, borderCurve: 'continuous' as const };
 
@@ -158,7 +132,7 @@ export function Wheel({
       aria-hidden={stowed}
       accessibilityElementsHidden={stowed}
       importantForAccessibility={stowed ? 'no-hide-descendants' : 'auto'}
-      style={[{ width: W }, style, parked && styles.parked]}>
+      style={[{ width: W }, style]}>
       <Animated.View style={stowStyle}>
         <View style={{ width: W, height: H }}>
           <View
@@ -224,10 +198,39 @@ export function Wheel({
   );
 }
 
+/** The sheet curve (EASE_SHEET_GADGET) as a CSS timing function. */
+const EASE_STOW = cubicBezier(0.2, 0.9, 0.3, 1);
+
+/**
+ * The wheel's stow as a Reanimated CSS transition (outside StyleSheet.create, whose RN types
+ * don't know it). It slides 40pt right and scales to 0.9 while it fades a little faster; coming
+ * back, the fade waits out that difference. Reduce Motion: a plain fade.
+ */
+function wheelStow(stowed: boolean, reduceMotion: boolean): CSSStyle<ViewStyle> {
+  if (reduceMotion) {
+    return {
+      opacity: stowed ? 0 : 1,
+      transitionProperty: 'opacity',
+      transitionDuration: DEVICE.WHEEL_STOW,
+      transitionTimingFunction: EASE_STOW,
+    };
+  }
+  return {
+    opacity: stowed ? 0 : 1,
+    transform: [
+      { translateX: stowed ? device.wheelStowX : 0 },
+      { scale: stowed ? device.wheelStowScale : 1 },
+    ],
+    transitionProperty: ['opacity', 'transform'],
+    transitionDuration: [DEVICE.WHEEL_STOW_FADE, DEVICE.WHEEL_STOW],
+    transitionDelay: [stowed ? 0 : DEVICE.WHEEL_STOW - DEVICE.WHEEL_STOW_FADE, 0],
+    transitionTimingFunction: EASE_STOW,
+  };
+}
+
 const styles = StyleSheet.create({
   abs: { position: 'absolute', left: 0, top: 0 },
   clip: { overflow: 'hidden' },
   ridges: { position: 'absolute', left: 0, top: 0 },
   label: { marginTop: device.labelGap, width: W },
-  parked: { opacity: 0 },
 });

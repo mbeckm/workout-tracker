@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CartridgeInsert } from '../../modules/trim-device';
@@ -92,7 +92,6 @@ function DeviceSurface() {
   const jsClock = insert?.engine === 'js' && insert.phase === 'scene' ? insert.clock : null;
   const deviceMotion = useInsertDeviceStyle(jsClock);
   const hidden = insert?.engine === 'native' && insert.phase === 'scene' && insert.nativeShowing;
-  const hiddenStyle = useAnimatedStyle(() => ({ opacity: hidden ? 0 : 1 }));
   const { log } = work;
   /**
    * What the big key meant when the finger landed. The release runs that, even if the mode
@@ -198,12 +197,15 @@ function DeviceSurface() {
       {/*
         The sheet's own `accessibilityViewIsModal` only hides its siblings inside SheetHost, so
         the device hides itself from VoiceOver while a sheet is up (trim-ui §10 SheetHost).
+        Hidden under the native insert by React's own style, never a worklet's: a worklet's value
+        that held for over a second, then changed during a JS stall, comes back on the next commit
+        (trim-ui §8 Rules), and the whole device would stay invisible after a plan activation.
       */}
       <Animated.View
         aria-hidden={sheetUp}
         accessibilityElementsHidden={sheetUp}
         importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
-        style={[StyleSheet.absoluteFill, deviceMotion, hiddenStyle]}>
+        style={[StyleSheet.absoluteFill, deviceMotion, hidden && styles.hidden]}>
         {jsClock && insert ? (
           <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
         ) : null}
@@ -567,6 +569,7 @@ function WeekRocker({ model }: { model: HomeModel }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  hidden: { opacity: 0 },
   column: { flex: 1 },
   topRow: {
     height: device.keySize,

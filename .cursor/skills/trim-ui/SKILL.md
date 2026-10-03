@@ -384,6 +384,7 @@ Who plays it (`device/insert/use-insert.ts`): the SceneKit view (`CartridgeInser
 5. **No idle motion.** Nothing loops while the user isn't doing anything, with two exceptions that are information: blinking text for a state waiting on the user (`INSERT PLAN`, `GO` for `REST_GO_MS`), and the exercise figure, which demonstrates the movement while its sheet is open.
 6. **Coming back is instant.** No launch or foreground animation. A moment interrupted by backgrounding jumps to its end state on return; the device is never stuck in `loading`.
 7. **Reduced motion** (SPEC §7): movement becomes fades. The receipt shows without the feed, the insert is skipped (straight to the loaded state), the figure stands still. Haptics and sounds stay.
+8. **React holds every resting state.** Reanimated 4 hands a worklet style's values to React only once they've held still for 1 s, and drops them if the JS thread is busy in the next second. A dropped hand-over comes back on the next commit: the wheel on Home, no wheel in the log, the whole device invisible after a plan activation (all seen with a 2.6 s stall). So a part with more than one resting state (stowed, hidden) gets it from React: a Reanimated CSS transition or a plain style, never a worklet style. A worklet style may only hold still at its one resting value; a hold anywhere else keeps moving (a held key drifts imperceptibly, `press.ts`), or the part unmounts when it ends (the insert scene, the week moment).
 
 ### Haptics (SPEC §8)
 
@@ -513,7 +514,7 @@ Use these. Don't rebuild them per screen.
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
 | `Well` | 170 round recess around the big key. |
 | `HoldRing` | Stroke 6 at r80 around the well, amber with a soft glow. Fills linearly over 1100 ms while held, snaps back on release. |
-| `Wheel` | Pan on the UI thread; a notch every 16 pt; ridge texture and drum offset driven by shared values; per notch `scheduleOnRN(onNotch, ±1)` and the notch haptic. Commits to React state at most once per frame. An adjustable accessibility element. Stows on Home; once the stow lands, React's own props hide it (`parked`), so a dropped Reanimated settled-props sync can't bring it back, and a stowed wheel is hidden from VoiceOver. |
+| `Wheel` | Pan on the UI thread; a notch every 16 pt; ridge texture and drum offset driven by shared values; per notch `scheduleOnRN(onNotch, ±1)` and the notch haptic. Commits to React state at most once per frame. An adjustable accessibility element. Stows on Home, finish and loading with a Reanimated CSS transition, so React's own props always hold the resting state (a worklet stow's settled props are lost after a 1–2 s JS stall, and the next commit brings the wheel back on Home or drops it from the log); a stowed wheel is hidden from VoiceOver. |
 | `EngravedLabel` | `engraved` type in the finish's `label` with its `labelShadow` (0 1 0). |
 
 ### Sheet primitives
