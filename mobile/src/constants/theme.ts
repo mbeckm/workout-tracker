@@ -1,4 +1,4 @@
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 
 /** iOS semantic colors as hex so Expo Go cannot crash on dynamic Color tokens. */
 
@@ -383,3 +383,444 @@ export function appearanceLabel(preference: AppearancePreference): string {
     }
   }
 }
+
+/* ------------------------------------------------------------------------------------------ *
+ * Gadget redesign (design/gadget/SPEC.md §2–4). The device, its display, the dark sheets and
+ * the moments. Everything the gadget draws comes from here; the old tokens above stay until
+ * the old screens are gone (PLAN §4.6).
+ * ------------------------------------------------------------------------------------------ */
+
+/** The finish keys (mirrors `Finish` in `domain/finish.ts`, kept local so theme has no imports). */
+export type FinishId = '212' | '101' | '305' | '408';
+
+/** What changes per finish (SPEC §2 Device). */
+export type FinishColors = {
+  /** Top of the body gradient. */
+  body1: string;
+  /** Bottom of the body gradient. */
+  body2: string;
+  /** Engraved `.lab` text. */
+  label: string;
+  /** The 1pt shadow under engraved text. */
+  labelShadow: string;
+  /** The lip under every raised key (and the metal big key's lip). */
+  keyEdge: string;
+  /** Big key, primary: radial highlight → body, and its lip. Graphite on Signal. */
+  bigKeyHi: string;
+  bigKeyLo: string;
+  bigKeyLip: string;
+  /** Inset top highlight on the primary big key. */
+  bigKeyHighlight: string;
+  /** Inset bottom shade on the primary big key (transparent on Signal). */
+  bigKeyShade: string;
+  /** The soft cast shadow under the primary big key. */
+  bigKeyGlow: string;
+  /** Status bar text on this finish. */
+  statusBar: 'dark' | 'light';
+  /** Swatch name. */
+  name: string;
+};
+
+export const finishColors: Record<FinishId, FinishColors> = {
+  '212': {
+    body1: '#E4E2DC',
+    body2: '#D2CFC8',
+    label: '#7C7A73',
+    labelShadow: 'rgba(255,255,255,0.7)',
+    keyEdge: '#A9A69E',
+    bigKeyHi: '#FF8A45',
+    bigKeyLo: '#F2550F',
+    bigKeyLip: '#B83A05',
+    bigKeyHighlight: 'rgba(255,255,255,0.45)',
+    bigKeyShade: 'rgba(150,40,0,0.25)',
+    bigKeyGlow: 'rgba(200,70,10,0.3)',
+    statusBar: 'dark',
+    name: 'Aluminium',
+  },
+  '101': {
+    body1: '#3A3936',
+    body2: '#232220',
+    label: '#8C8A84',
+    labelShadow: 'rgba(0,0,0,0.6)',
+    keyEdge: '#A9A69E',
+    bigKeyHi: '#FF8A45',
+    bigKeyLo: '#F2550F',
+    bigKeyLip: '#B83A05',
+    bigKeyHighlight: 'rgba(255,255,255,0.45)',
+    bigKeyShade: 'rgba(150,40,0,0.25)',
+    bigKeyGlow: 'rgba(200,70,10,0.3)',
+    statusBar: 'light',
+    name: 'Graphite',
+  },
+  '305': {
+    body1: '#FF7A35',
+    body2: '#DE470A',
+    label: '#FFE2CF',
+    labelShadow: 'rgba(120,30,0,0.35)',
+    keyEdge: '#9E3A0A',
+    // On Signal the primary big key is graphite (an orange key on an orange body disappears).
+    bigKeyHi: '#4A4843',
+    bigKeyLo: '#22211F',
+    bigKeyLip: '#0E0E0D',
+    bigKeyHighlight: 'rgba(255,255,255,0.2)',
+    bigKeyShade: 'rgba(0,0,0,0)',
+    bigKeyGlow: 'rgba(0,0,0,0.3)',
+    statusBar: 'light',
+    name: 'Signal',
+  },
+  '408': {
+    body1: '#EFE6D3',
+    body2: '#D9CBB0',
+    label: '#7A6F5C',
+    labelShadow: 'rgba(255,255,255,0.7)',
+    keyEdge: '#A9A69E',
+    bigKeyHi: '#FF8A45',
+    bigKeyLo: '#F2550F',
+    bigKeyLip: '#B83A05',
+    bigKeyHighlight: 'rgba(255,255,255,0.45)',
+    bigKeyShade: 'rgba(150,40,0,0.25)',
+    bigKeyGlow: 'rgba(200,70,10,0.3)',
+    statusBar: 'dark',
+    name: 'Bone',
+  },
+};
+
+/** Shared by every finish (SPEC §2 Shared, Body overlays, Big key; prototype CSS). */
+export const deviceColors = {
+  // Raised keys (.rk, the rocker body)
+  key1: '#F4F3EF',
+  key2: '#DEDBD4',
+  keyInk: '#2A2925',
+  /** inset 0 1 0 on every raised key. */
+  keyHighlight: '#FFFFFF',
+  /** 0 6 10 cast shadow under a raised key. */
+  keyDrop: 'rgba(0,0,0,0.1)',
+  // Body overlays
+  sheenTop: 'rgba(255,255,255,0.35)',
+  sheenBottom: 'rgba(255,255,255,0)',
+  brushLight: 'rgba(255,255,255,0.06)',
+  brushDark: 'rgba(0,0,0,0.02)',
+  /** The body's inner rim: inset 0 2 0, and a 1.5 inner outline. */
+  bodyRim: 'rgba(255,255,255,0.65)',
+  bodyRimOutline: 'rgba(255,255,255,0.35)',
+  /** The light catch under recessed parts (display, well, plate): 0 1 0. */
+  recessRim: 'rgba(255,255,255,0.5)',
+  recessRimStrong: 'rgba(255,255,255,0.6)',
+  // Wheel
+  wheelLight: '#F2F1ED',
+  wheelDark: '#C4C1B9',
+  wheelShade: 'rgba(0,0,0,0.22)',
+  wheelShadeClear: 'rgba(0,0,0,0)',
+  wheelDrop: 'rgba(0,0,0,0.08)',
+  // Well around the big key
+  well: 'rgba(0,0,0,0.14)',
+  wellShade: 'rgba(0,0,0,0.28)',
+  // The rocker's recessed middle strip
+  plate: '#C9C6BE',
+  plateShade: 'rgba(0,0,0,0.25)',
+  // The recessed lamp plate (finish mode)
+  recessedPlate: 'rgba(0,0,0,0.12)',
+  // Lamps in the rocker strip
+  lampOff: '#8E8A80',
+  lampPart: '#C08A68',
+  lampDoneShine: 'rgba(255,255,255,0.25)',
+  // Lamps on the recessed plate
+  plateLampOff: 'rgba(0,0,0,0.28)',
+  plateLampShade: 'rgba(0,0,0,0.4)',
+  // Big key: metal (Skip, Done, Plans)
+  metalHi: '#FAF9F6',
+  metalLo: '#D6D2CA',
+  metalGlow: 'rgba(0,0,0,0.14)',
+  // Big key: disabled (the primary key through CSS grayscale(1), at .5 opacity)
+  disabledHi: '#9E9E9E',
+  disabledLo: '#717171',
+  disabledLip: '#515151',
+  /** Pressed big key: inset highlight and the small contact shadow. */
+  bigKeyPressedHighlight: 'rgba(255,255,255,0.3)',
+  bigKeyPressedDrop: 'rgba(0,0,0,0.2)',
+  /** Text on the primary big key. */
+  bigKeyInk: '#FFFFFF',
+} as const;
+
+/** The display (SPEC §2 Display). */
+export const lcd = {
+  lcd: '#121211',
+  /** The lcd ground at 0 alpha, for top/bottom fades over scrolling rows. */
+  lcdClear: 'rgba(18,18,17,0)',
+  lcdShade: 'rgba(0,0,0,0.8)',
+  amber: '#FF6A1A',
+  /** The hold ring's glow and the lamp halo, amber at ~35%. */
+  amberGlow: 'rgba(255,106,26,0.35)',
+  amberDim: '#7A3E1C',
+  amberOff: '#3A2214',
+  /** Pressed tint behind a tappable display word (the exercise name). */
+  amberPress: '#2A1A10',
+  doneRow: '#FF6A1A',
+  doneRowInk: '#121211',
+  doneRowMeta: '#5A1E00',
+  todoRow: '#1C1610',
+} as const;
+
+/** Dark, flat sheets (SPEC §2 Sheets, §6). */
+export const sheetColors = {
+  sheet: '#151514',
+  sheetClear: 'rgba(21,21,20,0)',
+  card: '#232321',
+  /** Highlighted row inside a card (Today's current lift). */
+  cardRaised: '#2C2A27',
+  rule: '#2E2E2B',
+  ink: '#F3F2EE',
+  /** Body copy a step below ink (how-to steps, muscle chips). */
+  inkSoft: '#D9D6CF',
+  muted: '#8C8A84',
+  sectionLabel: '#6E6C66',
+  control: '#262624',
+  controlInk: '#C9C6BF',
+  /** Tracks and done chips. */
+  track: '#33322F',
+  pillLight: '#FBFAF7',
+  pillLightInk: '#1C1B18',
+  pillDark: '#2E2D2A',
+  /** Text on orange fills (chips, ticks, badges). */
+  onOrange: '#1C0E05',
+  shadow: 'rgba(0,0,0,0.35)',
+  scrim: 'rgba(20,18,15,0.4)',
+  toast: '#2A2925',
+} as const;
+
+/** Signals (SPEC §2): orange acts, green is done, yellow is a record. */
+export const signal = {
+  orange: '#FF6A1A',
+  bigKey: '#F2550F',
+  done: '#5DAA68',
+  doneGlow: 'rgba(93,170,104,0.45)',
+  record: '#F5C542',
+} as const;
+
+/** Receipt paper (SPEC §2, §6 Receipt). */
+export const receiptColors = {
+  paperTop: '#FCFAF4',
+  paperBottom: '#EFEADF',
+  paperEdge: '#F1ECE0',
+  ink: '#34322D',
+  inkMini: '#4A4741',
+  muted: '#8E8B83',
+  pr: '#C2410C',
+  rule: '#B9B6AE',
+  slot: '#000000',
+} as const;
+
+/** Font weights the gadget uses (SF Rounded). */
+export const weight = {
+  semibold: '600',
+  bold: '700',
+  heavy: '800',
+} as const;
+
+/** Font families (registered by expo-font; SF Rounded is the system's rounded design). */
+export const fontFamily = {
+  lcd: 'Doto-Black',
+  // iOS resolves `ui-rounded` to SF Rounded; browsers need the fallback list.
+  rounded: Platform.OS === 'web' ? 'ui-rounded, "SF Pro Rounded", system-ui, sans-serif' : 'ui-rounded',
+  receipt: 'IBMPlexMono-Medium',
+  receiptBold: 'IBMPlexMono-Bold',
+} as const;
+
+const lcdRole = (fontSize: number, lineHeight = fontSize) => ({
+  fontFamily: fontFamily.lcd,
+  fontSize,
+  lineHeight,
+  color: lcd.amber,
+});
+const roundedRole = (
+  fontSize: number,
+  lineHeight: number,
+  fontWeight: (typeof weight)[keyof typeof weight],
+  letterSpacing = 0,
+) => ({
+  fontFamily: fontFamily.rounded,
+  fontSize,
+  lineHeight,
+  fontWeight,
+  letterSpacing,
+});
+
+/**
+ * The gadget's type roles (SPEC §3). LCD roles are amber by default; dim them with
+ * `lcd.amberDim`. LCD text is never scaled (`maxFontSizeMultiplier={1}`); key glyphs cap at
+ * `fontScaleCap.display` (1.2).
+ */
+export const gadgetType = {
+  /** The weight on the drum; sets × reps in edit. */
+  lcdHero: lcdRole(104),
+  /** The drum's weight from 1000 up (PLAN §7: shrinks to fit). */
+  lcdHeroCompact: lcdRole(88),
+  /** Rest time. */
+  lcdBig: lcdRole(56),
+  /** ALL DONE, END EARLY?, the plan name while loading. */
+  lcdTitle: lcdRole(44, 48),
+  /** `×8` under the drum. */
+  lcdReps: lcdRole(56),
+  /** The drum's previous and next steps. */
+  lcdStep: lcdRole(40),
+  /** The lift name in device edit. */
+  lcdName: lcdRole(28, 32),
+  /** Day row titles. */
+  lcdRow: lcdRole(20, 24),
+  /** Finish stats (`n OF m SETS` over the volume). */
+  lcdStat: lcdRole(20, 34),
+  /** The expanded day row's lift lines. */
+  lcdList: lcdRole(16, 27),
+  /** Display headers (`hd`) and footers. */
+  lcdSmall: lcdRole(15, 18),
+  /** Small display labels (SETS / REPS in edit), sheet section labels. */
+  lcdCaption: lcdRole(13, 16),
+  /** Day row meta. */
+  lcdMeta: lcdRole(12, 14),
+  /** The PR stamp. */
+  lcdStamp: lcdRole(11, 13),
+  /** Glyphs on round keys (☰, ↶, ✕). */
+  keyGlyph: { ...roundedRole(22, 26, weight.heavy), color: deviceColors.keyInk },
+  /** Glyphs on tall keys (+, −) and the rocker ends (‹ ›). */
+  keyGlyphLarge: { ...roundedRole(26, 30, weight.heavy), color: deviceColors.keyInk },
+  /** Words on tall keys (+15, −15). */
+  keyWord: { ...roundedRole(17, 22, weight.heavy), color: deviceColors.keyInk },
+  /** Small words on tall keys (Back). */
+  keyWordSmall: { ...roundedRole(15, 20, weight.heavy), color: deviceColors.keyInk },
+  /** The big key's label. */
+  bigKeyLabel: roundedRole(24, 28, weight.heavy),
+  /** Engraved body labels (`.lab`): uppercase, label colour, 1pt labelShadow. */
+  engraved: roundedRole(10, 12, weight.heavy, 1.5),
+  sheetTitle: { ...roundedRole(18, 22, weight.heavy), color: sheetColors.ink },
+  sheetHero: { ...roundedRole(28, 32, weight.heavy, -0.5), color: sheetColors.ink },
+  bigNumber: { ...roundedRole(54, 58, weight.heavy, -1.5), color: sheetColors.ink },
+  rowTitle: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.ink },
+  rowSub: { ...roundedRole(15, 20, weight.semibold), color: sheetColors.muted },
+  sectionLabel: { ...lcdRole(13, 16), letterSpacing: 1, color: sheetColors.sectionLabel },
+  receipt: { fontFamily: fontFamily.receipt, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
+  receiptBold: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
+  receiptMini: { fontFamily: fontFamily.receipt, fontSize: 9, lineHeight: 13, color: receiptColors.inkMini },
+} as const;
+
+/** Radii the gadget adds (SPEC §4, §6). Always `borderCurve: 'continuous'`. */
+export const gadgetRadius = {
+  stamp: 6,
+  lcdRow: 16,
+  lcdFrame: 20,
+  tallKey: 22,
+  wheel: 24,
+  card: 24,
+  key: 28,
+  display: 28,
+  sheet: 38,
+} as const;
+
+/** Device geometry at the 390 × 844 reference (SPEC §4). Keys keep these sizes on every phone. */
+export const device = {
+  /** Body edge to the keys and the display. */
+  edge: 20,
+  /** The display's inner padding. */
+  displayPad: 22,
+  /** Day rows inset inside the display, and their gap. */
+  rowInset: 14,
+  rowGap: 8,
+  rowHeight: 62,
+  /** The expanded row: base height plus one line per lift (max 4). */
+  rowExpandedBase: 70,
+  rowExpandedLine: 27,
+  /** Top of the top row under the safe area at the reference (56 − 47 status bar ≈ 9). */
+  topRowY: 56,
+  displayY: 140,
+  displayHeight: 420,
+  /** Round keys. */
+  keySize: 56,
+  keyLip: 3,
+  keyPress: 3,
+  /** Tall left keys. */
+  tallKeyWidth: 64,
+  tallKeyHeight: 76,
+  tallKeyGap: 12,
+  /** The rocker (raised key body) and its parts. */
+  rockerWidth: 198,
+  rockerHeight: 56,
+  rockerEnd: 46,
+  rockerStrip: 30,
+  rockerTilt: 10,
+  rockerPerspective: 300,
+  lamp: 10,
+  lampGap: 7,
+  /** Compressed lamps when a day has > 12 lifts (PLAN §7). */
+  lampCompact: 8,
+  lampGapCompact: 4,
+  /** The recessed lamp plate (finish mode). */
+  plateWidth: 190,
+  plateHeight: 44,
+  plateLamp: 12,
+  plateLampGap: 10,
+  /** The gap between the rocker and its engraved label. */
+  labelGap: 6,
+  /** Big key, its well and the hold ring. */
+  bigKeySize: 146,
+  bigKeyLip: 6,
+  bigKeyPress: 6,
+  wellSize: 170,
+  holdRingRadius: 80,
+  holdRingStroke: 6,
+  /** The wheel. */
+  wheelWidth: 64,
+  wheelHeight: 180,
+  wheelRidgeLight: 5,
+  wheelRidgeDark: 2,
+  wheelShade: 16,
+  /** One notch of wheel travel. */
+  wheelNotch: 16,
+  wheelLip: 3,
+  wheelStowX: 40,
+  wheelStowScale: 0.9,
+  /** The weight drum. */
+  drumFrameHeight: 124,
+  drumFrameInset: 10,
+  drumFrameStroke: 2,
+  drumStepTravel: 24,
+  /** Drum rows inside the display (prototype `#drum`): above, current, below, the frame and the top fade. */
+  drumAboveY: 64,
+  drumCurrentY: 122,
+  drumBelowY: 240,
+  drumFrameY: 112,
+  drumFadeY: 50,
+  drumFadeHeight: 60,
+  /** Display header top and footer bottom. */
+  displayHeaderY: 20,
+  displayFooterY: 22,
+  /** The PR stamp on a done row. */
+  stampPadX: 6,
+  stampPadY: 1,
+  stampBorder: 2,
+  stampOffsetRight: 46,
+  stampOffsetTop: -7,
+  /** Day row inner padding. */
+  rowPadX: 14,
+  rowPadY: 10,
+  rowMetaGap: 6,
+  rowListGap: 12,
+  /** Selected row outline. */
+  rowOutline: 2,
+  /** Finish-mode set grid: 9 columns, lamps 10 tall. */
+  gridColumns: 9,
+  gridLamp: 10,
+  gridGap: 8,
+  /** Rest ring. */
+  restRingRadius: 95,
+  restRingStroke: 12,
+  /** Bottom clearance above the home indicator at the reference; 16 on iPhone SE. */
+  bottomClearance: 34,
+  bottomClearanceCompact: 16,
+  /** Display content fade+rise distance. */
+  displayRise: 8,
+  /** Stamp angle on done rows. */
+  stampAngle: 7,
+  /** Pressed key and lamp-dim opacities. */
+  keyDisabledOpacity: 0.45,
+  rockerEndDisabledOpacity: 0.3,
+  bigKeyDisabledOpacity: 0.5,
+} as const;
