@@ -15,6 +15,7 @@ import {
 import { useDevice } from '@/device/device-context';
 import { PRESS_SCALE } from '@/motion';
 import { useFinish } from '@/device/finish';
+import { useLogSession } from '@/device/log';
 import { trackedLiftCount } from '@/device/progress-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -22,8 +23,29 @@ import { ObjectIcon } from './object-icon';
 import { SheetCard, SheetHeader, SheetRow, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
-/** During a workout (Phase 4 passes it): the End workout row's facts and action. */
-export type MenuWorkout = { logged: number; total: number; onEnd: () => void };
+/** During a workout: the End workout row's facts and action, and Discard under it. */
+export type MenuWorkout = { logged: number; total: number; onEnd: () => void; onDiscard: () => void };
+
+/** The menu with the open workout's End and Discard (PLAN Phase 4, screen 10). */
+export function DeviceMenuSheet() {
+  const log = useLogSession();
+  const { close } = useSheetChrome();
+  const workout: MenuWorkout | null = log.openDay
+    ? {
+        logged: log.loggedSetCount,
+        total: Math.max(log.finishSummary?.planned ?? 0, log.loggedSetCount),
+        onEnd: () => {
+          close();
+          log.endWorkout();
+        },
+        onDiscard: () => {
+          close();
+          void log.discard();
+        },
+      }
+    : null;
+  return <MenuSheet workout={workout} />;
+}
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -51,6 +73,7 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
             sub={`${workout.logged} of ${plural(workout.total, 'set', 'sets')} logged`}
             onPress={workout.onEnd}
           />
+          <SheetRow title="Discard workout" size="compact" destructive onPress={workout.onDiscard} />
         </SheetCard>
       ) : null}
       <FinishCard onPress={() => swapSheet('finishes', from)} />

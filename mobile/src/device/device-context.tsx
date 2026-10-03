@@ -12,6 +12,7 @@ import {
   type DeviceState,
   type JustFinished,
   type LogIntent,
+  type LogMode,
   type SheetKind,
   type SheetParams,
   type UiMode,
@@ -19,7 +20,7 @@ import {
 
 type DeviceContextValue = {
   state: DeviceState;
-  /** The mode on screen (PLAN §4.2). Home until Phase 4 feeds the log session's mode. */
+  /** The mode on screen (PLAN §4.2): a UI mode, else the open log's (mirrored by the device screen). */
   mode: DeviceMode;
   /** `{mode: 'log', planId, dayId, exerciseId?}` or `{sheet, params}`. */
   open: (command: DeviceCommand) => void;
@@ -28,6 +29,8 @@ type DeviceContextValue = {
   swapSheet: (kind: SheetKind, params?: SheetParams) => void;
   closeSheet: () => void;
   setUiMode: (mode: UiMode | null) => void;
+  /** The device screen mirrors `useLogSession().mode` here. */
+  setLogMode: (mode: LogMode | null) => void;
   /** The log session calls this once it has opened `logIntent`. */
   consumeLogIntent: (intent: LogIntent) => void;
   /** After the receipt (Phase 5): Home stamps this day in and flickers its lamp. */
@@ -58,6 +61,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
   }, []);
   const closeSheet = useCallback(() => dispatch({ type: 'closeSheet' }), []);
   const setUiMode = useCallback((mode: UiMode | null) => dispatch({ type: 'setUiMode', mode }), []);
+  const setLogMode = useCallback((mode: LogMode | null) => dispatch({ type: 'setLogMode', mode }), []);
   const consumeLogIntent = useCallback(
     (intent: LogIntent) => dispatch({ type: 'consumeLogIntent', id: intent.id }),
     [],
@@ -86,6 +90,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       swapSheet,
       closeSheet,
       setUiMode,
+      setLogMode,
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,
@@ -97,6 +102,7 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       swapSheet,
       closeSheet,
       setUiMode,
+      setLogMode,
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,

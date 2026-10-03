@@ -15,9 +15,12 @@ import { DEVICE, EASE_KEY_FN } from '@/motion';
 
 import { Lamp, type LampState } from './lamp';
 
-/** Lamps compress past this many lifts, and give way to `n/m` text past `LAMP_TEXT_OVER`. */
-const LAMP_COMPACT_OVER = 12;
-const LAMP_TEXT_OVER = 16;
+/**
+ * The strip holds what fits: regular lamps (10, gap 7) up to 6, compact (8, gap 4) up to 8,
+ * then `n/m` text. PLAN §7's 12 / 16 thresholds don't fit the 106pt strip (7 lamps overflowed).
+ */
+const STRIP_ROOM = device.rockerWidth - device.rockerEnd * 2 - device.lampStripInset * 2;
+const fits = (count: number, size: number, gap: number) => count * size + (count - 1) * gap <= STRIP_ROOM;
 
 type RockerBase = {
   lamps: readonly LampState[];
@@ -56,9 +59,19 @@ export function Rocker(props: RockerProps) {
   const haptics = useHaptics();
   const reduceMotion = useReducedMotion();
   const tilt = useSharedValue(0);
-  const tiltStyle = useAnimatedStyle(() => ({
-    transform: [{ perspective: device.rockerPerspective }, { rotateY: `${tilt.get()}deg` }],
-  }));
+  // The tilt stays 2D. A rotateY with perspective (a 3D layer) left stale, uncomposited
+  // rectangles over the display and the keys after a press on iOS (QA, Phase 4), whether the
+  // perspective stayed on or came and went. 2D stand-in for rotateY ±10°: the body
+  // foreshortens (cos 10°) and rocks a little toward the pressed end.
+  const tiltStyle = useAnimatedStyle(() => {
+    const t = tilt.get() / device.rockerTilt;
+    return {
+      transform: [
+        { scaleX: 1 - Math.abs(t) * device.rockerTiltSqueeze },
+        { rotate: `${t * device.rockerTiltRock}deg` },
+      ],
+    };
+  });
 
   const rock = (direction: -1 | 1) => {
     haptics.rockerMove();
@@ -179,7 +192,9 @@ function RockerEnd({
 }
 
 function LampStrip({ lamps, litIndex }: { lamps: readonly LampState[]; litIndex?: number }) {
-  if (lamps.length > LAMP_TEXT_OVER) {
+  const regular = fits(lamps.length, device.lamp, device.lampGap);
+  const compact = !regular && fits(lamps.length, device.lampCompact, device.lampGapCompact);
+  if (!regular && !compact) {
     const current = lamps.findIndex((lamp) => lamp === 'on');
     return (
       <Text maxFontSizeMultiplier={1} style={gadgetType.keyWordSmall}>
@@ -187,7 +202,6 @@ function LampStrip({ lamps, litIndex }: { lamps: readonly LampState[]; litIndex?
       </Text>
     );
   }
-  const compact = lamps.length > LAMP_COMPACT_OVER;
   return (
     <View style={[styles.row, { gap: compact ? device.lampGapCompact : device.lampGap }]}>
       {lamps.map((state, index) => (

@@ -78,9 +78,9 @@ Information lives on the lowest layer that serves the job:
 | Mode | Top left | Rocker | Top right | Left keys | Wheel | Big key |
 | --- | --- | --- | --- | --- | --- | --- |
 | **home** | Menu | Week lamps, no ends; `WEEK n` engraved under it | History | none | stowed | `Start` (primary); `Plans` (metal) with no plans |
-| **log** | Menu | `‹` `›` move between lifts; lamps per lift; the middle opens Today | Undo last set | `+` / `−` reps | weight (or the mode's value, §13 Log) | `Log` (primary); `Save` when editing a logged set |
+| **log** | Menu | `‹` `›` move between lifts; lamps per lift; the middle opens Today | Undo last set (cancels the edit while editing a logged set) | `+` / `−` reps | weight (or the mode's value, §13 Log) | `Log` (primary); `Save` when editing a logged set |
 | **rest** | Menu | as in log | Undo last set | `+15` / `−15` | time, 2 notches = 15 s | `Skip` (metal) |
-| **finish** | Menu | lamps per lift | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
+| **finish** | Menu | lamps per lift on the recessed plate (green when done) | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
 | **edit** | `‹` back to the editor | `‹` `›` move between the day's lifts; the middle returns to the editor | Remove lift (`✕`) | `+` / `−` sets | reps (or seconds, minutes) | `Done` (metal) |
 | **loading** | inert | lamps off, then flicking on | hidden | none | stowed | inert |
 
@@ -355,7 +355,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Weight drum step | translateY ±24, then back, 160 ms, bezier(.2,.8,.3,1) | Per wheel notch |
 | Wheel | Ridges follow the finger 1:1. One notch = 16 pt of travel | Weight: one step per notch. Rest: ±15 s per 2 notches. Reps while editing: 1 per notch. |
 | Sheet in / out | 380 ms, bezier(.2,.9,.3,1); scrim 300 ms | |
-| Rocker press | rotateY ±10°, 160 ms | Tilts toward the end pressed |
+| Rocker press | 2D stand-in for rotateY ±10° (scaleX 0.985, rotate ±1.5°), 160 ms | Tilts toward the end pressed (3D layers composite badly on iOS) |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
 | Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms) | Tapping the paper completes it. Plays from the wall too. Reduce Motion: the paper fades in where it ends |
 | Week moment (D15) | the grid ground fades in over 600 ms; 250 ms in, the report drops onto the spike from 120 above, −4° → 1.5°, 700 ms, bezier(.3,1.3,.5,1); Done fades it out over 300 ms | The thud at 315 ms into the drop (where the curve first meets the spike). A tap on the scene skips to the end |
@@ -389,6 +389,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | --- | --- | --- |
 | Wheel notch (weight, time, reps) | transient, intensity .5, sharpness .9; every 5th notch or whole 10 kg: intensity .8 | `selectionAsync` |
 | Key press (any key) | transient .6 / .5 | `impactAsync(Light)` |
+| Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
 | Big key press-in | transient .9 / .4 | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
 | Rocker move | transient .7 / .8 | `impactAsync(Light)` |
@@ -500,8 +501,8 @@ Use these. Don't rebuild them per screen.
 | `DeviceBody` | The finish's gradient, sheen and brushing (§5). Finish-aware through `FinishProvider`; changes live when the finish changes. |
 | `RoundKey` | 56, r28, key1 → key2 gradient, lip in `keyEdge`, glyph in `keyInk`. Press: down 3, lip collapses, 80 ms, key-press haptic on press-in. |
 | `TallKey` | 64 × 76, r22. Same press as `RoundKey`. Long press repeats (reps, sets, rest). |
-| `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts ±10° toward the pressed end. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
-| `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7; more than 12 lamps compress to 8 with gap 4; beyond 16, the strip shows `n/m` text. |
+| `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts toward the pressed end in 2D (scaleX 0.985, rotate 1.5°): a rotateY with perspective left stale rectangles on iOS. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
+| `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7 while they fit the rocker's 106pt strip (up to 6); then 8 with gap 4 (up to 8); beyond that the strip shows `n/m` text. |
 | `Display` | The lcd panel, r28, inset shadow, 22 padding. Owns the 220 ms content change and the one summary VoiceOver label per mode. |
 | `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
@@ -541,6 +542,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | --- | --- |
 | Change the weight | Wheel + long-press the drum for the keypad; VoiceOver increment / decrement on the wheel |
 | Move between lifts | Rocker ends + tap a row in Today |
+| Swap or remove a lift today | Swipe a Today row left + its VoiceOver actions |
 | Close a sheet | Swipe down + scrim tap + ✕ / `Done` |
 | Reorder lifts | Drag in Today or the editor + Move up / Move down accessibility actions |
 | Remove a lift in the editor | Swipe the row + the device's Remove key in edit |
@@ -711,7 +713,7 @@ Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard wo
 
 ### Today (M3) [07]
 
-Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump; "i" opens the exercise sheet; drag to reorder (writes the plan); Swap (alternatives, then the picker in replace mode; logged sets stay, no dialog); Add lift; Remove (today only, Undo toast); tap a logged set to edit it on the device (`EDIT SET n`, big key `Save`, no rest).
+Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump (the sheet closes); "i" opens the exercise sheet (‹ comes back); hold a row, then drag to reorder (writes the plan). Swipe a row left for its two actions, `Swap` (dark) and `Remove` (orange); both are also VoiceOver actions, with Move up / Move down and Exercise info. Swap swaps the sheet in place to the lift's alternatives plus `Choose another` (the picker in replace mode); logged sets stay, no dialog. `Add lift` (orange text under the card) opens the picker and appends to the day and the session. Remove takes the lift out of today only, with an Undo toast. Tap a logged set bar to edit it on the device (`EDIT SET n`, big key `Save`, no rest; ↶ cancels the edit). An edit started during rest shows the log view; rest keeps running and returns after Save.
 
 ### Exercise (M4) [06]
 
@@ -773,7 +775,7 @@ After the receipt's Done, once per full week (`weekMomentsShown` keeps the ISO w
 
 ### Keypad (D19)
 
-A short sheet from a long-press on the drum: a numeric keypad to type an exact weight (`81.25`, big jumps). It sets the drum; Log still commits.
+A short sheet (top edge 430, so the drum stays in view) from a long-press on the drum: the value (`bigNumber`, muted until the first key replaces it) with its unit, and a 3 × 4 pad (`card` keys, r16, 50 tall) with a decimal point for loads only and ⌫. ✕ leaves the drum as it was; `Done` sets it (weight, assistance, reps, seconds or minutes, whatever the drum shows). Log still commits.
 
 ---
 
