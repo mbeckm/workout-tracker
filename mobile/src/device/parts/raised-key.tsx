@@ -70,7 +70,7 @@ function RaisedKey({
     <Animated.View
       style={[
         { width, height, opacity: disabled ? device.keyDisabledOpacity : 1 },
-        styles.disableTransition,
+        disableTransition,
         style,
       ]}>
       <Animated.View
@@ -145,11 +145,13 @@ export function TallKey(props: RaisedKeyProps) {
   );
 }
 
+/** Reanimated CSS transition: outside StyleSheet.create, whose RN types don't know it. */
+const disableTransition = {
+  transitionProperty: 'opacity',
+  transitionDuration: DEVICE.KEY_DISABLE,
+} as const;
+
 const styles = StyleSheet.create({
   abs: { position: 'absolute', left: 0, top: 0 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  disableTransition: {
-    transitionProperty: 'opacity',
-    transitionDuration: DEVICE.KEY_DISABLE,
-  },
 });
