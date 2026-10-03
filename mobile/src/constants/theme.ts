@@ -740,6 +740,10 @@ export const gadgetType = {
   lcdPrompt: lcdRole(40, 44),
   /** The lift name in device edit. */
   lcdName: lcdRole(28, 32),
+  /** The `×` between sets and reps in device edit (prototype 48/66). */
+  lcdTimes: lcdRole(48, 66),
+  /** A day ticking in while a plan loads (prototype 18/34). */
+  lcdLoadDay: lcdRole(18, 34),
   /** Day row titles. */
   lcdRow: lcdRole(20, 24),
   /** Finish stats (`n OF m SETS` over the volume). */
@@ -1479,4 +1483,195 @@ export const plansGeometry = {
   pickGap: 12,
   tick: 30,
   tickRing: 2,
+} as const;
+
+/** Device edit (PA2, screen 22; prototype `renderEdit`): where the display's parts sit. */
+export const editGeometry = {
+  /** The lift name's top (prototype 52). */
+  nameY: 52,
+  /** The sets × reps row's top (prototype 150); it moves up on short displays. */
+  numbersY: 150,
+  /** The row's height: the SETS label (16) + 6 + the number (100), plus the frame's overhang. */
+  numbersHeight: 135,
+  /**
+   * The number under its label. CSS has 6, but Doto sits higher in an RN line box: 24 puts the
+   * glyph 15 under the frame's top and the frame 7 under the label, as on screen 22.
+   */
+  numberGap: 24,
+  /** The × sits on the numbers' baseline (Doto 48 drops lower in its line box than 104). */
+  timesLift: 11,
+  /** 104 Doto on a 100 line (prototype). */
+  numberLine: 100,
+  /** Between SETS, ×, REPS (`gap: 14`). */
+  columnGap: 14,
+  /** The frame round the wheel's value: 10 past each side, from 23 under the label's top (screen 22), 112 tall, r18. */
+  frameOutset: 10,
+  frameTop: 23,
+  frameHeight: 112,
+  frameRadius: 18,
+  frameStroke: 2,
+  /** Footer bottom (prototype 20). */
+  footerY: 20,
+  /** The footer and the room the numbers keep above it. */
+  footerRoom: 44,
+  /** Value lengths (sets + value characters) that fit at 104, then 88; longer ones go to 56. */
+  heroChars: 4,
+  compactChars: 5,
+  /** The SETS label under the tall keys (prototype y762, left keys at x22). */
+  setsLabelY: 174,
+} as const;
+
+/** The plan insert (SPEC §7 Plan activation; prototype `.scene`, `.c3`, `.pulse`, `.slotglow`). */
+export const insertColors = {
+  /** The backdrop's radial (`#1D1C1A` → `#0B0B0A`). */
+  backdropIn: '#1D1C1A',
+  backdropOut: '#0B0B0A',
+  gridLine: '#FFFFFF',
+  gridLineOpacity: 0.14,
+  vignette: '#000000',
+  vignetteOpacity: 0.7,
+  shadow: '#000000',
+  shadowOpacity: 0.6,
+  /** The cartridge's plastic, its top highlight and bottom shade, the back layers, the ridges. */
+  cartHi: '#DAD7D0',
+  cartLo: '#B7B3AA',
+  cartHighlight: 'rgba(255,255,255,0.65)',
+  cartShade: 'rgba(0,0,0,0.08)',
+  cartBack: '#8E8A80',
+  cartRidge: 'rgba(0,0,0,0.18)',
+  cartLabelShade: 'rgba(0,0,0,0.8)',
+  /** The slot glow and the pulse ring. */
+  glow: '#FF6A1A',
+  glowHalo: 'rgba(255,106,26,0.7)',
+  pulseRing: 'rgba(255,106,26,0.5)',
+  pulseHalo: 'rgba(255,106,26,0.25)',
+  /** The display's boot flicker (`@keyframes boot`). */
+  bootFlash1: '#3A2214',
+  bootFlash2: '#2A1A10',
+  /** The body's depth layers: brightness from the front layer to the back one (`.edge`, .6). */
+  depthFront: 0.72,
+  depthBack: 0.42,
+} as const;
+
+export const insertGeometry = {
+  /** The pull-back pose (SPEC §7): translateY 70, scale .68, rotateX −16°, rotateY −30°, rotateZ 2°. */
+  pullY: 70,
+  pullScale: 0.68,
+  pullRotateX: -16,
+  pullRotateY: -30,
+  pullRotateZ: 2,
+  /** `.phone { perspective: 1400px }`. */
+  perspective: 1400,
+  /** How far behind the screen the scene's backdrop sits, clear of the turned device's back half. */
+  backdropDepth: 2000,
+  /** The body as an object: r52, 44 deep in 22 layers. */
+  bodyRadius: 52,
+  bodyDepth: 44,
+  depthLayers: 22,
+  /** The click's dip: down 10, rotateX 4°, scale .985; rebound −4, −1°, 1.006; then 1, 0. */
+  dipY: 10,
+  dipRotateX: 4,
+  dipScale: 0.985,
+  reboundY: -4,
+  reboundRotateX: -1,
+  reboundScale: 1.006,
+  settleY: 1,
+  /** The cartridge (`.c3`): 160 × 190 at y −240, half into the body's depth, 5 layers thick. */
+  cartWidth: 160,
+  cartHeight: 190,
+  cartTop: -240,
+  cartDepth: 22,
+  cartLayers: 5,
+  cartLayerStep: 2,
+  cartRadiusTop: 9,
+  cartRadiusTopRight: 22,
+  cartRadiusBottom: 6,
+  /** Appears from 60 above, slides 180 down, overshoots to 192, settles 184 then 186. */
+  cartFrom: -60,
+  cartSlide: 180,
+  cartOvershoot: 192,
+  cartSettle1: 184,
+  cartSettle2: 186,
+  /** `.rid`: left 18, right 30, top 10, 14 tall, ridges 2 on 4 off. */
+  ridgeLeft: 18,
+  ridgeRight: 30,
+  ridgeTop: 10,
+  ridgeHeight: 14,
+  ridgeLine: 2,
+  ridgePitch: 6,
+  ridgeRadius: 3,
+  /** `.lbl`: 14 in, 34 down, 118 tall, r7, padding 10 12; name Doto 17/19, days 10/15. */
+  labelInset: 14,
+  labelTop: 34,
+  labelHeight: 118,
+  labelRadius: 7,
+  labelPadY: 10,
+  labelPadX: 12,
+  labelDaysTop: 8,
+  /** `.brand` and `.arrow`. */
+  brandInset: 14,
+  brandBottom: 10,
+  arrowRight: 16,
+  arrowBottom: 9,
+  arrowHalf: 6,
+  arrowHeight: 9,
+  /** `.slotglow`: 180 × 10 at y −4, r5, an 18 blur. */
+  glowWidth: 180,
+  glowHeight: 10,
+  glowTop: -4,
+  glowBlur: 18,
+  glowSpread: 6,
+  /** `.pulse`: 340 round, centred 40% down; scale .35 → 1.25, opacity .9 → 0. */
+  pulseSize: 340,
+  pulseCentreY: 0.4,
+  pulseFrom: 0.35,
+  pulseTo: 1.25,
+  pulseOpacity: 0.9,
+  pulseRing: 2,
+  pulseBlur: 40,
+  pulseSpread: 6,
+  /** `.gridfloor`: 44 cells, from 52% down, tilted 72° under a 500 perspective, 120% long, 60% wider each side. */
+  gridCell: 44,
+  gridTop: 0.52,
+  gridTilt: 72,
+  gridPerspective: 500,
+  gridLength: 1.2,
+  gridSpread: 0.6,
+  gridLine: 1.5,
+  /** The floor's mask: .2 at its far edge, full from 30% to 60%, gone at the end. */
+  gridMaskStart: 0.2,
+  gridMaskIn: 0.3,
+  gridMaskOut: 0.6,
+  /** The radial backdrop: 80% × 55% at 50% 42%; the vignette 75% × 65% at 50% 48%, clear to 55%. */
+  backdropRx: 0.8,
+  backdropRy: 0.55,
+  backdropCy: 0.42,
+  vignetteRx: 0.75,
+  vignetteRy: 0.65,
+  vignetteCy: 0.48,
+  vignetteClear: 0.55,
+  /** `.devshadow`: 270 × 46 at y720 of 844, from scale .6. */
+  shadowWidth: 270,
+  shadowHeight: 46,
+  shadowY: 720 / 844,
+  shadowFrom: 0.6,
+  /** The boot: scaleY .02 → 1.04 (35%) → 1. */
+  bootFrom: 0.02,
+  bootPeak: 1.04,
+  bootPeakAt: 0.35,
+  /** Loaded: the plan name at 54, the days from 170 (34 apart), a 10-segment bar 16 tall, 4 apart, 22 up. */
+  loadedNameY: 54,
+  loadedListY: 170,
+  loadedLine: 34,
+  barSegments: 10,
+  barHeight: 16,
+  barGap: 4,
+  barBottom: 22,
+} as const;
+
+/** The cartridge's printing in the insert (`.c3 .lbl b`, `.lbl span`, `.brand`). */
+export const insertType = {
+  cartName: lcdRole(17, 19),
+  cartDays: { ...lcdRole(10, 15), color: lcd.amberDim },
+  brand: { ...roundedRole(11, 13, weight.heavy, 2), color: insertColors.cartBack },
 } as const;

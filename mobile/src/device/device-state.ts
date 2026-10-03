@@ -112,6 +112,12 @@ export type EditTarget = {
   id: number;
 };
 
+/** A plan going into the slot (Phase 6, SPEC §7 Plan activation) while `uiMode` is `loading`. */
+export type LoadingTarget = { planId: string; id: number; dev?: InsertDevOptions };
+
+/** Development only (`/?insert=js&pause=1200&speed=0.25`): force an engine, freeze or slow the insert. */
+export type InsertDevOptions = { engine?: 'js' | 'native'; pauseAt?: number; speed?: number };
+
 export type DeviceState = {
   sheet: OpenSheet | null;
   uiMode: UiMode | null;
@@ -122,6 +128,8 @@ export type DeviceState = {
   justFinished: JustFinished | null;
   /** The lift on the device while `uiMode` is `edit` (Phase 6). */
   edit: EditTarget | null;
+  /** The plan being inserted while `uiMode` is `loading`. */
+  loading: LoadingTarget | null;
   /** Monotonic counter for `key` and `id`. */
   seq: number;
 };
@@ -133,6 +141,7 @@ export const initialDeviceState: DeviceState = {
   logIntent: null,
   justFinished: null,
   edit: null,
+  loading: null,
   seq: 0,
 };
 
@@ -154,8 +163,14 @@ export type DeviceAction =
   | { type: 'clearJustFinished'; id: number }
   /** The editor's sets × reps chip: the sheet hides and the device edits that lift. */
   | { type: 'startEdit'; target: Omit<EditTarget, 'id'> }
+  /** The rocker in edit: another lift of the same day. */
+  | { type: 'editLift'; exerciseId: string }
   /** Done, ‹ or the rocker's middle in edit: the editor sheet comes back where it was. */
-  | { type: 'leaveEdit' };
+  | { type: 'leaveEdit' }
+  /** Use plan: the sheet closes and the device plays the insert (`loading`). */
+  | { type: 'startLoading'; planId: string; dev?: InsertDevOptions }
+  /** The insert is over (or skipped, or the app came back): Home. `id` guards a newer one. */
+  | { type: 'finishLoading'; id: number };
 
 export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceState {
   switch (action.type) {
@@ -187,6 +202,18 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
       const seq = state.seq + 1;
       return { ...state, seq, sheet: null, uiMode: 'edit', edit: { ...action.target, id: seq } };
     }
+    case 'editLift':
+      return state.edit && state.edit.exerciseId !== action.exerciseId
+        ? { ...state, edit: { ...state.edit, exerciseId: action.exerciseId } }
+        : state;
+    case 'startLoading': {
+      const seq = state.seq + 1;
+      return { ...state, seq, sheet: null, uiMode: 'loading', edit: null, loading: { planId: action.planId, id: seq, ...(action.dev ? { dev: action.dev } : {}) } };
+    }
+    case 'finishLoading':
+      return state.loading?.id === action.id
+        ? { ...state, loading: null, uiMode: state.uiMode === 'loading' ? null : state.uiMode }
+        : state;
     case 'leaveEdit': {
       if (!state.edit) {
         return state;

@@ -5,8 +5,9 @@
  * Covers cartridge labels, the shelf's counts and order, days done this week (active plan only),
  * the editor's edits (rename, add / duplicate / move days, move lifts, add lifts with defaults),
  * leaving the editor (discard, auto-name per decision 71, filing) and the gates for `+` and
- * Use plan.
+ * Use plan; device edit (PA2): its steps, limits, faces and where it goes after a removal.
  */
+import { editFace, liftAfterRemoval, stepSets, stepValue, stepWithin, withExercise } from '@/device/edit-model';
 import {
   activatedToast,
   addDay,
@@ -223,6 +224,49 @@ check('gates: second plan, use plan', () => {
     kind: 'pro',
     reason: 'switch_plan',
   });
+});
+
+check('device edit: sets 1–10, reps 1–50, a rep scheme cleared', () => {
+  const ten = { ...bench, sets: 10 };
+  assert.equal(stepSets(ten, 1), null);
+  assert.equal(stepSets({ ...bench, sets: 1 }, -1), null);
+  assert.equal(stepSets(bench, 1)?.sets, 4);
+  assert.equal(stepSets({ ...bench, repScheme: [10, 8, 6] }, 1)?.repScheme, null);
+  assert.equal(stepValue({ ...bench, reps: 50 }, 1), null);
+  assert.equal(stepValue({ ...bench, reps: 1 }, -1), null);
+  assert.equal(stepValue(bench, 1)?.reps, 9);
+  // An old plan's 12 sets still come down one at a time.
+  assert.equal(stepSets({ ...bench, sets: 12 }, -1)?.sets, 11);
+});
+
+check('device edit: holds step 5 s on a grid, minute cardio 1 min', () => {
+  const plank = lift('bundled-plank');
+  const face = editFace({ ...plank, sets: 3, durationSeconds: 45 });
+  assert.deepEqual([face.kind, face.valueText, face.valueLabel, face.total], ['seconds', '0:45', 'TIME', '2:15']);
+  assert.equal(stepValue({ ...plank, durationSeconds: 42 }, 1)?.durationSeconds, 45);
+  assert.equal(stepValue({ ...plank, durationSeconds: 42 }, -1)?.durationSeconds, 40);
+  assert.equal(stepValue({ ...plank, durationSeconds: 5 }, -1), null);
+  assert.equal(stepWithin(600, 1, { min: 5, max: 600, step: 5 }), null);
+  const cardio = { ...plank, itemType: 'cardio' as const, trackingMode: 'duration' as const, durationSeconds: 20 * 60, sets: 1 };
+  const minutes = editFace(cardio);
+  assert.deepEqual([minutes.kind, minutes.valueText, minutes.valueLabel, minutes.total], ['minutes', '20', 'MIN', '20 MIN']);
+  assert.equal(stepValue(cardio, 1)?.durationSeconds, 21 * 60);
+});
+
+check('device edit: face and the reps total', () => {
+  const face = editFace({ ...bench, sets: 3, reps: 12 });
+  assert.deepEqual([face.setsText, face.valueText, face.valueLabel, face.wheelLabel, face.total], ['3', '12', 'REPS', 'REPS', '36 REPS']);
+  assert.equal(face.spoken, '3 sets of 12 reps');
+});
+
+check('device edit: the lift is replaced in its day only; after a removal the next one shows', () => {
+  const changed = withExercise(ul, ul.days[0].id, { ...bench, sets: 5 });
+  assert.equal(changed.days[0].exercises[0].sets, 5);
+  assert.equal(changed.days[1], ul.days[1]);
+  assert.equal(withExercise(ul, ul.days[1].id, { ...bench, sets: 5 }), ul);
+  assert.equal(liftAfterRemoval([bench, row], bench.id), row.id);
+  assert.equal(liftAfterRemoval([bench, row], row.id), bench.id);
+  assert.equal(liftAfterRemoval([bench], bench.id), null);
 });
 
 if (failures > 0) {

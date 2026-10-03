@@ -298,7 +298,7 @@ function DoneRow({ row, title, celebrate }: { row: HomeRow; title: string; celeb
 }
 
 /** No plans (D18): `SLOT` / `EMPTY` dim on top and a blinking `INSERT PLAN`. */
-function EmptySlot() {
+export function EmptySlot() {
   const blink = useSharedValue(1);
   useEffect(() => {
     const half = DEVICE.BLINK / 2;

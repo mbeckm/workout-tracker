@@ -702,7 +702,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyEntitlement = useCallback((entitlement: Entitlement) => {
-    if (entitlement.status === 'unknown') {
+    // A home demo (development) pins its own Pro state, so the gates act on the fixture.
+    if (entitlement.status === 'unknown' || homeDemoMode()) {
       return;
     }
     const isPro = entitlement.status === 'pro';
