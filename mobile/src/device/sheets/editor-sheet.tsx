@@ -409,7 +409,13 @@ export function EditorSheet({ params }: { params: SheetParams }) {
                 onChip={(exercise) => openEdit(day, exercise)}
                 onRemove={(exercise) => removeExercise(plan, day.id, exercise.id)}
                 onMove={(exercise, delta) => edit((latest) => moveExercise(latest, day.id, exercise.id, delta))}
-                onReorder={(from, to) => edit((latest) => moveExerciseTo(latest, day.id, from, to))}
+                onReorder={(exerciseId, to) =>
+                  edit((latest) => {
+                    const lifts = latest.days.find((item) => item.id === day.id)?.exercises ?? [];
+                    const from = lifts.findIndex((item) => item.id === exerciseId);
+                    return moveExerciseTo(latest, day.id, from, to);
+                  })
+                }
                 onAdd={() => openAdd(day)}
                 testID={`editor-day-${index}`}
               />
