@@ -10,6 +10,7 @@ import {
   type DeviceCommand,
   type DeviceMode,
   type DeviceState,
+  type JustFinished,
   type LogIntent,
   type SheetKind,
   type SheetParams,
@@ -29,6 +30,10 @@ type DeviceContextValue = {
   setUiMode: (mode: UiMode | null) => void;
   /** The log session calls this once it has opened `logIntent`. */
   consumeLogIntent: (intent: LogIntent) => void;
+  /** After the receipt (Phase 5): Home stamps this day in and flickers its lamp. */
+  markJustFinished: (dayId: string) => void;
+  /** Home calls this once it has started the stamp. */
+  clearJustFinished: (finished: JustFinished) => void;
 };
 
 const DeviceContext = createContext<DeviceContextValue | null>(null);
@@ -57,6 +62,14 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
     (intent: LogIntent) => dispatch({ type: 'consumeLogIntent', id: intent.id }),
     [],
   );
+  const markJustFinished = useCallback(
+    (dayId: string) => dispatch({ type: 'markJustFinished', dayId }),
+    [],
+  );
+  const clearJustFinished = useCallback(
+    (finished: JustFinished) => dispatch({ type: 'clearJustFinished', id: finished.id }),
+    [],
+  );
   const open = useCallback((command: DeviceCommand) => {
     if ('sheet' in command) {
       trackSheet(command.sheet);
@@ -74,8 +87,20 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       closeSheet,
       setUiMode,
       consumeLogIntent,
+      markJustFinished,
+      clearJustFinished,
     }),
-    [state, open, openSheet, swapSheet, closeSheet, setUiMode, consumeLogIntent],
+    [
+      state,
+      open,
+      openSheet,
+      swapSheet,
+      closeSheet,
+      setUiMode,
+      consumeLogIntent,
+      markJustFinished,
+      clearJustFinished,
+    ],
   );
 
   return <DeviceContext.Provider value={value}>{children}</DeviceContext.Provider>;

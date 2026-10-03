@@ -1,29 +1,31 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { device, finishColors, gadgetType, lcd, space } from '@/constants/theme';
+import { device, finishColors, gadgetType, signal, space } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { commandFromParams } from '@/device/device-state';
 import { useFinish } from '@/device/finish';
 import { useAppFonts } from '@/device/fonts';
+import { HomeDisplay } from '@/device/home/home-display';
+import { useHome } from '@/device/home/use-home';
+import type { HomeModel } from '@/device/home-model';
 import { REFERENCE_WIDTH, fromReferenceTop } from '@/device/layout';
 import {
   BigKey,
   DeviceBody,
   Display,
+  EngravedLabel,
   HistoryGlyph,
   MenuGlyph,
   Rocker,
   RoundKey,
   Well,
   Wheel,
-  type LampState,
 } from '@/device/parts';
 import { SheetHost } from '@/device/sheets';
-import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
 const ROW_GAP = device.displayY - device.topRowY - device.keySize;
@@ -52,6 +54,7 @@ export function DeviceScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const { openSheet } = useDevice();
+  const home = useHome();
   useDeviceParams();
 
   if (!fontsReady) {
@@ -65,32 +68,33 @@ export function DeviceScreen() {
     ? Math.max(insets.bottom, device.bottomClearance) + space.gutter
     : device.bottomClearanceCompact + space.inset;
 
+  const topRowY = fromReferenceTop(device.topRowY, insets.top);
+
   return (
     <View style={styles.root}>
       <StatusBar style={finishColors[finish].statusBar} />
       <DeviceBody>
-        <View
-          style={[
-            styles.column,
-            { paddingTop: fromReferenceTop(device.topRowY, insets.top), paddingBottom: bottomPad },
-          ]}>
+        {/*
+          VoiceOver groups every view's children and reads siblings top-left first, so the
+          History key sits outside this column (drawn over its top-right slot): the order is
+          menu, the week, the rows, Start, then History (PLAN Phase 3).
+        */}
+        <View style={[styles.column, { paddingTop: topRowY, paddingBottom: bottomPad }]}>
           <View style={[styles.topRow, { paddingHorizontal: edge }]}>
             <RoundKey accessibilityLabel="Menu" onPress={() => openSheet('menu')}>
               <MenuGlyph />
             </RoundKey>
-            <WeekRocker />
-            <RoundKey accessibilityLabel="History" onPress={() => openSheet('history')}>
-              <HistoryGlyph />
-            </RoundKey>
+            <WeekRocker model={home.model} />
+            <View style={styles.keySlot} />
           </View>
 
           <Display
-            contentKey="home"
+            contentKey={home.model.kind}
             style={[
               styles.display,
               { marginHorizontal: edge, minHeight: height >= TALL_SCREEN ? DISPLAY_MIN : undefined },
             ]}>
-            <HomePlaceholder />
+            <HomeDisplay model={home.model} celebrateDayId={home.celebrateDayId} onPick={home.pickDay} />
           </Display>
 
           <View style={styles.bottomRow}>
@@ -98,8 +102,12 @@ export function DeviceScreen() {
               <Well />
             </View>
             <View style={[styles.centered, { top: BIG_KEY_Y }]}>
-              {/* Start lands in Phase 3 (Home picks the day). */}
-              <BigKey label="Start" />
+              <BigKey
+                label={home.startLabel}
+                variant={home.model.kind === 'empty' ? 'metal' : 'primary'}
+                accessibilityLabel={home.startAccessibilityLabel}
+                onPress={home.start}
+              />
             </View>
             <Wheel
               stowed
@@ -109,6 +117,12 @@ export function DeviceScreen() {
             />
           </View>
         </View>
+        <RoundKey
+          accessibilityLabel="History"
+          onPress={() => openSheet('history')}
+          style={[styles.historyKey, { top: topRowY, right: edge }]}>
+          <HistoryGlyph />
+        </RoundKey>
       </DeviceBody>
       <SheetHost />
     </View>
@@ -142,47 +156,30 @@ function useDeviceParams() {
   }, [signature]);
 }
 
-/** The week in the rocker body (W1): done days green, the next day orange. Phase 3 refines it. */
-function WeekRocker() {
-  const { activePlan, completedDayIds, nextDayIndex } = useWorkoutStore();
-  const days = activePlan?.days ?? [];
-  const lamps: LampState[] = days.map((day, index) =>
-    completedDayIds.includes(day.id) ? 'done' : index === nextDayIndex ? 'on' : 'off',
-  );
-  const done = lamps.filter((lamp) => lamp === 'done').length;
-  // TODO(Phase 3): the engraved WEEK n label under the rocker (D20).
+/**
+ * The week in the rocker body (W1): one lamp per trainable day, green in the order trained, the
+ * next one orange; `WEEK n` engraved under it, with `▲n` in orange once the streak counts (D20).
+ */
+function WeekRocker({ model }: { model: HomeModel }) {
+  const week = model.kind === 'plan' ? model.week : null;
   return (
-    <Rocker
-      variant="week"
-      lamps={lamps}
-      accessibilityLabel={`${done} of ${days.length} days done this week`}
-    />
-  );
-}
-
-/** Until Phase 3's day rows: the plan's days, in the display's own type. */
-function HomePlaceholder() {
-  const { activePlan, completedDayIds } = useWorkoutStore();
-  return (
-    <View style={styles.home}>
-      {(activePlan?.days ?? []).map((day) => {
-        const done = completedDayIds.includes(day.id);
-        return (
-          <View key={day.id} style={styles.homeRow}>
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={1}
-              style={[gadgetType.lcdRow, styles.homeName, !done && styles.dim]}>
-              {day.title.toUpperCase()}
-            </Text>
-            {done ? (
-              <Text maxFontSizeMultiplier={1} style={gadgetType.lcdRow}>
-                ✓
-              </Text>
-            ) : null}
-          </View>
-        );
-      })}
+    <View
+      accessible
+      accessibilityLabel={week ? week.accessibilityLabel : 'No plan'}
+      style={styles.rocker}>
+      <Rocker
+        variant="week"
+        lamps={week?.lamps ?? []}
+        litIndex={week?.litIndex ?? undefined}
+        accessibilityLabel=""
+      />
+      {week ? (
+        <EngravedLabel
+          accent={week.streak ? { text: week.streak, color: signal.orange } : undefined}
+          style={styles.rockerLabel}>
+          {week.label}
+        </EngravedLabel>
+      ) : null}
     </View>
   );
 }
@@ -200,14 +197,13 @@ const styles = StyleSheet.create({
   bottomRow: { height: BOTTOM_ROW },
   centered: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   wheel: { position: 'absolute', top: 0 },
-  home: {
+  keySlot: { width: device.keySize, height: device.keySize },
+  historyKey: { position: 'absolute' },
+  rocker: { width: device.rockerWidth, height: device.rockerHeight },
+  rockerLabel: {
     position: 'absolute',
-    left: device.displayPad,
-    right: device.displayPad,
-    top: device.displayPad,
-    gap: device.rowGap,
+    left: 0,
+    right: 0,
+    top: device.rockerHeight + device.labelGap,
   },
-  homeRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  homeName: { flexShrink: 1 },
-  dim: { color: lcd.amberDim },
 });

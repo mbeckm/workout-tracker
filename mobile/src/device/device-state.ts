@@ -89,10 +89,15 @@ export type LogIntent = {
   id: number;
 };
 
+/** A day whose workout just finished: Home stamps its row and flickers its lamp once (SPEC §7). */
+export type JustFinished = { dayId: string; id: number };
+
 export type DeviceState = {
   sheet: OpenSheet | null;
   uiMode: UiMode | null;
   logIntent: LogIntent | null;
+  /** Set when the receipt closes (Phase 5); Home plays the stamp, then clears it. */
+  justFinished: JustFinished | null;
   /** Monotonic counter for `key` and `id`. */
   seq: number;
 };
@@ -101,6 +106,7 @@ export const initialDeviceState: DeviceState = {
   sheet: null,
   uiMode: null,
   logIntent: null,
+  justFinished: null,
   seq: 0,
 };
 
@@ -113,7 +119,11 @@ export type DeviceAction =
   | { type: 'setUiMode'; mode: UiMode | null }
   | { type: 'requestLog'; intent: Omit<LogIntent, 'id'> }
   /** The log session took the intent; `id` guards against clearing a newer one. */
-  | { type: 'consumeLogIntent'; id: number };
+  | { type: 'consumeLogIntent'; id: number }
+  /** A workout of this day just finished: Home stamps it in when it next shows. */
+  | { type: 'markJustFinished'; dayId: string }
+  /** Home played the stamp; `id` guards against clearing a newer one. */
+  | { type: 'clearJustFinished'; id: number };
 
 export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceState {
   switch (action.type) {
@@ -133,6 +143,12 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
     }
     case 'consumeLogIntent':
       return state.logIntent?.id === action.id ? { ...state, logIntent: null } : state;
+    case 'markJustFinished': {
+      const seq = state.seq + 1;
+      return { ...state, seq, justFinished: { dayId: action.dayId, id: seq } };
+    }
+    case 'clearJustFinished':
+      return state.justFinished?.id === action.id ? { ...state, justFinished: null } : state;
     default: {
       const exhaustive: never = action;
       return exhaustive;
