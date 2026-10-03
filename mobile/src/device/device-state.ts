@@ -1,0 +1,212 @@
+/**
+ * The device's UI state (PLAN §4.2): which sheet is up, the UI-only modes (`edit`, `loading`)
+ * and a pending request to open the log. Pure TS, no `react-native`, so it can be checked with
+ * `tsx`. Logging data never lives here: `log`, `rest` and `finish` come from the open log
+ * session (Phase 4), which reads `logIntent` to know what to open.
+ */
+
+export type DeviceMode = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading';
+
+/** Modes the UI sets itself; the others follow the log session. */
+export type UiMode = Extract<DeviceMode, 'edit' | 'loading'>;
+
+/** Modes that follow the open log session (Phase 4). */
+export type LogMode = Extract<DeviceMode, 'log' | 'rest' | 'finish'>;
+
+export const SHEET_KINDS = [
+  'menu',
+  'finishes',
+  'settings',
+  'plans',
+  'editor',
+  'add',
+  'progress',
+  'lift',
+  'body',
+  'history',
+  'receipt',
+  'today',
+  'exercise',
+] as const;
+
+export type SheetKind = (typeof SHEET_KINDS)[number];
+
+export function isSheetKind(value: unknown): value is SheetKind {
+  return typeof value === 'string' && (SHEET_KINDS as readonly string[]).includes(value);
+}
+
+/** Whatever a sheet needs to know (ids, `new`), as strings like route params. */
+export type SheetParams = Readonly<Record<string, string | undefined>>;
+
+/** Where a sheet's top edge sits (SPEC §6 Top edge); the host maps it to points. */
+export type SheetTop = 'default' | 'tall' | 'today' | 'finishes';
+
+const TOPS: Record<SheetKind, SheetTop> = {
+  menu: 'default',
+  finishes: 'finishes',
+  settings: 'default',
+  plans: 'default',
+  editor: 'tall',
+  add: 'tall',
+  progress: 'tall',
+  lift: 'tall',
+  body: 'tall',
+  history: 'default',
+  receipt: 'tall',
+  today: 'today',
+  exercise: 'tall',
+};
+
+export function sheetTop(kind: SheetKind): SheetTop {
+  return TOPS[kind];
+}
+
+/** Sheets whose opening is counted (PLAN §9 `sheet_opened`). */
+export const TRACKED_SHEETS: readonly SheetKind[] = [
+  'menu',
+  'today',
+  'exercise',
+  'plans',
+  'progress',
+  'history',
+  'settings',
+];
+
+export type OpenSheet = {
+  kind: SheetKind;
+  params: SheetParams;
+  /** Bumps on every open or swap, so the host can tell a new content from a re-render. */
+  key: number;
+};
+
+/** Open the log for this day (Start, a Live Activity tap, resume). Phase 4 consumes it. */
+export type LogIntent = {
+  planId: string;
+  dayId: string;
+  exerciseId?: string;
+  /** A fresh start (plays the start moment); resume and Live Activity links never carry it. */
+  start?: boolean;
+  id: number;
+};
+
+export type DeviceState = {
+  sheet: OpenSheet | null;
+  uiMode: UiMode | null;
+  logIntent: LogIntent | null;
+  /** Monotonic counter for `key` and `id`. */
+  seq: number;
+};
+
+export const initialDeviceState: DeviceState = {
+  sheet: null,
+  uiMode: null,
+  logIntent: null,
+  seq: 0,
+};
+
+export type DeviceAction =
+  /** Opens a sheet; with one already up, its content swaps in place (one sheet at a time). */
+  | { type: 'openSheet'; kind: SheetKind; params?: SheetParams }
+  /** Replaces the open sheet's content in place (‹ back, a row that opens its detail). */
+  | { type: 'swapSheet'; kind: SheetKind; params?: SheetParams }
+  | { type: 'closeSheet' }
+  | { type: 'setUiMode'; mode: UiMode | null }
+  | { type: 'requestLog'; intent: Omit<LogIntent, 'id'> }
+  /** The log session took the intent; `id` guards against clearing a newer one. */
+  | { type: 'consumeLogIntent'; id: number };
+
+export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceState {
+  switch (action.type) {
+    case 'openSheet':
+    case 'swapSheet': {
+      const seq = state.seq + 1;
+      return { ...state, seq, sheet: { kind: action.kind, params: action.params ?? {}, key: seq } };
+    }
+    case 'closeSheet':
+      return state.sheet ? { ...state, sheet: null } : state;
+    case 'setUiMode':
+      return state.uiMode === action.mode ? state : { ...state, uiMode: action.mode };
+    case 'requestLog': {
+      const seq = state.seq + 1;
+      // Opening the log puts the device in front: any sheet goes away.
+      return { ...state, seq, sheet: null, logIntent: { ...action.intent, id: seq } };
+    }
+    case 'consumeLogIntent':
+      return state.logIntent?.id === action.id ? { ...state, logIntent: null } : state;
+    default: {
+      const exhaustive: never = action;
+      return exhaustive;
+    }
+  }
+}
+
+/** The mode on screen: a UI mode wins, then the log session's, then Home. */
+export function deviceMode(state: DeviceState, logMode: LogMode | null = null): DeviceMode {
+  return state.uiMode ?? logMode ?? 'home';
+}
+
+/** What `/` search params ask for: `?log=1&planId&dayId&exerciseId`, or `?sheet=…`. */
+export type DeviceCommand =
+  | { mode: 'log'; planId: string; dayId: string; exerciseId?: string; start?: boolean }
+  | { sheet: SheetKind; params?: SheetParams };
+
+type RawParams = Readonly<Record<string, string | string[] | undefined>>;
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** Reads a device command from `/` search params; `null` when they ask for nothing. */
+export function commandFromParams(raw: RawParams): DeviceCommand | null {
+  const planId = first(raw.planId);
+  const dayId = first(raw.dayId);
+  if (first(raw.log) === '1' && planId && dayId) {
+    const exerciseId = first(raw.exerciseId);
+    return {
+      mode: 'log',
+      planId,
+      dayId,
+      ...(exerciseId ? { exerciseId } : {}),
+      ...(first(raw.start) === '1' ? { start: true } : {}),
+    };
+  }
+  const sheet = first(raw.sheet);
+  if (!isSheetKind(sheet)) {
+    return null;
+  }
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const v = first(value);
+    if (key !== 'sheet' && v != null) {
+      params[key] = v;
+    }
+  }
+  return { sheet, params };
+}
+
+/** The reducer action a command maps to. */
+export function actionForCommand(command: DeviceCommand): DeviceAction {
+  if ('mode' in command) {
+    const { mode: _mode, ...intent } = command;
+    return { type: 'requestLog', intent };
+  }
+  return { type: 'openSheet', kind: command.sheet, params: command.params };
+}
+
+/** `/` with the params for a command, for links into the device from routes and deep links. */
+export function deviceHref(command: DeviceCommand): `/?${string}` {
+  const params = new URLSearchParams();
+  if ('mode' in command) {
+    params.set('log', '1');
+    params.set('planId', command.planId);
+    params.set('dayId', command.dayId);
+    if (command.exerciseId) params.set('exerciseId', command.exerciseId);
+    if (command.start) params.set('start', '1');
+  } else {
+    params.set('sheet', command.sheet);
+    for (const [key, value] of Object.entries(command.params ?? {})) {
+      if (value != null) params.set(key, value);
+    }
+  }
+  return `/?${params.toString()}`;
+}

@@ -1,4 +1,3 @@
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -16,14 +15,24 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PRESSED_OPACITY, TOUCH_TARGET, iconSize, radius, space } from '@/constants/theme';
+import {
+  PRESSED_OPACITY,
+  TOUCH_TARGET,
+  gadgetRadius,
+  gadgetType,
+  sheetColors,
+  sheetGeometry,
+  signal,
+  space,
+} from '@/constants/theme';
+import { fromReferenceTop } from '@/device/layout';
 import { DURATION, EASE_OUT, ENTER_OFFSET, SPRING } from '@/motion';
-import { useTheme } from '@/theme/theme-context';
 
 /**
- * Confirm: a result that isn't on screen yet (a sheet that just closed), green check, ~2s.
+ * Confirm: a result that isn't on screen yet (a sheet that just closed), ~2s.
  * Undo: something that just happened and can come back (`Plan deleted` + `Undo`), ~5s,
- * swipe down to dismiss (trim-ui §10 Toast, Forgiveness). One toast at a time; a new one
+ * swipe it away (trim-ui §10 Toast, Forgiveness). The gadget's toast is a dark pill near the
+ * top (prototype `.toast`), above the device and any sheet. One toast at a time; a new one
  * replaces the old. Not for errors: those stay in an alert or next to the control that failed.
  */
 export type ToastInput = { title: string; onUndo?: () => void };
@@ -34,7 +43,7 @@ const VISIBLE_MS = 2200;
 const UNDO_VISIBLE_MS = 5000;
 /** VoiceOver needs time to reach `Undo`. */
 const UNDO_VISIBLE_SCREEN_READER_MS = 10000;
-/** A downward drag past this, or a flick, dismisses. */
+/** A drag back towards its edge past this, or a flick, dismisses. */
 const DISMISS_DISTANCE = 24;
 const DISMISS_VELOCITY = 500;
 
@@ -66,35 +75,44 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** Rises 8pt (trim-ui §8 Toast). */
-const ENTER = FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
-  opacity: 0,
-  transform: [{ translateY: ENTER_OFFSET }],
-});
+/** Arrives 8pt from its edge (trim-ui §8 Toast): drops in at the top, rises at the bottom. */
+function enterFrom(direction: 1 | -1) {
+  return FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
+    opacity: 0,
+    transform: [{ translateY: ENTER_OFFSET * direction }],
+  });
+}
+const ENTER_TOP = enterFrom(-1);
+const ENTER_BOTTOM = enterFrom(1);
 
-/** Leaves the way it came: sinks 8pt as it fades. */
-function exitDown() {
-  'worklet';
-  return {
-    initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
-    animations: {
-      opacity: withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }),
-      transform: [{ translateY: withTiming(ENTER_OFFSET, { duration: DURATION.exit, easing: EASE_OUT }) }],
-    },
+/** Leaves the way it came. */
+function exitTowards(direction: 1 | -1) {
+  return () => {
+    'worklet';
+    return {
+      initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
+      animations: {
+        opacity: withTiming(0, { duration: DURATION.exit, easing: EASE_OUT }),
+        transform: [
+          { translateY: withTiming(ENTER_OFFSET * direction, { duration: DURATION.exit, easing: EASE_OUT }) },
+        ],
+      },
+    };
   };
 }
-
-/** Clears the tab bar and the home indicator. */
-const TAB_BAR_CLEARANCE = 84;
+const EXIT_TOP = exitTowards(-1);
+const EXIT_BOTTOM = exitTowards(1);
 
 /**
- * Mount once near the root; it sits above the tab bar. A full-screen modal that needs toasts
- * (the paywall) mounts its own with `bottom`, because the root one is drawn underneath it.
+ * Mount once at the root, after the navigator: it draws above the device and SheetHost. A
+ * full-screen modal that needs toasts (the paywall) mounts its own with `bottom`, because the
+ * root one is drawn underneath it.
  */
 export function ToastHost({ bottom }: { bottom?: number } = {}) {
   const toast = useSyncExternalStore(subscribe, () => current, () => null);
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
+  const atTop = bottom == null;
 
   useEffect(() => {
     if (!toast) {
@@ -127,7 +145,7 @@ export function ToastHost({ bottom }: { bottom?: number } = {}) {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: bottom ?? insets.bottom + TAB_BAR_CLEARANCE,
+        ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
         // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
         paddingHorizontal: space.gutter,
         alignItems: 'center',
@@ -136,17 +154,16 @@ export function ToastHost({ bottom }: { bottom?: number } = {}) {
         <Animated.View
           key={toast.id}
           style={{ maxWidth: '100%' }}
-          entering={reduceMotion ? FadeIn.duration(DURATION.fade) : ENTER}
-          exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : exitDown}>
-          <ToastPill toast={toast} />
+          entering={reduceMotion ? FadeIn.duration(DURATION.fade) : atTop ? ENTER_TOP : ENTER_BOTTOM}
+          exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : atTop ? EXIT_TOP : EXIT_BOTTOM}>
+          <ToastPill toast={toast} direction={atTop ? -1 : 1} />
         </Animated.View>
       ) : null}
     </View>
   );
 }
 
-function ToastPill({ toast }: { toast: ToastState }) {
-  const { colors, type } = useTheme();
+function ToastPill({ toast, direction }: { toast: ToastState; direction: 1 | -1 }) {
   // Keep the toast's content while the exit animation runs after `current` is cleared.
   const [{ title, onUndo, id }] = useState(toast);
   const dragY = useSharedValue(0);
@@ -157,19 +174,22 @@ function ToastPill({ toast }: { toast: ToastState }) {
     onUndo?.();
   };
 
-  // Swipe down to dismiss: follows the finger 1:1 (never upward), then leaves downward with
-  // the flick's velocity, or settles back.
+  // Swipe towards its edge to dismiss (up at the top): follows the finger 1:1 (never the other
+  // way), then leaves with the flick's velocity, or settles back.
   const swipe = Gesture.Pan()
     .enabled(onUndo != null)
-    .activeOffsetY(8)
-    .failOffsetY(-8)
+    .activeOffsetY(ENTER_OFFSET * direction)
+    .failOffsetY(-ENTER_OFFSET * direction)
     .onUpdate((event) => {
-      dragY.set(Math.max(0, event.translationY));
+      dragY.set(direction * Math.max(0, event.translationY * direction));
     })
     .onEnd((event) => {
-      if (event.translationY > DISMISS_DISTANCE || event.velocityY > DISMISS_VELOCITY) {
+      if (
+        event.translationY * direction > DISMISS_DISTANCE ||
+        event.velocityY * direction > DISMISS_VELOCITY
+      ) {
         dragY.set(
-          withSpring(dragY.get() + ENTER_OFFSET * 3, {
+          withSpring(dragY.get() + ENTER_OFFSET * 3 * direction, {
             ...SPRING.fling,
             velocity: event.velocityY,
             reduceMotion: ReduceMotion.System,
@@ -204,28 +224,19 @@ function ToastPill({ toast }: { toast: ToastState }) {
             alignItems: 'center',
             gap: space.inline,
             minHeight: TOUCH_TARGET,
-            paddingLeft: space.inset,
-            paddingRight: onUndo ? space.related : space.inset,
-            borderRadius: radius.full,
+            paddingLeft: sheetGeometry.toastPadX,
+            paddingRight: onUndo ? space.related : sheetGeometry.toastPadX,
+            borderRadius: gadgetRadius.toast,
             borderCurve: 'continuous',
-            backgroundColor: colors.label,
+            backgroundColor: sheetColors.toast,
           },
           dragStyle,
         ]}>
         <Pressable
           onPress={() => hideToast(id)}
           accessibilityLabel={title}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: space.related, flexShrink: 1, paddingVertical: space.related }}>
-          {onUndo == null ? (
-            <SymbolView
-              name="checkmark"
-              size={iconSize.row}
-              weight="semibold"
-              tintColor={colors.systemGreen}
-              fallback={<Text style={[type.body, { color: colors.systemGreen }]}>✓</Text>}
-            />
-          ) : null}
-          <Text style={[type.body, { color: colors.onLabel, flexShrink: 1 }]}>{title}</Text>
+          style={{ flexShrink: 1, paddingVertical: sheetGeometry.toastPadY }}>
+          <Text style={[gadgetType.toast, { flexShrink: 1 }]}>{title}</Text>
         </Pressable>
         {onUndo ? (
           <Pressable
@@ -239,7 +250,7 @@ function ToastPill({ toast }: { toast: ToastState }) {
               paddingHorizontal: space.related,
               opacity: pressed ? PRESSED_OPACITY : 1,
             })}>
-            <Text style={[type.button, { color: colors.onLabel }]}>Undo</Text>
+            <Text style={[gadgetType.toast, { color: signal.orange }]}>Undo</Text>
           </Pressable>
         ) : null}
       </Animated.View>
