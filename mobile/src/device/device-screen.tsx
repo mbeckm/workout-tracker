@@ -250,8 +250,8 @@ function DeviceSurface() {
                   lamps={log.lamps}
                   prevDisabled={log.exerciseIndex <= 0}
                   nextDisabled={log.exerciseIndex >= log.drafts.length - 1}
-                  onPrev={() => log.goToExercise(log.exerciseIndex - 1)}
-                  onNext={() => log.goToExercise(log.exerciseIndex + 1)}
+                  onPrev={() => log.stepExercise(-1)}
+                  onNext={() => log.stepExercise(1)}
                   onMiddle={() => openSheet('today')}
                 />
               )}

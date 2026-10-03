@@ -64,6 +64,12 @@ export function useEditDevice(): EditController | null {
     editLift(day.exercises[Math.min(lastIndex.current, day.exercises.length - 1)].id);
   }, [target, exercise, day, leaveEdit, editLift]);
 
+  // ‹ › step from the lift the last press chose, not the last render: quick presses each move one.
+  const liveIndex = useRef(index);
+  useEffect(() => {
+    liveIndex.current = index;
+  }, [index]);
+
   // Steps read the latest value, not the last render: fast taps and spins don't drop a step.
   const live = useRef<ExercisePrescription | null>(exercise ?? null);
   useEffect(() => {
@@ -91,9 +97,12 @@ export function useEditDevice(): EditController | null {
   }
 
   const face = editFace(exercise);
-  const go = (to: number) => {
+  const go = (delta: 1 | -1) => {
+    const to = liveIndex.current + delta;
     const lift = day.exercises[to];
-    if (lift) editLift(lift.id);
+    if (!lift) return;
+    liveIndex.current = to;
+    editLift(lift.id);
   };
   const dayName = dayDisplayName(day, dayIndex);
 
@@ -108,8 +117,8 @@ export function useEditDevice(): EditController | null {
     face,
     stepSets: stepSetsBy,
     stepValue: stepValueBy,
-    prev: () => go(index - 1),
-    next: () => go(index + 1),
+    prev: () => go(-1),
+    next: () => go(1),
     remove: () => {
       const after = liftAfterRemoval(day.exercises, exercise.id);
       removeExercise(plan, day.id, exercise.id);

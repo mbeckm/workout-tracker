@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, TextInput } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { showToast } from '@/components/toast';
 import { LEGAL_URLS } from '@/constants/legal';
@@ -131,19 +131,25 @@ export function SettingsSheet({ fromMenu }: { fromMenu: boolean }) {
       <SheetCard>
         <NameRow key={userName} name={userName} onSave={setUserName} />
         <SheetRow size="compact" title="Weight units" trailing={units} onPress={pickUnits} />
+        {/* The whole row flips the switch. A quick tap straight on the UISwitch (under ~150 ms) was
+            lost inside the sheet's pan, so the row's Pressable takes every touch; VoiceOver still
+            reaches the switch itself. */}
         <SheetRow
           size="compact"
           title="Sounds"
+          onPress={() => setSoundsOn(!soundsOn)}
           accessory={
-            <Switch
-              value={soundsOn}
-              onValueChange={setSoundsOn}
-              accessibilityLabel="Sounds"
-              trackColor={{ true: signal.orange, false: sheetColors.track }}
-              thumbColor={deviceColors.key1}
-              ios_backgroundColor={sheetColors.track}
-              testID="settings-sounds"
-            />
+            <View pointerEvents="none">
+              <Switch
+                value={soundsOn}
+                onValueChange={setSoundsOn}
+                accessibilityLabel="Sounds"
+                trackColor={{ true: signal.orange, false: sheetColors.track }}
+                thumbColor={deviceColors.key1}
+                ios_backgroundColor={sheetColors.track}
+                testID="settings-sounds"
+              />
+            </View>
           }
         />
       </SheetCard>

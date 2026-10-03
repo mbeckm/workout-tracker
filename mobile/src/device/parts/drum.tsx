@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -52,13 +52,17 @@ export function Drum({
 
   const rollStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
 
-  // Off, on, off, on in steps (a blink, not movement, so Reduce Motion keeps it).
+  // Three blinks in steps, off/on (a blink, not movement, so Reduce Motion keeps it). A single
+  // blink read as nothing at all on device. Only a bump after mount flashes: the drum remounts
+  // with each display swap (another lift), which must not replay an old flash.
   const frameOpacity = useSharedValue(1);
+  const flashSeen = useRef(flash);
   useEffect(() => {
-    if (!flash) return;
+    if (flash === flashSeen.current) return;
+    flashSeen.current = flash;
     const snap = (value: number) => withDelay(DEVICE.DRUM_FLASH, withTiming(value, { duration: DEVICE.SNAP }));
     frameOpacity.set(0);
-    frameOpacity.set(withSequence(snap(1), snap(0), snap(1)));
+    frameOpacity.set(withSequence(snap(1), snap(0), snap(1), snap(0), snap(1)));
   }, [flash, frameOpacity]);
   const frameStyle = useAnimatedStyle(() => ({ opacity: frameOpacity.get() }));
 
