@@ -566,12 +566,12 @@ No other custom gestures (double-tap, two-finger, shake).
 
 A chart answers one question: is this going up?
 
-1. **On an lcd panel.** The lift chart sits on an `lcd` panel (r24, inset shadow): an orange line with dots, straight segments between sessions, no smoothing. No gridlines, no y-axis labels, no legend, no fill.
+1. **On an lcd panel.** The lift chart sits on an `lcd` panel (r24, inset shadow, 230 tall): an orange line with a dot per session (only the last one beyond 24 sessions), straight segments between sessions, no smoothing. Three faint `amberPress` rules at 60, 120 and 180 (screen 19) and nothing else: no y-axis labels, no dates, no legend, no fill.
 2. **The last point** is a dot; yellow if it's a record.
 3. **Goal line:** a dashed green line labelled `GOAL 100` in Doto. The y-range stretches to include it.
 4. **The number is the axis.** `bigNumber` above the chart states the value; the change line under it is ink with ↑ / ↓.
 5. **Scrub to read.** Touching the chart moves a marker along the line; the big number shows that point's value; a selection haptic ticks at each data point; releasing returns to now (ported from the current `progress-line-chart`).
-6. **Y-range fits the data** in the window with ~10% padding, never from zero.
+6. **Y-range fits the data** in the window (and the goal) ±1 unit (prototype `chart()`), never from zero.
 7. **Ranges** in a `Segmented` under the readout: `1M` and `3M` free; `6M`, `1Y` and `All` marked `PRO`, opening the paywall (`progress_history`). The chart is never blurred or hidden.
 8. **The line draws in** over 1 s on open; under Reduce Motion it's simply there.
 9. **Sparklines** in Progress rows: 70 × 24, no dots; yellow if the last point is a record, muted if flat, otherwise ink. A fixed 30-day window (`PROGRESS_SPARKLINE_DAYS`).
@@ -738,11 +738,11 @@ Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways, rows wi
 
 ### Progress (QA1, without the gauge) [18]
 
-No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: up to 3 cards, each a 64 green ring, `Bench 100`, `at 92.5`; reached goals marked. `LIFTS, 30 DAYS`: rows of name, a 70 × 24 sparkline, the value (estimated max) and the change in ink. BODY rows. Long-press a lift to set a goal. Empty: `No lifts yet` with the next day's lifts dim. A `Check in` row ends LIFTS when there's no body data (D11).
+No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinned goals (up to 3, fixed thirds), each a 64 green ring filling over 1 s with the percentage in it, the lift's name and target, `at 92`; a reached goal shows a full ring with ✓ and a green `Reached 2 Oct`. `LIFTS, 30 DAYS`: every tracked lift, a pinned goal's lift included (screen 18), as name, a 70 × 24 sparkline, the value (estimated max, whole like the old app) and the change since the window's first point (`↑ 6`, `↓ 2`, `±0`; a record is `★ +6`, value and change in yellow). Body measurements with a check-in get their own `BODY` card, same rows, one decimal. Tap a row for its detail; long-press a lift or body row for its goal sheet; long-press a goal for the system action sheet (Edit goal, Unpin from Progress, Remove goal with Undo). Empty: `No lifts yet` over the next day's lifts, dim. A `Check in` row (orange, `+`) ends LIFTS when there's no body data (D11). From the menu the header has ‹; opened directly, ✕.
 
 ### Lift detail (QA2) [19]
 
-`Estimated max`, the big number (`bigNumber` with a smaller unit) and the change line, then the lcd chart (§11) with the goal line, the range `Segmented`, and `SESSIONS` rows. Body detail is the same without lift-only parts, with `+` in the header for a check-in. Goal sheets and the check-in are dark sheets with the existing logic.
+`Estimated max` (the scrubbed session's date while scrubbing), the big number (`bigNumber` with a 22 unit) and the change line (`↑ 6 in 3 months`, `No change in a month`, `since 1 Mar` for All and while scrubbing), then the lcd chart (§11) with the goal line, the range `Segmented` (default 1M, carried between lifts), and `SESSIONS` rows: `Thu 2 Oct` over `87.5 × 8, 8, 7`, the session's estimated max trailing, `★` and yellow on a record. `Goal` in the header opens the goal sheet (set, replace on Progress, unpin, remove with Undo; a reached goal opens on the next round number). Body detail is the same without lift-only parts: its caption is the latest check-in's date, `+` in the header opens the check-in, a `Goal` row under the range opens the body goal, and the list is `CHECK-INS`. The goal sheet: a `Now 96 kg` fact, the target as a 54 field over − / +, `Pin to Progress` (or `Replace on Progress` and which), `Remove goal`, the light `Set goal` pill. The check-in: every measurement as a row with the last value as placeholder, `Save` in the header, Next / Done on the keyboard. Every ‹ goes back where it came from (goal and check-in to their lift, body or Progress).
 
 ### Finishes (N7) [16, 17]
 

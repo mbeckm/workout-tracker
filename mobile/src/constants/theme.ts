@@ -943,3 +943,114 @@ export const device = {
   rockerEndDisabledOpacity: 0.3,
   bigKeyDisabledOpacity: 0.5,
 } as const;
+
+/* ----------------------------------------------------------------------------------------- *
+ * Progress and lift detail (Phase 7; SPEC §6 Progress, Lift detail; prototype `.goal`,
+ * `.plift`, `.lbig`, `.chart`, `.srow`).
+ * ----------------------------------------------------------------------------------------- */
+
+/** Progress's type roles (prototype CSS). Numbers that change in place are tabular. */
+export const progressType = {
+  /** `Bench 100` under a goal ring (`.goal b`). */
+  goalTitle: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.ink },
+  /** `at 92` (`.goal span`). */
+  goalSub: { ...roundedRole(12, 16, weight.bold), color: sheetColors.muted },
+  /** `85%` inside the ring. */
+  goalPercent: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.ink },
+  /** A lift row's name (`.plift .n`). */
+  liftName: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  /** A lift row's value (`.plift .v`). */
+  liftValue: { ...roundedRole(17, 20, weight.heavy), color: sheetColors.ink },
+  /** A lift row's change (`.plift .d`). */
+  liftChange: { ...roundedRole(12, 14, weight.heavy), color: sheetColors.controlInk },
+  /** `Estimated max` over the big number. */
+  readoutCaption: { ...roundedRole(16, 20, weight.semibold), color: sheetColors.inkSoft },
+  /** The unit beside the big number (`.lbig span`). */
+  bigUnit: { ...roundedRole(22, 26, weight.heavy), color: sheetColors.ink },
+  /** The change line under the big number (`.lchg`). */
+  changeLine: { ...roundedRole(15, 20, weight.heavy), color: sheetColors.controlInk },
+  /** `GOAL 100` on the chart, `NO SESSIONS` on an empty panel. */
+  chartLabel: lcdRole(11, 13),
+  /** A session row (`.srow`): date, sets, value. */
+  sessionTitle: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  sessionSub: { ...roundedRole(13, 17, weight.semibold), color: sheetColors.muted },
+  sessionValue: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  /** The goal sheet's target field (bigNumber without a line height: a TextInput). */
+  goalInput: { fontFamily: fontFamily.rounded, fontSize: 54, fontWeight: weight.heavy, letterSpacing: -1.5 },
+} as const;
+
+/** Progress geometry (prototype CSS; SPEC §6). */
+export const progressGeometry = {
+  /** GOALS: three cards, 9 apart, 4 in from the content edge. */
+  goalGap: 9,
+  goalInset: 4,
+  goalCardHeight: 136,
+  goalCardRadius: 22,
+  goalCardPadTop: 12,
+  goalCardPadX: 6,
+  goalTitleTop: 6,
+  /** The goal ring: 64, r26, stroke 6. */
+  ring: 64,
+  ringRadius: 26,
+  ringStroke: 6,
+  /** Lift rows (`.plift`): 12 × 18 padding, 12 gap; the value lane is 70 wide. */
+  rowPadY: 12,
+  rowPadX: 18,
+  rowGap: 12,
+  valueLane: 70,
+  /** A row with a name only (empty state, Check in): as tall as a lift row. */
+  plainRowHeight: 62,
+  /** Sparklines: 70 × 24, stroke 2.5; the line spans x 2…68 and y 4…20 (`spark()`). */
+  sparkW: 70,
+  sparkH: 24,
+  sparkStroke: 2.5,
+  sparkInsetX: 2,
+  sparkTop: 4,
+  sparkBottom: 20,
+  sparkDot: 2.5,
+  /** Lift detail head (`.lhead`): 16 in. */
+  headInset: 16,
+  /** The lcd chart (`.chart`): 230 tall, r24, 14 under the change line. */
+  chartTop: 14,
+  chartHeight: 230,
+  /** Plot area inside the chart: 18 from the sides, 16 from the top, 170 tall (`chart()`). */
+  chartPadX: 18,
+  chartPadTop: 16,
+  chartPlot: 170,
+  /** Three faint rules at y 60, 120, 180. */
+  chartRules: [60, 120, 180],
+  chartLine: 3,
+  chartDot: 3,
+  chartLastDot: 6,
+  /** Dots on every session up to this many; beyond it only the last one. */
+  chartDotsMax: 24,
+  goalLineStroke: 1.5,
+  goalLineDash: [4, 5],
+  /** `GOAL 100` sits 6 above the line, 10 from the right edge. */
+  goalLabelGap: 6,
+  goalLabelRight: 10,
+  /** The scrub guide and its dot. */
+  scrubGuide: 1,
+  scrubDot: 12,
+  /** Session rows (`.srow`): 13 × 18. */
+  sessionPadY: 13,
+  sessionPadX: 18,
+  sessionSubTop: 2,
+  /** Check-in rows: a fixed field height (no lineHeight on a TextInput, AGENTS.md). */
+  fieldHeight: 44,
+  fieldMinWidth: 80,
+  fieldUnit: 32,
+  /** The keyboard's Next / Done bar. */
+  accessoryPadY: 6,
+  /** The goal sheet: the target field, its − / + keys, the replace choice's tick (`.tick`). */
+  targetHeight: 64,
+  targetMinWidth: 120,
+  nudgeHeight: 56,
+  tick: 30,
+} as const;
+
+/** Progress colours beyond the sheet palette (prototype `.tick`). */
+export const progressColors = {
+  /** An unticked round tick's ring. */
+  tickRing: '#4A4945',
+} as const;

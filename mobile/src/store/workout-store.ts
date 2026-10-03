@@ -233,7 +233,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || !hydratedRef.current || homeDemoMode()) {
+      if (state === 'active' || !hydratedRef.current || homeDemoMode() || shouldUseProgressDemo()) {
         return;
       }
       if (persistTimeoutRef.current) {
@@ -246,8 +246,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // The Home demo fixture must never overwrite the user's saved data.
-    if (!isHydrated || homeDemoMode()) {
+    // The demo fixtures (Home, Progress) must never overwrite the user's saved data.
+    if (!isHydrated || homeDemoMode() || shouldUseProgressDemo()) {
       return;
     }
 
