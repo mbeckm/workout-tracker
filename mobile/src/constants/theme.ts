@@ -697,6 +697,8 @@ export const gadgetType = {
   lcdReps: lcdRole(56),
   /** The drum's previous and next steps. */
   lcdStep: lcdRole(40),
+  /** `INSERT PLAN` on an empty slot (prototype 40/44). */
+  lcdPrompt: lcdRole(40, 44),
   /** The lift name in device edit. */
   lcdName: lcdRole(28, 32),
   /** Day row titles. */
@@ -911,6 +913,17 @@ export const device = {
   rowListGap: 12,
   /** Selected row outline. */
   rowOutline: 2,
+  /** A selected done row: a ring outside it, clear of the orange by a gap of lcd ground. */
+  rowRingGap: 2,
+  /** The fade over rows that scroll under the display's edge. */
+  rowFadeHeight: 24,
+  /** `INSERT PLAN`'s top on an empty slot (prototype 150). */
+  promptY: 150,
+  /** Blinking display text's dim phase (`blinkx`: opacity .25). */
+  blinkDimOpacity: 0.25,
+  /** The stamp's start: scale 2.4, rotate −12° (SPEC §7). */
+  stampFromScale: 2.4,
+  stampFromAngle: -12,
   /** Finish-mode set grid: 9 columns, lamps 10 tall. */
   gridColumns: 9,
   gridLamp: 10,

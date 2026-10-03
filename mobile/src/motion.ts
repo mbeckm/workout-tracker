@@ -131,6 +131,11 @@ export const DEVICE = {
   /** Stamp: scale 2.4 → 1, rotate −12° → 7°, after a delay; the row fills over STAMP. */
   STAMP: 500,
   STAMP_DELAY: 450,
+  /**
+   * When the stamp lands, into STAMP: bezier(.2,1.6,.4,1) first reaches its end value at
+   * ~23% of the run, so the haptic and the sound play there (trim-ui §8 rule 3).
+   */
+  STAMP_LAND: 115,
   ROW_FILL_DELAY: 100,
   /** Lamp turns green: off, on, off, on in steps, after a delay. */
   LAMP_LIT: 900,
