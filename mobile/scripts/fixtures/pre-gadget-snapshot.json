@@ -1,0 +1,3558 @@
+{
+  "plans": [
+    {
+      "id": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "name": "Upper Lower",
+      "daysPerWeek": 1,
+      "createdAt": "2026-10-03T15:25:44.964Z",
+      "days": [
+        {
+          "id": "3e3a0499-6553-4c89-ab2a-c76ae94a6421",
+          "title": "Upper",
+          "exercises": [
+            {
+              "id": "d63124b9-032d-4913-b9f9-5c0960e7da6f",
+              "name": "Flat Barbell Bench Press",
+              "sets": 4,
+              "reps": 6,
+              "providerExerciseId": "EIeI8Vf",
+              "bodyParts": [
+                "Chest"
+              ],
+              "targetMuscles": [
+                "Pectorals"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "43f2c956-a527-4e19-9ccf-df22e7180d43",
+              "name": "Barbell Row",
+              "sets": 4,
+              "reps": 8,
+              "providerExerciseId": "eZyBC3j",
+              "bodyParts": [
+                "Back"
+              ],
+              "targetMuscles": [
+                "Upper Back"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "e99d8c77-edba-4a0b-a16c-3cd9cb7361c6",
+              "name": "Overhead Press",
+              "sets": 3,
+              "reps": 8,
+              "providerExerciseId": "Kyd9Rz5",
+              "bodyParts": [
+                "Shoulders"
+              ],
+              "targetMuscles": [
+                "Delts"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "c3f10559-240e-456b-9749-c1e3da212893",
+              "name": "Lat Pulldown",
+              "sets": 3,
+              "reps": 10,
+              "providerExerciseId": "0MlxeMn",
+              "bodyParts": [
+                "Back"
+              ],
+              "targetMuscles": [
+                "Lats"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Cable"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "45cee236-bc4d-470e-aea0-7427b11e3ea9",
+              "name": "Low-to-High Cable Fly",
+              "sets": 3,
+              "reps": 12,
+              "bodyParts": [
+                "Chest"
+              ],
+              "targetMuscles": [
+                "Pectorals"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "isolation",
+              "equipments": [
+                "Cable"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "6bdf46ef-6330-420c-8488-be0218f8bc7e",
+              "name": "Barbell Curl",
+              "sets": 3,
+              "reps": 12,
+              "providerExerciseId": "25GPyDY",
+              "bodyParts": [
+                "Upper Arms"
+              ],
+              "targetMuscles": [
+                "Biceps"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "isolation",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        },
+        {
+          "id": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde",
+          "title": "Lower",
+          "exercises": [
+            {
+              "id": "eb17015d-674d-49b6-ba37-0a306f0bac96",
+              "name": "Barbell Back Squat",
+              "sets": 5,
+              "reps": 5,
+              "providerExerciseId": "iYzB0Cz",
+              "bodyParts": [
+                "Upper Legs"
+              ],
+              "targetMuscles": [
+                "Quads"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "f13b3530-bd08-49d7-9005-cbae5a79f390",
+              "name": "Romanian Deadlift",
+              "sets": 4,
+              "reps": 8,
+              "providerExerciseId": "wQ2c4XD",
+              "bodyParts": [
+                "Upper Legs"
+              ],
+              "targetMuscles": [
+                "Hamstrings"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "78f981a2-e20c-4738-ae98-a9a0fecd51bf",
+              "name": "Leg Curl",
+              "sets": 3,
+              "reps": 12,
+              "providerExerciseId": "17lJ1kr",
+              "bodyParts": [
+                "Upper Legs"
+              ],
+              "targetMuscles": [
+                "Hamstrings"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "isolation",
+              "equipments": [
+                "Machine"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        },
+        {
+          "id": "2905868b-33ef-4c87-9b88-bd9cb3e0b4c2",
+          "title": "Push",
+          "exercises": [
+            {
+              "id": "42080698-e5f3-4bcf-b37f-ed5a0fee7a6b",
+              "name": "Incline Bench Press (Barbell)",
+              "sets": 4,
+              "reps": 8,
+              "providerExerciseId": "3TZduzM",
+              "bodyParts": [
+                "Chest"
+              ],
+              "targetMuscles": [
+                "Pectorals"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "4461b266-3e24-4c18-83e7-29cb5ceb76b0",
+              "name": "Dumbbell Bench Press",
+              "sets": 3,
+              "reps": 10,
+              "bodyParts": [
+                "Chest"
+              ],
+              "targetMuscles": [
+                "Pectorals"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Dumbbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        },
+        {
+          "id": "858f89e5-bfeb-41b0-8848-713e0dfb80a0",
+          "title": "Pull",
+          "exercises": [
+            {
+              "id": "21810955-f043-4f63-8c95-b6273e722c0b",
+              "name": "Barbell Row",
+              "sets": 4,
+              "reps": 8,
+              "providerExerciseId": "eZyBC3j",
+              "bodyParts": [
+                "Back"
+              ],
+              "targetMuscles": [
+                "Upper Back"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "2f03d018-947d-4dc7-b3e1-8ec5ba7f5c86",
+              "name": "Close-Grip Lat Pulldown",
+              "sets": 3,
+              "reps": 12,
+              "bodyParts": [
+                "Back"
+              ],
+              "targetMuscles": [
+                "Lats"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Cable"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a912767c-61cc-499c-9e6e-47e62eec6994",
+      "name": "Push / Pull / Legs",
+      "daysPerWeek": 3,
+      "createdAt": "2026-10-03T15:25:44.970Z",
+      "days": [
+        {
+          "id": "f9647ffd-9fc3-4197-85c8-4ce3bb3d2475",
+          "title": "Push",
+          "exercises": [
+            {
+              "id": "235bbd95-1b7e-4920-951a-57fbb172d3a4",
+              "name": "Bench press",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "8ea9741b-4e21-4186-9e93-dd3bd7438114",
+              "name": "Squat",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "0aef6d07-4d1c-4460-99a2-4cfdb9407e3e",
+              "name": "Deadlift",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "2bc5a988-47e3-40c3-ad02-9487238bf455",
+              "name": "Overhead press",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "48b868c3-af20-44d5-956d-34ba27f4bae2",
+              "name": "Barbell row",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "b2480fc8-b071-46ee-a81d-ed810ead098b",
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 5,
+              "bodyParts": [],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "10af8fa9-0786-4275-a708-6a74ecf83be9",
+              "name": "Landmine press",
+              "sets": 3,
+              "reps": 10,
+              "bodyParts": [
+                "shoulders"
+              ],
+              "targetMuscles": [],
+              "secondaryMuscles": [],
+              "equipments": [
+                "barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "archivedPlans": [
+    {
+      "id": "838c95f7-d8ce-448f-aec2-e6208c45ba7a",
+      "name": "Old Full Body",
+      "daysPerWeek": 1,
+      "createdAt": "2026-10-03T15:25:44.970Z",
+      "days": [
+        {
+          "id": "500a248b-d5f9-4dc2-b1e8-44d9ed2f24b3",
+          "title": "Full body",
+          "exercises": [
+            {
+              "id": "46ca2481-99bd-40f2-9aa1-fcd48a7e75c2",
+              "name": "Barbell Back Squat",
+              "sets": 3,
+              "reps": 8,
+              "providerExerciseId": "iYzB0Cz",
+              "bodyParts": [
+                "Upper Legs"
+              ],
+              "targetMuscles": [
+                "Quads"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            },
+            {
+              "id": "123633dd-39eb-4b64-9971-e272bdae753d",
+              "name": "Flat Barbell Bench Press",
+              "sets": 3,
+              "reps": 8,
+              "providerExerciseId": "EIeI8Vf",
+              "bodyParts": [
+                "Chest"
+              ],
+              "targetMuscles": [
+                "Pectorals"
+              ],
+              "secondaryMuscles": [],
+              "movementType": "compound",
+              "equipments": [
+                "Barbell"
+              ],
+              "imageURLs": {},
+              "itemType": "strength",
+              "trackingMode": "weightAndReps",
+              "repScheme": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "activePlanId": "406b9672-c029-48cd-acc9-2f117acb0673",
+  "customExercises": [
+    {
+      "id": "142f5d79-9574-4481-9ff8-2863a5c6fce1",
+      "name": "Landmine press",
+      "equipment": "barbell",
+      "muscle": "shoulders",
+      "exerciseType": "strength",
+      "trackingMode": "weightAndReps",
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "updatedAt": null,
+      "isArchived": false,
+      "notes": "Half-kneeling"
+    }
+  ],
+  "workoutHistory": [
+    {
+      "id": "da7f8813-4f6d-4818-a6f2-2e918df57f11",
+      "title": "Upper",
+      "completedAt": "2026-10-03T15:20:44.965Z",
+      "durationMinutes": 50,
+      "exerciseCount": 6,
+      "setCount": 20,
+      "exercises": [
+        {
+          "id": "8c05a0f6-9fda-4c2e-bec4-9609460dad18",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "5db855f6-8f9b-4e2a-9622-534d24cc06ca",
+              "index": 0,
+              "weight": 62.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b29ce21d-b13a-4f1f-ba82-2343c7474030",
+              "index": 1,
+              "weight": 62.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b1cfe910-b6ba-45dc-9f2e-251cf7292a0c",
+              "index": 2,
+              "weight": 62.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "38e23649-9276-40d8-bf2a-b43d993ff08f",
+              "index": 3,
+              "weight": 62.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "60550e5d-09d5-49ad-bff4-4add10bf621d",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "3e5def75-4a0a-404e-b9a3-462c606aeba7",
+              "index": 0,
+              "weight": 72.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "68ca008a-db96-4224-8abb-b5ebce298ea4",
+              "index": 1,
+              "weight": 72.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "9bd95c39-f443-44ff-84b5-5759fed70ac6",
+              "index": 2,
+              "weight": 72.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "490bc45f-2841-40ee-9c63-c1abe5c367e0",
+              "index": 3,
+              "weight": 72.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "d74b2db6-00d8-497f-909e-b80502c58651",
+          "exerciseName": "Overhead Press",
+          "sets": [
+            {
+              "id": "a6f402d1-9d95-4dab-a99a-7117aa37f9cb",
+              "index": 0,
+              "weight": 40,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8408768a-a0e9-4f8a-8395-f8510a234e0a",
+              "index": 1,
+              "weight": 40,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "814f795c-103d-4210-9fae-437511820257",
+              "index": 2,
+              "weight": 40,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "fa697ebd-6d9f-4490-aa46-19e1ad1a60d7",
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "id": "90eac3e0-06b3-43e0-a2d1-4b256d483680",
+              "index": 0,
+              "weight": 57.5,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "3f0be17c-8101-4c30-9e93-f3b1dac39c04",
+              "index": 1,
+              "weight": 57.5,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "1ffc15c6-0e0d-4a88-b25d-a2cb561c3b7f",
+              "index": 2,
+              "weight": 57.5,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "80b55539-81c5-4880-a4b7-5604056c92c5",
+          "exerciseName": "Low-to-High Cable Fly",
+          "sets": [
+            {
+              "id": "bf43956d-0ade-4fd6-84f2-85c0689974b0",
+              "index": 0,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b29039f7-9b53-427b-b873-2714b10d1db6",
+              "index": 1,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "0383f6d9-d873-4520-bf01-08f6f02f67bf",
+              "index": 2,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "0a5d14c6-e412-4a5e-8d36-144fa539d27a",
+          "exerciseName": "Barbell Curl",
+          "sets": [
+            {
+              "id": "be125721-6c6e-4739-bace-551cde01343b",
+              "index": 0,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6b4b3ac9-5c9d-4c23-b802-19b702195d77",
+              "index": 1,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "fc2e6f51-1ecb-428b-9668-cee2d2b5f1f8",
+              "index": 2,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "3e3a0499-6553-4c89-ab2a-c76ae94a6421"
+    },
+    {
+      "id": "0f2bf7e7-329e-44fa-a4a1-b5f73fad9133",
+      "title": "Lower",
+      "completedAt": "2026-10-02T16:00:00.000Z",
+      "durationMinutes": 44,
+      "exerciseCount": 3,
+      "setCount": 12,
+      "exercises": [
+        {
+          "id": "55d9e85b-2b62-45a0-a047-1bd9d2a069d0",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "180db464-b020-4d1c-bfb2-4b51d220ea8e",
+              "index": 0,
+              "weight": 100,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "988cb982-08f3-4e86-8509-548117f6f56b",
+              "index": 1,
+              "weight": 100,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "77a3668f-5163-4b12-bd44-0758425f7d84",
+              "index": 2,
+              "weight": 100,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "615d9213-4d67-4acd-ae67-322c9fce49ab",
+              "index": 3,
+              "weight": 100,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "320ce8d1-5fe8-4bd9-a73b-f2057680f7b1",
+              "index": 4,
+              "weight": 100,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "7b5ec235-df28-483f-962c-305e1164cd76",
+          "exerciseName": "Romanian Deadlift",
+          "sets": [
+            {
+              "id": "1a5b6e06-ac01-4457-b539-7138b506169b",
+              "index": 0,
+              "weight": 90,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f5bc6309-4b43-4bd7-b128-6483e25bf176",
+              "index": 1,
+              "weight": 90,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "134ac5da-2a90-40fa-aa0c-95e241b12415",
+              "index": 2,
+              "weight": 90,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "4a1ab4a1-714d-4d53-8363-7835a303eac1",
+              "index": 3,
+              "weight": 90,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "e8fbb47c-1d90-4e9f-8bb7-92935e6d1f57",
+          "exerciseName": "Leg Curl",
+          "sets": [
+            {
+              "id": "14933ce3-97f3-4ec5-a008-9c69130b853b",
+              "index": 0,
+              "weight": 44,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "70517006-de16-420a-9712-2e77203125b3",
+              "index": 1,
+              "weight": 44,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "3497d476-0a8e-436b-8f07-8e21b55027fd",
+              "index": 2,
+              "weight": 44,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde"
+    },
+    {
+      "id": "ab3ce8e2-bee2-4db0-91ef-584f5bb8c918",
+      "title": "Pull",
+      "completedAt": "2026-09-30T16:00:00.000Z",
+      "durationMinutes": 48,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "764da367-ffb0-483c-aa78-cbdc457bd2f5",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "eb32d0d7-8d89-4452-8327-24fb9a94e09f",
+              "index": 0,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "0fc90e52-01b5-47f1-9abf-f281365f492d",
+              "index": 1,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "d5a76058-83c0-4fce-9480-f4b82583e01d",
+              "index": 2,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b8180979-8cca-4bae-955c-7cff67a14cde",
+              "index": 3,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "b4f635bf-71b0-458e-8bbb-c0ae18e5990c",
+          "exerciseName": "Close-Grip Lat Pulldown",
+          "sets": [
+            {
+              "id": "d77d713a-27bc-4cea-9127-ee82a9429fbd",
+              "index": 0,
+              "weight": 50,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a16e3369-41b1-4982-956e-50b677171bc1",
+              "index": 1,
+              "weight": 50,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "32476477-d7b3-431e-8069-f1005854ebe8",
+              "index": 2,
+              "weight": 50,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "858f89e5-bfeb-41b0-8848-713e0dfb80a0"
+    },
+    {
+      "id": "11f8fed4-f185-4ce0-980a-44f2aa2e96a6",
+      "title": "Push",
+      "completedAt": "2026-09-29T16:00:00.000Z",
+      "durationMinutes": 45,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "33a3abdd-9ee5-4a8d-a843-9f61903c79bd",
+          "exerciseName": "Incline Bench Press (Barbell)",
+          "sets": [
+            {
+              "id": "65670010-8f43-46f7-9f23-31a08d1961a5",
+              "index": 0,
+              "weight": 52.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "7a0c7724-9f68-42f9-a7fc-790e350b7507",
+              "index": 1,
+              "weight": 52.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "45285d1a-da16-45bc-ab28-83d4acb494e4",
+              "index": 2,
+              "weight": 52.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a0f594cf-916e-4ae4-986c-c029a1ff1580",
+              "index": 3,
+              "weight": 52.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "e43e2943-c8c8-4062-b9b1-97ce6175c500",
+          "exerciseName": "Dumbbell Bench Press",
+          "sets": [
+            {
+              "id": "fd299255-19ba-4b4b-98a7-f46131f8c5c5",
+              "index": 0,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "e0da2b7b-7b9f-4fa3-b366-e4e6138a3343",
+              "index": 1,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "c1a96713-0d1e-44fa-8fef-6060ec665c85",
+              "index": 2,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "2905868b-33ef-4c87-9b88-bd9cb3e0b4c2"
+    },
+    {
+      "id": "64e819af-44f9-47e4-a581-8060a4506f83",
+      "title": "Upper",
+      "completedAt": "2026-09-28T16:00:00.000Z",
+      "durationMinutes": 48,
+      "exerciseCount": 6,
+      "setCount": 20,
+      "exercises": [
+        {
+          "id": "53ba6753-2d6a-477f-965c-454f599a51d4",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "0ae9808b-a682-4231-afb5-025a41997626",
+              "index": 0,
+              "weight": 60,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6a1da224-3e19-4858-b569-da4864293faa",
+              "index": 1,
+              "weight": 60,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "16f7d6de-da63-4ff8-b6e4-595e643cd19d",
+              "index": 2,
+              "weight": 60,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5e3f27d9-a695-41ab-9baf-34bce0c69da8",
+              "index": 3,
+              "weight": 60,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "882e1b35-7874-4daf-b1dc-9f02ac22630c",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "78ab8ec4-ef1e-4078-9e0e-44fe374b6930",
+              "index": 0,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "674472e1-7e4d-42c1-93dc-47c6f870e6e4",
+              "index": 1,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5a01e50e-15e0-492d-afb7-0bd2496f9a4e",
+              "index": 2,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "caf3e960-4854-4f66-a599-080e33da7bd1",
+              "index": 3,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "9ff5ccd3-b787-4e36-8086-704d363c0911",
+          "exerciseName": "Overhead Press",
+          "sets": [
+            {
+              "id": "f716bc1b-2d0a-4433-9a72-ac122850aeac",
+              "index": 0,
+              "weight": 40,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "7abacf7c-30b6-49aa-8e6f-25a2d3390521",
+              "index": 1,
+              "weight": 40,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "da35c84b-b571-478a-aa1a-fe626a91e64c",
+              "index": 2,
+              "weight": 40,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "037dffdb-5178-4e0f-83bd-d8409431e802",
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "id": "086152dd-3bfb-463d-b615-0590dbbc465b",
+              "index": 0,
+              "weight": 55,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "e8d1e884-a48b-4898-9c9b-613c7023f320",
+              "index": 1,
+              "weight": 55,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f40c8b07-4e48-4667-a776-f6e228d098fd",
+              "index": 2,
+              "weight": 55,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "969993a1-34d5-4c5d-b140-86f865c8c049",
+          "exerciseName": "Low-to-High Cable Fly",
+          "sets": [
+            {
+              "id": "76b13251-f083-41d5-9fc8-dcdaeb0ca391",
+              "index": 0,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "9571e67e-972e-42be-b00d-1fe791aad97e",
+              "index": 1,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f92fefb6-ed6c-42dc-b0f8-3f481cc9e1c8",
+              "index": 2,
+              "weight": 15,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "9d3f395e-19b3-4978-a3b0-3778b2f1b966",
+          "exerciseName": "Barbell Curl",
+          "sets": [
+            {
+              "id": "4a28f24d-3d81-4b9e-a5e4-351500830251",
+              "index": 0,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b0cda3be-abae-488f-9f28-90b996938acf",
+              "index": 1,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "500668a8-ff12-4d28-97d1-32fdb520b5e0",
+              "index": 2,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "3e3a0499-6553-4c89-ab2a-c76ae94a6421"
+    },
+    {
+      "id": "6aca0238-2011-4401-952e-85e73472ee6b",
+      "title": "Lower",
+      "completedAt": "2026-09-26T16:00:00.000Z",
+      "durationMinutes": 51,
+      "exerciseCount": 3,
+      "setCount": 12,
+      "exercises": [
+        {
+          "id": "87c123dd-ec7e-425b-b3f5-5a8f97f0cf41",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "f3608b54-e5c3-4f12-8a05-602a52ec876e",
+              "index": 0,
+              "weight": 97.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "dee37531-4d1b-430b-a7ab-0da12c80df2f",
+              "index": 1,
+              "weight": 97.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "29df845e-2af5-4687-bb4d-d5cddc8171cc",
+              "index": 2,
+              "weight": 97.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "bff9e4aa-74d3-4f4c-8c15-9357c3835074",
+              "index": 3,
+              "weight": 97.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "67191ecf-439f-4671-b9fb-1ac082c5b34c",
+              "index": 4,
+              "weight": 97.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "028362b2-1acf-4b6f-892c-b64e3d001e01",
+          "exerciseName": "Romanian Deadlift",
+          "sets": [
+            {
+              "id": "f06f5336-5916-4e97-8135-3f89981f01bc",
+              "index": 0,
+              "weight": 87.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "96cc9b84-45c1-4916-aebf-6e7efbe54f96",
+              "index": 1,
+              "weight": 87.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "20da9b2d-8d98-4e50-88c2-dc11df5e9adf",
+              "index": 2,
+              "weight": 87.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "82e76309-e054-4859-84f6-d2bddb0dc92a",
+              "index": 3,
+              "weight": 87.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "e6ddbe78-71c9-4e2d-a0f7-74ac6903ee98",
+          "exerciseName": "Leg Curl",
+          "sets": [
+            {
+              "id": "00ecaea0-4a1b-43cc-9088-8ab13a3a987e",
+              "index": 0,
+              "weight": 42,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5c7f91ce-ca0d-41d9-be00-a488c06cf484",
+              "index": 1,
+              "weight": 42,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a4360200-a8cb-418b-b780-1e0552000ce9",
+              "index": 2,
+              "weight": 42,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde"
+    },
+    {
+      "id": "023d0d48-6544-4951-9105-689cda3e6886",
+      "title": "Pull",
+      "completedAt": "2026-09-24T16:00:00.000Z",
+      "durationMinutes": 46,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "7c06a283-081e-4765-86f1-4c53adbe938a",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "59b89195-051f-4adc-8e87-58a32e3bb5f5",
+              "index": 0,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "50527aeb-e5fb-449c-bfa6-8ffb27a29035",
+              "index": 1,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a17bdc6b-be48-41d4-8bb5-32fe4a0afc26",
+              "index": 2,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "3451bbea-80ce-4e4e-a4a0-ce03aa9f5a21",
+              "index": 3,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "324eec97-ba6a-42be-a3d0-0a811da5bfbf",
+          "exerciseName": "Close-Grip Lat Pulldown",
+          "sets": [
+            {
+              "id": "2517d9ed-82a7-4ab2-912e-041a38a3e660",
+              "index": 0,
+              "weight": 47.5,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "bc46105a-247c-4cf6-9b1a-ae03a09149f6",
+              "index": 1,
+              "weight": 47.5,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "3c752631-c3f6-49c6-8021-c070130e3748",
+              "index": 2,
+              "weight": 47.5,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "858f89e5-bfeb-41b0-8848-713e0dfb80a0"
+    },
+    {
+      "id": "f5c57745-7df9-414e-ab1a-80d74296f331",
+      "title": "Push",
+      "completedAt": "2026-09-23T16:00:00.000Z",
+      "durationMinutes": 52,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "3c0af60d-8ac4-409c-9a4c-0eafbbf56b3f",
+          "exerciseName": "Incline Bench Press (Barbell)",
+          "sets": [
+            {
+              "id": "3e1aef74-f9cd-4eeb-ab1a-43cc37e8f45d",
+              "index": 0,
+              "weight": 50,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "04703373-3178-4f50-82e4-9e053fca809e",
+              "index": 1,
+              "weight": 50,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "833edf83-b81c-4acb-910e-ff942233ebc4",
+              "index": 2,
+              "weight": 50,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "764382a2-df4e-42b7-99b5-6798e09cee4e",
+              "index": 3,
+              "weight": 50,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "8043ea1d-8b81-47b4-8cf3-d9f26fe9cf27",
+          "exerciseName": "Dumbbell Bench Press",
+          "sets": [
+            {
+              "id": "eab7ada8-5aa3-41c1-b1e3-a6b08643a252",
+              "index": 0,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "57bc5eb2-630b-4f34-85db-8c71939c2c57",
+              "index": 1,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "88b08f30-d707-4019-93f2-4a106c8b87bc",
+              "index": 2,
+              "weight": 24,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "2905868b-33ef-4c87-9b88-bd9cb3e0b4c2"
+    },
+    {
+      "id": "94439d1e-ba9a-4978-9efa-4ceecc7d2696",
+      "title": "Upper",
+      "completedAt": "2026-09-21T16:00:00.000Z",
+      "durationMinutes": 46,
+      "exerciseCount": 6,
+      "setCount": 20,
+      "exercises": [
+        {
+          "id": "8eb1f70e-dc5c-4070-8c68-575df3457300",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "10926146-b6ff-42d5-92f6-34b6d2c5b816",
+              "index": 0,
+              "weight": 57.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "c08b1a60-98c4-4009-a0b2-9e389741c3df",
+              "index": 1,
+              "weight": 57.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f880d8e4-5596-44a1-aea7-a575350933ae",
+              "index": 2,
+              "weight": 57.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "9b8cbaf6-602b-4a0d-adc5-e0596d3c9b98",
+              "index": 3,
+              "weight": 57.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "4df55c26-1fb9-4549-9d63-a54ce569849e",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "102eede1-ffe3-4f9a-8c49-98e4bfef2541",
+              "index": 0,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "0f68eff8-0ca5-48c2-8a34-9334b2b04ea2",
+              "index": 1,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "bed56bd6-01bc-443a-a66f-33ffa3d814a2",
+              "index": 2,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "94c8fd23-95fd-4bef-9afe-7ed21d312d65",
+              "index": 3,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "a09beab2-60fd-4376-b456-205c8aea82f8",
+          "exerciseName": "Overhead Press",
+          "sets": [
+            {
+              "id": "4cb1f5fd-1ed0-49c4-8510-b81a01d649d0",
+              "index": 0,
+              "weight": 40,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6b6fbf11-2493-4734-9434-b8145b5cab47",
+              "index": 1,
+              "weight": 40,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "b3a8e269-0a46-4e7f-a730-dfbf4e728520",
+              "index": 2,
+              "weight": 40,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "26983673-cea2-4083-887f-ce30fb57dd31",
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "id": "e10c123b-1198-4b42-94e5-e40ab38d0732",
+              "index": 0,
+              "weight": 52.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "ab3f5b58-9bd6-49d7-8a61-5406c466b2ab",
+              "index": 1,
+              "weight": 52.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "ff9e4164-a93c-4bf7-8e67-3283f9094e79",
+              "index": 2,
+              "weight": 52.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "ecd1b888-bd01-40fe-9c5f-5401f551964d",
+          "exerciseName": "Low-to-High Cable Fly",
+          "sets": [
+            {
+              "id": "742eb059-7b7c-4c8f-9e20-4eced6986d2c",
+              "index": 0,
+              "weight": 14,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "ff3241cc-4d56-45f2-91a7-8ddd4fdd3387",
+              "index": 1,
+              "weight": 14,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "c2830bc1-d6da-437d-af51-4e677b2ab92c",
+              "index": 2,
+              "weight": 14,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "2e28f3f4-49c0-4e66-8d61-544d3866bdd4",
+          "exerciseName": "Barbell Curl",
+          "sets": [
+            {
+              "id": "8234d0ce-4457-4ec1-bfa9-25ea3257c182",
+              "index": 0,
+              "weight": 30,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "37ed3014-b3d4-4630-9d03-70935b604633",
+              "index": 1,
+              "weight": 30,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "e047347d-0194-47b9-b3cb-ea6ed9c09795",
+              "index": 2,
+              "weight": 30,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "3e3a0499-6553-4c89-ab2a-c76ae94a6421"
+    },
+    {
+      "id": "a701fa8d-49ca-4874-bc56-018b8af8409d",
+      "title": "Lower",
+      "completedAt": "2026-09-19T16:00:00.000Z",
+      "durationMinutes": 49,
+      "exerciseCount": 3,
+      "setCount": 12,
+      "exercises": [
+        {
+          "id": "a21f6577-136c-41e8-90aa-1c6334a0f263",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "b1bb0be6-eb5c-49c3-b34d-fb2fa8de8b61",
+              "index": 0,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "7ef237b3-a2a4-422d-98eb-cf54ddb3fc5a",
+              "index": 1,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6ccc0237-bf0b-4081-9f28-992691f2b1d8",
+              "index": 2,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5b761ac1-86c7-49ba-8728-461b056dab63",
+              "index": 3,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "179c47ef-e595-455b-a92b-46aa4349990b",
+              "index": 4,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "2f362afd-aabd-42aa-9a65-8b5788293c88",
+          "exerciseName": "Romanian Deadlift",
+          "sets": [
+            {
+              "id": "4b9de042-7a90-4110-938a-10d77586feef",
+              "index": 0,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5c4e307a-12f1-42b1-9f8e-b3102b9457ad",
+              "index": 1,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "7baa1ae2-1dca-495c-a93b-e8a0041bedf7",
+              "index": 2,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f41684f9-5a84-44ed-abaf-3d6c95e3d4ed",
+              "index": 3,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "83e1d92d-d3e3-4365-afbb-887024b41626",
+          "exerciseName": "Leg Curl",
+          "sets": [
+            {
+              "id": "f72ad5aa-fd45-4838-b5bd-5c06d65749bb",
+              "index": 0,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "373b1dc7-273c-4fca-8da5-5f637f9219d8",
+              "index": 1,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "61246f64-f892-4bb5-8306-b3447be687d1",
+              "index": 2,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde"
+    },
+    {
+      "id": "c89f9d6e-86e7-4233-9b64-e1740fcade3d",
+      "title": "Pull",
+      "completedAt": "2026-09-17T16:00:00.000Z",
+      "durationMinutes": 44,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "64b23fba-3623-40f3-8de5-ebdaefad0330",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "6690bed7-5879-438c-9131-511292c095a8",
+              "index": 0,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a7a96722-5788-4d5e-9e6c-64b92653be27",
+              "index": 1,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "ff3dfabe-4d71-4a17-b996-d6622804b550",
+              "index": 2,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "d353adad-a2f4-4d68-aa2f-e0ffb7881df4",
+              "index": 3,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "59d7bdbe-e4b6-478d-91e2-2c068c2f170b",
+          "exerciseName": "Close-Grip Lat Pulldown",
+          "sets": [
+            {
+              "id": "3ac9c5e1-a386-4ed9-af0a-8e03633bfdb0",
+              "index": 0,
+              "weight": 45,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "788d8253-3d29-4415-973e-107e94654ce6",
+              "index": 1,
+              "weight": 45,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8b2d67e1-bda0-4591-987d-e4730a76f7ba",
+              "index": 2,
+              "weight": 45,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "858f89e5-bfeb-41b0-8848-713e0dfb80a0"
+    },
+    {
+      "id": "5731a7bd-1cee-4ce1-97a4-bb922f04221b",
+      "title": "Push",
+      "completedAt": "2026-09-16T16:00:00.000Z",
+      "durationMinutes": 50,
+      "exerciseCount": 2,
+      "setCount": 7,
+      "exercises": [
+        {
+          "id": "3162452d-5f2c-4eed-92ed-d28a7c1a128d",
+          "exerciseName": "Incline Bench Press (Barbell)",
+          "sets": [
+            {
+              "id": "4c26c2a6-98e0-49ff-97fc-4d9cbba21787",
+              "index": 0,
+              "weight": 47.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "4ce1f3da-ab5c-4c2a-9727-e14333119b1a",
+              "index": 1,
+              "weight": 47.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "cfa1136a-7cd1-4bd5-b556-fa2a6efa5f4d",
+              "index": 2,
+              "weight": 47.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "48ae880c-5c2a-4199-83f5-aef34cebc311",
+              "index": 3,
+              "weight": 47.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "fb6c48c4-8411-430d-8120-8940eec94a05",
+          "exerciseName": "Dumbbell Bench Press",
+          "sets": [
+            {
+              "id": "5edb0827-7d80-4bb0-9a58-e6e7f5f4355e",
+              "index": 0,
+              "weight": 22,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "4fa28edb-f864-42e4-a4bc-0c7923045f0d",
+              "index": 1,
+              "weight": 22,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f9b18697-bb0d-4017-b8f1-292911229395",
+              "index": 2,
+              "weight": 22,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "2905868b-33ef-4c87-9b88-bd9cb3e0b4c2"
+    },
+    {
+      "id": "bd814793-ae91-4ab8-a74c-4222ee4f0107",
+      "title": "Upper",
+      "completedAt": "2026-09-14T16:00:00.000Z",
+      "durationMinutes": 44,
+      "exerciseCount": 6,
+      "setCount": 20,
+      "exercises": [
+        {
+          "id": "b10a0c62-53e7-467a-9841-2ad4864443a6",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "268bd92b-1bd0-4796-8ec3-7bc4ad7f5d41",
+              "index": 0,
+              "weight": 55,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f757e344-4af8-4c3b-8906-b6243e7bfebf",
+              "index": 1,
+              "weight": 55,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a1717985-91dd-4727-8658-cb46c42d8bfb",
+              "index": 2,
+              "weight": 55,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8fef8874-d583-4d89-82f9-148fe0f7d537",
+              "index": 3,
+              "weight": 55,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "a862fb40-d18a-4036-b5f9-3e6a7e673079",
+          "exerciseName": "Barbell Row",
+          "sets": [
+            {
+              "id": "523a80ef-a991-4abf-b3bf-76c953811d98",
+              "index": 0,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "0f99c54c-2bb3-4b90-a59d-14f818bcbc32",
+              "index": 1,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "e2318d39-ccfb-4461-9874-292ae00bb5d4",
+              "index": 2,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "abb60034-01bf-4c5b-b641-8b76f737331c",
+              "index": 3,
+              "weight": 65,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "e4a400ef-b17e-44d4-83f0-78340604a221",
+          "exerciseName": "Overhead Press",
+          "sets": [
+            {
+              "id": "36edcf30-8cb1-449d-8ba9-9a7ceaebc83a",
+              "index": 0,
+              "weight": 37.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "37a0f87e-cff7-4e84-9c5a-b78f6dd581a7",
+              "index": 1,
+              "weight": 37.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8bcbc406-39b9-4baf-9832-7ec2d818fa8d",
+              "index": 2,
+              "weight": 37.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "2fd2ada3-3a95-4c49-8f03-de6bb01bc216",
+          "exerciseName": "Lat Pulldown",
+          "sets": [
+            {
+              "id": "f8dc520a-0819-436c-8de8-da4ec342647d",
+              "index": 0,
+              "weight": 50,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "1982a0a6-2431-4d79-a010-f896ff5bd085",
+              "index": 1,
+              "weight": 50,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "726cf154-54dc-4db2-8a91-3d6f2f0eeaf2",
+              "index": 2,
+              "weight": 50,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "602de51b-cace-4342-80f0-53582593d45b",
+          "exerciseName": "Low-to-High Cable Fly",
+          "sets": [
+            {
+              "id": "967401cb-0e4c-4c99-b662-a4b8a54ff833",
+              "index": 0,
+              "weight": 13,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "420be7e7-b043-45e5-8038-3cc51cc50ee6",
+              "index": 1,
+              "weight": 13,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "fef72100-9ce2-4c8f-b4ef-4255d8a4a1cc",
+              "index": 2,
+              "weight": 13,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "40e8cdb5-ce89-4ce7-862f-7af7f41c0da4",
+          "exerciseName": "Barbell Curl",
+          "sets": [
+            {
+              "id": "5e0de687-5459-4c83-82ec-dfc3103a4954",
+              "index": 0,
+              "weight": 27.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "883567f9-1577-4942-8839-0bff88b31fd3",
+              "index": 1,
+              "weight": 27.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6d01d168-7bb5-4a77-a489-44fd0e8946be",
+              "index": 2,
+              "weight": 27.5,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "3e3a0499-6553-4c89-ab2a-c76ae94a6421"
+    },
+    {
+      "id": "7c71d3fd-20b4-454f-9667-74fe692f1f5f",
+      "title": "Lower",
+      "completedAt": "2026-09-12T16:00:00.000Z",
+      "durationMinutes": 47,
+      "exerciseCount": 3,
+      "setCount": 12,
+      "exercises": [
+        {
+          "id": "51d4e5c3-80d1-430b-b757-abcdb8b129b5",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "5c58eff8-f3ff-49ae-a99f-f7d6b1b90240",
+              "index": 0,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "679040a0-95f9-48e9-b05f-b9dedcf7db89",
+              "index": 1,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "a9b5bb39-40dd-4d6d-b1a0-f09636e34623",
+              "index": 2,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "620cc7b1-1e04-4aae-9ac5-c3033f8b26f7",
+              "index": 3,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "07b32e24-4ab6-469a-8c7e-9bf6874918e4",
+              "index": 4,
+              "weight": 95,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "e1d0506a-cdad-474a-8f34-37c3fc898189",
+          "exerciseName": "Romanian Deadlift",
+          "sets": [
+            {
+              "id": "3b1f8136-212b-4923-8e3f-c28cc4b39769",
+              "index": 0,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "1e37fc9c-c7cd-44b1-a30c-09046968324d",
+              "index": 1,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f4fc8d0b-bd61-4663-a476-3abc528ea65a",
+              "index": 2,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "89b9ab76-4514-4bd2-bc8e-607978fd23a6",
+              "index": 3,
+              "weight": 85,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "42bb291c-ef7a-4215-a28d-53888855e018",
+          "exerciseName": "Leg Curl",
+          "sets": [
+            {
+              "id": "c73dece3-0f91-4e66-b818-398b635b87da",
+              "index": 0,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8e2e0c16-cf68-4ca0-b0db-015a3fd664ae",
+              "index": 1,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "58bddf31-2bc2-4728-8084-24f68f20416b",
+              "index": 2,
+              "weight": 40,
+              "reps": 12,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+      "dayId": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde"
+    },
+    {
+      "id": "32d7ceb3-4bd9-465d-b7a8-5acc641303e0",
+      "title": "Push",
+      "completedAt": "2026-08-26T18:00:00.000Z",
+      "durationMinutes": 48,
+      "exerciseCount": 2,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "b12eb7cc-e68f-498c-ab69-8fa363155cff",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "7c1ff427-f68c-4c9b-bef3-579aba44b09c",
+              "index": 0,
+              "weight": 85,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "96506366-25aa-4112-a8df-800f74bf7dac",
+              "index": 1,
+              "weight": 85,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "789c362b-2997-481d-bd6b-d51518aac508",
+              "index": 2,
+              "weight": 82.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "c2427d9c-e324-4b0f-bf7b-945c71b4750e",
+          "exerciseName": "Landmine press",
+          "sets": [
+            {
+              "id": "d111d627-e698-41bb-a6b7-95cb2dcb6937",
+              "index": 0,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "5eee92af-ebfa-4462-bc5c-95e2991cb85b",
+              "index": 1,
+              "weight": 30,
+              "reps": 10,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "dc51ed9f-47ee-48eb-a0ea-dd78127da493",
+              "index": 2,
+              "weight": 30,
+              "reps": 9,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "a912767c-61cc-499c-9e6e-47e62eec6994",
+      "dayId": "f9647ffd-9fc3-4197-85c8-4ce3bb3d2475"
+    },
+    {
+      "id": "af45b583-bba7-453d-a1fe-6aaf70e2ae9e",
+      "title": "Push day",
+      "completedAt": "2026-08-19T18:00:00.000Z",
+      "durationMinutes": 55,
+      "exerciseCount": 6,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "42f0492a-f822-455a-aa87-f5448c5b7b79",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "db22728f-ecbc-4040-ad02-efa94ba34d95",
+              "index": 0,
+              "weight": 82.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "c868019e-e9b2-449f-a02e-577b73033b94",
+          "exerciseName": "Squat",
+          "sets": [
+            {
+              "id": "5a842f69-7482-4964-9ea8-d1b7b4c80f67",
+              "index": 0,
+              "weight": 113,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "b8092863-c35d-485b-930e-d3824f81a684",
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "id": "0d22d30d-29d4-49c1-a622-dbeb9eeda89d",
+              "index": 0,
+              "weight": 141.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "ba6a09ea-af5b-402b-85ed-0ddc87f183e2",
+          "exerciseName": "Overhead press",
+          "sets": [
+            {
+              "id": "a49b98de-0c28-4233-8766-1e508b4b3d4c",
+              "index": 0,
+              "weight": 49.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "0558f197-d5be-43f4-aa4a-b5c726df1c24",
+          "exerciseName": "Barbell row",
+          "sets": [
+            {
+              "id": "5933de60-2206-483f-8efd-4490cc30723c",
+              "index": 0,
+              "weight": 69.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "37439594-408d-46ae-a8da-8601867a1092",
+          "exerciseName": "Pull-up",
+          "sets": [
+            {
+              "id": "a01a59b1-0c65-4018-8ee4-01a4232a3082",
+              "index": 0,
+              "weight": 22,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "8ebe5647-1593-4201-9336-a623375f8b18",
+      "title": "Push day",
+      "completedAt": "2026-08-12T18:00:00.000Z",
+      "durationMinutes": 55,
+      "exerciseCount": 6,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "a80015e3-fff6-40eb-a15f-b6770d76327b",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "24ce1729-6bcf-434e-b379-d45cd95e195f",
+              "index": 0,
+              "weight": 80,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "1ac5ab9c-7877-4067-aaca-e831e0686ee9",
+          "exerciseName": "Squat",
+          "sets": [
+            {
+              "id": "e5833cc4-0f3c-43df-9075-d152f0019468",
+              "index": 0,
+              "weight": 113,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "38cfb2c6-4ed3-4a9d-b22f-735b35e42a1c",
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "id": "af199cd3-9fab-4dc1-a4ac-72a4cc80dcba",
+              "index": 0,
+              "weight": 141.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "0d8fc646-39f6-49f4-92fc-60e027de5cd6",
+          "exerciseName": "Overhead press",
+          "sets": [
+            {
+              "id": "8b9ca389-8ccf-4a41-b0dc-91f7d480fbca",
+              "index": 0,
+              "weight": 49.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "9a6c0ae8-bf69-4ee9-8e09-848cd0cb02bd",
+          "exerciseName": "Barbell row",
+          "sets": [
+            {
+              "id": "7d1b2e8a-3224-4836-bcf0-a438f8d02c4e",
+              "index": 0,
+              "weight": 69.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "b0e50b52-7c97-47f8-a2d6-14ce95c3b4e2",
+          "exerciseName": "Pull-up",
+          "sets": [
+            {
+              "id": "476f4c6d-71a2-4acc-90c9-2e6ad9215723",
+              "index": 0,
+              "weight": 22,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "9cc28ceb-f3b8-494b-9308-11f0bd60646c",
+      "title": "Push day",
+      "completedAt": "2026-08-05T18:00:00.000Z",
+      "durationMinutes": 55,
+      "exerciseCount": 6,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "c1c9168e-aa18-4319-bfdb-a8e35ed3a81d",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "c7d5831f-ab5f-478f-9335-5aed4127e486",
+              "index": 0,
+              "weight": 80,
+              "reps": 4,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "5ea4dd44-646c-4bba-8918-e605694c7a2d",
+          "exerciseName": "Squat",
+          "sets": [
+            {
+              "id": "87222710-5899-4c4c-b34f-ad0cca854623",
+              "index": 0,
+              "weight": 113,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "ae6bb612-7e0f-4c88-9f41-5fdb27261a71",
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "id": "0f255d68-b0e3-4d8f-bf70-8fdc72d068d9",
+              "index": 0,
+              "weight": 141.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "55a60fee-ca0f-440f-a73a-07695a77d7c7",
+          "exerciseName": "Overhead press",
+          "sets": [
+            {
+              "id": "0fee703d-74f0-4087-ad92-b31c436017ed",
+              "index": 0,
+              "weight": 49.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "0bcf21b9-9184-4d19-adc6-764dcff5162f",
+          "exerciseName": "Barbell row",
+          "sets": [
+            {
+              "id": "367aa57d-b19b-4178-9f5f-12d5eb4c1c5d",
+              "index": 0,
+              "weight": 69.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "961a548e-1fcb-4bb5-ac92-1d9f0827db8a",
+          "exerciseName": "Pull-up",
+          "sets": [
+            {
+              "id": "125a62dd-9769-42f0-af16-3ccfb5cc4c71",
+              "index": 0,
+              "weight": 22,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "861118e4-0106-4157-8b43-8719f9c7c047",
+      "title": "Push day",
+      "completedAt": "2026-07-29T18:00:00.000Z",
+      "durationMinutes": 55,
+      "exerciseCount": 6,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "e2bf13aa-bc0a-4d38-a388-8b8f33420d77",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "a5daa35d-e476-4756-9c0a-fbdc1eb5133a",
+              "index": 0,
+              "weight": 77.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "c59eabf7-5178-4315-a6a6-5568a299c6a0",
+          "exerciseName": "Squat",
+          "sets": [
+            {
+              "id": "13dcf8e1-180a-4768-bfe2-43dd0e064244",
+              "index": 0,
+              "weight": 113,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "81239d09-77b5-4c38-b62e-d679c7ae1bc1",
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "id": "ea6c8af5-06b3-41da-9ac1-d6eacc986fb7",
+              "index": 0,
+              "weight": 141.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "a0fb94e5-e30e-404b-aeae-dd007c285daa",
+          "exerciseName": "Overhead press",
+          "sets": [
+            {
+              "id": "b825f01c-cb5b-412b-99d1-00604ed1349c",
+              "index": 0,
+              "weight": 49.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "1cd9f916-706b-4ee9-82fb-9c0e4fe80950",
+          "exerciseName": "Barbell row",
+          "sets": [
+            {
+              "id": "5200bdf1-cde5-4ad5-be4f-b04d134cc7d8",
+              "index": 0,
+              "weight": 69.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "f7d08b15-4c9e-41d3-9fdb-3659f8554860",
+          "exerciseName": "Pull-up",
+          "sets": [
+            {
+              "id": "3a277aa1-7dbd-4d64-aa51-70fac1ee43df",
+              "index": 0,
+              "weight": 22,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2078337a-4425-4626-99cb-5d2122658c09",
+      "title": "Push day",
+      "completedAt": "2026-03-01T18:00:00.000Z",
+      "durationMinutes": 55,
+      "exerciseCount": 6,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "642da11b-583d-4ff0-aecd-e9e0e4d0cd6c",
+          "exerciseName": "Bench press",
+          "sets": [
+            {
+              "id": "4e379be3-f734-44f0-8781-33baedfecba2",
+              "index": 0,
+              "weight": 76.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "d72a0f8a-bd12-41d5-99e9-16e11f318b40",
+          "exerciseName": "Squat",
+          "sets": [
+            {
+              "id": "a01c88c4-8fc6-4a5f-8221-27448bf65e3f",
+              "index": 0,
+              "weight": 113,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "5124571e-0d53-4c68-b4f4-b8b66f8431fb",
+          "exerciseName": "Deadlift",
+          "sets": [
+            {
+              "id": "50abf7ea-bafb-49a6-a24e-0817399d99e2",
+              "index": 0,
+              "weight": 141.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "a099db37-19b1-44d4-85e0-224d3b97217e",
+          "exerciseName": "Overhead press",
+          "sets": [
+            {
+              "id": "d3ac6de1-d6a9-42bc-ad14-91e138632e78",
+              "index": 0,
+              "weight": 49.5,
+              "reps": 5,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "d799a48f-591d-479d-978c-c9d2655cb29c",
+          "exerciseName": "Barbell row",
+          "sets": [
+            {
+              "id": "e6cb5351-2937-46c8-9942-ecbb8ebbd5a7",
+              "index": 0,
+              "weight": 69.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "5e87f650-9079-436a-93c5-4b1fef29c6bd",
+          "exerciseName": "Pull-up",
+          "sets": [
+            {
+              "id": "553224da-699a-413a-9f1d-1dce45ac7700",
+              "index": 0,
+              "weight": 22,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "8e6830cf-739c-4ece-b027-1f7a84277813",
+      "title": "Full body",
+      "completedAt": "2026-02-14T18:00:00.000Z",
+      "durationMinutes": 48,
+      "exerciseCount": 2,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "f31b5892-19dd-4a59-ab0e-d9b93b9ffb34",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "54972405-99e3-4b46-9928-17efa7001eb2",
+              "index": 0,
+              "weight": 102.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "ba9e88bc-ba87-4afc-bf06-5d169c582331",
+              "index": 1,
+              "weight": 102.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "21463805-2c26-49c3-9875-9f021d90fa1f",
+              "index": 2,
+              "weight": 102.5,
+              "reps": 6,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "bf3c6d76-b9d6-4af1-951b-594fa6f007ec",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "69a8a6ea-93bc-4884-b01e-daef5f2544dc",
+              "index": 0,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "6c20a595-0a68-4a91-a22d-96a1eecb13f7",
+              "index": 1,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "f9661b33-ca80-48f8-b366-f6ed2b27eb72",
+              "index": 2,
+              "weight": 70,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "838c95f7-d8ce-448f-aec2-e6208c45ba7a",
+      "dayId": "500a248b-d5f9-4dc2-b1e8-44d9ed2f24b3"
+    },
+    {
+      "id": "f975133a-f062-4d89-9750-50463ab41ebb",
+      "title": "Full body",
+      "completedAt": "2026-02-10T18:00:00.000Z",
+      "durationMinutes": 48,
+      "exerciseCount": 2,
+      "setCount": 6,
+      "exercises": [
+        {
+          "id": "ec897110-4159-4b84-93ec-177a70a4d462",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "id": "ac06bf5b-b9a2-49b3-be5c-4443be006c23",
+              "index": 0,
+              "weight": 100,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "bd6ef81d-e01c-4630-b5c8-1fbd63bd267f",
+              "index": 1,
+              "weight": 100,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "d8d01606-1093-43e6-8790-3a889b5f7c18",
+              "index": 2,
+              "weight": 100,
+              "reps": 7,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        },
+        {
+          "id": "28d7a396-4739-49a4-925f-de5a1b4ebfb5",
+          "exerciseName": "Flat Barbell Bench Press",
+          "sets": [
+            {
+              "id": "c5eaaa8c-c727-49b7-8ff5-eb2b1e255933",
+              "index": 0,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "2b903ddf-69dc-43d9-87e5-b18696db1a61",
+              "index": 1,
+              "weight": 70,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            },
+            {
+              "id": "8e9f5e0d-852b-484c-b2d0-6199b8291abd",
+              "index": 2,
+              "weight": 67.5,
+              "reps": 8,
+              "counterweight": null,
+              "durationSeconds": null,
+              "distanceMeters": null
+            }
+          ]
+        }
+      ],
+      "planId": "838c95f7-d8ce-448f-aec2-e6208c45ba7a",
+      "dayId": "500a248b-d5f9-4dc2-b1e8-44d9ed2f24b3"
+    }
+  ],
+  "bodyCheckIns": [
+    {
+      "id": "f0fe34ee-633f-4ad4-827d-90e70d1e3bcb",
+      "recordedAt": "2026-07-01T18:00:00.000Z",
+      "bodyweightKg": 83,
+      "waistCm": 83,
+      "shouldersCm": 128,
+      "chestCm": 102,
+      "hipCm": 98,
+      "neckCm": 38
+    },
+    {
+      "id": "51a28a1a-faf4-4390-b304-e1d61b590624",
+      "recordedAt": "2026-07-31T18:00:00.000Z",
+      "bodyweightKg": 82.4,
+      "waistCm": 81.5,
+      "shouldersCm": 129,
+      "chestCm": 104,
+      "hipCm": 97,
+      "neckCm": 38,
+      "thighLeftCm": 58,
+      "thighRightCm": 58.5
+    },
+    {
+      "id": "23fa3290-e386-49f3-a7fe-75581c514fef",
+      "recordedAt": "2026-08-12T18:00:00.000Z",
+      "bodyweightKg": 82.1
+    },
+    {
+      "id": "80244769-5ffd-48ad-b206-e76a8a157f17",
+      "recordedAt": "2026-09-20T07:30:00.000Z",
+      "bodyweightKg": 81.6,
+      "waistCm": 80.5
+    }
+  ],
+  "nextDayIndex": 1,
+  "units": "lbs",
+  "appearance": "dark",
+  "systemScheme": "light",
+  "hasCompletedOnboarding": true,
+  "userName": "Marvin",
+  "postWorkoutPaywallShownAt": "2026-02-10T18:05:00.000Z",
+  "isPro": true,
+  "activeSession": {
+    "planId": "406b9672-c029-48cd-acc9-2f117acb0673",
+    "dayId": "a0dfe7f3-79cb-4dbc-ad98-f5efc572ebde",
+    "startedAt": "2026-10-03T17:34:00.000Z",
+    "updatedAt": "2026-10-03T17:40:00.000Z",
+    "exerciseIndex": 0,
+    "drafts": [
+      {
+        "prescription": {
+          "id": "eb17015d-674d-49b6-ba37-0a306f0bac96",
+          "name": "Barbell Back Squat",
+          "sets": 5,
+          "reps": 5,
+          "providerExerciseId": "iYzB0Cz",
+          "bodyParts": [
+            "Upper Legs"
+          ],
+          "targetMuscles": [
+            "Quads"
+          ],
+          "secondaryMuscles": [],
+          "movementType": "compound",
+          "equipments": [
+            "Barbell"
+          ],
+          "imageURLs": {},
+          "itemType": "strength",
+          "trackingMode": "weightAndReps",
+          "repScheme": null
+        },
+        "sets": [
+          {
+            "id": "dea47db0-e75d-4e79-9e6d-04c51d21b861",
+            "index": 1,
+            "weight": 120,
+            "reps": 5,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": true
+          },
+          {
+            "id": "80c6f1ba-c158-4f7f-9952-e65eb6736073",
+            "index": 2,
+            "weight": 100,
+            "reps": 5,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "e91e21e4-f4b6-42c5-800a-eccbc81f1d6a",
+            "index": 3,
+            "weight": 100,
+            "reps": 5,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "1e8dcc22-6fc1-4ee6-8047-91c152e101bd",
+            "index": 4,
+            "weight": 100,
+            "reps": 5,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "19262054-4c8b-42d8-af22-fcc14f4a0f1e",
+            "index": 5,
+            "weight": 100,
+            "reps": 5,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          }
+        ]
+      },
+      {
+        "prescription": {
+          "id": "f13b3530-bd08-49d7-9005-cbae5a79f390",
+          "name": "Romanian Deadlift",
+          "sets": 4,
+          "reps": 8,
+          "providerExerciseId": "wQ2c4XD",
+          "bodyParts": [
+            "Upper Legs"
+          ],
+          "targetMuscles": [
+            "Hamstrings"
+          ],
+          "secondaryMuscles": [],
+          "movementType": "compound",
+          "equipments": [
+            "Barbell"
+          ],
+          "imageURLs": {},
+          "itemType": "strength",
+          "trackingMode": "weightAndReps",
+          "repScheme": null
+        },
+        "sets": [
+          {
+            "id": "9b157deb-89b4-460e-ab74-b5fa8dac4b22",
+            "index": 1,
+            "weight": 90,
+            "reps": 8,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "fdc9af96-9253-4f6f-a59f-afbe9b288b8f",
+            "index": 2,
+            "weight": 90,
+            "reps": 8,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "b57ede43-00ac-40b6-b949-bd66a78c1655",
+            "index": 3,
+            "weight": 90,
+            "reps": 8,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "c96de812-60fd-47cd-b501-1fb4eed75bc5",
+            "index": 4,
+            "weight": 90,
+            "reps": 8,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          }
+        ]
+      },
+      {
+        "prescription": {
+          "id": "78f981a2-e20c-4738-ae98-a9a0fecd51bf",
+          "name": "Leg Curl",
+          "sets": 3,
+          "reps": 12,
+          "providerExerciseId": "17lJ1kr",
+          "bodyParts": [
+            "Upper Legs"
+          ],
+          "targetMuscles": [
+            "Hamstrings"
+          ],
+          "secondaryMuscles": [],
+          "movementType": "isolation",
+          "equipments": [
+            "Machine"
+          ],
+          "imageURLs": {},
+          "itemType": "strength",
+          "trackingMode": "weightAndReps",
+          "repScheme": null
+        },
+        "sets": [
+          {
+            "id": "a7cbbb38-34b9-4587-9961-3e798ac4e55d",
+            "index": 1,
+            "weight": 44,
+            "reps": 12,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "9a757b27-4dfd-4c16-8445-ed8028cece79",
+            "index": 2,
+            "weight": 44,
+            "reps": 12,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          },
+          {
+            "id": "a235a0ec-79e6-41fa-aec6-de1ee93d6420",
+            "index": 3,
+            "weight": 44,
+            "reps": 12,
+            "counterweight": null,
+            "durationSeconds": null,
+            "distanceMeters": null,
+            "done": false
+          }
+        ]
+      }
+    ],
+    "rest": {
+      "startedAtMs": 1791049200000,
+      "endsAtMs": 1791049350000
+    }
+  },
+  "milestonesShown": {
+    "First workout": "f975133a-f062-4d89-9750-50463ab41ebb",
+    "10th workout": "bd814793-ae91-4ab8-a74c-4222ee4f0107"
+  },
+  "goals": [
+    {
+      "id": "5b930b32-c4c1-4039-bad5-6a4193862a11",
+      "exerciseName": "Flat Barbell Bench Press",
+      "target": 70,
+      "pinned": true,
+      "createdAt": "2026-09-11T16:00:00.000Z",
+      "reachedAt": "2026-09-28T16:00:00.000Z"
+    },
+    {
+      "id": "15a7191c-7c93-4632-a2e0-4efcf18004e6",
+      "exerciseName": "Barbell Back Squat",
+      "target": 125,
+      "pinned": true,
+      "createdAt": "2026-09-11T16:00:00.000Z",
+      "reachedAt": null
+    },
+    {
+      "id": "a6a3b5fb-8f9c-4680-8b02-7dfb25277f49",
+      "exerciseName": "Romanian Deadlift",
+      "target": 120,
+      "pinned": true,
+      "createdAt": "2026-09-11T16:00:00.000Z",
+      "reachedAt": null
+    },
+    {
+      "id": "693e2e6a-0363-414a-8e73-fb584c1f59c8",
+      "exerciseName": "Overhead Press",
+      "target": 55,
+      "pinned": false,
+      "createdAt": "2026-09-11T16:00:00.000Z",
+      "reachedAt": null
+    },
+    {
+      "id": "8f07201b-e70e-4bfe-bc41-55ac1a2819bc",
+      "exerciseName": "Lat Pulldown",
+      "target": 75,
+      "pinned": false,
+      "createdAt": "2026-09-11T16:00:00.000Z",
+      "reachedAt": null
+    },
+    {
+      "id": "ed9c3c2f-8cb5-418a-942f-8fc25c895798",
+      "exerciseName": "Barbell row",
+      "target": 80,
+      "pinned": false,
+      "createdAt": "2026-08-01T10:00:00.000Z",
+      "reachedAt": null
+    }
+  ],
+  "bodyGoals": [
+    {
+      "id": "c65af7c9-d71a-4852-b273-dd7a7ed07c80",
+      "metric": "bodyweightKg",
+      "target": 80,
+      "start": 83,
+      "createdAt": "2026-07-01T19:00:00.000Z",
+      "reachedAt": null
+    },
+    {
+      "id": "e717db8c-7b91-4162-931b-700086470aeb",
+      "metric": "waistCm",
+      "target": 82,
+      "start": 83,
+      "createdAt": "2026-07-01T19:00:00.000Z",
+      "reachedAt": "2026-07-31T18:00:00.000Z"
+    }
+  ]
+}
