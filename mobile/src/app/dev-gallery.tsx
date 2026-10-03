@@ -85,12 +85,27 @@ function DevGallery() {
   const params = useLocalSearchParams<{ look?: string; finish?: string }>();
   const { finish: savedFinish } = useWorkoutStore();
   const fontsReady = useAppFonts();
-  const [look, setLook] = useState<Look>(
-    LOOKS.includes(params.look as Look) ? (params.look as Look) : 'parts',
-  );
-  const [finish, setFinish] = useState<Finish>(normalizeFinish(params.finish ?? savedFinish));
+  // The URL wins whenever it changes (a new `openurl` while mounted); taps change the local
+  // state in between. Reset during render, React's pattern for state derived from props.
+  const source = `${params.look ?? ''}|${params.finish ?? ''}`;
+  const fromParams = () => ({
+    source,
+    look: LOOKS.includes(params.look as Look) ? (params.look as Look) : ('parts' as Look),
+    finish: normalizeFinish(params.finish ?? savedFinish),
+  });
+  const [state, setState] = useState(fromParams);
+  if (state.source !== source) {
+    setState(fromParams());
+  }
+  const { look, finish } = state;
+  const setLook = useCallback((next: Look) => setState((s) => ({ ...s, look: next })), []);
+  const setFinish = useCallback((next: Finish) => setState((s) => ({ ...s, finish: next })), []);
   const cycleFinish = useCallback(
-    () => setFinish((current) => FINISHES[(FINISHES.indexOf(current) + 1) % FINISHES.length]),
+    () =>
+      setState((s) => ({
+        ...s,
+        finish: FINISHES[(FINISHES.indexOf(s.finish) + 1) % FINISHES.length],
+      })),
     [],
   );
 
@@ -424,9 +439,11 @@ function LogContent({
         nudge={nudge}
         compact={weight >= 1000}
       />
-      <View style={[styles.footer, styles.baseline]}>
+      <View style={[styles.footer, styles.bottomRow]}>
         <Text maxFontSizeMultiplier={1} style={gadgetType.lcdReps}>{`×${reps}`}</Text>
-        <Lcd dim>LAST 80×8</Lcd>
+        <View style={styles.besideReps}>
+          <Lcd dim>LAST 80×8</Lcd>
+        </View>
       </View>
     </>
   );
@@ -769,7 +786,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   footerRest: { bottom: device.displayHeaderY },
-  baseline: { alignItems: 'baseline' },
+  bottomRow: { alignItems: 'flex-end', bottom: device.repsFooterY },
+  besideReps: { paddingBottom: device.lcdSmallBesideReps },
   centerRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   centerText: { position: 'absolute', left: 0, right: 0, textAlign: 'center' },
   dayRow: {
@@ -783,8 +801,9 @@ const styles = StyleSheet.create({
     paddingVertical: device.rowPadY,
   },
   doneRow: { backgroundColor: lcd.doneRow },
-  nextRow: { boxShadow: `inset 0 0 0 ${device.rowOutline}px ${lcd.amber}` },
-  todoRow: { backgroundColor: lcd.todoRow },
+  // The prototype's undone rows are <button>s, which centre their content vertically.
+  nextRow: { justifyContent: 'center', boxShadow: `inset 0 0 0 ${device.rowOutline}px ${lcd.amber}` },
+  todoRow: { justifyContent: 'center', backgroundColor: lcd.todoRow },
   rowHead: { flexDirection: 'row', justifyContent: 'space-between' },
   meta: { marginTop: device.rowMetaGap },
   liftList: { marginTop: device.rowListGap },

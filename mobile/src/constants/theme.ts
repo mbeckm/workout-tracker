@@ -419,6 +419,9 @@ export type FinishColors = {
   statusBar: 'dark' | 'light';
   /** Swatch name. */
   name: string;
+  /** Text on this finish's swatch (finishes sheet): number and name. */
+  swatchInk: string;
+  swatchSub: string;
 };
 
 export const finishColors: Record<FinishId, FinishColors> = {
@@ -436,6 +439,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'dark',
     name: 'Aluminium',
+    swatchInk: '#1C1B18',
+    swatchSub: '#6E6B64',
   },
   '101': {
     body1: '#3A3936',
@@ -451,6 +456,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'light',
     name: 'Graphite',
+    swatchInk: '#F3F2EE',
+    swatchSub: '#8C8A84',
   },
   '305': {
     body1: '#FF7A35',
@@ -467,6 +474,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(0,0,0,0.3)',
     statusBar: 'light',
     name: 'Signal',
+    swatchInk: '#FFFFFF',
+    swatchSub: '#FFE2CF',
   },
   '408': {
     body1: '#EFE6D3',
@@ -482,6 +491,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
     bigKeyGlow: 'rgba(200,70,10,0.3)',
     statusBar: 'dark',
     name: 'Bone',
+    swatchInk: '#3A3326',
+    swatchSub: '#7A6F5C',
   },
 };
 
@@ -495,11 +506,13 @@ export const deviceColors = {
   keyHighlight: '#FFFFFF',
   /** 0 6 10 cast shadow under a raised key. */
   keyDrop: 'rgba(0,0,0,0.1)',
-  // Body overlays
-  sheenTop: 'rgba(255,255,255,0.35)',
-  sheenBottom: 'rgba(255,255,255,0)',
-  brushLight: 'rgba(255,255,255,0.06)',
-  brushDark: 'rgba(0,0,0,0.02)',
+  // Body overlays. SVG stops ignore rgba alpha on iOS, so SVG paints take a colour + opacity.
+  sheen: '#FFFFFF',
+  sheenOpacity: 0.35,
+  brushLight: '#FFFFFF',
+  brushLightOpacity: 0.06,
+  brushDark: '#000000',
+  brushDarkOpacity: 0.02,
   /** The body's inner rim: inset 0 2 0, and a 1.5 inner outline. */
   bodyRim: 'rgba(255,255,255,0.65)',
   bodyRimOutline: 'rgba(255,255,255,0.35)',
@@ -509,8 +522,8 @@ export const deviceColors = {
   // Wheel
   wheelLight: '#F2F1ED',
   wheelDark: '#C4C1B9',
-  wheelShade: 'rgba(0,0,0,0.22)',
-  wheelShadeClear: 'rgba(0,0,0,0)',
+  /** The wheel's inner shadows (inset 0 ±16 16), a boxShadow colour. */
+  wheelInset: 'rgba(0,0,0,0.22)',
   wheelDrop: 'rgba(0,0,0,0.08)',
   // Well around the big key
   well: 'rgba(0,0,0,0.14)',
@@ -586,6 +599,27 @@ export const sheetColors = {
   shadow: 'rgba(0,0,0,0.35)',
   scrim: 'rgba(20,18,15,0.4)',
   toast: '#2A2925',
+  /** The finish card's warm glow behind the mini device. */
+  finishGlowHi: '#3A2A20',
+  finishGlowLo: '#1E1915',
+  /** The selected swatch's ring. */
+  ring: '#FFFFFF',
+  swatchShadow: 'rgba(0,0,0,0.5)',
+} as const;
+
+/** The menu's 3D object icons (knob, gauge, receipt, toggles, cartridge). */
+export const objectColors = {
+  ridgeDark: '#BDB8AD',
+  ridgeLight: '#E4E0D7',
+  lip: '#6E6B64',
+  capHi: '#FAF9F6',
+  capLo: '#D9D6CF',
+  gaugeRim: '#CFCBC3',
+  paper: '#FFFEFA',
+  paperInk: '#2A2925',
+  paperLine: '#B9B6AE',
+  plasticHi: '#ECEAE4',
+  plasticLo: '#C9C5BC',
 } as const;
 
 /** Signals (SPEC §2): orange acts, green is done, yellow is a record. */
@@ -608,6 +642,45 @@ export const receiptColors = {
   pr: '#C2410C',
   rule: '#B9B6AE',
   slot: '#000000',
+  /** The slot's lower lip (`0 1 0 #333`). */
+  slotLip: '#333333',
+  /** Mini receipt and week report titles. */
+  title: '#1C1B18',
+  /** Ink bleed under thermal text (`text-shadow 0 0 .5px`). */
+  inkBleed: 'rgba(52,50,45,0.5)',
+  /** The paper's cast shadow (`drop-shadow 0 12 18`). */
+  shadow: 'rgba(0,0,0,0.45)',
+  // SVG paints take a colour + opacity (stops ignore rgba alpha on iOS).
+  /** The shade where the paper leaves the slot (black .16 → 0 over 22). */
+  slotShade: '#000000',
+  slotShadeOpacity: 0.16,
+  /** Faint thermal lines, 1 in every 3. */
+  thermalLine: '#5A503C',
+  thermalLineOpacity: 0.035,
+  /** The week report's record count (QC2: yellow darkened to read on paper). */
+  record: '#A8780A',
+  /** The spike hole punched through a receipt (the ground shows through). */
+  hole: '#0E0E0D',
+  /** A History week's unlit lamp (`.wl i`). */
+  wallLampOff: '#3A3936',
+} as const;
+
+/** Moments on the dark grid ground (SPEC §1 Moments; QC2, HR2). */
+export const momentColors = {
+  ground: '#0E0E0D',
+  /** Grid lines: white at .04, every 28. */
+  gridLine: '#FFFFFF',
+  gridLineOpacity: 0.04,
+  /** The spike: a metal rod, dark edges, light middle. */
+  spikeEdge: '#8E8A80',
+  spikeMid: '#F4F3EF',
+  /** The spike's base and its lip. */
+  baseHi: '#ECEAE4',
+  baseLo: '#B9B5AC',
+  baseLip: '#6E6B64',
+  baseShadow: 'rgba(0,0,0,0.5)',
+  ink: '#F3F2EE',
+  muted: '#8C8A84',
 } as const;
 
 /** Font weights the gadget uses (SF Rounded). */
@@ -663,6 +736,8 @@ export const gadgetType = {
   lcdReps: lcdRole(56),
   /** The drum's previous and next steps. */
   lcdStep: lcdRole(40),
+  /** `INSERT PLAN` on an empty slot (prototype 40/44). */
+  lcdPrompt: lcdRole(40, 44),
   /** The lift name in device edit. */
   lcdName: lcdRole(28, 32),
   /** Day row titles. */
@@ -700,6 +775,28 @@ export const gadgetType = {
   receipt: { fontFamily: fontFamily.receipt, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptBold: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptMini: { fontFamily: fontFamily.receipt, fontSize: 9, lineHeight: 13, color: receiptColors.inkMini },
+  /** A mini receipt's day (`.mini b`). */
+  receiptMiniTitle: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 13, color: receiptColors.title },
+  /** A mini receipt's PR line (`.prt`). */
+  receiptMiniPr: { fontFamily: fontFamily.receiptBold, fontSize: 9, lineHeight: 13, color: receiptColors.pr },
+  /** The week report on the spike (QC2 `.p`, `.p b`). */
+  receiptWeek: { fontFamily: fontFamily.receipt, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
+  receiptWeekBold: { fontFamily: fontFamily.receiptBold, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
+  receiptWeekTitle: { fontFamily: fontFamily.receiptBold, fontSize: 14, lineHeight: 18, color: receiptColors.title },
+  /** A moment's headline on the grid ground (QC2 `Week 12 done`). */
+  momentTitle: { ...roundedRole(30, 34, weight.heavy, -0.5), color: sheetColors.ink },
+  /** Menu item titles (`.item b`). */
+  itemTitle: { ...roundedRole(20, 24, weight.heavy, -0.3), color: sheetColors.ink },
+  /** Round sheet controls (‹, ✕, Done). */
+  control: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.controlInk },
+  /** Pill buttons. */
+  pill: roundedRole(18, 22, weight.heavy),
+  chip: roundedRole(13, 16, weight.heavy),
+  /** Segmented control labels. */
+  seg: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.muted },
+  swatchNumber: lcdRole(22, 26),
+  swatchName: roundedRole(13, 16, weight.bold),
+  toast: { ...roundedRole(15, 20, weight.heavy), color: deviceColors.bigKeyInk },
 } as const;
 
 /** Radii the gadget adds (SPEC §4, §6). Always `borderCurve: 'continuous'`. */
@@ -713,6 +810,158 @@ export const gadgetRadius = {
   key: 28,
   display: 28,
   sheet: 38,
+  control: 20,
+  chip: 13,
+  seg: 16,
+  segButton: 12,
+  swatch: 20,
+  toast: 16,
+  miniDevice: 22,
+  miniScreen: 10,
+} as const;
+
+/** Sheet geometry (SPEC §6, prototype CSS). */
+export const sheetGeometry = {
+  headerHeight: 68,
+  control: 40,
+  controlTop: 14,
+  controlInset: 16,
+  controlPadX: 14,
+  sidePad: 12,
+  bottomPad: 40,
+  cardGap: 10,
+  itemPadX: 18,
+  itemPadY: 16,
+  itemGap: 16,
+  object: 56,
+  sectionTop: 18,
+  sectionX: 16,
+  sectionBottom: 10,
+  pillHeight: 56,
+  pillWidth: 200,
+  pillTop: 18,
+  usebarTop: 20,
+  usebarBottom: 34,
+  chipHeight: 26,
+  chipPadX: 10,
+  segPad: 4,
+  segHeight: 32,
+  swatchW: 112,
+  swatchH: 92,
+  swatchPadX: 14,
+  swatchPadY: 12,
+  swatchGap: 10,
+  swatchTilt: -4,
+  swatchLift: 4,
+  swatchRing: 3,
+  finishCard: 200,
+  miniDeviceW: 128,
+  miniDeviceH: 104,
+  miniDeviceTilt: -6,
+  toastTop: 60,
+  toastPadX: 16,
+  toastPadY: 10,
+  /** Sheet top edges: most, tall, Today, finishes. */
+  tops: { default: 96, tall: 60, today: 200, finishes: 430 },
+} as const;
+
+/** The receipt, mini receipts and the week report (SPEC §6 Receipt, History wall; prototype `.paper`, `.mini`; QC2). */
+export const receiptGeometry = {
+  /** The slot (`.slot`): 12 tall, inset 16 inside the sheet's side padding. */
+  slotHeight: 12,
+  slotRadius: 6,
+  slotInset: 16,
+  /** The paper hangs from the slot's middle (`.clip` margin-top −6, `.paper` margin 4 28 0). */
+  clipOverlap: 6,
+  paperTop: 4,
+  paperInset: 28,
+  /** Room under the paper for its shadow (`.clip` padding-bottom 20). */
+  clipBottom: 20,
+  padTop: 22,
+  padX: 20,
+  padBottom: 30,
+  /** The torn bottom: teeth 14 wide, 9 deep (45° flanks, so the valleys sit 7 above the points). */
+  toothWidth: 14,
+  toothDepth: 9,
+  /** The dashed rule (`hr` margin 10 0). */
+  ruleGap: 10,
+  ruleDash: 3,
+  /** The indented set line (`&nbsp; `). */
+  indent: 16,
+  /** The shade where the paper leaves the slot. */
+  shadeHeight: 22,
+  /** Thermal lines: 1 pt in every 3. */
+  thermalPeriod: 3,
+  /** The paper's shadow (`drop-shadow 0 12 18`). */
+  shadowY: 12,
+  shadowBlur: 18,
+  /** Share and Done side by side (`.pill-btn` widths 130 and 170, gap 10). */
+  actionGap: 10,
+  shareWidth: 130,
+  doneWidth: 170,
+  /** `Share week` on the week moment needs a little more than `Share`. */
+  shareWeekWidth: 150,
+  // Mini receipts (`.mini`, `.rgrid`, `.wkh`)
+  miniColumns: 3,
+  miniGap: 10,
+  miniGridInset: 4,
+  miniPadTop: 10,
+  miniPadX: 9,
+  miniPadBottom: 16,
+  miniToothWidth: 10,
+  miniToothDepth: 6,
+  miniRuleGap: 5,
+  miniShadowY: 6,
+  miniShadowBlur: 8,
+  /** Each mini's tilt by its place in the week (degrees). */
+  miniTilts: [0, 1.5, -1, 1, -1.5],
+  miniPressScale: 0.96,
+  weekTop: 16,
+  weekX: 12,
+  weekBottom: 10,
+  weekLamp: 9,
+  weekLampGap: 6,
+  /** The empty wall's blank receipt. */
+  emptyWidth: 200,
+  emptyHeight: 120,
+  emptyTop: 48,
+  // The week report on the spike (QC2, at the 390 × 844 reference)
+  weekReportWidth: 230,
+  weekReportPadTop: 28,
+  weekReportPadX: 18,
+  weekReportPadBottom: 22,
+  weekToothWidth: 12,
+  weekToothDepth: 8,
+  weekRuleGap: 8,
+  weekReportLamp: 10,
+  weekReportLampGap: 6,
+  hole: 10,
+  holeTop: 12,
+  momentTitleY: 70,
+  momentSubY: 112,
+  spikeY: 200,
+  spikeWidth: 6,
+  spikeHeight: 420,
+  reportY: 170,
+  /** The two blank receipts already on the spike: top, content height (padding comes on top, as QC2), tilt. */
+  backReceipts: [
+    { y: 360, height: 200, tilt: -6 },
+    { y: 342, height: 210, tilt: 4 },
+  ],
+  reportTilt: 1.5,
+  baseY: 610,
+  baseWidth: 140,
+  baseHeight: 30,
+  baseLip: 8,
+  baseShadowY: 18,
+  baseShadowBlur: 30,
+  /** The report drops onto the spike from 120 above, tilted −4°. */
+  dropFrom: 120,
+  dropTilt: -4,
+  momentShadowY: 8,
+  momentShadowBlur: 12,
+  gridCell: 28,
+  momentBottom: 44,
 } as const;
 
 /** Device geometry at the 390 × 844 reference (SPEC §4). Keys keep these sizes on every phone. */
@@ -792,6 +1041,13 @@ export const device = {
   /** Display header top and footer bottom. */
   displayHeaderY: 20,
   displayFooterY: 22,
+  /**
+   * The log footer (`×8` and `LAST 80×8`). Doto at 56/56 sits 6pt higher in RN than in CSS, so
+   * the row's bottom is 16, not 22, and the `lcdSmall` text beside it is lifted 11 to share the
+   * baseline (measured against screen 04 on iOS).
+   */
+  repsFooterY: 16,
+  lcdSmallBesideReps: 11,
   /** The PR stamp on a done row. */
   stampPadX: 6,
   stampPadY: 1,
@@ -805,6 +1061,17 @@ export const device = {
   rowListGap: 12,
   /** Selected row outline. */
   rowOutline: 2,
+  /** A selected done row: a ring outside it, clear of the orange by a gap of lcd ground. */
+  rowRingGap: 2,
+  /** The fade over rows that scroll under the display's edge. */
+  rowFadeHeight: 24,
+  /** `INSERT PLAN`'s top on an empty slot (prototype 150). */
+  promptY: 150,
+  /** Blinking display text's dim phase (`blinkx`: opacity .25). */
+  blinkDimOpacity: 0.25,
+  /** The stamp's start: scale 2.4, rotate −12° (SPEC §7). */
+  stampFromScale: 2.4,
+  stampFromAngle: -12,
   /** Finish-mode set grid: 9 columns, lamps 10 tall. */
   gridColumns: 9,
   gridLamp: 10,
@@ -823,4 +1090,115 @@ export const device = {
   keyDisabledOpacity: 0.45,
   rockerEndDisabledOpacity: 0.3,
   bigKeyDisabledOpacity: 0.5,
+} as const;
+
+/* ----------------------------------------------------------------------------------------- *
+ * Progress and lift detail (Phase 7; SPEC §6 Progress, Lift detail; prototype `.goal`,
+ * `.plift`, `.lbig`, `.chart`, `.srow`).
+ * ----------------------------------------------------------------------------------------- */
+
+/** Progress's type roles (prototype CSS). Numbers that change in place are tabular. */
+export const progressType = {
+  /** `Bench 100` under a goal ring (`.goal b`). */
+  goalTitle: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.ink },
+  /** `at 92` (`.goal span`). */
+  goalSub: { ...roundedRole(12, 16, weight.bold), color: sheetColors.muted },
+  /** `85%` inside the ring. */
+  goalPercent: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.ink },
+  /** A lift row's name (`.plift .n`). */
+  liftName: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  /** A lift row's value (`.plift .v`). */
+  liftValue: { ...roundedRole(17, 20, weight.heavy), color: sheetColors.ink },
+  /** A lift row's change (`.plift .d`). */
+  liftChange: { ...roundedRole(12, 14, weight.heavy), color: sheetColors.controlInk },
+  /** `Estimated max` over the big number. */
+  readoutCaption: { ...roundedRole(16, 20, weight.semibold), color: sheetColors.inkSoft },
+  /** The unit beside the big number (`.lbig span`). */
+  bigUnit: { ...roundedRole(22, 26, weight.heavy), color: sheetColors.ink },
+  /** The change line under the big number (`.lchg`). */
+  changeLine: { ...roundedRole(15, 20, weight.heavy), color: sheetColors.controlInk },
+  /** `GOAL 100` on the chart, `NO SESSIONS` on an empty panel. */
+  chartLabel: lcdRole(11, 13),
+  /** A session row (`.srow`): date, sets, value. */
+  sessionTitle: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  sessionSub: { ...roundedRole(13, 17, weight.semibold), color: sheetColors.muted },
+  sessionValue: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  /** The goal sheet's target field (bigNumber without a line height: a TextInput). */
+  goalInput: { fontFamily: fontFamily.rounded, fontSize: 54, fontWeight: weight.heavy, letterSpacing: -1.5 },
+} as const;
+
+/** Progress geometry (prototype CSS; SPEC §6). */
+export const progressGeometry = {
+  /** GOALS: three cards, 9 apart, 4 in from the content edge. */
+  goalGap: 9,
+  goalInset: 4,
+  goalCardHeight: 136,
+  goalCardRadius: 22,
+  goalCardPadTop: 12,
+  goalCardPadX: 6,
+  goalTitleTop: 6,
+  /** The goal ring: 64, r26, stroke 6. */
+  ring: 64,
+  ringRadius: 26,
+  ringStroke: 6,
+  /** Lift rows (`.plift`): 12 × 18 padding, 12 gap; the value lane is 70 wide. */
+  rowPadY: 12,
+  rowPadX: 18,
+  rowGap: 12,
+  valueLane: 70,
+  /** A row with a name only (empty state, Check in): as tall as a lift row. */
+  plainRowHeight: 62,
+  /** Sparklines: 70 × 24, stroke 2.5; the line spans x 2…68 and y 4…20 (`spark()`). */
+  sparkW: 70,
+  sparkH: 24,
+  sparkStroke: 2.5,
+  sparkInsetX: 2,
+  sparkTop: 4,
+  sparkBottom: 20,
+  sparkDot: 2.5,
+  /** Lift detail head (`.lhead`): 16 in. */
+  headInset: 16,
+  /** The lcd chart (`.chart`): 230 tall, r24, 14 under the change line. */
+  chartTop: 14,
+  chartHeight: 230,
+  /** Plot area inside the chart: 18 from the sides, 16 from the top, 170 tall (`chart()`). */
+  chartPadX: 18,
+  chartPadTop: 16,
+  chartPlot: 170,
+  /** Three faint rules at y 60, 120, 180. */
+  chartRules: [60, 120, 180],
+  chartLine: 3,
+  chartDot: 3,
+  chartLastDot: 6,
+  /** Dots on every session up to this many; beyond it only the last one. */
+  chartDotsMax: 24,
+  goalLineStroke: 1.5,
+  goalLineDash: [4, 5],
+  /** `GOAL 100` sits 6 above the line, 10 from the right edge. */
+  goalLabelGap: 6,
+  goalLabelRight: 10,
+  /** The scrub guide and its dot. */
+  scrubGuide: 1,
+  scrubDot: 12,
+  /** Session rows (`.srow`): 13 × 18. */
+  sessionPadY: 13,
+  sessionPadX: 18,
+  sessionSubTop: 2,
+  /** Check-in rows: a fixed field height (no lineHeight on a TextInput, AGENTS.md). */
+  fieldHeight: 44,
+  fieldMinWidth: 80,
+  fieldUnit: 32,
+  /** The keyboard's Next / Done bar. */
+  accessoryPadY: 6,
+  /** The goal sheet: the target field, its − / + keys, the replace choice's tick (`.tick`). */
+  targetHeight: 64,
+  targetMinWidth: 120,
+  nudgeHeight: 56,
+  tick: 30,
+} as const;
+
+/** Progress colours beyond the sheet palette (prototype `.tick`). */
+export const progressColors = {
+  /** An unticked round tick's ring. */
+  tickRing: '#4A4945',
 } as const;

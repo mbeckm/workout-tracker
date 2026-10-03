@@ -7,7 +7,18 @@ import { useFinish } from '@/device/finish';
 import { useHaptics } from '@/device/haptics';
 import { DEVICE } from '@/motion';
 
+import { MinusGlyph, PlusGlyph, UndoGlyph } from './glyphs';
 import { usePressDepth } from './press';
+
+/**
+ * Glyph labels drawn in SVG, because the text glyphs in SF Rounded are lighter and smaller
+ * than the prototype's (+ and − 16pt at 3pt; ↶ a bold arc).
+ */
+const DRAWN: Record<string, () => ReactNode> = {
+  '+': () => <PlusGlyph />,
+  '−': () => <MinusGlyph />,
+  '↶': () => <UndoGlyph />,
+};
 
 /** Which `gadgetType` key role the text label uses. */
 export type KeyText = 'glyph' | 'glyphLarge' | 'word' | 'wordSmall';
@@ -25,7 +36,7 @@ export type RaisedKeyProps = {
   /** Long-press repeat and similar; the press-in visuals and haptic still run. */
   onLongPress?: () => void;
   disabled?: boolean;
-  /** A text label (glyph or word). Use `children` for SVG glyphs. */
+  /** A text label (glyph or word). `+`, `−` and `↶` are drawn in SVG. Use `children` for other SVG glyphs. */
   label?: string;
   text?: KeyText;
   children?: ReactNode;
@@ -59,7 +70,7 @@ function RaisedKey({
     <Animated.View
       style={[
         { width, height, opacity: disabled ? device.keyDisabledOpacity : 1 },
-        styles.disableTransition,
+        disableTransition,
         style,
       ]}>
       <Animated.View
@@ -101,7 +112,9 @@ function RaisedKey({
             },
             faceStyle,
           ]}>
-          {label != null ? (
+          {label != null && DRAWN[label] ? (
+            DRAWN[label]()
+          ) : label != null ? (
             <Text maxFontSizeMultiplier={fontScaleCap.display} style={TEXT_ROLE[text]}>
               {label}
             </Text>
@@ -132,11 +145,13 @@ export function TallKey(props: RaisedKeyProps) {
   );
 }
 
+/** Reanimated CSS transition: outside StyleSheet.create, whose RN types don't know it. */
+const disableTransition = {
+  transitionProperty: 'opacity',
+  transitionDuration: DEVICE.KEY_DISABLE,
+} as const;
+
 const styles = StyleSheet.create({
   abs: { position: 'absolute', left: 0, top: 0 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  disableTransition: {
-    transitionProperty: 'opacity',
-    transitionDuration: DEVICE.KEY_DISABLE,
-  },
 });

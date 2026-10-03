@@ -45,8 +45,140 @@ function benchSession(
   };
 }
 
+/** `daysAgo` days before today at 18:00 local: the gadget fixture moves with the run day. */
+function daysAgo(days: number, now = new Date()): string {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - days, 18).toISOString();
+}
+
+type DemoLift = { name: string; title: string; sessions: [days: number, weight: number, reps: number[]][] };
+
+/**
+ * The gadget Progress fixture (`EXPO_PUBLIC_PROGRESS_DEMO=gadget`, Phase 7): screen 18's shape
+ * relative to today, so the 30-day sparklines have points. Bench press ends on a record, Squat
+ * and Deadlift rise below an older best, Overhead press is flat, body weight goes down. Goals:
+ * Bench and Squat pinned, Overhead press reached; a body-weight goal.
+ */
+function progressGadgetSnapshot(base: WorkoutSnapshot): WorkoutSnapshot {
+  const lifts: DemoLift[] = [
+    {
+      name: 'Bench press',
+      title: 'Push 1',
+      sessions: [
+        [84, 72.5, [8, 8, 7]],
+        [77, 72.5, [8, 8, 8]],
+        [70, 75, [7, 7, 6]],
+        [63, 75, [8, 7, 7]],
+        [56, 77.5, [7, 7, 6]],
+        [49, 77.5, [8, 7, 7]],
+        [42, 80, [7, 6, 6]],
+        [35, 80, [8, 7, 7]],
+        [28, 80, [8, 8, 7]],
+        [21, 82.5, [7, 7, 6]],
+        [14, 82.5, [8, 7, 7]],
+        [7, 85, [7, 6, 6]],
+        [1, 87.5, [8, 8, 7]],
+      ],
+    },
+    {
+      name: 'Squat',
+      title: 'Legs 1',
+      sessions: [
+        [60, 110, [6, 6, 5]],
+        [26, 105, [5, 5, 5]],
+        [19, 105, [6, 6, 5]],
+        [12, 107.5, [6, 5, 5]],
+        [5, 110, [5, 5, 5]],
+      ],
+    },
+    {
+      name: 'Deadlift',
+      title: 'Pull 1',
+      sessions: [
+        [45, 150, [5, 5, 4]],
+        [27, 140, [5, 5, 5]],
+        [20, 140, [5, 5, 4]],
+        [13, 142.5, [5, 5, 5]],
+        [6, 145, [5, 5, 4]],
+      ],
+    },
+    {
+      name: 'Overhead press',
+      title: 'Push 1',
+      sessions: [
+        [40, 52.5, [8, 7, 7]],
+        [25, 50, [8, 8, 8]],
+        [18, 50, [8, 8, 7]],
+        [11, 50, [8, 7, 7]],
+        [4, 50, [8, 8, 8]],
+      ],
+    },
+  ];
+
+  const workoutHistory: LoggedWorkout[] = lifts
+    .flatMap((lift) =>
+      lift.sessions.map(([days, weight, reps]) => ({
+        id: newId(),
+        title: lift.title,
+        completedAt: daysAgo(days),
+        durationMinutes: 52,
+        exerciseCount: 1,
+        setCount: reps.length,
+        exercises: [{ id: newId(), exerciseName: lift.name, sets: reps.map((count, index) => set(weight, count, index)) }],
+      })),
+    )
+    .sort((left, right) => right.completedAt.localeCompare(left.completedAt));
+
+  const plan = emptyPlan('Push Pull Legs');
+  const day = emptyDay('Push 1');
+  day.exercises = lifts.map((lift) =>
+    clonePrescription({
+      id: newId(),
+      name: lift.name,
+      sets: 3,
+      reps: 8,
+      bodyParts: [],
+      targetMuscles: [],
+      secondaryMuscles: [],
+      equipments: [],
+      imageURLs: {},
+      itemType: 'strength',
+      trackingMode: 'weightAndReps',
+    }),
+  );
+  plan.days = [day];
+
+  const created = daysAgo(90);
+  return {
+    ...base,
+    hasCompletedOnboarding: true,
+    activePlanId: plan.id,
+    plans: [plan],
+    units: 'kg',
+    workoutHistory,
+    goals: [
+      { id: newId(), exerciseName: 'Bench press', target: 130, pinned: true, createdAt: created, reachedAt: null },
+      { id: newId(), exerciseName: 'Squat', target: 160, pinned: true, createdAt: daysAgo(80), reachedAt: null },
+      { id: newId(), exerciseName: 'Overhead press', target: 60, pinned: true, createdAt: daysAgo(70), reachedAt: daysAgo(25) },
+    ],
+    bodyGoals: [
+      { id: newId(), metric: 'bodyweightKg', target: 78, start: 83, createdAt: created, reachedAt: null },
+    ],
+    bodyCheckIns: [
+      newCheckIn({ recordedAt: daysAgo(60), bodyweightKg: 82.6, waistCm: 85 }),
+      newCheckIn({ recordedAt: daysAgo(28), bodyweightKg: 82.2, waistCm: 84 }),
+      newCheckIn({ recordedAt: daysAgo(21), bodyweightKg: 82 }),
+      newCheckIn({ recordedAt: daysAgo(14), bodyweightKg: 81.9 }),
+      newCheckIn({ recordedAt: daysAgo(7), bodyweightKg: 81.6 }),
+      newCheckIn({ recordedAt: daysAgo(1), bodyweightKg: 81.4, waistCm: 83 }),
+    ],
+  };
+}
+
 /** Paper judgment-journey fixture (Marvin) for Progress visual QA. */
 export function progressDemoSnapshot(base: WorkoutSnapshot): WorkoutSnapshot {
+  if (progressDemoMode() === 'gadget') {
+    return progressGadgetSnapshot(base);
+  }
   const plan = emptyPlan('Push / Pull / Legs');
   const pushDay = emptyDay('Push');
   pushDay.exercises = [
@@ -129,9 +261,9 @@ export function progressDemoSnapshot(base: WorkoutSnapshot): WorkoutSnapshot {
   };
 }
 
-export type ProgressDemoMode = 'index' | 'dark' | 'checkin' | 'dark-checkin' | 'lift' | 'body';
+export type ProgressDemoMode = 'index' | 'dark' | 'checkin' | 'dark-checkin' | 'lift' | 'body' | 'gadget';
 
-/** Development only: the fixture replaces the user's data and appearance, so release builds ignore the flag. */
+/** Development only, and never saved (the store skips persisting while the flag is on); release builds ignore it. */
 export function progressDemoMode(): ProgressDemoMode | null {
   if (!__DEV__) {
     return null;
@@ -148,7 +280,8 @@ export function progressDemoMode(): ProgressDemoMode | null {
     value === 'checkin' ||
     value === 'dark-checkin' ||
     value === 'lift' ||
-    value === 'body'
+    value === 'body' ||
+    value === 'gadget'
   ) {
     return value;
   }

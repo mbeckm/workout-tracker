@@ -55,3 +55,46 @@ export function ListGlyph({ color = deviceColors.keyInk, size = iconSize.control
     </Svg>
   );
 }
+
+/** Weight-800 stroke for the drawn key glyphs (measured from screens 04 and 08). */
+const STROKE_HEAVY = 2.6;
+const STROKE_TALL = 3;
+
+/** Undo last set: the prototype's ↶, a counter-clockwise arc with an open arrowhead. */
+export function UndoGlyph({ color = deviceColors.keyInk, size = iconSize.control }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 22 22">
+      <G
+        fill="none"
+        stroke={color}
+        strokeWidth={STROKE_HEAVY}
+        strokeLinecap="round"
+        strokeLinejoin="round">
+        <Path d="M17.9 10.1 C17.9 6.6 15.3 4.8 12.7 4.8 C10.1 4.8 8 6.9 8 10 L8 13.2" />
+        <Path d="M4.5 9.8 L8 13.3 L11.5 9.8" />
+      </G>
+    </Svg>
+  );
+}
+
+/** Tall key glyphs: 16pt + and − (screens 04, 05), 3pt strokes. */
+const TALL_GLYPH = 16;
+
+export function PlusGlyph({ color = deviceColors.keyInk, size = TALL_GLYPH }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16">
+      <G stroke={color} strokeWidth={STROKE_TALL} strokeLinecap="round">
+        <Line x1={1.5} y1={8} x2={14.5} y2={8} />
+        <Line x1={8} y1={1.5} x2={8} y2={14.5} />
+      </G>
+    </Svg>
+  );
+}
+
+export function MinusGlyph({ color = deviceColors.keyInk, size = TALL_GLYPH }: GlyphProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 16 16">
+      <Line x1={1.5} y1={8} x2={14.5} y2={8} stroke={color} strokeWidth={STROKE_TALL} strokeLinecap="round" />
+    </Svg>
+  );
+}

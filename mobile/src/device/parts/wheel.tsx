@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { device, gadgetRadius } from '@/constants/theme';
@@ -21,8 +21,6 @@ const W = device.wheelWidth;
 const H = device.wheelHeight;
 const PERIOD = device.wheelRidgeLight + device.wheelRidgeDark;
 const NOTCH = device.wheelNotch;
-/** The inset shadow (0 ±16 16) reaches about offset + blur/2 into the wheel. */
-const SHADE_DEPTH = device.wheelShade * 2;
 /** Without a caller verdict, every 5th notch is a major one (SPEC §8). */
 const MAJOR_EVERY = 5;
 
@@ -184,20 +182,18 @@ export function Wheel({
                 <Rect width={W} height={H + PERIOD * 2} fill="url(#ridge)" />
               </Svg>
             </Animated.View>
-            <Svg style={StyleSheet.absoluteFill} width={W} height={H} pointerEvents="none">
-              <Defs>
-                <LinearGradient id="shadeTop" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={palette.wheelShade} />
-                  <Stop offset="1" stopColor={palette.wheelShadeClear} />
-                </LinearGradient>
-                <LinearGradient id="shadeBottom" x1="0" y1="1" x2="0" y2="0">
-                  <Stop offset="0" stopColor={palette.wheelShade} />
-                  <Stop offset="1" stopColor={palette.wheelShadeClear} />
-                </LinearGradient>
-              </Defs>
-              <Rect x={0} y={0} width={W} height={SHADE_DEPTH} fill="url(#shadeTop)" />
-              <Rect x={0} y={H - SHADE_DEPTH} width={W} height={SHADE_DEPTH} fill="url(#shadeBottom)" />
-            </Svg>
+            {/* The CSS inset 0 ±16 16 shadows; RN's inset boxShadow follows the radius as CSS does. */}
+            <View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  borderRadius: gadgetRadius.wheel,
+                  borderCurve: 'continuous',
+                  boxShadow: `inset 0 ${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}, inset 0 -${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}`,
+                },
+              ]}
+            />
           </View>
         </GestureDetector>
       </View>

@@ -14,7 +14,20 @@ import type { WorkoutSnapshot } from '@/store/snapshot';
  * The fixture is never saved: the store skips persistence while it's on, so turning the flag
  * off brings the real data back.
  */
-export type HomeDemoMode = `${'free' | 'pro'}${'' | '-trained' | '-complete' | '-almost'}`;
+export type HomeDemoMode =
+  | `${'free' | 'pro'}${'' | '-trained' | '-complete' | '-almost'}`
+  | GadgetDemoMode;
+
+/**
+ * The gadget's Home targets (design/gadget/screens), pinned to this week whatever the weekday:
+ * `gadget` is screen 01 (Pull 1 Monday, Legs 1 Tuesday with a squat PR, Push 1 next),
+ * `gadget-stamped` is 14 (Push 1 just finished with a bench PR; the stamp plays), `-complete`
+ * every day done with a 2-week streak, `-zero` a plan whose days have no lifts, `-seven` a
+ * 7-day plan, `-empty` no plans at all. `-history` is `gadget` plus 28 older weeks (110+ workouts,
+ * loads creeping up so records land, a few short weeks, one workout from a deleted plan) for
+ * the History wall.
+ */
+export type GadgetDemoMode = `gadget${'' | '-stamped' | '-complete' | '-zero' | '-seven' | '-empty' | '-history'}`;
 
 const MODES: readonly HomeDemoMode[] = [
   'free',
@@ -25,6 +38,13 @@ const MODES: readonly HomeDemoMode[] = [
   'pro-complete',
   'free-almost',
   'pro-almost',
+  'gadget',
+  'gadget-stamped',
+  'gadget-complete',
+  'gadget-zero',
+  'gadget-seven',
+  'gadget-empty',
+  'gadget-history',
 ];
 
 export function homeDemoMode(): HomeDemoMode | null {
@@ -221,6 +241,9 @@ function loggedSets(sets: [number, number][]): LoggedSet[] {
 }
 
 export function homeDemoSnapshot(base: WorkoutSnapshot, mode: HomeDemoMode): WorkoutSnapshot {
+  if (mode.startsWith('gadget')) {
+    return gadgetDemoSnapshot(base, mode as GadgetDemoMode);
+  }
   const plan = emptyPlan('Upper Lower');
   const days: WorkoutDay[] = DAYS.map(({ title, lifts }) => {
     const day = emptyDay(title);
@@ -291,4 +314,171 @@ export function homeDemoSnapshot(base: WorkoutSnapshot, mode: HomeDemoMode): Wor
     goals,
     nextDayIndex: 0,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Gadget Home targets
+
+/** `name` shows the targets' short names (the fixture is never saved). */
+type GadgetLift = { id: string; sets: number; reps: number; name?: string };
+
+const GADGET_DAYS: { title: string; lifts: GadgetLift[]; minutes: number }[] = [
+  {
+    title: 'Pull 1',
+    minutes: 48,
+    lifts: [
+      { id: 'bundled-barbell-row', sets: 3, reps: 8 },
+      { id: 'bundled-lat-pulldown', sets: 3, reps: 10 },
+      { id: 'bundled-barbell-curl', sets: 3, reps: 12 },
+    ],
+  },
+  {
+    title: 'Legs 1',
+    minutes: 55,
+    lifts: [
+      { id: 'bundled-barbell-back-squat', sets: 3, reps: 6, name: 'Squat' },
+      { id: 'bundled-leg-curl', sets: 3, reps: 12 },
+      { id: 'bundled-romanian-deadlift', sets: 3, reps: 8 },
+    ],
+  },
+  {
+    title: 'Push 1',
+    minutes: 45,
+    lifts: [
+      { id: 'bundled-flat-barbell-bench-press', sets: 3, reps: 8, name: 'Bench Press' },
+      { id: 'bundled-cable-chest-fly', sets: 3, reps: 12, name: 'Cable Fly' },
+      { id: 'bundled-overhead-press', sets: 3, reps: 8 },
+    ],
+  },
+  {
+    title: 'Legs 2',
+    minutes: 45,
+    lifts: [
+      { id: 'bundled-barbell-back-squat', sets: 3, reps: 6, name: 'Squat' },
+      { id: 'bundled-romanian-deadlift', sets: 3, reps: 8 },
+      { id: 'bundled-leg-curl', sets: 3, reps: 12 },
+    ],
+  },
+];
+
+/** `weekday` days after this week's Monday at 18:00, or a few minutes ago if that's still ahead. */
+function thisWeekAt(weekday: number, order = 0): string {
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const at = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + weekday, 18);
+  const latest = now.getTime() - (order + 1) * 60_000;
+  return new Date(Math.min(at.getTime(), latest)).toISOString();
+}
+
+function gadgetDemoSnapshot(base: WorkoutSnapshot, mode: GadgetDemoMode): WorkoutSnapshot {
+  const now = new Date();
+  const weeksAgo = (weeks: number, weekday: number) => {
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7) - weeks * 7);
+    return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + weekday, 18).toISOString();
+  };
+  const common = {
+    ...base,
+    hasCompletedOnboarding: true,
+    userName: 'Marvin',
+    units: 'kg' as const,
+    isPro: true,
+    activeSession: null,
+    goals: [],
+    nextDayIndex: 0,
+  };
+  if (mode === 'gadget-empty') {
+    return { ...common, activePlanId: null, plans: [], workoutHistory: [] };
+  }
+
+  const plan = emptyPlan('Push Pull Legs');
+  // WEEK 12, as on the targets.
+  plan.createdAt = weeksAgo(11, 0);
+
+  if (mode === 'gadget-zero') {
+    plan.name = 'My plan';
+    plan.days = ['Day 1', 'Day 2', 'Day 3'].map((title) => emptyDay(title));
+    return { ...common, activePlanId: plan.id, plans: [plan], workoutHistory: [] };
+  }
+
+  const specs =
+    mode === 'gadget-seven'
+      ? [...GADGET_DAYS, ...GADGET_DAYS.slice(0, 3).map((spec) => ({ ...spec, title: spec.title.replace('1', '2') }))]
+      : GADGET_DAYS;
+  if (mode === 'gadget-seven') {
+    specs[6] = { ...specs[6], title: 'Arms', lifts: [...specs[0].lifts, ...specs[2].lifts] };
+  }
+  plan.days = specs.map(({ title, lifts }) => {
+    const day = emptyDay(title);
+    day.exercises = lifts.flatMap(({ id, sets, reps, name }) => {
+      const row = bundledExerciseById(id);
+      return row ? [{ ...clonePrescription(row), name: name ?? row.name, sets, reps, repScheme: null }] : [];
+    });
+    return day;
+  });
+
+  const workouts: LoggedWorkout[] = [];
+  const log = (dayIndex: number, completedAt: string, load: number, onlySets?: number) => {
+    const day = plan.days[dayIndex];
+    const exercises = day.exercises.map((exercise) => ({
+      id: newId(),
+      exerciseName: exercise.name,
+      sets: loggedSets(Array(exercise.sets).fill([load, exercise.reps])),
+    }));
+    const kept = onlySets ? exercises.slice(0, 1).map((item) => ({ ...item, sets: item.sets.slice(0, onlySets) })) : exercises;
+    workouts.push({
+      id: newId(),
+      title: day.title,
+      completedAt,
+      durationMinutes: onlySets ? 1 : specs[dayIndex].minutes,
+      exerciseCount: kept.length,
+      setCount: kept.reduce((sum, exercise) => sum + exercise.sets.length, 0),
+      exercises: kept,
+      planId: plan.id,
+      dayId: day.id,
+    });
+  };
+
+  // Last week in full, so records and estimates have something to stand on (and a finished
+  // week makes a 2-week streak, shown on the complete week only).
+  plan.days.forEach((_, index) => log(index, weeksAgo(1, Math.min(index, 6)), 80));
+  // This week: Pull 1 Monday (no record: same load), Legs 1 Tuesday with a squat PR.
+  log(0, thisWeekAt(0, 3), 80);
+  log(1, thisWeekAt(1, 2), 80);
+  const legs = workouts[workouts.length - 1];
+  legs.exercises[0].sets.forEach((set) => (set.weight = 85));
+  if (mode === 'gadget-stamped') {
+    // Push 1 just now: one set, a bench record.
+    log(2, thisWeekAt(6, 0), 85, 1);
+  }
+  if (mode === 'gadget-complete') {
+    log(2, thisWeekAt(2, 1), 80);
+    log(3, thisWeekAt(3, 0), 80);
+  }
+  if (mode === 'gadget-history') {
+    const weekdays = [0, 1, 3, 5];
+    for (let weeks = 29; weeks >= 2; weeks -= 1) {
+      const load = 52.5 + 2.5 * Math.floor((29 - weeks) / 3);
+      const count = weeks % 7 === 3 ? 2 : weeks % 5 === 1 ? 3 : 4;
+      for (let index = 0; index < count; index += 1) {
+        log(index, weeksAgo(weeks, weekdays[index]), load);
+        workouts[workouts.length - 1].durationMinutes = specs[index].minutes - 6 + ((weeks * 7 + index * 3) % 13);
+      }
+    }
+    // A plan that was deleted since: its workouts keep their own title.
+    const bench = plan.days[2].exercises[0];
+    workouts.push({
+      id: newId(),
+      title: 'Full Body',
+      completedAt: weeksAgo(5, 6),
+      durationMinutes: 62,
+      exerciseCount: 1,
+      setCount: 3,
+      exercises: [{ id: newId(), exerciseName: bench.name, sets: loggedSets([[60, 10], [65, 8], [70, 6]]) }],
+      planId: 'deleted-plan',
+      dayId: 'deleted-day',
+    });
+  }
+  workouts.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+  // The plan loop starts each week where it left off; last week ended on the last day.
+  return { ...common, activePlanId: plan.id, plans: [plan], workoutHistory: workouts };
 }

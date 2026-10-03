@@ -10,7 +10,7 @@ There is no ad-hoc or empty workout. You make a plan, then start a day from it.
 
 ## Who and where
 
-Serious lifters, mostly young, training in a gym. They use Trim between sets, under artificial light, at arm's length, often one-handed, with music in their headphones. They open and close it dozens of times a workout and switch to music or messages in between. Trim is built for that moment: instant resume, big numbers, thumb-reach controls, no sound. It must work for people who don't see well (Dynamic Type, contrast, VoiceOver), but it isn't an accessibility-first product.
+Serious lifters, mostly young, training in a gym. They use Trim between sets, under artificial light, at arm's length, often one-handed, with music in their headphones. They open and close it dozens of times a workout and switch to music or messages in between. Trim is built for that moment: instant resume, big numbers, thumb-reach controls, and only short mechanical sounds that mix with their music and stay silent on the silent switch. It must work for people who don't see well (Dynamic Type, contrast, VoiceOver), but it isn't an accessibility-first product.
 
 ## Principles
 
@@ -27,7 +27,7 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 9. **A joyful tool for years.** Robust, native and timeless. Joy comes from things working remarkably well, plus a few earned moments that feel special: the first open, the first plan, the first workout, the first purchase, a new record, a full week. Never from confetti or copy.
 10. **The moment decides the screen.** Every screen answers why someone opens it right now, and anything that doesn't serve that moment leaves it. Home is opened to start a workout, so it holds the week and the next workout, and plan editing stays in Plans.
 11. **Screens reflect what just happened.** A screen changes with the user's recent history (before a workout, just trained, week complete) instead of showing one static layout. That, not decoration, is what makes Trim feel like a companion.
-12. **Your numbers first, and show the change.** The user's own values lead and the plan's prescription supports them. Wherever there's a previous value, Trim shows the difference. Color is for the rare peaks only: green for done, yellow for a record, orange for a secured week; ordinary progress is an ink ↑. The one brand hue (indigo) marks what you act on next and what's selected, never a result.
+12. **Your numbers first, and show the change.** The user's own values lead and the plan's prescription supports them. Wherever there's a previous value, Trim shows the difference. Color is for the rare peaks only: green for done, yellow for a record; ordinary progress is an ink ↑. The one brand hue, orange (#FF6A1A), marks what you act on next and what's selected (the big key, focus frames, the current lamp, selected chips), and also a secured week and the streak; it never marks any other result.
 
 ### Control
 
@@ -61,37 +61,37 @@ The exercise catalog is local-only: about 200 exercises written for Trim, plus t
 
 ## Onboarding
 
-Welcome → Name (optional, for Home's greeting) → Units → Days a week → Pick a plan (free starter templates, or Build my own) → Plan ready → paywall (template path only, soft). It always ends with a real, active plan.
+Welcome (the device fades in on a dark grid) → Name (optional, printed on receipts) → Units → Days a week → Pick a plan (the free starter templates as cartridge packs, or Build my own) → Pick your finish (free finishes, plus Pro ones that preview) → the plan inserts into the device as Plan ready → paywall (template path only, soft). It always ends with a real, active plan. Build my own inserts an empty plan with the chosen number of days and opens the editor.
 
-## Tabs
+## Device and menu
 
-**Workout, Plans, Progress, History, Settings.**
+The device is the one persistent screen: a metal body in the chosen finish (212 Aluminium, 101 Graphite, 305 Signal, 408 Bone), with a dot-matrix display, a menu key and a top-right key, a rocker, left keys, one wheel and a big round key. It runs Home, logging, rest, finish and setting a plan's numbers. Everything list- or number-heavy is a dark sheet that slides up over it, with the device still visible above. The menu key opens the menu sheet: Plans, Progress, History, Settings, and the finish card (change the device's finish, live). During a workout the menu starts with End workout, and Discard workout under it. There is no tab bar.
 
-- **Workout (Home):** one job, start the next workout (decisions 61, 72). The greeting (`Afternoon, Marvin`) alone as the head. Then the week: `2 of 5 this week` with the streak trailing (🔥 `3 weeks`, lit once the week's goal is reached), over one slot per workout the plan asks for, filling in the order you trained on any days (a filled slot names the workout and day and opens it). Then `Next workout` as day chips (a done day wears a green badge, selected or not; the suggested day stays ringed when you pick another) over that day's exercises with the prescription (`4 × 6`) and your load (`↑ 2.5 kg` under it where a Pro target goes up), and Start at the thumb. It changes with what just happened: just trained shows what went up and the next day quietly; a complete week lights the flame and says how many lifts went up and how many records fell. Tapping or swiping a chip shows that day.
-- **Plans:** the active plan and other plans. The plan editor reads top to bottom (decision 70): each day as a header over its exercises, sets and reps (or duration) edited in place, and its own Add exercise; Add day at the end. The plan's controls are the bar's `…` menu; a day's are behind the `…` on its header. Pick exercises, then sets and reps.
-- **Progress:** pinned goals first (up to 3, green track; decision 63), then each lift and body measurement as one line with a 30-day sparkline (90 as a setting). Long-press a lift to set a goal. Lift detail: goal block, range chips (1M and 3M free; 6M, 1Y and All Pro), the estimated 1RM with its change and the chart as one object, sessions. Body check-ins (native sheet) chart the same way, and each measurement can have a goal (long-press a Body row, or body detail's goal block).
-- **History:** sessions by month, PR badge per session. Session detail lists every set on its own row, with a crown on the PR set. Long-press or detail to delete.
-- **Settings:** Name, Weight (kg/lbs), Appearance (System/Light/Dark), Trim Pro, Restore purchases; links out to Contact support, Privacy Policy, Terms of Use; Clear history.
+- **Home (on the device):** one job, start the next workout. The display lists the plan's days as rows; a day done this week is stamped (orange row, its weekday, minutes and sets, a PR stamp when it set one). The selected day (the next in the plan, or the first unstamped one) is expanded with up to four lifts and their prescription. Tap any row to pick it; a stamped day can be repeated. The week is lamps in the rocker body, one per trainable day, lit green in the order trained (any days, a repeated day counts), with `WEEK n` engraved under it and an orange `▲n` streak from two full weeks. The big key is Start; the top-right key opens History. A full week shows `WEEK DONE` and plays the week report once. With no plans left, the display reads `INSERT PLAN` and the big key opens Plans.
+- **Plans:** a rack of shelves, one per plan, each day a cartridge; the active plan is outlined. `+` makes a plan. The editor is a clean list: each day a header over its lifts, each lift with a `sets × reps` chip, `Add lift` under each day and `Add day` at the end. Tapping a chip hides the sheet and the device sets the numbers (keys for sets, the wheel for reps, the rocker between the day's lifts). Lifts are added from the add lifts sheet (search, muscle sections, recents, multi-select, custom exercises). Plans and days are renamed inline; a day's actions sit behind its `…`, the plan's behind the header `…`. Closing the editor files the plan's cartridges onto its shelf. `Use plan` on another plan inserts its cartridge into the device with a click, then shows Home.
+- **Progress:** pinned goals first (up to 3, green rings), then each lift as one row with a 30-day sparkline, its estimated 1RM and the change, then body measurements. Long-press a lift to set a goal. Lift detail: the estimated 1RM and its change, the chart on a display panel with the goal as a dashed line, ranges (1M and 3M free; 6M, 1Y and All Pro) and sessions. Body detail and the check-in work the same way, as dark sheets. There is no rank: it needs strength-standards data Trim doesn't have.
+- **History:** a wall of receipts grouped by week, each week's header with its lamps. Tap a receipt to print it in full (every lift, sets, volume, estimated max, the PR line; Share). Long-press a receipt to delete it; it asks first, naming the workout.
+- **Settings (a sheet from the menu):** Name, Weight (kg/lbs), Sounds, Trim Pro, Restore purchases; links out to Contact support, Privacy Policy, Terms of Use; Clear history. There's no Appearance setting: sheets are always dark and the device's look is its finish.
 
 ## Logging
 
-One exercise, one set at a time:
+One lift, one set at a time, on the device:
 
-- Exercise strip across the top; finished exercises get a green check.
-- Exercise name, then `Set n of m` and `Last time 60 kg × 8` (Pro: `Target 62.5 kg × 8`, with `Last time 60 kg × 8` in the trailing lane).
-- Two wells (weight, reps): tap the number to type, −/+ for small steps. Green `Log set` at the thumb.
-- Logged sets grow below as checked lines; a rest timer starts after each set.
-- Logging the last set of an exercise shows `Done` with `Last time 4 sets, best 60 kg × 10` and moves on with `Next exercise`.
-- Finish (or finish with sets left) leads to Done: facts line and every set as its own row, then Home.
+- The display shows the lift's name (tap it for the exercise sheet: figure, muscles, how-to, your numbers), `SET n/m` (or `EXTRA SET`), the weight on the drum and `×reps`, and `LAST 80×8` (Pro: `TARGET 87.5×8`).
+- The wheel sets the weight in the lift's load steps (long-press the drum to type one); the `+` and `−` keys set reps. The big key is Log.
+- The rocker's `‹ ›` move between lifts, and its lamps show each lift done, part-done or current. Its middle opens Today: jump to a lift, reorder, swap, add or remove a lift, or edit a logged set.
+- The top-right key is Undo last set: immediate, with an Undo toast.
+- After a set, rest runs as a ring on the display: the keys and the wheel add or take 15 s, the big key is Skip. At 0:00 the display blinks `GO` with a haptic and returns to the same next set; nothing else happens.
+- After the last set, or End workout from the menu, the device is in finish mode: hold the big key until the ring closes. The receipt prints out of the device; Done returns to Home with the day stamped.
 - A session in progress survives leaving or killing the app, and shows as a Live Activity.
 
 **Next-session targets (Trim Pro).** Double progression on the plan's reps: if last session hit the prescribed reps on every set, the load goes up one step (kg: +2.5 bar, +2 dumbbells, +2.5 machine/cable compounds, +1 isolation; lbs: +5, or +2.5 machine/cable isolation); otherwise the load holds and the set aims for last time's reps + 1, up to the plan. Bodyweight adds a rep, assisted moves remove assistance, holds add 5 s; cardio, stretches, mobility and timers get none. No history means no target, and after a clearly worse session the load holds. Logic: `mobile/src/domain/targets.ts`.
 
 ## Trim Pro
 
-Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, and next-session targets. Logging and history are free. Prices always come from the App Store through RevenueCat.
+Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, next-session targets, and every finish (212 Aluminium and 101 Graphite are free; 305 Signal and 408 Bone are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
 
-The paywall appears only at these moments: the end of onboarding (template path), once after the first completed workout, when the user taps a Pro-locked feature, and from Settings → Trim Pro.
+The paywall appears only at these moments: the end of onboarding (template path), once after the first completed workout (from the receipt's Done), when the user taps a Pro-locked feature, and from Settings → Trim Pro. A locked finish only previews on the device; the paywall opens from the finishes sheet's `Get Trim Pro` pill, never from the swatch itself and never during a workout.
 
 ## Privacy
 

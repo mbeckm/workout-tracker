@@ -101,6 +101,8 @@ export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
 export const EASE_INSERT_SLIDE_FN = Easing.bezierFn(0.55, 0, 0.8, 0.35);
 /** Key press (CSS `transition: transform .08s` uses `ease`). */
 export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
+/** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
+export const EASE_WEEK_DROP_FN = Easing.bezierFn(0.3, 1.3, 0.5, 1);
 export const LINEAR_FN = Easing.linear;
 
 export const DEVICE = {
@@ -131,6 +133,11 @@ export const DEVICE = {
   /** Stamp: scale 2.4 → 1, rotate −12° → 7°, after a delay; the row fills over STAMP. */
   STAMP: 500,
   STAMP_DELAY: 450,
+  /**
+   * When the stamp lands, into STAMP: bezier(.2,1.6,.4,1) first reaches its end value at
+   * ~23% of the run, so the haptic and the sound play there (trim-ui §8 rule 3).
+   */
+  STAMP_LAND: 115,
   ROW_FILL_DELAY: 100,
   /** Lamp turns green: off, on, off, on in steps, after a delay. */
   LAMP_LIT: 900,
@@ -162,6 +169,14 @@ export const DEVICE = {
   INSERT_BOOT: 450,
   INSERT_SWING: 700,
   INSERT_DAY_TICK: 190,
+  /** The week moment (D15): the grid ground fades in, then the report drops onto the spike. */
+  WEEK_SCENE: 600,
+  WEEK_DROP: 700,
+  WEEK_DROP_DELAY: 250,
+  /** bezier(.3,1.3,.5,1) first reaches the spike at 45% of the drop: the thud plays there. */
+  WEEK_DROP_LAND: 315,
+  /** The moment fades away after Done. */
+  WEEK_SCENE_OUT: 300,
   /** Blinking display text (INSERT PLAN, GO). */
   BLINK: 1000,
   /** A stepped change (CSS `steps(1)`): jumps, no tween. */

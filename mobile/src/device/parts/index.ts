@@ -4,7 +4,7 @@ export { DeviceBody } from './device-body';
 export { Display } from './display';
 export { Drum, type DrumNudge } from './drum';
 export { EngravedLabel } from './engraved-label';
-export { HistoryGlyph, ListGlyph, MenuGlyph } from './glyphs';
+export { HistoryGlyph, ListGlyph, MenuGlyph, MinusGlyph, PlusGlyph, UndoGlyph } from './glyphs';
 export { HoldRing } from './hold-ring';
 export { Lamp, type LampState, type LampSurface } from './lamp';
 export { RoundKey, TallKey, type KeyText, type RaisedKeyProps } from './raised-key';
