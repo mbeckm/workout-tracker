@@ -17,9 +17,10 @@ import { GridGround } from '@/device/moment/grid-ground';
 import { ASSEMBLY as A, EASE_ARRIVE_FN, EASE_HIT_FN, EASE_SLAM_FN, LINEAR_FN } from '@/motion';
 
 /**
- * First open (D74): the machine is born. It floats in out of space, its parts snap on faster and
- * faster, the Start key hovers and trembles while it charges, then slams home: the bang, the
- * shake, and the grid floor lights. From then on it's yours.
+ * First open (D74): the machine is born. It approaches out of space, its parts snap on faster and
+ * faster, the Start key hovers and trembles while it charges and the camera pushes in, then it
+ * slams home: the bang, a double shockwave, the shake, and the grid floor lights. From then on
+ * it's yours.
  *
  * One clock (`ASSEMBLY`, 0 → END) drives everything, so a tap skips by jumping the clock to its
  * end. Every animated style rests at its React base at END (identity, or a base that matches),
@@ -66,7 +67,10 @@ function usePartStyle(clock: SharedValue<number>, at: number, from: From) {
 function scheduleFeel(haptics: ReturnType<typeof useHaptics>, sound: (name: DeviceSound) => void) {
   const at = (ms: number, run: () => void) => setTimeout(run, ms);
   return [
-    at(0, () => sound('arrive')),
+    at(0, () => {
+      haptics.startAssemblyApproach();
+      sound('arrive');
+    }),
     at(A.ARRIVE, haptics.assemblyArrive),
     ...BEATS.map((beat, index) =>
       at(beat.at, () => {
@@ -168,13 +172,14 @@ export function useAssembly(enabled: boolean) {
     return { opacity: p > 0 ? settle : 0, transform: [{ rotate: `${rotate}deg` }, { scale }] };
   });
 
-  // The whole stage recoils a hair on every hit, and shakes at the bang.
+  // The whole stage recoils on every hit, pushes in while the key charges, and shakes at the bang.
   const stage = useAnimatedStyle(() => {
     const t = clock.get();
-    let kick = 1;
+    const push = t >= A.CHARGE_AT && t < A.BANG ? 1 + (G.pushIn - 1) * ((t - A.CHARGE_AT) / (A.BANG - A.CHARGE_AT)) ** 2 : 1;
+    let kick = push;
     for (let i = 0; i < BEAT_TIMES.length; i++) {
       const since = t - BEAT_TIMES[i];
-      if (since >= 0 && since < A.KICK) kick = 1 + (G.kick - 1) * (1 - since / A.KICK);
+      if (since >= 0 && since < A.KICK) kick = push * (1 + (G.kick - 1) * (1 - since / A.KICK));
     }
     const shake = seg(t, A.BANG, A.SHAKE);
     const step = shake > 0 && shake < 1 ? G.shake[Math.min(G.shake.length - 1, Math.floor(shake * G.shake.length))] : null;
@@ -195,7 +200,8 @@ export function useAssembly(enabled: boolean) {
         {BEATS.map((beat) => (
           <Spark key={beat.part} clock={clock} at={beat.at} {...DEVICE_OBJECT_ANCHORS[beat.part]} />
         ))}
-        <Shockwave clock={clock} />
+        <Shockwave clock={clock} at={A.BANG} />
+        <Shockwave clock={clock} at={A.BANG + A.RING_2_DELAY} />
       </>
     ) : null,
   };
@@ -366,9 +372,9 @@ function Spark({ clock, at, x, y }: { clock: SharedValue<number>; at: number; x:
 }
 
 /** The shockwave ring around the device at the bang. */
-function Shockwave({ clock }: { clock: SharedValue<number> }) {
+function Shockwave({ clock, at }: { clock: SharedValue<number>; at: number }) {
   const style = useAnimatedStyle(() => {
-    const s = seg(clock.get(), A.BANG, A.RING);
+    const s = seg(clock.get(), at, A.RING);
     return {
       opacity: s > 0 && s < 1 ? 1 - s : 0,
       transform: [{ scale: G.ringFrom + (G.ringTo - G.ringFrom) * s }],
