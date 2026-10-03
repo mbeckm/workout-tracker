@@ -1,5 +1,6 @@
 /** The sheet layer (PLAN §4.1) and its primitives (Phase 2). */
 export { SheetHost } from './sheet-host';
+export { SheetList } from './sheet-list';
 export { useSheetChrome } from './sheet-context';
 export { ObjectIcon, type ObjectIconKind } from './object-icon';
 export {

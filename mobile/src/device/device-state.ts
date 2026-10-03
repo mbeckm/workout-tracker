@@ -28,6 +28,9 @@ export const SHEET_KINDS = [
   'today',
   'exercise',
   'keypad',
+  // Phase 7: a lift's or body measurement's goal, and the body check-in (D11).
+  'goal',
+  'checkin',
 ] as const;
 
 export type SheetKind = (typeof SHEET_KINDS)[number];
@@ -58,6 +61,8 @@ const TOPS: Record<SheetKind, SheetTop> = {
   exercise: 'tall',
   // Short like finishes, so the drum stays in view above it (D19).
   keypad: 'finishes',
+  goal: 'tall',
+  checkin: 'tall',
 };
 
 export function sheetTop(kind: SheetKind): SheetTop {

@@ -16,6 +16,7 @@ import { REFERENCE_WIDTH, fromReferenceTop } from '@/device/layout';
 import { LogSessionProvider, type KeysKind } from '@/device/log';
 import { FinishDisplay, LogDisplay, RestDisplay } from '@/device/log/log-display';
 import { useLogDevice } from '@/device/log/use-log-device';
+import { MomentHost } from '@/device/moment/moment-host';
 import {
   BigKey,
   DeviceBody,
@@ -312,6 +313,7 @@ function DeviceSurface() {
         )}
       </DeviceBody>
       <SheetHost />
+      <MomentHost />
     </View>
   );
 }

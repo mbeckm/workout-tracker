@@ -357,7 +357,8 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Sheet in / out | 380 ms, bezier(.2,.9,.3,1); scrim 300 ms | |
 | Rocker press | rotateY ±10°, 160 ms | Tilts toward the end pressed |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
-| Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s | Tapping the paper completes it |
+| Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms) | Tapping the paper completes it. Plays from the wall too. Reduce Motion: the paper fades in where it ends |
+| Week moment (D15) | the grid ground fades in over 600 ms; 250 ms in, the report drops onto the spike from 120 above, −4° → 1.5°, 700 ms, bezier(.3,1.3,.5,1); Done fades it out over 300 ms | The thud at 315 ms into the drop (where the curve first meets the spike). A tap on the scene skips to the end |
 | Stamp (new PR or done day) | scale 2.4 → 1, rotate −12° → 7°, opacity 0 → 1, 500 ms, delay 450, bezier(.2,1.6,.4,1); the row fills from todo to done over 500 ms | When Home reappears after the receipt |
 | Lamp turns green (day finished) | flicker off, on, off, on over 900 ms (steps) | |
 | Wheel stow on Home | translateX 40, scale .9, opacity 0, 350 ms | |
@@ -396,7 +397,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Hold to finish | continuous, intensity .2 → .9 over 1.1 s, sharpness .3; release cancels | `impactAsync(Soft)` at the start, a heavy impact at the end |
 | Finish complete | transient 1.0 / .3 | `notificationAsync(Success)` |
 | Receipt printing | 18 transients .25 / .9, 100 ms apart (the feed's steps) | none |
-| Stamp lands | transient .9 / .2 | `impactAsync(Heavy)` |
+| Stamp lands; the week report lands on the spike | transient .9 / .2 | `impactAsync(Heavy)` |
 | Cartridge click | t0 transient 1.0 / 1.0 (latch), t65 transient 1.0 / .2 (seat), then continuous .3 / .1 for 80 ms | `impactAsync(Rigid)`, then `impactAsync(Heavy)` 65 ms later |
 | Day ticks in (loading) | transient .4 / .7 | `selectionAsync` |
 | Finish swatch picked | transient .5 / .6 | `selectionAsync` |
@@ -412,7 +413,7 @@ Short, dry, mechanical, never musical. Each under 1 s, 44.1 kHz mono, peak −3 
 | --- | --- | --- |
 | `cartridge` | a latch "clack" plus a thump, then at 65 ms a "thunk" plus a lower thump | The cartridge seats |
 | `print` | stepper chatter, 18 short ticks | The receipt prints |
-| `stamp` | a soft low thud | A PR or done stamp lands |
+| `stamp` | a soft low thud | A PR or done stamp lands; the week report lands on the spike |
 | `key` (optional) | a very quiet click | Key presses; off by default, decided in QA |
 
 No other sounds.
@@ -568,12 +569,12 @@ No other custom gestures (double-tap, two-finger, shake).
 
 A chart answers one question: is this going up?
 
-1. **On an lcd panel.** The lift chart sits on an `lcd` panel (r24, inset shadow): an orange line with dots, straight segments between sessions, no smoothing. No gridlines, no y-axis labels, no legend, no fill.
+1. **On an lcd panel.** The lift chart sits on an `lcd` panel (r24, inset shadow, 230 tall): an orange line with a dot per session (only the last one beyond 24 sessions), straight segments between sessions, no smoothing. Three faint `amberPress` rules at 60, 120 and 180 (screen 19) and nothing else: no y-axis labels, no dates, no legend, no fill.
 2. **The last point** is a dot; yellow if it's a record.
 3. **Goal line:** a dashed green line labelled `GOAL 100` in Doto. The y-range stretches to include it.
 4. **The number is the axis.** `bigNumber` above the chart states the value; the change line under it is ink with ↑ / ↓.
 5. **Scrub to read.** Touching the chart moves a marker along the line; the big number shows that point's value; a selection haptic ticks at each data point; releasing returns to now (ported from the current `progress-line-chart`).
-6. **Y-range fits the data** in the window with ~10% padding, never from zero.
+6. **Y-range fits the data** in the window (and the goal) ±1 unit (prototype `chart()`), never from zero.
 7. **Ranges** in a `Segmented` under the readout: `1M` and `3M` free; `6M`, `1Y` and `All` marked `PRO`, opening the paywall (`progress_history`). The chart is never blurred or hidden.
 8. **The line draws in** over 1 s on open; under Reduce Motion it's simply there.
 9. **Sparklines** in Progress rows: 70 × 24, no dots; yellow if the last point is a record, muted if flat, otherwise ink. A fixed 30-day window (`PROGRESS_SPARKLINE_DAYS`).
@@ -720,11 +721,17 @@ A 230 illustration panel (our own figure for the movement pattern, D5; no panel 
 
 ### History wall (HR1) [02]
 
-Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then a 3-column grid, gap 10, of mini receipts tilted 0 / 1.5 / −1 / 1 / −1.5°, each with a torn zigzag bottom: day, date, sets, kg, PR or minutes (Plex Mono 9 / 13). Tap prints the full receipt with ‹ back to the wall. Long-press deletes after an action sheet. Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts.
+Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then a 3-column grid, gap 10, of mini receipts tilted 0 / 1.5 / −1 / 1 / −1.5°, each with a torn zigzag bottom: day, date, sets, kg, PR or minutes (Plex Mono 9 / 13). Tap prints the full receipt with ‹ back to the wall (the wall keeps its scroll). Long-press deletes after an action sheet (`Delete Push 1 from Thu 2 Oct?`; VoiceOver: a Delete action). Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts (`SheetList`, FlashList: a week header or one row of three per item); minis are drawn without measuring (`SlipPaper`), so recycled cells never show stale paper.
+
+- The week header reads `WEEK n` in the active plan's weeks (Home's numbering); weeks before the plan existed read `WEEK OF 22 SEP`. Lamps are the plan's trainable days, lit by the week's workouts (capped).
+- The header has ✕; ‹ back to the menu only when it was opened from the menu (Home's History key opens it directly).
+- Workouts from deleted plans keep their own title. The PR line uses `workoutPersonalBests`, as the old History detail did.
 
 ### Receipt [13, 03]
 
-A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the day, `date  N MIN`; per lift the name and set count with an indented `w × r, r, r` line (or `w×r` per set when weights differ); `SETS`, `VOLUME`, the first lift's estimated max, the PR line in #C2410C; milestone and goal lines (D7). Actions: `Share` (dark pill, the receipt as text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`). Done triggers, in order: the Home stamp, the week moment, the post-workout paywall.
+A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the milestone (bold) when there is one, the day, `date N MIN`; per lift the name and set count with an indented `w × r, r, r` line (`compressSetLines`; `w×r` per set when weights differ); `SETS`, `VOLUME`, the estimated max of the first lift that has one (`BENCH E1RM`, the stamp word), one PR line per record lift (`BENCH PR ★`) in #C2410C, one `GOAL BENCH 100 ✓` line per goal reached (D7). Actions: `Share` (dark pill, the receipt as 32-column text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from the wall the header is the day's name with ‹. The fresh receipt claims its milestone (`claimMilestone`).
+
+Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue runs (`device/moments.ts`, `moment/moment-host.tsx`), one at a time: the Home stamp (`justFinished`; it waits until Home is in front and the stamp has played), the week moment if this workout filled the week and its ISO week isn't in `weekMomentsShown`, then the post-workout paywall. Phase 4's finish calls `openReceiptAfterFinish(workoutId)`.
 
 ### Plans rack (PB3) [20, 24]
 
@@ -740,11 +747,11 @@ Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways, rows wi
 
 ### Progress (QA1, without the gauge) [18]
 
-No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: up to 3 cards, each a 64 green ring, `Bench 100`, `at 92.5`; reached goals marked. `LIFTS, 30 DAYS`: rows of name, a 70 × 24 sparkline, the value (estimated max) and the change in ink. BODY rows. Long-press a lift to set a goal. Empty: `No lifts yet` with the next day's lifts dim. A `Check in` row ends LIFTS when there's no body data (D11).
+No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinned goals (up to 3, fixed thirds), each a 64 green ring filling over 1 s with the percentage in it, the lift's name and target, `at 92`; a reached goal shows a full ring with ✓ and a green `Reached 2 Oct`. `LIFTS, 30 DAYS`: every tracked lift, a pinned goal's lift included (screen 18), as name, a 70 × 24 sparkline, the value (estimated max, whole like the old app) and the change since the window's first point (`↑ 6`, `↓ 2`, `±0`; a record is `★ +6`, value and change in yellow). Body measurements with a check-in get their own `BODY` card, same rows, one decimal. Tap a row for its detail; long-press a lift or body row for its goal sheet; long-press a goal for the system action sheet (Edit goal, Unpin from Progress, Remove goal with Undo). Empty: `No lifts yet` over the next day's lifts, dim. A `Check in` row (orange, `+`) ends LIFTS when there's no body data (D11). From the menu the header has ‹; opened directly, ✕.
 
 ### Lift detail (QA2) [19]
 
-`Estimated max`, the big number (`bigNumber` with a smaller unit) and the change line, then the lcd chart (§11) with the goal line, the range `Segmented`, and `SESSIONS` rows. Body detail is the same without lift-only parts, with `+` in the header for a check-in. Goal sheets and the check-in are dark sheets with the existing logic.
+`Estimated max` (the scrubbed session's date while scrubbing), the big number (`bigNumber` with a 22 unit) and the change line (`↑ 6 in 3 months`, `No change in a month`, `since 1 Mar` for All and while scrubbing), then the lcd chart (§11) with the goal line, the range `Segmented` (default 1M, carried between lifts), and `SESSIONS` rows: `Thu 2 Oct` over `87.5 × 8, 8, 7`, the session's estimated max trailing, `★` and yellow on a record. `Goal` in the header opens the goal sheet (set, replace on Progress, unpin, remove with Undo; a reached goal opens on the next round number). Body detail is the same without lift-only parts: its caption is the latest check-in's date, `+` in the header opens the check-in, a `Goal` row under the range opens the body goal, and the list is `CHECK-INS`. The goal sheet: a `Now 96 kg` fact, the target as a 54 field over − / +, `Pin to Progress` (or `Replace on Progress` and which), `Remove goal`, the light `Set goal` pill. The check-in: every measurement as a row with the last value as placeholder, `Save` in the header, Next / Done on the keyboard. Every ‹ goes back where it came from (goal and check-in to their lift, body or Progress).
 
 ### Finishes (N7) [16, 17]
 
@@ -764,7 +771,7 @@ A full-screen modal above any sheet, on the dark ground, with the knob hero (N9)
 
 ### Week moment (D15)
 
-After the receipt's Done, once per full week: a full-screen moment on the dark grid where the week's report prints onto the spike (HR2, QC2 content: lifts up, records, volume, best). `Share` and `Done`.
+After the receipt's Done, once per full week (`weekMomentsShown` keeps the ISO week key; `week_completed` is tracked): a full-screen moment above the device and sheets on the dark grid ground (#0E0E0D, 1 pt lines of white .04 every 28). The headline `Week 12 done` (30/34, 800) and `8 weeks in a row` under it once the streak counts; the spike with two blank slips, and the report (Plex Mono 12/18, 230 wide, a punched hole) dropping onto it: `WEEK 12` with the week's lamps, `29 SEP TO 5 OCT`, `LIFTS UP`, `RECORDS ★ n` (#A8780A), `VOLUME` (`38.9 T` from 10 t; pounds in full), `BEST SQUAT 127.5` (the week's best estimated max). `Share week` (dark) and `Done` (light). It replaces the flame celebration. Development: `/?moment=week`.
 
 ### Keypad (D19)
 

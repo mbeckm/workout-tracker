@@ -6,6 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { showToast } from '@/components/toast';
 import { useDevice } from '@/device/device-context';
 import { useHaptics } from '@/device/haptics';
+import { openReceiptAfterFinish } from '@/device/moment/moment-host';
 import type { DrumNudge, NotchResult } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { DEVICE, LINEAR_FN } from '@/motion';
@@ -141,7 +142,7 @@ export function useLogDevice() {
   const log = useLogSession();
   const rest = useRest();
   const haptics = useHaptics();
-  const { openSheet, markJustFinished } = useDevice();
+  const { openSheet } = useDevice();
   const repeat = useRepeat();
 
   const [nudge, setNudge] = useState<DrumNudge | null>(null);
@@ -222,24 +223,16 @@ export function useLogDevice() {
   }, [log]);
 
   /**
-   * The workout is saved and the log closed: Home's row stamps in (and its lamp flickers).
-   * TODO(Phase 5): open the receipt sheet for `workoutId` here; the stamp then plays when the
-   * receipt closes (`useHome` waits for Home to be in front).
+   * The workout is saved and the log closed: its receipt prints over Home. When it closes,
+   * MomentHost plays the Home stamp (`justFinished`), the week moment and the post-workout
+   * paywall, one at a time (Phase 5).
    */
-  const onWorkoutFinished = useCallback(
-    (_workoutId: string, dayId: string) => {
-      markJustFinished(dayId);
-    },
-    [markJustFinished],
-  );
-
   const finishWorkout = useCallback(() => {
-    const dayId = log.openDay?.dayId;
     const workoutId = log.finish();
-    if (workoutId && dayId) {
-      onWorkoutFinished(workoutId, dayId);
+    if (workoutId) {
+      openReceiptAfterFinish(workoutId);
     }
-  }, [log, onWorkoutFinished]);
+  }, [log]);
 
   const hold = useHoldToFinish(finishWorkout);
 

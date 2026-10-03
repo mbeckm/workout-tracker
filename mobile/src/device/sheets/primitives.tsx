@@ -1,4 +1,4 @@
-import { Children, useEffect, useRef, type ReactNode } from 'react';
+import { Children, useEffect, useRef, type ReactNode, type Ref } from 'react';
 import {
   AccessibilityInfo,
   Pressable,
@@ -39,10 +39,13 @@ import { useSheetChrome } from './sheet-context';
 export function SheetScroll({
   header,
   actionBar,
+  scrollRef,
   children,
 }: {
   header: ReactNode;
   actionBar?: ReactNode;
+  /** For sheets that scroll a focused field into view (the check-in). */
+  scrollRef?: Ref<Animated.ScrollView>;
   children: ReactNode;
 }) {
   const { scrollY, scrollGesture, keyboard } = useSheetChrome();
@@ -55,6 +58,7 @@ export function SheetScroll({
     <View style={styles.fill}>
       <GestureDetector gesture={scrollGesture}>
         <Animated.ScrollView
+          ref={scrollRef}
           onScroll={onScroll}
           scrollEventThrottle={16}
           // At the top a pull moves the sheet, not the content.
@@ -90,6 +94,8 @@ export type SheetControl = {
   onPress: () => void;
   label?: string;
   accessibilityLabel?: string;
+  /** Dimmed and inert (Save with nothing to save). */
+  disabled?: boolean;
 };
 
 const CONTROL_GLYPH = { back: '‹', close: '✕' } as const;
@@ -146,13 +152,16 @@ function ControlButton({ control, side }: { control: SheetControl; side: 'left' 
   return (
     <Pressable
       onPress={control.onPress}
+      disabled={control.disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={control.disabled ? { disabled: true } : undefined}
       hitSlop={sheetGeometry.controlTop / 2}
       style={({ pressed }) => [
         styles.control,
         side === 'left' ? styles.controlLeft : styles.controlRight,
         pressed && styles.controlPressed,
+        control.disabled && styles.disabled,
       ]}>
       <Text maxFontSizeMultiplier={fontScaleCap.display} style={gadgetType.control}>
         {text}
