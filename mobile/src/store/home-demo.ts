@@ -23,9 +23,11 @@ export type HomeDemoMode =
  * `gadget` is screen 01 (Pull 1 Monday, Legs 1 Tuesday with a squat PR, Push 1 next),
  * `gadget-stamped` is 14 (Push 1 just finished with a bench PR; the stamp plays), `-complete`
  * every day done with a 2-week streak, `-zero` a plan whose days have no lifts, `-seven` a
- * 7-day plan, `-empty` no plans at all.
+ * 7-day plan, `-empty` no plans at all. `-history` is `gadget` plus 28 older weeks (110+ workouts,
+ * loads creeping up so records land, a few short weeks, one workout from a deleted plan) for
+ * the History wall.
  */
-export type GadgetDemoMode = `gadget${'' | '-stamped' | '-complete' | '-zero' | '-seven' | '-empty'}`;
+export type GadgetDemoMode = `gadget${'' | '-stamped' | '-complete' | '-zero' | '-seven' | '-empty' | '-history'}`;
 
 const MODES: readonly HomeDemoMode[] = [
   'free',
@@ -42,6 +44,7 @@ const MODES: readonly HomeDemoMode[] = [
   'gadget-zero',
   'gadget-seven',
   'gadget-empty',
+  'gadget-history',
 ];
 
 export function homeDemoMode(): HomeDemoMode | null {
@@ -450,6 +453,30 @@ function gadgetDemoSnapshot(base: WorkoutSnapshot, mode: GadgetDemoMode): Workou
   if (mode === 'gadget-complete') {
     log(2, thisWeekAt(2, 1), 80);
     log(3, thisWeekAt(3, 0), 80);
+  }
+  if (mode === 'gadget-history') {
+    const weekdays = [0, 1, 3, 5];
+    for (let weeks = 29; weeks >= 2; weeks -= 1) {
+      const load = 52.5 + 2.5 * Math.floor((29 - weeks) / 3);
+      const count = weeks % 7 === 3 ? 2 : weeks % 5 === 1 ? 3 : 4;
+      for (let index = 0; index < count; index += 1) {
+        log(index, weeksAgo(weeks, weekdays[index]), load);
+        workouts[workouts.length - 1].durationMinutes = specs[index].minutes - 6 + ((weeks * 7 + index * 3) % 13);
+      }
+    }
+    // A plan that was deleted since: its workouts keep their own title.
+    const bench = plan.days[2].exercises[0];
+    workouts.push({
+      id: newId(),
+      title: 'Full Body',
+      completedAt: weeksAgo(5, 6),
+      durationMinutes: 62,
+      exerciseCount: 1,
+      setCount: 3,
+      exercises: [{ id: newId(), exerciseName: bench.name, sets: loggedSets([[60, 10], [65, 8], [70, 6]]) }],
+      planId: 'deleted-plan',
+      dayId: 'deleted-day',
+    });
   }
   workouts.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
   // The plan loop starts each week where it left off; last week ended on the last day.

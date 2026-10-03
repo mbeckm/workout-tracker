@@ -642,6 +642,45 @@ export const receiptColors = {
   pr: '#C2410C',
   rule: '#B9B6AE',
   slot: '#000000',
+  /** The slot's lower lip (`0 1 0 #333`). */
+  slotLip: '#333333',
+  /** Mini receipt and week report titles. */
+  title: '#1C1B18',
+  /** Ink bleed under thermal text (`text-shadow 0 0 .5px`). */
+  inkBleed: 'rgba(52,50,45,0.5)',
+  /** The paper's cast shadow (`drop-shadow 0 12 18`). */
+  shadow: 'rgba(0,0,0,0.45)',
+  // SVG paints take a colour + opacity (stops ignore rgba alpha on iOS).
+  /** The shade where the paper leaves the slot (black .16 → 0 over 22). */
+  slotShade: '#000000',
+  slotShadeOpacity: 0.16,
+  /** Faint thermal lines, 1 in every 3. */
+  thermalLine: '#5A503C',
+  thermalLineOpacity: 0.035,
+  /** The week report's record count (QC2: yellow darkened to read on paper). */
+  record: '#A8780A',
+  /** The spike hole punched through a receipt (the ground shows through). */
+  hole: '#0E0E0D',
+  /** A History week's unlit lamp (`.wl i`). */
+  wallLampOff: '#3A3936',
+} as const;
+
+/** Moments on the dark grid ground (SPEC §1 Moments; QC2, HR2). */
+export const momentColors = {
+  ground: '#0E0E0D',
+  /** Grid lines: white at .04, every 28. */
+  gridLine: '#FFFFFF',
+  gridLineOpacity: 0.04,
+  /** The spike: a metal rod, dark edges, light middle. */
+  spikeEdge: '#8E8A80',
+  spikeMid: '#F4F3EF',
+  /** The spike's base and its lip. */
+  baseHi: '#ECEAE4',
+  baseLo: '#B9B5AC',
+  baseLip: '#6E6B64',
+  baseShadow: 'rgba(0,0,0,0.5)',
+  ink: '#F3F2EE',
+  muted: '#8C8A84',
 } as const;
 
 /** Font weights the gadget uses (SF Rounded). */
@@ -736,6 +775,16 @@ export const gadgetType = {
   receipt: { fontFamily: fontFamily.receipt, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptBold: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 20, color: receiptColors.ink },
   receiptMini: { fontFamily: fontFamily.receipt, fontSize: 9, lineHeight: 13, color: receiptColors.inkMini },
+  /** A mini receipt's day (`.mini b`). */
+  receiptMiniTitle: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 13, color: receiptColors.title },
+  /** A mini receipt's PR line (`.prt`). */
+  receiptMiniPr: { fontFamily: fontFamily.receiptBold, fontSize: 9, lineHeight: 13, color: receiptColors.pr },
+  /** The week report on the spike (QC2 `.p`, `.p b`). */
+  receiptWeek: { fontFamily: fontFamily.receipt, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
+  receiptWeekBold: { fontFamily: fontFamily.receiptBold, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
+  receiptWeekTitle: { fontFamily: fontFamily.receiptBold, fontSize: 14, lineHeight: 18, color: receiptColors.title },
+  /** A moment's headline on the grid ground (QC2 `Week 12 done`). */
+  momentTitle: { ...roundedRole(30, 34, weight.heavy, -0.5), color: sheetColors.ink },
   /** Menu item titles (`.item b`). */
   itemTitle: { ...roundedRole(20, 24, weight.heavy, -0.3), color: sheetColors.ink },
   /** Round sheet controls (‹, ✕, Done). */
@@ -814,6 +863,105 @@ export const sheetGeometry = {
   toastPadY: 10,
   /** Sheet top edges: most, tall, Today, finishes. */
   tops: { default: 96, tall: 60, today: 200, finishes: 430 },
+} as const;
+
+/** The receipt, mini receipts and the week report (SPEC §6 Receipt, History wall; prototype `.paper`, `.mini`; QC2). */
+export const receiptGeometry = {
+  /** The slot (`.slot`): 12 tall, inset 16 inside the sheet's side padding. */
+  slotHeight: 12,
+  slotRadius: 6,
+  slotInset: 16,
+  /** The paper hangs from the slot's middle (`.clip` margin-top −6, `.paper` margin 4 28 0). */
+  clipOverlap: 6,
+  paperTop: 4,
+  paperInset: 28,
+  /** Room under the paper for its shadow (`.clip` padding-bottom 20). */
+  clipBottom: 20,
+  padTop: 22,
+  padX: 20,
+  padBottom: 30,
+  /** The torn bottom: teeth 14 wide, 9 deep (45° flanks, so the valleys sit 7 above the points). */
+  toothWidth: 14,
+  toothDepth: 9,
+  /** The dashed rule (`hr` margin 10 0). */
+  ruleGap: 10,
+  ruleDash: 3,
+  /** The indented set line (`&nbsp; `). */
+  indent: 16,
+  /** The shade where the paper leaves the slot. */
+  shadeHeight: 22,
+  /** Thermal lines: 1 pt in every 3. */
+  thermalPeriod: 3,
+  /** The paper's shadow (`drop-shadow 0 12 18`). */
+  shadowY: 12,
+  shadowBlur: 18,
+  /** Share and Done side by side (`.pill-btn` widths 130 and 170, gap 10). */
+  actionGap: 10,
+  shareWidth: 130,
+  doneWidth: 170,
+  /** `Share week` on the week moment needs a little more than `Share`. */
+  shareWeekWidth: 150,
+  // Mini receipts (`.mini`, `.rgrid`, `.wkh`)
+  miniColumns: 3,
+  miniGap: 10,
+  miniGridInset: 4,
+  miniPadTop: 10,
+  miniPadX: 9,
+  miniPadBottom: 16,
+  miniToothWidth: 10,
+  miniToothDepth: 6,
+  miniRuleGap: 5,
+  miniShadowY: 6,
+  miniShadowBlur: 8,
+  /** Each mini's tilt by its place in the week (degrees). */
+  miniTilts: [0, 1.5, -1, 1, -1.5],
+  miniPressScale: 0.96,
+  weekTop: 16,
+  weekX: 12,
+  weekBottom: 10,
+  weekLamp: 9,
+  weekLampGap: 6,
+  /** The empty wall's blank receipt. */
+  emptyWidth: 200,
+  emptyHeight: 120,
+  emptyTop: 48,
+  // The week report on the spike (QC2, at the 390 × 844 reference)
+  weekReportWidth: 230,
+  weekReportPadTop: 28,
+  weekReportPadX: 18,
+  weekReportPadBottom: 22,
+  weekToothWidth: 12,
+  weekToothDepth: 8,
+  weekRuleGap: 8,
+  weekReportLamp: 10,
+  weekReportLampGap: 6,
+  hole: 10,
+  holeTop: 12,
+  momentTitleY: 70,
+  momentSubY: 112,
+  spikeY: 200,
+  spikeWidth: 6,
+  spikeHeight: 420,
+  reportY: 170,
+  /** The two blank receipts already on the spike: top, content height (padding comes on top, as QC2), tilt. */
+  backReceipts: [
+    { y: 360, height: 200, tilt: -6 },
+    { y: 342, height: 210, tilt: 4 },
+  ],
+  reportTilt: 1.5,
+  baseY: 610,
+  baseWidth: 140,
+  baseHeight: 30,
+  baseLip: 8,
+  baseShadowY: 18,
+  baseShadowBlur: 30,
+  /** The report drops onto the spike from 120 above, tilted −4°. */
+  dropFrom: 120,
+  dropTilt: -4,
+  momentShadowY: 8,
+  momentShadowBlur: 12,
+  gridCell: 28,
+  momentBottom: 44,
 } as const;
 
 /** Device geometry at the 390 × 844 reference (SPEC §4). Keys keep these sizes on every phone. */

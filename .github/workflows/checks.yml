@@ -25,5 +25,7 @@ jobs:
         run: node scripts/check-design-tokens.mjs
       - name: Device logic (PLAN §10)
         run: npx tsx scripts/check-device-logic.ts
+      - name: Receipt, History and moments logic (PLAN Phase 5)
+        run: npx tsx scripts/check-receipt-logic.ts
       - name: Progress logic
         run: npx tsx scripts/check-progress-logic.ts
