@@ -27,3 +27,5 @@ jobs:
         run: npx tsx scripts/check-device-logic.ts
       - name: Log logic
         run: npx tsx scripts/check-log-logic.ts
+      - name: Catalog info (D5)
+        run: npx tsx scripts/check-catalog-info.ts

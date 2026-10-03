@@ -43,6 +43,8 @@ export function useRest() {
     clock: formatClock(secondsLeft),
     /** Length of this rest, for the ring. */
     totalSeconds: rest ? Math.round((rest.endsAtMs - rest.startedAtMs) / 1000) : 0,
+    /** Identifies this rest window (a new set's rest starts a new one). */
+    startedAtMs: rest?.startedAtMs ?? 0,
     /** 1 → 0 as rest runs out (the ring). */
     fraction: restFraction(rest, nowMs),
     /** ±15 keys. Shortened to or below 0 rest ends; it never runs over 10 minutes. */

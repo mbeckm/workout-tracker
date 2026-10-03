@@ -112,6 +112,14 @@ export const DEVICE = {
   DISPLAY: 220,
   /** Weight drum step: translateY ±24 back to 0. */
   DRUM: 160,
+  /** The drum frame's flash (no weight yet): each off/on step lasts this long. */
+  DRUM_FLASH: 120,
+  /** Long-press repeat on the tall keys: a step every REPEAT once the long press lands. */
+  REPEAT: 90,
+  /** The rest ring glides between the clock's ticks (`useRest` ticks every 250 ms). */
+  REST_TICK: 250,
+  /** Finish mode's `N MIN` refresh. */
+  MINUTE_TICK: 15000,
   /** Sheet in/out. */
   SHEET: 380,
   /** Scrim fade. */
@@ -173,6 +181,8 @@ export const DEVICE = {
   SNAP: 0,
   /** Reduced-motion stand-in for every movement: a plain fade. */
   REDUCED_FADE: 160,
+  /** The exercise figure's demonstration loop (prototype `lift` / `sweep`, 2.4 s ease-in-out). */
+  FIGURE_LOOP: 2400,
 } as const;
 
 /** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */

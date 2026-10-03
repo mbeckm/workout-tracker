@@ -748,6 +748,12 @@ export const gadgetType = {
   swatchNumber: lcdRole(22, 26),
   swatchName: roundedRole(13, 16, weight.bold),
   toast: { ...roundedRole(15, 20, weight.heavy), color: deviceColors.bigKeyInk },
+  /** The exercise sheet (M4): the name, how-to steps and their Doto numbers, the YOU card. */
+  exerciseName: { ...roundedRole(30, 34, weight.heavy, -0.5), color: sheetColors.ink },
+  step: { ...roundedRole(15, 21, weight.semibold), color: sheetColors.inkSoft },
+  stepNumber: lcdRole(15, 21),
+  statValue: { ...roundedRole(20, 24, weight.heavy), color: sheetColors.ink },
+  statLabel: { ...roundedRole(12, 16, weight.bold), color: sheetColors.muted },
 } as const;
 
 /** Radii the gadget adds (SPEC §4, §6). Always `borderCurve: 'continuous'`. */
@@ -769,6 +775,9 @@ export const gadgetRadius = {
   toast: 16,
   miniDevice: 22,
   miniScreen: 10,
+  /** The exercise figure panel and the muscle chips (M4). */
+  figure: 28,
+  muscleChip: 14,
 } as const;
 
 /** Sheet geometry (SPEC §6, prototype CSS). */
@@ -942,4 +951,114 @@ export const device = {
   keyDisabledOpacity: 0.45,
   rockerEndDisabledOpacity: 0.3,
   bigKeyDisabledOpacity: 0.5,
+} as const;
+
+/** The exercise sheet (M4, prototype `.fig`, `.mchip`, `.step`). */
+export const exerciseSheet = {
+  figureHeight: 230,
+  figureTop: 12,
+  /** The floating ‹ over the figure (prototype left 28, top 26 in the sheet). */
+  controlX: 28,
+  controlY: 26,
+  nameTop: 16,
+  namePadX: 12,
+  kitTop: 4,
+  chipsTop: 14,
+  chipHeight: 28,
+  chipPadX: 12,
+  chipGap: 6,
+  stepPadX: 18,
+  stepPadY: 12,
+  stepGap: 14,
+  stepNumberWidth: 14,
+  statPadY: 16,
+  statPadX: 8,
+} as const;
+
+/**
+ * Trim's own movement figures (D5, prototype `FIG`): a light stick figure, dark equipment,
+ * orange plates and handles, on a warm radial ground. SVG paints take a colour + opacity.
+ */
+export const figureColors = {
+  body: '#E4E2DC',
+  equipment: '#3A3936',
+  pad: '#4A4843',
+  bar: '#B9B6AE',
+  plate: '#FF6A1A',
+  cable: '#FF6A1A',
+  groundHi: '#2E2620',
+  groundLo: '#161412',
+  /** The floating ‹ over the figure: the control colour at 85%. */
+  control: 'rgba(38,38,36,0.85)',
+} as const;
+
+/** Log, rest and finish on the display, and the bottom row in those modes (SPEC §4–5, prototype). */
+export const logGeometry = {
+  /** Tall keys from the bottom row's top (y588): `+` at y592, `−` at y680, `Back` alone at y636. */
+  tallKeyTop: 4,
+  tallKeyBottom: 92,
+  backKeyTop: 48,
+  /** The tappable lift name (`.nm`): padding 2 8 pulled back by the same margin, r8. */
+  namePadX: 8,
+  namePadY: 2,
+  nameRadius: 8,
+  /** Rest: the ring's 230 box at y74 in the display (r95, stroke 12; the track dashed 3 on, 7 off). */
+  restRingBox: 230,
+  restRingTop: 74,
+  restRingDash: '3 7',
+  /** The rest footer sits 20 from the bottom; the ring shrinks to keep this much above it. */
+  restFooterY: 20,
+  restFooterRoom: 52,
+  /** Finish: the title, the set grid (120 clear on the right) and the stats. */
+  finishTitleY: 64,
+  finishGridY: 150,
+  finishGridRight: 120,
+  finishStatsY: 220,
+} as const;
+
+/** Today (M3, screen 07; prototype `.lift`, `.bars`, `.info`). */
+export const todayGeometry = {
+  rowHeight: 70,
+  rowPadLeft: 6,
+  rowPadRight: 14,
+  jumpPadX: 12,
+  jumpPadY: 10,
+  jumpRadius: 14,
+  subGap: 2,
+  rowGap: 12,
+  /** The current row's orange inset on the left. */
+  currentInset: 3,
+  bar: 16,
+  barHeight: 6,
+  barRadius: 3,
+  barGap: 4,
+  info: 32,
+  /** Swipe-left actions (Swap, Remove), each this wide. */
+  action: 84,
+  /** A lifted row while it's dragged. */
+  dragScale: 1.03,
+} as const;
+
+export const todayColors = {
+  /** An unlogged set bar. */
+  barOff: '#3A3936',
+  dragShadow: 'rgba(0,0,0,0.45)',
+} as const;
+
+/** The keypad sheet (D19). */
+export const keypadGeometry = {
+  key: 50,
+  gap: 8,
+  radius: 16,
+  valueTop: 4,
+  valueBottom: 16,
+} as const;
+
+/** Type the log's sheets add (Today rows, the keypad). */
+export const logType = {
+  /** Today's row sub (`Now, set 2/3`): 13/600 muted. */
+  liftSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
+  /** Today's "i": an italic serif i, like the system's info glyph. */
+  info: { fontFamily: 'Georgia', fontStyle: 'italic', fontSize: 15, lineHeight: 18, fontWeight: weight.heavy, color: sheetColors.controlInk },
+  keypadDigit: { ...roundedRole(26, 30, weight.bold), color: sheetColors.ink },
 } as const;

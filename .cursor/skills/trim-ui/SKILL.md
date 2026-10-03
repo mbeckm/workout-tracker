@@ -78,9 +78,9 @@ Information lives on the lowest layer that serves the job:
 | Mode | Top left | Rocker | Top right | Left keys | Wheel | Big key |
 | --- | --- | --- | --- | --- | --- | --- |
 | **home** | Menu | Week lamps, no ends; `WEEK n` engraved under it | History | none | stowed | `Start` (primary); `Plans` (metal) with no plans |
-| **log** | Menu | `‹` `›` move between lifts; lamps per lift; the middle opens Today | Undo last set | `+` / `−` reps | weight (or the mode's value, §13 Log) | `Log` (primary); `Save` when editing a logged set |
+| **log** | Menu | `‹` `›` move between lifts; lamps per lift; the middle opens Today | Undo last set (cancels the edit while editing a logged set) | `+` / `−` reps | weight (or the mode's value, §13 Log) | `Log` (primary); `Save` when editing a logged set |
 | **rest** | Menu | as in log | Undo last set | `+15` / `−15` | time, 2 notches = 15 s | `Skip` (metal) |
-| **finish** | Menu | lamps per lift | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
+| **finish** | Menu | lamps per lift on the recessed plate (green when done) | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
 | **edit** | `‹` back to the editor | `‹` `›` move between the day's lifts; the middle returns to the editor | Remove lift (`✕`) | `+` / `−` sets | reps (or seconds, minutes) | `Done` (metal) |
 | **loading** | inert | lamps off, then flicking on | hidden | none | stowed | inert |
 
@@ -388,6 +388,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | --- | --- | --- |
 | Wheel notch (weight, time, reps) | transient, intensity .5, sharpness .9; every 5th notch or whole 10 kg: intensity .8 | `selectionAsync` |
 | Key press (any key) | transient .6 / .5 | `impactAsync(Light)` |
+| Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
 | Big key press-in | transient .9 / .4 | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
 | Rocker move | transient .7 / .8 | `impactAsync(Light)` |
@@ -540,6 +541,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | --- | --- |
 | Change the weight | Wheel + long-press the drum for the keypad; VoiceOver increment / decrement on the wheel |
 | Move between lifts | Rocker ends + tap a row in Today |
+| Swap or remove a lift today | Swipe a Today row left + its VoiceOver actions |
 | Close a sheet | Swipe down + scrim tap + ✕ / `Done` |
 | Reorder lifts | Drag in Today or the editor + Move up / Move down accessibility actions |
 | Remove a lift in the editor | Swipe the row + the device's Remove key in edit |
@@ -710,7 +712,7 @@ Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard wo
 
 ### Today (M3) [07]
 
-Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump; "i" opens the exercise sheet; drag to reorder (writes the plan); Swap (alternatives, then the picker in replace mode; logged sets stay, no dialog); Add lift; Remove (today only, Undo toast); tap a logged set to edit it on the device (`EDIT SET n`, big key `Save`, no rest).
+Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump (the sheet closes); "i" opens the exercise sheet (‹ comes back); hold a row, then drag to reorder (writes the plan). Swipe a row left for its two actions, `Swap` (dark) and `Remove` (orange); both are also VoiceOver actions, with Move up / Move down and Exercise info. Swap swaps the sheet in place to the lift's alternatives plus `Choose another` (the picker in replace mode); logged sets stay, no dialog. `Add lift` (orange text under the card) opens the picker and appends to the day and the session. Remove takes the lift out of today only, with an Undo toast. Tap a logged set bar to edit it on the device (`EDIT SET n`, big key `Save`, no rest; ↶ cancels the edit). An edit started during rest shows the log view; rest keeps running and returns after Save.
 
 ### Exercise (M4) [06]
 
@@ -766,7 +768,7 @@ After the receipt's Done, once per full week: a full-screen moment on the dark g
 
 ### Keypad (D19)
 
-A short sheet from a long-press on the drum: a numeric keypad to type an exact weight (`81.25`, big jumps). It sets the drum; Log still commits.
+A short sheet (top edge 430, so the drum stays in view) from a long-press on the drum: the value (`bigNumber`, muted until the first key replaces it) with its unit, and a 3 × 4 pad (`card` keys, r16, 50 tall) with a decimal point for loads only and ⌫. ✕ leaves the drum as it was; `Done` sets it (weight, assistance, reps, seconds or minutes, whatever the drum shows). Log still commits.
 
 ---
 
