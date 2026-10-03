@@ -89,6 +89,59 @@ function thump(voice, at, from, to, gain, duration) {
   }
 }
 
+/** Noise through a bandpass whose centre glides from `from` to `to`, under `envelope(progress)`. */
+function sweep(voice, at, duration, from, to, q, gain, envelope) {
+  const n = Math.floor(duration * RATE);
+  const start = Math.floor(at * RATE);
+  const block = 128;
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let b = 0; b < n; b += block) {
+    const progress = b / n;
+    const freq = from * Math.pow(to / from, progress);
+    const w0 = (2 * Math.PI * freq) / RATE;
+    const alpha = Math.sin(w0) / (2 * q);
+    const a0 = 1 + alpha;
+    const b0 = alpha / a0;
+    const b2 = -alpha / a0;
+    const a1 = (-2 * Math.cos(w0)) / a0;
+    const a2 = (1 - alpha) / a0;
+    for (let i = b; i < Math.min(b + block, n) && start + i < voice.buffer.length; i++) {
+      const x = voice.random() * 2 - 1;
+      const y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2;
+      x2 = x1;
+      x1 = x;
+      y2 = y1;
+      y1 = y;
+      voice.buffer[start + i] += y * gain * envelope(i / n);
+    }
+  }
+}
+
+/** A sine gliding from `from` to `to` Hz, under `envelope(progress)`. */
+function glide(voice, at, duration, from, to, gain, envelope) {
+  const n = Math.floor(duration * RATE);
+  const start = Math.floor(at * RATE);
+  let phase = 0;
+  for (let i = 0; i < n && start + i < voice.buffer.length; i++) {
+    const progress = i / n;
+    phase += (2 * Math.PI * from * Math.pow(to / from, progress)) / RATE;
+    voice.buffer[start + i] += Math.sin(phase) * gain * envelope(progress);
+  }
+}
+
+/** A struck metal partial: a sine at `freq` decaying over `decay` seconds. */
+function ring(voice, at, freq, gain, decay) {
+  const start = Math.floor(at * RATE);
+  const n = Math.floor(decay * 4 * RATE);
+  for (let i = 0; i < n && start + i < voice.buffer.length; i++) {
+    const t = i / RATE;
+    voice.buffer[start + i] += Math.sin(2 * Math.PI * freq * t) * gain * Math.exp(-t / decay);
+  }
+}
+
 function finished(voice) {
   const { buffer } = voice;
   // 5 ms fade at the end so a cut tail never clicks.
@@ -156,7 +209,52 @@ const SOUNDS = {
     hit(voice, 0, 4200, 2.0, 1.0, 0.006);
     return voice;
   },
+  // First open (the machine is born): the body floats in out of the dark, a soft airy swell.
+  arrive() {
+    const voice = makeVoice(0.6, 5);
+    sweep(voice, 0, 0.58, 260, 1400, 1.2, 0.8, (p) => Math.sin(Math.PI * p) ** 2);
+    thump(voice, 0.46, 90, 50, 0.35, 0.1);
+    return voice;
+  },
+  // The machine charging before the Start key slams in: rising air over a rising hum.
+  charge() {
+    const voice = makeVoice(0.72, 6);
+    sweep(voice, 0, 0.7, 220, 2600, 1.4, 0.7, (p) => p * p);
+    glide(voice, 0, 0.7, 70, 210, 0.45, (p) => 0.2 + 0.8 * p);
+    return voice;
+  },
+  // The Start key slams home: a heavy low thud, a sharp metal hit and a short ring.
+  bang() {
+    const voice = makeVoice(0.9, 7);
+    thump(voice, 0, 150, 38, 1.0, 0.45);
+    hit(voice, 0, 2400, 1.2, 0.8, 0.05);
+    hit(voice, 0.004, 620, 0.7, 0.9, 0.12);
+    thump(voice, 0.01, 62, 30, 0.6, 0.7);
+    ring(voice, 0.004, 1170, 0.06, 0.18);
+    ring(voice, 0.004, 1730, 0.045, 0.14);
+    ring(voice, 0.004, 2390, 0.03, 0.1);
+    return voice;
+  },
+  // The display boots: two tiny electronic blips.
+  boot() {
+    const voice = makeVoice(0.22, 8);
+    glide(voice, 0, 0.045, 1320, 1320, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
+    glide(voice, 0.09, 0.06, 1980, 1980, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
+    return voice;
+  },
 };
+
+// The parts snapping on, each a whole step higher than the last (D74: the build climbs).
+for (let step = 1; step <= 7; step++) {
+  const lift = Math.pow(2, ((step - 1) * 2) / 12);
+  SOUNDS[`snap-${step}`] = () => {
+    const voice = makeVoice(0.1, 10 + step);
+    hit(voice, 0, 1800 * lift, 2.2, 1.0, 0.012);
+    thump(voice, 0, 520 * lift, 260 * lift, 0.35, 0.03);
+    hit(voice, 0.008, 700 * lift, 0.9, 0.4, 0.02);
+    return voice;
+  };
+}
 
 mkdirSync(OUT_DIR, { recursive: true });
 for (const [name, render] of Object.entries(SOUNDS)) {
