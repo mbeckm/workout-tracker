@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 
 import { device, deviceColors, gadgetRadius, lcd } from '@/constants/theme';
@@ -23,6 +31,8 @@ export function Display({
   children,
   style,
   accessibilityLabel,
+  accessibilityActions,
+  onAccessibilityAction,
 }: {
   /** Change it on every mode change (home → log → rest …) to play the swap. */
   contentKey: string;
@@ -30,12 +40,17 @@ export function Display({
   style?: StyleProp<ViewStyle>;
   /** One summary per mode (PLAN §7 VoiceOver). */
   accessibilityLabel?: string;
+  /** What the display's tappable words do (the exercise name, `TARGET ›`, the keypad). */
+  accessibilityActions?: readonly AccessibilityActionInfo[];
+  onAccessibilityAction?: (event: AccessibilityActionEvent) => void;
 }) {
   const reduceMotion = useReducedMotion();
   return (
     <View
       accessible={accessibilityLabel != null}
       accessibilityLabel={accessibilityLabel}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
       style={[styles.panel, style]}>
       <View style={[StyleSheet.absoluteFill, styles.clip]}>
         <Animated.View

@@ -5,14 +5,17 @@ import { CheckInSheet } from './check-in-sheet';
 import { BodySheet, LiftSheet } from './detail-sheets';
 import { EditorSheet } from './editor-sheet';
 import { EmptySheet } from './empty-sheet';
+import { ExerciseSheet } from './exercise-sheet';
 import { FinishesSheet } from './finishes-sheet';
+import { KeypadSheet } from './keypad-sheet';
+import { DeviceMenuSheet } from './menu-sheet';
 import { HistorySheet } from './history-sheet';
-import { MenuSheet } from './menu-sheet';
 import { PlansSheet } from './plans-sheet';
 import { ReceiptSheet } from './receipt-sheet';
 import { GoalSheet } from './goal-sheet';
 import { ProgressSheet } from './progress-sheet';
 import { SettingsSheet } from './settings-sheet';
+import { TodaySheet } from './today-sheet';
 
 /** Sheets with a text field: their content ends above the keyboard. */
 const KEYBOARD_SHEETS: readonly SheetKind[] = ['settings', 'editor', 'add', 'goal', 'checkin'];
@@ -36,6 +39,7 @@ const TITLES: Record<SheetKind, string> = {
   receipt: 'Receipt',
   today: 'Today',
   exercise: 'Exercise',
+  keypad: 'Weight',
   goal: 'Goal',
   checkin: 'Check in',
 };
@@ -44,8 +48,13 @@ const TITLES: Record<SheetKind, string> = {
 export function SheetContent({ sheet }: { sheet: OpenSheet }) {
   switch (sheet.kind) {
     case 'menu':
-      // TODO(Phase 4): pass the open workout ({logged, total, onEnd}) from useLogSession.
-      return <MenuSheet key={sheet.key} workout={null} />;
+      return <DeviceMenuSheet key={sheet.key} />;
+    case 'today':
+      return <TodaySheet key={sheet.key} params={sheet.params} />;
+    case 'keypad':
+      return <KeypadSheet key={sheet.key} />;
+    case 'exercise':
+      return <ExerciseSheet key={sheet.key} params={sheet.params} />;
     case 'finishes':
       return <FinishesSheet key={sheet.key} />;
     case 'settings':

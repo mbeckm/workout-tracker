@@ -4,6 +4,8 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -26,6 +28,7 @@ export function Drum({
   nudge,
   compact = false,
   framed = true,
+  flash = 0,
 }: {
   current: string;
   above?: string;
@@ -35,6 +38,8 @@ export function Drum({
   compact?: boolean;
   /** Flash or hide the frame (the first-set focus cue in Phase 4). */
   framed?: boolean;
+  /** Bump it to flash the frame (the first weighted set has no weight: look here). */
+  flash?: number;
 }) {
   const reduceMotion = useReducedMotion();
   const offset = useSharedValue(0);
@@ -47,6 +52,16 @@ export function Drum({
 
   const rollStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
 
+  // Off, on, off, on in steps (a blink, not movement, so Reduce Motion keeps it).
+  const frameOpacity = useSharedValue(1);
+  useEffect(() => {
+    if (!flash) return;
+    const snap = (value: number) => withDelay(DEVICE.DRUM_FLASH, withTiming(value, { duration: DEVICE.SNAP }));
+    frameOpacity.set(0);
+    frameOpacity.set(withSequence(snap(1), snap(0), snap(1)));
+  }, [flash, frameOpacity]);
+  const frameStyle = useAnimatedStyle(() => ({ opacity: frameOpacity.get() }));
+
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Animated.View style={[StyleSheet.absoluteFill, rollStyle]}>
@@ -58,6 +73,7 @@ export function Drum({
         <Text
           maxFontSizeMultiplier={1}
           numberOfLines={1}
+          adjustsFontSizeToFit
           style={[compact ? gadgetType.lcdHeroCompact : gadgetType.lcdHero, styles.current]}>
           {current}
         </Text>
@@ -73,7 +89,7 @@ export function Drum({
           { experimental_backgroundImage: `linear-gradient(180deg, ${lcd.lcd}, ${lcd.lcdClear})` },
         ]}
       />
-      {framed ? <View style={styles.frame} /> : null}
+      {framed ? <Animated.View style={[styles.frame, frameStyle]} /> : null}
     </View>
   );
 }
@@ -81,7 +97,7 @@ export function Drum({
 const styles = StyleSheet.create({
   dim: { color: lcd.amberDim },
   above: { position: 'absolute', left: device.displayPad, top: device.drumAboveY },
-  current: { position: 'absolute', left: device.displayPad, top: device.drumCurrentY },
+  current: { position: 'absolute', left: device.displayPad, right: device.displayPad, top: device.drumCurrentY },
   below: { position: 'absolute', left: device.displayPad, top: device.drumBelowY },
   fade: {
     position: 'absolute',

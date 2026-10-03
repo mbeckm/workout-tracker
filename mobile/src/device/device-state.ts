@@ -27,6 +27,7 @@ export const SHEET_KINDS = [
   'receipt',
   'today',
   'exercise',
+  'keypad',
   // Phase 7: a lift's or body measurement's goal, and the body check-in (D11).
   'goal',
   'checkin',
@@ -58,6 +59,8 @@ const TOPS: Record<SheetKind, SheetTop> = {
   receipt: 'tall',
   today: 'today',
   exercise: 'tall',
+  // Short like finishes, so the drum stays in view above it (D19).
+  keypad: 'finishes',
   goal: 'tall',
   checkin: 'tall',
 };
@@ -112,6 +115,8 @@ export type EditTarget = {
 export type DeviceState = {
   sheet: OpenSheet | null;
   uiMode: UiMode | null;
+  /** The open log session's mode (`log` / `rest` / `finish`), mirrored for readers outside it. */
+  logMode: LogMode | null;
   logIntent: LogIntent | null;
   /** Set when the receipt closes (Phase 5); Home plays the stamp, then clears it. */
   justFinished: JustFinished | null;
@@ -124,6 +129,7 @@ export type DeviceState = {
 export const initialDeviceState: DeviceState = {
   sheet: null,
   uiMode: null,
+  logMode: null,
   logIntent: null,
   justFinished: null,
   edit: null,
@@ -137,6 +143,8 @@ export type DeviceAction =
   | { type: 'swapSheet'; kind: SheetKind; params?: SheetParams }
   | { type: 'closeSheet' }
   | { type: 'setUiMode'; mode: UiMode | null }
+  /** The log session's mode changed (the device mirrors it; the session owns it). */
+  | { type: 'setLogMode'; mode: LogMode | null }
   | { type: 'requestLog'; intent: Omit<LogIntent, 'id'> }
   /** The log session took the intent; `id` guards against clearing a newer one. */
   | { type: 'consumeLogIntent'; id: number }
@@ -160,6 +168,8 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
       return state.sheet ? { ...state, sheet: null } : state;
     case 'setUiMode':
       return state.uiMode === action.mode ? state : { ...state, uiMode: action.mode };
+    case 'setLogMode':
+      return state.logMode === action.mode ? state : { ...state, logMode: action.mode };
     case 'requestLog': {
       const seq = state.seq + 1;
       // Opening the log puts the device in front: any sheet goes away.
@@ -197,8 +207,8 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
   }
 }
 
-/** The mode on screen: a UI mode wins, then the log session's, then Home. */
-export function deviceMode(state: DeviceState, logMode: LogMode | null = null): DeviceMode {
+/** The mode on screen: a UI mode wins, then the log session's (mirrored unless passed), then Home. */
+export function deviceMode(state: DeviceState, logMode: LogMode | null = state.logMode): DeviceMode {
   return state.uiMode ?? logMode ?? 'home';
 }
 

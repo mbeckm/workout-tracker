@@ -35,6 +35,8 @@ export type RaisedKeyProps = {
   onPress?: () => void;
   /** Long-press repeat and similar; the press-in visuals and haptic still run. */
   onLongPress?: () => void;
+  /** Release (ends a long-press repeat). */
+  onPressOut?: () => void;
   disabled?: boolean;
   /** A text label (glyph or word). `+`, `−` and `↶` are drawn in SVG. Use `children` for other SVG glyphs. */
   label?: string;
@@ -55,6 +57,7 @@ function RaisedKey({
   accessibilityLabel,
   onPress,
   onLongPress,
+  onPressOut,
   disabled = false,
   label,
   text = 'glyph',
@@ -96,7 +99,10 @@ function RaisedKey({
           pressIn();
           haptics.key();
         }}
-        onPressOut={pressOut}
+        onPressOut={() => {
+          pressOut();
+          onPressOut?.();
+        }}
         onPress={onPress}
         onLongPress={onLongPress}
         style={[styles.abs, shape]}>

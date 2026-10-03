@@ -18,7 +18,7 @@ import {
   type ReceiptRow,
 } from '@/device/receipt-model';
 import type { Goal } from '@/domain/goals';
-import { personalBestCount } from '@/domain/helpers';
+import { formatLoggedSetLine, formatWorkoutVolume, personalBestCount } from '@/domain/helpers';
 import { workoutPersonalBests } from '@/domain/set-lines';
 import type { ExercisePrescription, LoggedSet, LoggedWorkout, WorkoutDay, WorkoutPlan } from '@/domain/types';
 import { homeDemoSnapshot, type HomeDemoMode } from '@/store/home-demo';
@@ -319,6 +319,31 @@ check('week report: lifts up, records, volume, best (QC2)', () => {
   assert.equal(report.streak, '2 weeks in a row');
   assert.equal(weekVolume(38900, 'kg'), '38.9 T');
   assert.equal(weekVolume(9108, 'lbs'), '9,108 LBS');
+});
+
+// ---------------------------------------------------------------------------------------------
+// Units: switching relabels, it never converts (Settings: "Past workouts keep their numbers.")
+
+check('units: a kg workout read in lbs keeps its numbers, as the old History detail and Done did', () => {
+  const kg = workout('Push 1', at(9, 1), [{ name: 'Bench Press', sets: sets([[60, 8], [60, 8], [65, 6]]) }]);
+  const older = workout('Push 1', at(8, 24), [{ name: 'Bench Press', sets: sets([[55, 8]]) }]);
+  const history = newestFirst([older, kg]);
+  const inKg = texts(receiptModel({ workout: kg, history, units: 'kg' }).rows);
+  const inLbs = texts(receiptModel({ workout: kg, history, units: 'lbs' }).rows);
+  // Only the unit word changes; every number stays as logged.
+  assert.deepEqual(inLbs, inKg.map((line) => line.replace(' KG|', ' LBS|')));
+  assert.ok(inLbs.includes('  60×8, 60×8, 65×6'));
+  assert.ok(inLbs.includes('VOLUME|1,350 LBS|bold'));
+  assert.ok(inLbs.includes('BENCH E1RM|78|pr'));
+  // The old app's own formatters, on the same switch: the number is relabelled too.
+  assert.equal(formatWorkoutVolume(1350, 'lbs').toUpperCase(), '1,350 LBS');
+  assert.equal(formatLoggedSetLine({ weight: 60, reps: 8 }, { unit: 'lbs' }), '60 lbs × 8');
+  assert.equal(miniReceipt(kg, history, 'lbs').volume, '1,350 LBS');
+  const report = weekReport({ history, plan: null, units: 'lbs', weekOf: at(9, 1) });
+  assert.equal(report.volume, '1,350 LBS');
+  assert.equal(report.best, 'BENCH 78');
+  // Metric tonnes only for kg: 12,000 logged reads 12,000 LBS after the switch, never 12.0 T.
+  assert.equal(weekVolume(12000, 'lbs'), '12,000 LBS');
 });
 
 if (failures > 0) {

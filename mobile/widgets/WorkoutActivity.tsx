@@ -24,7 +24,11 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
   'widget';
   const WHITE = '#FFFFFF';
   const MUTED = '#FFFFFF99';
-  const ACCENT = '#007AFF';
+  // Gadget (D16): orange on the display's dark ground. Widget code can't import theme tokens:
+  // these mirror signal.orange, lcd.lcd and lcd.amberOff in src/constants/theme.ts.
+  const ACCENT = '#FF6A1A';
+  const GROUND = '#121211';
+  const TRACK = '#3A2214';
   const restStart = new Date(props.restStartEpochMs);
   const restEnd = new Date(props.restEndEpochMs);
 
@@ -68,13 +72,13 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
   const RestBar = () =>
     props.isResting ? (
       <ZStack modifiers={[frame({ maxWidth: Infinity })]}>
-        <Capsule modifiers={[foregroundStyle('#FFFFFF40'), frame({ height: 4, maxWidth: Infinity })]} />
+        <Capsule modifiers={[foregroundStyle(TRACK), frame({ height: 4, maxWidth: Infinity })]} />
         <ProgressView
           timerInterval={{ lower: restStart, upper: restEnd }}
           countsDown={false}
           modifiers={[
             progressViewStyle('linear'),
-            tint(WHITE),
+            tint(ACCENT),
             labelsHidden(),
             frame({ maxWidth: Infinity }),
           ]}
@@ -86,7 +90,7 @@ const WorkoutActivity = (props: WorkoutActivityProps, _environment: LiveActivity
     banner: (
       <ZStack
         modifiers={[
-          containerBackground('#000000', 'widget'),
+          containerBackground(GROUND, 'widget'),
           clipShape('containerRelativeShape'),
           widgetURL(props.openUrl),
         ]}>
