@@ -7,6 +7,7 @@ import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { useDeviceSoundsSetting } from '@/device/haptics';
 import { KeyboardProvider } from '@/keyboard';
 
 import { gadgetType, sheetColors, signal, space } from '@/constants/theme';
@@ -153,6 +154,9 @@ function RootNav() {
       open({ sheet: 'progress' });
     }
   }, [hasCompletedOnboarding, isHydrated, open]);
+
+  // Every key's click follows Settings → Sounds.
+  useDeviceSoundsSetting();
 
   // Live Activity taps open scratchworkout://…/log?planId&dayId&exerciseId. `+native-intent`
   // keeps the router on the device; here the same URL puts the device in log mode.
