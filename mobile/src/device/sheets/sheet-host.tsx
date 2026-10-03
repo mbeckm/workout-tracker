@@ -24,7 +24,7 @@ import { DEVICE, EASE_SHEET_GADGET_FN, SPRING } from '@/motion';
 import { SheetChromeContext, type SheetChrome } from './sheet-context';
 import { SheetContent, sheetUsesKeyboard } from './registry';
 
-/** Pan, rubber band and projection: the math from `components/animated-sheet.tsx`. */
+/** Pan, rubber band and projection: the math from the old `components/animated-sheet.tsx`. */
 function project(velocity: number, decelerationRate = 0.998) {
   'worklet';
   return ((velocity / 1000) * decelerationRate) / (1 - decelerationRate);

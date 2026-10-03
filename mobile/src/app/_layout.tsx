@@ -9,7 +9,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { KeyboardProvider } from '@/keyboard';
 
-import { colors, darkColors, sheetColors, spacing, type } from '@/constants/theme';
+import { gadgetType, sheetColors, signal, space } from '@/constants/theme';
 import { DeviceProvider, useDevice } from '@/device/device-context';
 import { FinishProvider } from '@/device/finish';
 import { logCommandForLink } from '@/device/log-link';
@@ -19,24 +19,22 @@ import { progressDemoMode, shouldUseProgressDemo } from '@/store/progress-demo';
 import { WorkoutProvider, useWorkoutStore } from '@/store/workout-store';
 import { ToastHost } from '@/components/toast';
 import { trackScreen } from '@/analytics/analytics';
-import { useTheme } from '@/theme/theme-context';
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 /**
- * The old routes still pushed above the device draw on the navigator's background; sheets and
- * moments are always dark (D2), so they get the dark one. gadget: delete in Phase 10.
+ * What the navigator draws behind a route while it moves (onboarding, the paywall modal): the
+ * sheets' dark, never a white flash (D2).
  */
 const NAVIGATION_THEME = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: darkColors.brand,
-    background: darkColors.systemBackground,
-    card: darkColors.systemBackground,
-    text: darkColors.label,
-    border: darkColors.separator,
-    notification: darkColors.systemRed,
+    primary: signal.orange,
+    background: sheetColors.sheet,
+    card: sheetColors.sheet,
+    text: sheetColors.ink,
+    border: sheetColors.rule,
   },
 };
 
@@ -60,12 +58,12 @@ class RootErrorBoundary extends Component<
         <View
           style={{
             flex: 1,
-            backgroundColor: colors.systemBackground,
-            padding: spacing.lg,
+            backgroundColor: sheetColors.sheet,
+            padding: space.gutter,
             justifyContent: 'center',
           }}>
-          <Text style={type.title}>Trim hit an error</Text>
-          <Text style={[type.body, { marginTop: spacing.sm }]}>{this.state.message}</Text>
+          <Text style={gadgetType.sheetTitle}>Trim hit an error</Text>
+          <Text style={[gadgetType.rowSub, { marginTop: space.related }]}>{this.state.message}</Text>
         </View>
       );
     }
@@ -99,8 +97,6 @@ function ScreenTracker() {
 }
 
 function RootNav() {
-  // gadget: the old routes below still read the (always dark) compatibility theme.
-  const { colors: themeColors } = useTheme();
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const segments = useSegments();
@@ -206,131 +202,6 @@ function RootNav() {
       />
       {/* A deep-link alias: it opens the device in log mode and leaves (app/log.tsx). */}
       <Stack.Screen name="log" options={{ headerShown: false, animation: 'none', title: 'Log' }} />
-      <Stack.Screen
-        name="workout-complete"
-        options={{
-          presentation: 'fullScreenModal',
-          headerShown: false,
-          gestureEnabled: false,
-          title: 'Nice work',
-        }}
-      />
-      <Stack.Screen
-        name="history-session"
-        options={{ headerShown: false, gestureEnabled: true, title: 'Session' }}
-      />
-      <Stack.Screen
-        name="progress-lift"
-        options={{ headerShown: false, gestureEnabled: true, title: 'Progress' }}
-      />
-      <Stack.Screen
-        name="progress-body"
-        options={{ headerShown: false, gestureEnabled: true, title: 'Progress' }}
-      />
-      <Stack.Screen
-        name="plan/[id]"
-        options={{
-          headerShown: false,
-          title: 'Plan',
-          headerBackButtonDisplayMode: 'minimal',
-          keyboardHandlingEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="day-preview"
-        options={{
-          // Native sheet: system glass, detent and drag-to-dismiss (trim-ui §5). Every sheet
-          // draws Trim's grabber (`PaperGrabber overlay`): iOS's sits 5pt from the edge.
-          presentation: 'formSheet',
-          sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: false,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.systemBackground },
-          title: 'Day',
-        }}
-      />
-      <Stack.Screen
-        name="edit"
-        options={{
-          // A plan's or a day's name, and a day's actions (trim-ui §10 Rename).
-          presentation: 'formSheet',
-          sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: false,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.systemBackground },
-          title: 'Edit',
-        }}
-      />
-      <Stack.Screen
-        name="day-workout"
-        options={{
-          // A trained day from Home's week: a record, read-only, sized to its content like Day
-          // preview, with Trim's grabber (trim-ui §10 Sheets).
-          presentation: 'formSheet',
-          sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: false,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.systemBackground },
-          title: 'Workout',
-        }}
-      />
-      <Stack.Screen
-        name="exercises"
-        options={{
-          // A step in the editor stack: a push, so the back chevron and edge swipe agree.
-          headerShown: false,
-          title: 'Exercises',
-        }}
-      />
-      <Stack.Screen
-        name="check-in"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [1],
-          sheetGrabberVisible: false,
-          sheetCornerRadius: 24,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
-          title: 'Check in',
-        }}
-      />
-      <Stack.Screen
-        name="goal"
-        options={{
-          // The goal sheet (trim-ui §13 Goals): native, sized to its content, Trim's grabber.
-          presentation: 'formSheet',
-          sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: false,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.systemBackground },
-          title: 'Goal',
-        }}
-      />
-      <Stack.Screen
-        name="weeks"
-        options={{
-          // F6: Home's week amount over the last weeks. Read-only, so a medium detent that
-          // can grow for large text; the grouped background matches Check in.
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.7, 1],
-          sheetGrabberVisible: false,
-          sheetCornerRadius: 24,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.secondarySystemBackground },
-          title: 'Weeks',
-        }}
-      />
-      <Stack.Screen
-        name="exercise-sheet"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: 'fitToContents',
-          sheetGrabberVisible: false,
-          headerShown: false,
-          contentStyle: { backgroundColor: themeColors.systemBackground },
-          title: 'Exercise',
-        }}
-      />
     </Stack>
   );
 }
