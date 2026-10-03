@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
 import { device, deviceObject, gadgetType, logGeometry } from '@/constants/theme';
 import {
@@ -35,6 +36,54 @@ export const DEVICE_OBJECT_HEIGHT =
 
 const NONE = () => false as const;
 
+/** The parts of the device object that can move on their own (first open, D74). */
+export type DevicePart = 'menu' | 'rocker' | 'history' | 'display' | 'plus' | 'minus' | 'well' | 'bigKey' | 'wheel';
+
+type PartStyle = StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>;
+
+/**
+ * First open's assembly (D74): an animated style for the body and for each part, plus layers in
+ * the object's 390 frame: `underlay` over the body and under the parts, `overlay` over all.
+ * Without it the object is static. The parts sit outside the body's clip so they can fly in.
+ */
+export type DeviceAssembly = {
+  body?: PartStyle;
+  parts?: Partial<Record<DevicePart, PartStyle>>;
+  underlay?: ReactNode;
+  overlay?: ReactNode;
+};
+
+const BOTTOM_ROW_Y = deviceObject.padTop + device.keySize + ROW_GAP + deviceObject.displayHeight + ROW_GAP;
+
+/** Where each part's centre sits in the object's 390 frame (sparks, glows). */
+export const DEVICE_OBJECT_ANCHORS: Record<DevicePart, { x: number; y: number }> = {
+  menu: { x: device.edge + device.keySize / 2, y: deviceObject.padTop + device.keySize / 2 },
+  rocker: { x: deviceObject.width / 2, y: deviceObject.padTop + device.keySize / 2 },
+  history: { x: deviceObject.width - device.edge - device.keySize / 2, y: deviceObject.padTop + device.keySize / 2 },
+  // The display's top edge: it lands from above.
+  display: { x: deviceObject.width / 2, y: deviceObject.padTop + device.keySize + ROW_GAP },
+  plus: {
+    x: device.edge + KEY_INSET + device.tallKeyWidth / 2,
+    y: BOTTOM_ROW_Y + logGeometry.tallKeyTop + device.tallKeyHeight / 2,
+  },
+  minus: {
+    x: device.edge + KEY_INSET + device.tallKeyWidth / 2,
+    y: BOTTOM_ROW_Y + logGeometry.tallKeyBottom + device.tallKeyHeight / 2,
+  },
+  well: { x: deviceObject.width / 2, y: BOTTOM_ROW_Y + WELL_Y + device.wellSize / 2 },
+  bigKey: { x: deviceObject.width / 2, y: BOTTOM_ROW_Y + BIG_KEY_Y + device.bigKeySize / 2 },
+  wheel: {
+    x: deviceObject.width - device.edge - KEY_INSET - device.wheelWidth / 2,
+    y: BOTTOM_ROW_Y + device.wheelHeight / 2,
+  },
+};
+
+/** A part's slot: animated while an assembly drives it, a plain view otherwise. */
+function Slot({ animated, style, children }: { animated?: PartStyle; style?: StyleProp<ViewStyle>; children: ReactNode }) {
+  if (animated) return <Animated.View style={[style, animated]}>{children}</Animated.View>;
+  return <View style={style}>{children}</View>;
+}
+
 /** The scale that fits the object in a box. */
 export function deviceObjectScale(maxWidth: number, maxHeight: number): number {
   return Math.max(0.1, Math.min(maxWidth / deviceObject.width, maxHeight / DEVICE_OBJECT_HEIGHT));
@@ -54,6 +103,7 @@ export function DeviceObject({
   wheelLabel,
   bigKeyLabel = 'Start',
   accessibilityLabel,
+  assembly,
   style,
 }: {
   scale: number;
@@ -65,8 +115,10 @@ export function DeviceObject({
   wheelLabel?: string;
   bigKeyLabel?: string;
   accessibilityLabel: string;
+  assembly?: DeviceAssembly;
   style?: StyleProp<ViewStyle>;
 }) {
+  const parts = assembly?.parts ?? {};
   const width = deviceObject.width;
   const height = DEVICE_OBJECT_HEIGHT;
   const edge = device.edge;
@@ -91,45 +143,54 @@ export function DeviceObject({
             transform: [{ scale }],
           },
         ]}>
-        <View style={styles.shadow} />
-        <View style={styles.clip}>
-          <DeviceBody rim rimRadius={deviceObject.radius}>
-            <View style={[styles.column, { paddingTop: deviceObject.padTop }]}>
-              <View style={[styles.topRow, { paddingHorizontal: edge }]}>
-                <RoundKey accessibilityLabel="Menu">
-                  <MenuGlyph />
-                </RoundKey>
-                <Rocker variant="week" lamps={lamps} accessibilityLabel="" />
-                <RoundKey accessibilityLabel="History">
-                  <HistoryGlyph />
-                </RoundKey>
-              </View>
-              <Display contentKey={displayKey} style={[styles.display, { marginHorizontal: edge }]}>
-                {display}
-              </Display>
-              <View style={styles.bottomRow}>
-                <TallKey label="+" accessibilityLabel="More" style={[styles.abs, { left: edge + KEY_INSET, top: logGeometry.tallKeyTop }]} />
-                <TallKey
-                  label="−"
-                  accessibilityLabel="Fewer"
-                  style={[styles.abs, { left: edge + KEY_INSET, top: logGeometry.tallKeyBottom }]}
-                />
-                <View style={[styles.centered, { top: WELL_Y }]}>
-                  <Well />
-                </View>
-                <View style={[styles.centered, { top: BIG_KEY_Y }]}>
-                  <BigKey label={bigKeyLabel} />
-                </View>
-                <Wheel
-                  onNotch={NONE}
-                  accessibilityLabel="Weight"
-                  label={wheelLabel}
-                  style={[styles.abs, { top: 0, right: edge + KEY_INSET }]}
-                />
-              </View>
-            </View>
-          </DeviceBody>
+        <Slot animated={assembly?.body} style={StyleSheet.absoluteFill}>
+          <View style={styles.shadow} />
+          <View style={styles.clip}>
+            <DeviceBody rim rimRadius={deviceObject.radius} />
+          </View>
+        </Slot>
+        {assembly?.underlay}
+        <View style={[styles.column, { paddingTop: deviceObject.padTop }]}>
+          <View style={[styles.topRow, { paddingHorizontal: edge }]}>
+            <Slot animated={parts.menu}>
+              <RoundKey accessibilityLabel="Menu">
+                <MenuGlyph />
+              </RoundKey>
+            </Slot>
+            <Slot animated={parts.rocker}>
+              <Rocker variant="week" lamps={lamps} accessibilityLabel="" />
+            </Slot>
+            <Slot animated={parts.history}>
+              <RoundKey accessibilityLabel="History">
+                <HistoryGlyph />
+              </RoundKey>
+            </Slot>
+          </View>
+          <Slot animated={parts.display} style={[styles.display, { marginHorizontal: edge }]}>
+            <Display contentKey={displayKey} style={styles.fill}>
+              {display}
+            </Display>
+          </Slot>
+          <View style={styles.bottomRow}>
+            <Slot animated={parts.plus} style={[styles.abs, { left: edge + KEY_INSET, top: logGeometry.tallKeyTop }]}>
+              <TallKey label="+" accessibilityLabel="More" />
+            </Slot>
+            <Slot animated={parts.minus} style={[styles.abs, { left: edge + KEY_INSET, top: logGeometry.tallKeyBottom }]}>
+              <TallKey label="−" accessibilityLabel="Fewer" />
+            </Slot>
+            <Slot animated={parts.well} style={[styles.centered, { top: WELL_Y }]}>
+              <Well />
+            </Slot>
+            <Slot animated={parts.wheel} style={[styles.abs, { top: 0, right: edge + KEY_INSET }]}>
+              <Wheel onNotch={NONE} accessibilityLabel="Weight" label={wheelLabel} />
+            </Slot>
+            {/* After the wheel, so the Start key passes over it while it hovers (first open). */}
+            <Slot animated={parts.bigKey} style={[styles.centered, { top: BIG_KEY_Y }]}>
+              <BigKey label={bigKeyLabel} />
+            </Slot>
+          </View>
         </View>
+        {assembly?.overlay}
       </View>
     </View>
   );
@@ -154,7 +215,8 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     overflow: 'hidden',
   },
-  column: { flex: 1 },
+  column: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  fill: { flex: 1 },
   topRow: {
     height: device.keySize,
     flexDirection: 'row',

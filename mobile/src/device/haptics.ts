@@ -4,7 +4,7 @@ import * as TrimDevice from '../../modules/trim-device';
 import type { DeviceSound, HapticPattern } from '../../modules/trim-device';
 import { useWorkoutStore } from '@/store/workout-store';
 
-export type { DeviceSound, HapticPattern } from '../../modules/trim-device';
+export type { DeviceSound, HapticPattern, SnapSound } from '../../modules/trim-device';
 
 const pattern = (name: HapticPattern) => () => TrimDevice.play(name);
 
@@ -31,6 +31,18 @@ export const haptics = {
   /** A day ticks in while the plan loads. */
   dayTick: pattern('dayTick'),
   swatch: pattern('swatch'),
+  /** The onboarding wheel hits 2 or 6 days. */
+  wheelStop: pattern('wheelStop'),
+  /** First open: a part snaps onto the body. */
+  assemblySnap: pattern('assemblySnap'),
+  /** First open: the body settles after floating in. */
+  assemblyArrive: pattern('assemblyArrive'),
+  /** First open: the Start key slams home. */
+  assemblyBang: pattern('assemblyBang'),
+  /** First open: the rumble while the Start key charges; runs out on its own at the bang. */
+  startAssemblyCharge: () => TrimDevice.startContinuous('assemblyCharge'),
+  /** First open skipped mid-charge. */
+  stopAssemblyCharge: () => TrimDevice.stopContinuous(),
   /** Hold to finish: the ramp starts on press-in. */
   startHoldFinish: () => TrimDevice.startContinuous('holdFinish'),
   /** Release, or the ring closed: cancels the ramp. */
