@@ -1,0 +1,18 @@
+# log: page.locator(body).ariaSnapshot() (Playwright; page.accessibility was removed), web export (--dev) with EXPO_PUBLIC_HOME_DEMO=gadget
+- img
+- button "Menu":
+  - img
+- button "Previous lift" [disabled]: ‹
+- button "Today's lifts"
+- button "Next lift": ›
+- text: 85.0 82.5 80.0 BENCH PRESS ▾ SET 1/3 ×8 TARGET 82.5×8
+- button "More reps":
+  - img
+- button "Fewer reps":
+  - img
+- button "Log set": Log
+- slider "Weight":
+  - img
+- text: KG
+- button "Undo last set" [disabled]:
+  - img
