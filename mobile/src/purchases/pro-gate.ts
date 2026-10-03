@@ -12,6 +12,7 @@ export const PRO_REASONS = [
   'switch_plan',
   'progress_history',
   'targets',
+  'finishes',
   'settings',
 ] as const;
 

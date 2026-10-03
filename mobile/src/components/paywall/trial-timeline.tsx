@@ -1,9 +1,7 @@
-import { SymbolView } from 'expo-symbols';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { fontScaleCap, lcd, onboardingType, paywallGeometry as geo, sheetColors, space } from '@/constants/theme';
 import { billedPerPeriod, type FreeTrial, type ProOffer } from '@/purchases/offers';
-import { iconSize, space } from '@/constants/theme';
-import { useTheme } from '@/theme/theme-context';
 
 type Step = { when: string; what: string; now: boolean };
 
@@ -19,64 +17,43 @@ export function trialSteps(offer: ProOffer, trial: FreeTrial): Step[] {
   ];
 }
 
-const NODE = 28;
-/** Same lane as the paywall's 36pt feature tiles, so every text edge on the page lines up. */
-const LANE = 36;
-
 /**
- * Home week-dot language, with a glyph in each node: ink for now (unlocked), grey for
- * later (the charge). One thin rail between. Compact, so it sits above the fold.
+ * The trial as a timeline (trim-ui §12 rule 11): today, lit like a lamp, then the charge day on
+ * a thin rail. One line each, so it sits above the fold with the CTA.
  */
 export function TrialTimeline({ offer, trial }: { offer: ProOffer; trial: FreeTrial }) {
-  const { colors, type } = useTheme();
   const steps = trialSteps(offer, trial);
-
   return (
     <View testID="paywall-trial-timeline">
       {steps.map((step, index) => {
         const last = index === steps.length - 1;
         return (
-          <View
-            key={step.when}
-            accessible
-            accessibilityLabel={`${step.when}: ${step.what}`}
-            style={{ flexDirection: 'row', gap: space.inline }}>
-            <View style={{ width: LANE, alignItems: 'center' }}>
-              <View
-                style={{
-                  width: NODE,
-                  height: NODE,
-                  borderRadius: NODE / 2,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: step.now ? colors.brand : colors.systemGray5,
-                }}>
-                <SymbolView
-                  name={step.now ? 'lock.open.fill' : 'creditcard.fill'}
-                  size={iconSize.caption}
-                  weight="semibold"
-                  tintColor={step.now ? colors.onBrand : colors.secondaryLabel}
-                />
-              </View>
-              {last ? null : (
-                <View style={{ flex: 1, width: 2, marginVertical: space.tight, backgroundColor: colors.systemGray5 }} />
-              )}
+          <View key={step.when} accessible accessibilityLabel={`${step.when}: ${step.what}`} style={styles.step}>
+            <View style={styles.lane}>
+              <View style={[styles.node, step.now ? styles.nodeNow : styles.nodeLater]} />
+              {last ? null : <View style={styles.rail} />}
             </View>
-            {/* `tight` centres the first 20pt line on the 28pt node. */}
-            <View
-              style={{
-                flex: 1,
-                minWidth: 0,
-                gap: space.pair,
-                paddingTop: space.tight,
-                paddingBottom: last ? 0 : space.inset,
-              }}>
-              <Text style={[type.caption, { color: colors.label }]}>{step.when}</Text>
-              <Text style={[type.caption, { fontVariant: ['tabular-nums'] }]}>{step.what}</Text>
-            </View>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.featureDetail, styles.line, last ? null : styles.gap]}>
+              <Text style={styles.when}>{`${step.when}  `}</Text>
+              {step.what}
+            </Text>
           </View>
         );
       })}
     </View>
   );
 }
+
+const NODE = geo.featureLamp;
+
+const styles = StyleSheet.create({
+  step: { flexDirection: 'row', gap: geo.featureGap + NODE / 2 },
+  lane: { width: NODE, alignItems: 'center' },
+  node: { marginTop: geo.featureLampTop, width: NODE, height: NODE, borderRadius: NODE / 2 },
+  nodeNow: { backgroundColor: lcd.amber, boxShadow: `0 0 6px ${lcd.amberGlow}` },
+  nodeLater: { borderWidth: geo.nodeRail, borderColor: sheetColors.muted },
+  rail: { flex: 1, width: geo.nodeRail, marginVertical: space.tight, backgroundColor: sheetColors.rule },
+  line: { flex: 1, minWidth: 0, fontVariant: ['tabular-nums'] },
+  gap: { paddingBottom: space.related },
+  when: { color: sheetColors.ink },
+});

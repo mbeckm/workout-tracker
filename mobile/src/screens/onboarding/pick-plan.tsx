@@ -1,28 +1,33 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { isStarterDayCount, starterTemplatesForDays, type StarterTemplate } from '@/catalog/templates';
-import { iconSize, radius, space } from '@/constants/theme';
-import { useTheme } from '@/theme/theme-context';
+import {
+  isStarterDayCount,
+  planFromStarterTemplate,
+  starterTemplatesForDays,
+  type StarterTemplate,
+} from '@/catalog/templates';
+import { onboardingGeometry, space } from '@/constants/theme';
+import { estimateDayMinutes, formatEstimateMinutes } from '@/domain/day-facts';
 
 import { selectionTick } from './choice';
-import { useFinishOnboarding } from './finish';
-import { OnboardingFrame, SYMBOL_CHECK } from './frame';
+import { OnboardingFrame } from './frame';
 import { joinNames } from './join-names';
+import { cartridgeLabel, PlanPack } from './pack';
 
-const BUILD_OWN = 'build-own';
+export const BUILD_OWN = 'build-own';
 
-/** Step 5: a ready plan for the chosen days, or build one from empty days. */
+/**
+ * Step 5 (PB1): the starter plans for the chosen days as packs of cartridges, one per day, and
+ * Build my own as the empty pack. Continue goes on to the finish; the plan loads after it.
+ */
 export function OnboardingPickPlan() {
-  const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ days?: string }>();
   const days = Number(params.days);
-  const templates = isStarterDayCount(days) ? starterTemplatesForDays(days) : [];
+  const templates = useMemo(() => (isStarterDayCount(days) ? starterTemplatesForDays(days) : []), [days]);
   const [choice, setChoice] = useState<string>(templates[0]?.id ?? BUILD_OWN);
-  const { finishBuildingOwn } = useFinishOnboarding();
 
   if (!isStarterDayCount(days)) {
     return <Redirect href="/onboarding/days" />;
@@ -36,40 +41,34 @@ export function OnboardingPickPlan() {
   };
 
   const next = () => {
-    if (choice === BUILD_OWN) {
-      finishBuildingOwn(days);
-      return;
-    }
-    router.push({ pathname: '/onboarding/ready', params: { template: choice } });
+    router.push({
+      pathname: '/onboarding/finish',
+      params: choice === BUILD_OWN ? { days: String(days), own: '1' } : { days: String(days), template: choice },
+    });
   };
 
   return (
-    <OnboardingFrame title="Pick a plan" action={{ title: 'Continue', onPress: next }} testID="onboarding-plan">
-      <View accessibilityRole="radiogroup" accessibilityLabel="Plans" style={{ paddingTop: space.section, gap: space.related }}>
-        <View
-          style={{
-            borderRadius: radius.md,
-            borderCurve: 'continuous',
-            backgroundColor: colors.secondarySystemBackground,
-            overflow: 'hidden',
-          }}>
-          {templates.map((template, index) => (
-            <PlanOption
-              key={template.id}
-              title={template.name}
-              meta={templateMeta(template)}
-              selected={choice === template.id}
-              separator={index > 0}
-              onSelect={() => select(template.id)}
-              testID={`onboarding-template-${template.id}`}
-            />
-          ))}
-        </View>
-        <PlanOption
+    <OnboardingFrame
+      title="Pick a plan"
+      sub={`${days} days a week`}
+      action={{ title: 'Continue', onPress: next }}
+      testID="onboarding-plan">
+      <View accessibilityRole="radiogroup" accessibilityLabel="Plans" style={styles.packs}>
+        {templates.map((template) => (
+          <TemplatePack
+            key={template.id}
+            template={template}
+            selected={choice === template.id}
+            onSelect={() => select(template.id)}
+          />
+        ))}
+        <PlanPack
           title="Build my own"
-          meta={`${days} empty days. You add the exercises.`}
+          sub={`${days} empty days`}
+          carts={Array.from({ length: days }, () => null)}
           selected={choice === BUILD_OWN}
           onSelect={() => select(BUILD_OWN)}
+          accessibilityLabel={`Build my own, ${days} empty days`}
           testID="onboarding-build-own"
         />
       </View>
@@ -77,59 +76,37 @@ export function OnboardingPickPlan() {
   );
 }
 
-function templateMeta(template: StarterTemplate): string {
-  return joinNames(template.days.map((day) => day.title));
-}
-
-function PlanOption({
-  title,
-  meta,
+function TemplatePack({
+  template,
   selected,
-  separator = false,
   onSelect,
-  testID,
 }: {
-  title: string;
-  meta: string;
+  template: StarterTemplate;
   selected: boolean;
-  separator?: boolean;
   onSelect: () => void;
-  testID?: string;
 }) {
-  const { colors, type } = useTheme();
+  const minutes = useMemo(() => {
+    const plan = planFromStarterTemplate(template);
+    const each = plan.days.map((day) => estimateDayMinutes(plan, day, []) ?? 0);
+    const average = each.reduce((sum, value) => sum + value, 0) / Math.max(1, each.length);
+    return Math.max(5, Math.round(average / 5) * 5);
+  }, [template]);
+  const sub = `${formatEstimateMinutes(minutes)} a day`;
+  const titles = template.days.map((day) => day.title);
+
   return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityLabel={`${title}, ${meta}`}
-      accessibilityState={{ checked: selected }}
-      onPress={onSelect}
-      testID={testID}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? colors.systemGray5 : 'transparent',
-      })}>
-      <View
-        style={{
-          marginHorizontal: space.inset,
-          minHeight: 44,
-          paddingVertical: space.inset,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.inline,
-          borderTopWidth: separator ? 0.5 : 0,
-          borderTopColor: colors.separator,
-        }}>
-        <View style={{ flex: 1, gap: space.pair, minWidth: 0 }}>
-          <Text style={type.row}>{title}</Text>
-          <Text style={[type.kicker, { color: colors.tertiaryLabel }]} numberOfLines={3}>
-            {meta}
-          </Text>
-        </View>
-        <View style={{ width: iconSize.control, alignItems: 'center', flexShrink: 0 }}>
-          {selected ? (
-            <SymbolView name={SYMBOL_CHECK} tintColor={colors.brand} size={iconSize.row} weight="semibold" />
-          ) : null}
-        </View>
-      </View>
-    </Pressable>
+    <PlanPack
+      title={template.name}
+      sub={sub}
+      carts={titles.map(cartridgeLabel)}
+      selected={selected}
+      onSelect={onSelect}
+      accessibilityLabel={`${template.name}, ${joinNames(titles)}, about ${minutes} minutes a day`}
+      testID={`onboarding-template-${template.id}`}
+    />
   );
 }
+
+const styles = StyleSheet.create({
+  packs: { gap: onboardingGeometry.packGap, paddingTop: space.gutter },
+});

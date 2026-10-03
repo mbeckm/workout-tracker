@@ -43,6 +43,7 @@ import { setProCache, type ProReason } from '@/purchases/pro-gate';
 
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { homeDemoMode, homeDemoSnapshot } from './home-demo';
+import { onboardingDemo } from './onboarding-demo';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
 import {
   defaultSnapshot,
@@ -208,7 +209,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         : null;
 
       const homeDemo = homeDemoMode();
-      if (homeDemo) {
+      if (onboardingDemo()) {
+        // Dev only: a new install, in memory (never saved).
+        setSnapshot(defaultSnapshot);
+      } else if (homeDemo) {
         // Dev only, never saved (see the persistence effects below).
         setSnapshot(homeDemoSnapshot(loaded ?? defaultSnapshot, homeDemo));
       } else if (loaded) {
@@ -233,7 +237,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || !hydratedRef.current || homeDemoMode() || shouldUseProgressDemo()) {
+      if (state === 'active' || !hydratedRef.current || homeDemoMode() || shouldUseProgressDemo() || onboardingDemo()) {
         return;
       }
       if (persistTimeoutRef.current) {
@@ -247,7 +251,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // The demo fixtures (Home, Progress) must never overwrite the user's saved data.
-    if (!isHydrated || homeDemoMode() || shouldUseProgressDemo()) {
+    if (!isHydrated || homeDemoMode() || shouldUseProgressDemo() || onboardingDemo()) {
       return;
     }
 
@@ -605,7 +609,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const saveLogSession = useCallback((session: LogSession, options?: { flush?: boolean }) => {
     setSnapshot((current) => {
       const next = { ...current, activeSession: session };
-      if (options?.flush && !homeDemoMode()) {
+      if (options?.flush && !homeDemoMode() && !onboardingDemo()) {
         // Backgrounding: write now instead of waiting for the debounce. Idempotent.
         void saveSnapshot(next);
       }

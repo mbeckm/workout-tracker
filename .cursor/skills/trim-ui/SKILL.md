@@ -755,7 +755,7 @@ No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinne
 
 ### Finishes (N7) [16, 17]
 
-Top edge 430. A sticky title `Finish 305, Signal`, then swatches 112 × 92 in a sideways row (number in Doto 22, name 13). The selected swatch is rotated −4°, lifted and ringed in white. The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free; 305 and 408 preview and offer `Get Trim Pro` (D3).
+Top edge 430. A sticky title `Finish 305, Signal`, then swatches 92 tall in a sideways row (number in Doto 22, name 13), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A swatch picked at either end scrolls fully into view. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap; for free users 305 and 408 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
 
 ### Settings (D1)
 
@@ -763,11 +763,11 @@ A dark sheet reached from the menu's last row, built like the menu and editor: c
 
 ### Onboarding (D12)
 
-Dark grid ground, the new type, one question per screen (see §12 Onboarding). Plan packs are cartridges (PB1); Build my own is the empty pack. Pick your finish on the dark grid (N10): free finishes plus locked ones that preview only. Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to 212.
+Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome: the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) fades in and rises 16 over the grid with its slot empty (`SLOT EMPTY`, blinking `INSERT PLAN`), then `Trim` and the lede. Days: the week rocker above the numbers lights one lamp per day. Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the four swatches in a 2 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
 
 ### Paywall (D13)
 
-A full-screen modal above any sheet, on the dark ground, with the knob hero (N9). Everything in §12 Paywall applies.
+A full-screen modal above any sheet, on the dark grid with a warm glow at the top, and the knob hero (N9): a ridged metal knob (128) with a light cap and an orange pointer on a dial from `FREE` to `PRO`. Once the modal has landed (550 ms) it turns from FREE to PRO over 1 s, gathering speed then settling, with a detent tick per ridge step and a firmer one on PRO; the arc lights behind it. Then the feature rows' lamps (amber display lamps, not tiles or checkmarks) light one after another, 90 ms apart. Reduce Motion: knob at PRO, lamps lit. Under it the reason's headline (26, centred), one row per Pro feature (title 16, line 14), the plans as pill cards (64, r20; selected 3 pt orange ring, the other a 2 pt quiet ring; the price with its period, then `Free for 7 days, $3.33 a month, save 52%`), the trial timeline one line per step, then the auto-renewal terms (scrolls). The footer: the light CTA pill (56), what happens to money under it, then Restore, Terms and Privacy. `Not now` top right. Everything in §12 Paywall applies; it fits above the fold on a 6.1" iPhone.
 
 ### Week moment (D15)
 

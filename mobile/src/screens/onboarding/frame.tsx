@@ -1,84 +1,96 @@
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
+import {
+  fontScaleCap,
+  gadgetRadius,
+  gadgetType,
+  onboardingGeometry,
+  onboardingType,
+  sheetColors,
+  sheetGeometry,
+  space,
+} from '@/constants/theme';
+import { GridGround } from '@/device/moment/grid-ground';
 import { KeyboardStickyView } from '@/keyboard';
-import { useTheme } from '@/theme/theme-context';
-import { iconSize, PRESSED_OPACITY, space } from '@/constants/theme';
-
-/** SF Symbol on iOS; the matching Material Symbol keeps web QA honest. */
-export const SYMBOL_CHECK = { ios: 'checkmark', android: 'check', web: 'check' } as const;
-const SYMBOL_BACK = { ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' } as const;
+import { PRESS_SCALE } from '@/motion';
 
 /**
- * One onboarding step: Back (except on Welcome), a scrollable stage on the 24pt grid,
- * and the black Continue pill at the thumb.
+ * One onboarding step on the moments' dark grid ground (D12, PB1, N10): a round ‹ (except on
+ * Welcome), the step's question centred with an optional fact under it, a scrollable stage, and
+ * the light Continue pill at the thumb, riding the keyboard on a step with a field.
  */
 export function OnboardingFrame({
   title,
+  sub,
   back = true,
-  centered = false,
   action,
   children,
+  stageStyle,
+  scroll = true,
   testID,
 }: {
-  /** The step's question. Rendered as the screen's header for VoiceOver. */
+  /** The step's question, read as the screen's header. */
   title?: string;
+  /** One fact under the title (`4 days a week`). */
+  sub?: string;
   back?: boolean;
-  /** Welcome only: the stage sits in the optical middle instead of under a title. */
-  centered?: boolean;
-  action: { title: string; onPress: () => void; testID?: string };
+  action: { title: string; onPress: () => void; testID?: string; disabled?: boolean };
   children: ReactNode;
+  stageStyle?: StyleProp<ViewStyle>;
+  /** Off for a step that lays its stage out to the screen (Welcome, Pick your finish). */
+  scroll?: boolean;
   testID?: string;
 }) {
-  const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const bottom = Math.max(insets.bottom, space.inline);
+
+  const heading = title ? (
+    <View style={styles.heading}>
+      <Text accessibilityRole="header" maxFontSizeMultiplier={fontScaleCap.title} style={[onboardingType.title, styles.center]}>
+        {title}
+      </Text>
+      {sub ? (
+        <Text maxFontSizeMultiplier={fontScaleCap.title} style={[onboardingType.sub, styles.center, styles.sub]}>
+          {sub}
+        </Text>
+      ) : null}
+    </View>
+  ) : null;
 
   return (
-    <View
-      testID={testID}
-      style={{
-        flex: 1,
-        backgroundColor: colors.systemBackground,
-        paddingTop: insets.top + 16,
-      }}>
-      <View style={{ paddingHorizontal: space.gutter, minHeight: 44, justifyContent: 'center' }}>
-        {back ? <OnboardingBack onPress={() => router.back()} /> : null}
+    <View testID={testID} style={styles.root}>
+      <StatusBar style="light" />
+      <GridGround />
+      <View style={[styles.bar, { marginTop: insets.top + space.related }]}>
+        {back ? <RoundControl glyph="‹" accessibilityLabel="Back" onPress={() => router.back()} testID="onboarding-back" /> : null}
       </View>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: space.gutter,
-          paddingTop: centered ? 0 : 12,
-          paddingBottom: space.gutter,
-          justifyContent: centered ? 'center' : 'flex-start',
-        }}>
-        {title ? (
-          <Text accessibilityRole="header" style={type.displayCompact} maxFontSizeMultiplier={1.4}>
-            {title}
-          </Text>
-        ) : null}
-        {children}
-      </ScrollView>
-      {/* Rides the keyboard on a step with a field (Name), so Continue stays at the thumb. */}
+      {scroll ? (
+        <ScrollView
+          style={styles.fill}
+          keyboardShouldPersistTaps="handled"
+          contentInsetAdjustmentBehavior="never"
+          contentContainerStyle={[styles.stage, stageStyle]}>
+          {heading}
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.fill, styles.stageFixed, stageStyle]}>
+          {heading}
+          {children}
+        </View>
+      )}
       <KeyboardStickyView
-        offset={{ closed: 0, opened: 0 }}
-        style={{
-          paddingHorizontal: space.gutter,
-          paddingTop: space.related,
-          paddingBottom: Math.max(insets.bottom, 12),
-          backgroundColor: colors.systemBackground,
-        }}>
-        <Button
+        offset={{ closed: 0, opened: bottom - space.inline }}
+        style={[styles.footer, { paddingBottom: bottom }]}>
+        <WidePill
           title={action.title}
-          variant="black"
           onPress={action.onPress}
+          disabled={action.disabled}
           testID={action.testID ?? 'onboarding-continue'}
         />
       </KeyboardStickyView>
@@ -86,23 +98,106 @@ export function OnboardingFrame({
   );
 }
 
-function OnboardingBack({ onPress }: { onPress: () => void }) {
-  const { colors } = useTheme();
+/** A round sheet control (SPEC §6 Header): 40, `control` ground, ‹ or ✕. */
+export function RoundControl({
+  glyph,
+  accessibilityLabel,
+  onPress,
+  testID,
+}: {
+  glyph: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+  testID?: string;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back"
-      testID="onboarding-back"
-      hitSlop={12}
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => ({
-        alignSelf: 'flex-start',
-        minHeight: 44,
-        minWidth: 44,
-        justifyContent: 'center',
-        opacity: pressed ? PRESSED_OPACITY : 1,
-      })}>
-      <SymbolView name={SYMBOL_BACK} tintColor={colors.label} size={iconSize.control} weight="medium" />
+      hitSlop={sheetGeometry.controlTop / 2}
+      testID={testID}
+      style={({ pressed }) => [styles.control, pressed && styles.controlPressed]}>
+      <Text maxFontSizeMultiplier={fontScaleCap.display} style={gadgetType.control}>
+        {glyph}
+      </Text>
     </Pressable>
   );
 }
+
+/** The light main pill at full width (PB1 `.cta`: 60 tall, r30). */
+export function WidePill({
+  title,
+  onPress,
+  disabled = false,
+  testID,
+}: {
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [styles.pill, disabled && styles.pillDisabled, pressed && styles.pillPressed]}>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        maxFontSizeMultiplier={fontScaleCap.title}
+        style={[gadgetType.pill, { color: sheetColors.pillLightInk }]}>
+        {title}
+      </Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  fill: { flex: 1 },
+  bar: {
+    height: sheetGeometry.control,
+    paddingHorizontal: onboardingGeometry.gutter,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heading: { paddingTop: onboardingGeometry.titleTop },
+  center: { textAlign: 'center' },
+  sub: { marginTop: onboardingGeometry.subTop },
+  stage: {
+    flexGrow: 1,
+    paddingHorizontal: onboardingGeometry.gutter,
+    paddingBottom: space.gutter,
+  },
+  stageFixed: { paddingHorizontal: onboardingGeometry.gutter },
+  footer: {
+    paddingHorizontal: onboardingGeometry.gutter,
+    paddingTop: space.related,
+  },
+  control: {
+    height: sheetGeometry.control,
+    minWidth: sheetGeometry.control,
+    paddingHorizontal: sheetGeometry.controlPadX,
+    borderRadius: gadgetRadius.control,
+    borderCurve: 'continuous',
+    backgroundColor: sheetColors.control,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlPressed: { backgroundColor: sheetColors.cardRaised },
+  pill: {
+    height: onboardingGeometry.ctaHeight,
+    borderRadius: onboardingGeometry.ctaHeight / 2,
+    borderCurve: 'continuous',
+    backgroundColor: sheetColors.pillLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.gutter,
+  },
+  pillDisabled: { backgroundColor: sheetColors.pillDark },
+  pillPressed: { transform: [{ scale: PRESS_SCALE }] },
+});
