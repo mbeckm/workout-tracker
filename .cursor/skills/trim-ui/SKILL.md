@@ -371,6 +371,8 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 
 The sheet closes; the scene fades in over 600 ms (dark radial backdrop, a perspective grid floor of 44 pt cells, a vignette); the display shows `SLOT EMPTY` and a blinking `INSERT PLAN`. 0–750 ms the device pulls back and turns (about 44 pt thick). 750–1170 ms the cartridge appears above the top edge. 1350–1780 ms it slides in. **At 1780 ms, the click:** overshoot and settle, the device dips and rebounds, an orange glow along the slot, a pulse ring, the lamps flick across, the display powers on to `LOADED` and the plan name, haptic `cartridgeClick` and sound `cartridge` on that frame. 2300–3000 ms the device swings back and the scene fades. From 3000 ms the days tick onto the display 190 ms apart (a tick haptic each), the lamps light, Home renders with the toast "<Plan> is your plan". SPEC §7 has the exact table; `frames/a–g` is the visual target.
 
+Who plays it (`device/insert/use-insert.ts`): the SceneKit view (`CartridgeInsert`) when the build has it; the JS 2.5D version (`device/insert/insert-scene.tsx`, one clock in `timeline.ts`) on web, in older builds, or when the native view hasn't drawn within 1.5 s; nobody under Reduce Motion (straight to `LOADED`, haptic and sound kept). Either way the JS device takes over face-on for the ticks. In the JS version depth is faked in the face's plane (22 layers shifted where a point that deep would land), and anything flat that shares the screen with the turned device sits far behind it (a `matrix` z of −2000): Core Animation depth-sorts 3D layers against flat siblings, so a backdrop at z 0 cuts away the half of the device that leans back. A tap in the first 380 ms (the second tap of a double tap on Use plan) doesn't skip. Dev: `/?insert=js|native|auto&pause=<ms>&speed=<x>`, `/dev-insert?fallback=1`.
+
 ### Rules
 
 1. **Respond within 100 ms.** Press feedback starts on press-in. Nothing sits between a press and its visible effect.
@@ -401,6 +403,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Cartridge click | t0 transient 1.0 / 1.0 (latch), t65 transient 1.0 / .2 (seat), then continuous .3 / .1 for 80 ms | `impactAsync(Rigid)`, then `impactAsync(Heavy)` 65 ms later |
 | Day ticks in (loading) | transient .4 / .7 | `selectionAsync` |
 | Finish swatch picked | transient .5 / .6 | `selectionAsync` |
+| A cartridge files onto its shelf (one per cartridge, where its drop lands) | `key` | `impactAsync(Light)` |
 | Sheet open / close | none | |
 
 A haptic confirms something the body did. Nothing else buzzes: no haptic on navigation, errors or sheets.
@@ -735,15 +738,15 @@ Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue ru
 
 ### Plans rack (PB3) [20, 24]
 
-Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week), the day title uppercase, at most 6 characters. `+` makes a plan (free users with one plan get the paywall). Closing the editor after a change files that plan's cartridges.
+Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. `+` makes a plan (free users with one plan get the paywall). Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
 
 ### Editor (PA1) [21, 25]
 
-The plan name (28) with an `Active` badge, tappable to rename inline. Per day a header (20/800, `N lifts`, a `…` for rename, duplicate, delete with Undo, move up or down) over a card of rows: the name and a dark sets × reps chip (Doto 15 orange) that opens device edit. `Add lift` (orange) under each day; `Add day` (an outlined button) at the end; an empty plan's first state emphasises `Add lift`. The header `…` holds Rename, Use plan and Delete plan. A sticky `Use plan` when the plan isn't active (needs at least one lift; blocked during a workout). Swipe a row to remove it, with Undo. New plans name themselves from their days; leaving an empty, unnamed new plan discards it silently.
+The plan name (28) with an `Active` badge, tappable to rename inline. Per day a header (20/800, `N lifts`, a `…` for rename, duplicate, delete with Undo, move up or down) over a card of rows: the name and a dark sets × reps chip (Doto 15 orange) that opens device edit. `Add lift` (orange) under each day; `Add day` (an outlined button) at the end; an empty plan's first state emphasises `Add lift`. The header `…` holds Rename, Use plan and Delete plan. A sticky `Use plan` when the plan isn't active (needs at least one lift; blocked during a workout). Swipe a row left to remove it, with Undo (an orange `Remove` shows behind it); a long press picks a row up to drag it within its day. The day header reads name, `N lifts`, `…`; tapping the name renames it in place, with the usual split names as chips under the field. An empty plan's first day has `Add lift` filled orange. The header title is hidden (the page title repeats it) and its right control is `…`. New plans name themselves from their days; leaving an empty, unnamed new plan discards it silently.
 
 ### Add lifts (PA3) [23]
 
-Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways, rows with name, `kit, muscle` and a round tick (orange when picked), recents, creating a custom exercise. A sticky `Add N lifts`.
+Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways (catalog sections; `Recent` first when there are recents; a chip shows that section), rows with name, `kit, muscle` and a round tick (orange when picked; lifts already in the day read `In this day`), creating a custom exercise from a search with no exact match. A sticky `Add N lifts` (`Pick lifts`, dimmed, with none). The list is the shared `ExercisePicker` (`multi`, or `replace` for Choose another).
 
 ### Progress (QA1, without the gauge) [18]
 

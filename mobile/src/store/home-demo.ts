@@ -25,9 +25,10 @@ export type HomeDemoMode =
  * every day done with a 2-week streak, `-zero` a plan whose days have no lifts, `-seven` a
  * 7-day plan, `-empty` no plans at all. `-history` is `gadget` plus 28 older weeks (110+ workouts,
  * loads creeping up so records land, a few short weeks, one workout from a deleted plan) for
- * the History wall.
+ * the History wall. `-plans` is `gadget` plus an inactive Upper Lower on the rack (screens 24, 25),
+ * to switch plans and play the insert.
  */
-export type GadgetDemoMode = `gadget${'' | '-stamped' | '-complete' | '-zero' | '-seven' | '-empty' | '-history'}`;
+export type GadgetDemoMode = `gadget${'' | '-stamped' | '-complete' | '-zero' | '-seven' | '-empty' | '-history' | '-plans'}`;
 
 const MODES: readonly HomeDemoMode[] = [
   'free',
@@ -45,6 +46,7 @@ const MODES: readonly HomeDemoMode[] = [
   'gadget-seven',
   'gadget-empty',
   'gadget-history',
+  'gadget-plans',
 ];
 
 export function homeDemoMode(): HomeDemoMode | null {
@@ -479,6 +481,41 @@ function gadgetDemoSnapshot(base: WorkoutSnapshot, mode: GadgetDemoMode): Workou
     });
   }
   workouts.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+  const others = mode === 'gadget-plans' ? [upperLowerPlan()] : [];
   // The plan loop starts each week where it left off; last week ended on the last day.
-  return { ...common, activePlanId: plan.id, plans: [plan], workoutHistory: workouts };
+  return { ...common, activePlanId: plan.id, plans: [plan, ...others], workoutHistory: workouts };
+}
+
+/** The rack's second plan (screens 24, 25): Upper Lower, four days, never trained. */
+function upperLowerPlan() {
+  const plan = emptyPlan('Upper Lower');
+  const upper: [string, number, number][] = [
+    ['bundled-flat-barbell-bench-press', 4, 6],
+    ['bundled-barbell-row', 4, 8],
+    ['bundled-overhead-press', 3, 8],
+    ['bundled-lat-pulldown', 3, 10],
+  ];
+  const lower: [string, number, number][] = [
+    ['bundled-barbell-back-squat', 4, 6],
+    ['bundled-romanian-deadlift', 3, 8],
+    ['bundled-plank', 3, 45],
+  ];
+  plan.days = (
+    [
+      ['Upper A', upper],
+      ['Lower A', lower],
+      ['Upper B', upper.slice(1)],
+      ['Lower B', lower],
+    ] as const
+  ).map(([title, lifts]) => {
+    const day = emptyDay(title);
+    day.exercises = lifts.flatMap(([id, sets, value]) => {
+      const row = bundledExerciseById(id);
+      if (!row) return [];
+      const base = { ...clonePrescription(row), sets, repScheme: null };
+      return [row.trackingMode === 'duration' ? { ...base, durationSeconds: value } : { ...base, reps: value }];
+    });
+    return day;
+  });
+  return plan;
 }

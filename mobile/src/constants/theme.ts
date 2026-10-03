@@ -740,6 +740,10 @@ export const gadgetType = {
   lcdPrompt: lcdRole(40, 44),
   /** The lift name in device edit. */
   lcdName: lcdRole(28, 32),
+  /** The `×` between sets and reps in device edit (prototype 48/66). */
+  lcdTimes: lcdRole(48, 66),
+  /** A day ticking in while a plan loads (prototype 18/34). */
+  lcdLoadDay: lcdRole(18, 34),
   /** Day row titles. */
   lcdRow: lcdRole(20, 24),
   /** Finish stats (`n OF m SETS` over the volume). */
@@ -1325,6 +1329,351 @@ export const progressGeometry = {
 export const progressColors = {
   /** An unticked round tick's ring. */
   tickRing: '#4A4945',
+} as const;
+
+/* ----------------------------------------------------------------------------------------- *
+ * Plans: the rack, the editor and the add lifts sheet (Phase 6; SPEC §6 Plans rack, Editor,
+ * Add lifts; prototype `.shelf`, `.cart`, `.ptitle`, `.dh`, `.erow`, `.num`, `.addl`,
+ * `.addday`, `.search`, `.mus`, `.pickrow`, `.tick`).
+ * ----------------------------------------------------------------------------------------- */
+
+/** Plans colours beyond the sheet palette. */
+export const plansColors = {
+  /** A shelf (`.shelf`). */
+  shelf: '#1C1C1A',
+  /** The shelf's flash as cartridges file in (`@keyframes flash`). */
+  shelfFlash: '#2A2622',
+  /** A cartridge's top highlight (`inset 0 2px 0 #fff`). */
+  cartHighlight: '#FFFFFF',
+  /** The cartridge's grip ridges (`.cart u`). */
+  grip: '#B9B4AA',
+  /** The sets × reps chip's inner shade (`.num` inset 0 2 4). */
+  numShade: 'rgba(0,0,0,0.6)',
+  /** A dragged lift's lift-off shadow. */
+  dragShadow: 'rgba(0,0,0,0.45)',
+} as const;
+
+/** Plans type roles (prototype CSS). */
+export const plansType = {
+  /** A shelf's plan name (`.shelf .sn b`). */
+  shelfName: { ...roundedRole(19, 23, weight.heavy), color: sheetColors.ink },
+  /** `4 days, 12 lifts` (`.shelf .ss`). */
+  shelfSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
+  /** The `Active` badge (`.act`). */
+  badge: { ...roundedRole(11, 13, weight.heavy), color: sheetColors.onOrange },
+  /** A cartridge's label window (`.cart i`, Doto 9 on a 24 line). */
+  cartLabel: lcdRole(9, 24),
+  /** The editor's plan name (`.ptitle b`); a TextInput while renaming (no line height). */
+  planTitleInput: { fontFamily: fontFamily.rounded, fontSize: 28, fontWeight: weight.heavy, letterSpacing: -0.5 },
+  /** A day header (`.dh b`). */
+  dayTitle: { ...roundedRole(20, 24, weight.heavy), color: sheetColors.ink },
+  dayTitleInput: { fontFamily: fontFamily.rounded, fontSize: 20, fontWeight: weight.heavy },
+  /** `3 lifts`, the day's `…` (`.dh span`). */
+  dayCount: { ...roundedRole(13, 16, weight.bold), color: sheetColors.muted },
+  /** A lift row's name, `Add lift` (`.erow`). */
+  row: { ...roundedRole(16, 19, weight.bold), color: sheetColors.ink },
+  /** The sets × reps chip (`.num`, Doto 15). */
+  num: lcdRole(15, 18),
+  /** `Add day` (`.addday`). */
+  addDay: { ...roundedRole(16, 19, weight.heavy), color: sheetColors.ink },
+  /** The search field (`.search`); a TextInput, so no line height. */
+  search: { fontFamily: fontFamily.rounded, fontSize: 16, fontWeight: weight.bold },
+  /** The search glyph (`⌕`). */
+  searchGlyph: { ...roundedRole(16, 19, weight.bold), color: sheetColors.muted },
+  /** Muscle chips (`.mus .mchip`). */
+  muscleChip: { ...roundedRole(14, 18, weight.heavy), color: sheetColors.inkSoft },
+  /** A picker row (`.pickrow b`, `.pickrow .s`). */
+  pickName: { ...roundedRole(16, 19, weight.bold), color: sheetColors.ink },
+  pickSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
+  /** The tick's ✓ (`.tick`). */
+  tick: { ...roundedRole(15, 18, weight.heavy), color: sheetColors.onOrange },
+} as const;
+
+/** Plans geometry (prototype CSS; SPEC §6). */
+export const plansGeometry = {
+  // The rack (`.shelf`, `.cart`)
+  shelfHeight: 150,
+  shelfPadY: 14,
+  shelfPadX: 18,
+  shelfGap: 12,
+  shelfOutline: 3,
+  nameGap: 8,
+  subTop: 2,
+  badgeHeight: 22,
+  badgePadX: 9,
+  badgeRadius: 11,
+  cartWidth: 48,
+  cartHeight: 64,
+  cartRadius: 10,
+  cartGap: 8,
+  cartHighlight: 2,
+  labelInset: 5,
+  labelTop: 8,
+  labelHeight: 24,
+  labelRadius: 4,
+  gripInsetX: 10,
+  gripBottom: 8,
+  gripHeight: 10,
+  /** Ridges: 2 on, 2 off. */
+  gripLine: 2,
+  gripPitch: 4,
+  /** Filing: each cartridge drops from 120 above, tilted −8° (SPEC §7). */
+  fileFrom: -120,
+  fileTilt: -8,
+  /** The flash holds its colour for the first 40% (`@keyframes flash`). */
+  flashHold: 0.4,
+  /** The empty rack's fact sits this far below the header. */
+  emptyTop: 48,
+  // The editor (`.ptitle`, `.dh`, `.erow`, `.num`, `.addday`, `.usebar`)
+  titleTop: -6,
+  titleX: 16,
+  titleGap: 10,
+  titleHeight: 32,
+  dayTop: 20,
+  dayX: 16,
+  dayBottom: 8,
+  dayHeight: 24,
+  /** The day header's `…`: a 44 target around a short glyph. */
+  dayMore: 44,
+  rowPadY: 10,
+  rowPadLeft: 18,
+  rowPadRight: 12,
+  rowGap: 12,
+  numRadius: 10,
+  numPadX: 10,
+  numPadY: 6,
+  numShadowY: 2,
+  numShadowBlur: 4,
+  addDayTop: 6,
+  addDayX: 4,
+  addDayHeight: 56,
+  addDayRadius: 20,
+  addDayRing: 2,
+  /** `Use plan` and `Add N lifts` hug their words (`padding: 0 28px`). */
+  pillPadX: 28,
+  /** Room under the last card: 20, or 100 above a sticky pill. */
+  tail: 20,
+  tailOverPill: 100,
+  /** Swipe a lift left past this to remove it (a flick projects 0.1 s ahead), then it slides away. */
+  removeWidth: 96,
+  swipeSlop: 12,
+  swipeProjection: 0.1,
+  swipeAway: 4,
+  /** Day name suggestions while renaming a day (the old name sheet's chips). */
+  suggestionTop: 2,
+  dragScale: 1.03,
+  dragShadowY: 8,
+  dragShadowBlur: 18,
+  dragLongPress: 300,
+  // Add lifts (`.search`, `.mus`, `.pickrow`, `.tick`)
+  searchHeight: 46,
+  searchRadius: 23,
+  searchPadX: 16,
+  searchX: 4,
+  searchGap: 8,
+  chipsTop: 12,
+  chipsBottom: 12,
+  chipsPadX: 16,
+  chipGap: 8,
+  chipHeight: 32,
+  chipPadX: 14,
+  chipRadius: 14,
+  pickPadY: 12,
+  pickPadX: 18,
+  pickGap: 12,
+  tick: 30,
+  tickRing: 2,
+} as const;
+
+/** Device edit (PA2, screen 22; prototype `renderEdit`): where the display's parts sit. */
+export const editGeometry = {
+  /** The lift name's top (prototype 52). */
+  nameY: 52,
+  /** The sets × reps row's top (prototype 150); it moves up on short displays. */
+  numbersY: 150,
+  /** The row's height: the SETS label (16) + 6 + the number (100), plus the frame's overhang. */
+  numbersHeight: 135,
+  /**
+   * The number under its label. CSS has 6, but Doto sits higher in an RN line box: 24 puts the
+   * glyph 15 under the frame's top and the frame 7 under the label, as on screen 22.
+   */
+  numberGap: 24,
+  /** The × sits on the numbers' baseline (Doto 48 drops lower in its line box than 104). */
+  timesLift: 11,
+  /** 104 Doto on a 100 line (prototype). */
+  numberLine: 100,
+  /** Between SETS, ×, REPS (`gap: 14`). */
+  columnGap: 14,
+  /** The frame round the wheel's value: 10 past each side, from 23 under the label's top (screen 22), 112 tall, r18. */
+  frameOutset: 10,
+  frameTop: 23,
+  frameHeight: 112,
+  frameRadius: 18,
+  frameStroke: 2,
+  /** Footer bottom (prototype 20). */
+  footerY: 20,
+  /** The footer and the room the numbers keep above it. */
+  footerRoom: 44,
+  /** Value lengths (sets + value characters) that fit at 104, then 88; longer ones go to 56. */
+  heroChars: 4,
+  compactChars: 5,
+  /** The SETS label under the tall keys (prototype y762, left keys at x22). */
+  setsLabelY: 174,
+} as const;
+
+/** The plan insert (SPEC §7 Plan activation; prototype `.scene`, `.c3`, `.pulse`, `.slotglow`). */
+export const insertColors = {
+  /** The backdrop's radial (`#1D1C1A` → `#0B0B0A`). */
+  backdropIn: '#1D1C1A',
+  backdropOut: '#0B0B0A',
+  gridLine: '#FFFFFF',
+  gridLineOpacity: 0.14,
+  vignette: '#000000',
+  vignetteOpacity: 0.7,
+  shadow: '#000000',
+  shadowOpacity: 0.6,
+  /** The cartridge's plastic, its top highlight and bottom shade, the back layers, the ridges. */
+  cartHi: '#DAD7D0',
+  cartLo: '#B7B3AA',
+  cartHighlight: 'rgba(255,255,255,0.65)',
+  cartShade: 'rgba(0,0,0,0.08)',
+  cartBack: '#8E8A80',
+  cartRidge: 'rgba(0,0,0,0.18)',
+  cartLabelShade: 'rgba(0,0,0,0.8)',
+  /** The slot glow and the pulse ring. */
+  glow: '#FF6A1A',
+  glowHalo: 'rgba(255,106,26,0.7)',
+  pulseRing: 'rgba(255,106,26,0.5)',
+  pulseHalo: 'rgba(255,106,26,0.25)',
+  /** The display's boot flicker (`@keyframes boot`). */
+  bootFlash1: '#3A2214',
+  bootFlash2: '#2A1A10',
+  /** The body's depth layers: brightness from the front layer to the back one (`.edge`, .6). */
+  depthFront: 0.72,
+  depthBack: 0.42,
+} as const;
+
+export const insertGeometry = {
+  /** The pull-back pose (SPEC §7): translateY 70, scale .68, rotateX −16°, rotateY −30°, rotateZ 2°. */
+  pullY: 70,
+  pullScale: 0.68,
+  pullRotateX: -16,
+  pullRotateY: -30,
+  pullRotateZ: 2,
+  /** `.phone { perspective: 1400px }`. */
+  perspective: 1400,
+  /** How far behind the screen the scene's backdrop sits, clear of the turned device's back half. */
+  backdropDepth: 2000,
+  /** The body as an object: r52, 44 deep in 22 layers. */
+  bodyRadius: 52,
+  bodyDepth: 44,
+  depthLayers: 22,
+  /** The click's dip: down 10, rotateX 4°, scale .985; rebound −4, −1°, 1.006; then 1, 0. */
+  dipY: 10,
+  dipRotateX: 4,
+  dipScale: 0.985,
+  reboundY: -4,
+  reboundRotateX: -1,
+  reboundScale: 1.006,
+  settleY: 1,
+  /** The cartridge (`.c3`): 160 × 190 at y −240, half into the body's depth, 5 layers thick. */
+  cartWidth: 160,
+  cartHeight: 190,
+  cartTop: -240,
+  cartDepth: 22,
+  cartLayers: 5,
+  cartLayerStep: 2,
+  cartRadiusTop: 9,
+  cartRadiusTopRight: 22,
+  cartRadiusBottom: 6,
+  /** Appears from 60 above, slides 180 down, overshoots to 192, settles 184 then 186. */
+  cartFrom: -60,
+  cartSlide: 180,
+  cartOvershoot: 192,
+  cartSettle1: 184,
+  cartSettle2: 186,
+  /** `.rid`: left 18, right 30, top 10, 14 tall, ridges 2 on 4 off. */
+  ridgeLeft: 18,
+  ridgeRight: 30,
+  ridgeTop: 10,
+  ridgeHeight: 14,
+  ridgeLine: 2,
+  ridgePitch: 6,
+  ridgeRadius: 3,
+  /** `.lbl`: 14 in, 34 down, 118 tall, r7, padding 10 12; name Doto 17/19, days 10/15. */
+  labelInset: 14,
+  labelTop: 34,
+  labelHeight: 118,
+  labelRadius: 7,
+  labelPadY: 10,
+  labelPadX: 12,
+  labelDaysTop: 8,
+  /** `.brand` and `.arrow`. */
+  brandInset: 14,
+  brandBottom: 10,
+  arrowRight: 16,
+  arrowBottom: 9,
+  arrowHalf: 6,
+  arrowHeight: 9,
+  /** `.slotglow`: 180 × 10 at y −4, r5, an 18 blur. */
+  glowWidth: 180,
+  glowHeight: 10,
+  glowTop: -4,
+  glowBlur: 18,
+  glowSpread: 6,
+  /** `.pulse`: 340 round, centred 40% down; scale .35 → 1.25, opacity .9 → 0. */
+  pulseSize: 340,
+  pulseCentreY: 0.4,
+  pulseFrom: 0.35,
+  pulseTo: 1.25,
+  pulseOpacity: 0.9,
+  pulseRing: 2,
+  pulseBlur: 40,
+  pulseSpread: 6,
+  /** `.gridfloor`: 44 cells, from 52% down, tilted 72° under a 500 perspective, 120% long, 60% wider each side. */
+  gridCell: 44,
+  gridTop: 0.52,
+  gridTilt: 72,
+  gridPerspective: 500,
+  gridLength: 1.2,
+  gridSpread: 0.6,
+  gridLine: 1.5,
+  /** The floor's mask: .2 at its far edge, full from 30% to 60%, gone at the end. */
+  gridMaskStart: 0.2,
+  gridMaskIn: 0.3,
+  gridMaskOut: 0.6,
+  /** The radial backdrop: 80% × 55% at 50% 42%; the vignette 75% × 65% at 50% 48%, clear to 55%. */
+  backdropRx: 0.8,
+  backdropRy: 0.55,
+  backdropCy: 0.42,
+  vignetteRx: 0.75,
+  vignetteRy: 0.65,
+  vignetteCy: 0.48,
+  vignetteClear: 0.55,
+  /** `.devshadow`: 270 × 46 at y720 of 844, from scale .6. */
+  shadowWidth: 270,
+  shadowHeight: 46,
+  shadowY: 720 / 844,
+  shadowFrom: 0.6,
+  /** The boot: scaleY .02 → 1.04 (35%) → 1. */
+  bootFrom: 0.02,
+  bootPeak: 1.04,
+  bootPeakAt: 0.35,
+  /** Loaded: the plan name at 54, the days from 170 (34 apart), a 10-segment bar 16 tall, 4 apart, 22 up. */
+  loadedNameY: 54,
+  loadedListY: 170,
+  loadedLine: 34,
+  barSegments: 10,
+  barHeight: 16,
+  barGap: 4,
+  barBottom: 22,
+} as const;
+
+/** The cartridge's printing in the insert (`.c3 .lbl b`, `.lbl span`, `.brand`). */
+export const insertType = {
+  cartName: lcdRole(17, 19),
+  cartDays: { ...lcdRole(10, 15), color: lcd.amberDim },
+  brand: { ...roundedRole(11, 13, weight.heavy, 2), color: insertColors.cartBack },
 } as const;
 
 /* ----------------------------------------------------------------------------------------- *

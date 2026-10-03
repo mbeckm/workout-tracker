@@ -101,6 +101,8 @@ export const EASE_KNOB_FN = Easing.bezierFn(0.45, 0, 0.2, 1);
 export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
 /** Plan insert slide-in: bezier(.55,0,.8,.35). */
 export const EASE_INSERT_SLIDE_FN = Easing.bezierFn(0.55, 0, 0.8, 0.35);
+/** CSS `ease-out` (the insert's click settle and slot glow). */
+export const EASE_CSS_OUT_FN = Easing.bezierFn(0, 0, 0.58, 1);
 /** Key press (CSS `transition: transform .08s` uses `ease`). */
 export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
 /** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
@@ -179,6 +181,24 @@ export const DEVICE = {
   INSERT_BOOT: 450,
   INSERT_SWING: 700,
   INSERT_DAY_TICK: 190,
+  /** Pauses in the insert (prototype `activate()`): before the slide, between the click and the swing. */
+  INSERT_HOLD: 180,
+  INSERT_SWING_DELAY: 520,
+  /** The ticks start this long after face-on; Home comes this long after the last one. */
+  INSERT_TICK_START: 120,
+  INSERT_HOME_DELAY: 450,
+  /** The lamps flick across at the click: the first after 60, then 55 apart, each lit 140. */
+  INSERT_LAMP_FIRST: 60,
+  INSERT_LAMP_STEP: 55,
+  INSERT_LAMP_ON: 140,
+  /** The grid floor slides one cell as the scene comes in. */
+  INSERT_GRID: 1400,
+  /** The scene's shadow grows in with it. */
+  INSERT_SHADOW: 800,
+  /** No `onSceneReady` from the native insert by then: the JS insert plays instead. */
+  INSERT_NATIVE_TIMEOUT: 1500,
+  /** Whoever awaits the insert (onboarding) stops waiting by then, whatever happened to the device. */
+  INSERT_MAX_WAIT: 15000,
   /** The week moment (D15): the grid ground fades in, then the report drops onto the spike. */
   WEEK_SCENE: 600,
   WEEK_DROP: 700,

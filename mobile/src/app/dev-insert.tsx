@@ -15,10 +15,28 @@ import { useWorkoutStore } from '@/store/workout-store';
  * `scratchworkout:///dev-insert?finish=212&plan=Upper%20Lower&days=Upper%20A,Lower%20A`.
  * `pause=<ms>` freezes the timeline for screenshots (and hides the controls); `speed=0.25`
  * plays it in slow motion; `reduce=1` acts as Reduce Motion. Replay remounts it.
+ *
+ * `fallback=1` plays the JS 2.5D insert instead (Phase 6), on the real device with the active
+ * plan (`/?insert=js`), taking `pause` and `speed` too.
  */
 export default function DevInsertRoute() {
+  const params = useLocalSearchParams<{ fallback?: string; pause?: string; speed?: string }>();
   if (!__DEV__) {
     return <Redirect href="/" />;
+  }
+  if (params.fallback === '1') {
+    return (
+      <Redirect
+        href={{
+          pathname: '/',
+          params: {
+            insert: 'js',
+            ...(params.pause != null ? { pause: params.pause } : {}),
+            ...(params.speed != null ? { speed: params.speed } : {}),
+          },
+        }}
+      />
+    );
   }
   return <DevInsertForParams />;
 }

@@ -108,10 +108,13 @@ const CONTROL_A11Y = { back: 'Back', close: 'Close' } as const;
  */
 export function SheetHeader({
   title,
+  titleHidden = false,
   left,
   right,
 }: {
   title: string;
+  /** The page repeats the title right below (the editor's plan name): drawn clear, still read first. */
+  titleHidden?: boolean;
   left?: SheetControl;
   right?: SheetControl;
 }) {
@@ -136,7 +139,7 @@ export function SheetHeader({
         accessibilityRole="header"
         numberOfLines={1}
         maxFontSizeMultiplier={fontScaleCap.title}
-        style={[gadgetType.sheetTitle, styles.title]}>
+        style={[gadgetType.sheetTitle, styles.title, titleHidden && styles.titleHidden]}>
         {title}
       </Text>
       {left ? <ControlButton control={left} side="left" /> : null}
@@ -395,6 +398,7 @@ const styles = StyleSheet.create({
     experimental_backgroundImage: `linear-gradient(180deg, ${sheetColors.sheet} 70%, ${sheetColors.sheetClear})`,
   },
   title: { textAlign: 'center' },
+  titleHidden: { opacity: 0 },
   control: {
     position: 'absolute',
     top: sheetGeometry.controlTop,

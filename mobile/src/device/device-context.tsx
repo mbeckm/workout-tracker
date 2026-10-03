@@ -10,8 +10,10 @@ import {
   type DeviceCommand,
   type DeviceMode,
   type DeviceState,
+  type InsertDevOptions,
   type JustFinished,
   type LogIntent,
+  type LoadingTarget,
   type LogMode,
   type SheetKind,
   type SheetParams,
@@ -37,6 +39,15 @@ type DeviceContextValue = {
   markJustFinished: (dayId: string) => void;
   /** Home calls this once it has started the stamp. */
   clearJustFinished: (finished: JustFinished) => void;
+  /** Leaves device edit (`open({mode: 'edit', …})`) and puts the editor sheet back. */
+  leaveEdit: () => void;
+  /** Device edit's rocker: show another lift of the same day. */
+  editLift: (exerciseId: string) => void;
+  /** Use plan (`useActivation`): the device enters `loading` and plays the insert. */
+  /** `quiet`: no `<Plan> is your plan` toast (onboarding, where the next moment says it). */
+  startLoading: (planId: string, dev?: InsertDevOptions, quiet?: boolean) => void;
+  /** The insert ended: back to Home. */
+  finishLoading: (loading: LoadingTarget) => void;
 };
 
 const DeviceContext = createContext<DeviceContextValue | null>(null);
@@ -74,6 +85,16 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
     (finished: JustFinished) => dispatch({ type: 'clearJustFinished', id: finished.id }),
     [],
   );
+  const leaveEdit = useCallback(() => dispatch({ type: 'leaveEdit' }), []);
+  const editLift = useCallback((exerciseId: string) => dispatch({ type: 'editLift', exerciseId }), []);
+  const startLoading = useCallback(
+    (planId: string, dev?: InsertDevOptions, quiet?: boolean) => dispatch({ type: 'startLoading', planId, dev, quiet }),
+    [],
+  );
+  const finishLoading = useCallback(
+    (loading: LoadingTarget) => dispatch({ type: 'finishLoading', id: loading.id }),
+    [],
+  );
   const open = useCallback((command: DeviceCommand) => {
     if ('sheet' in command) {
       trackSheet(command.sheet);
@@ -94,6 +115,10 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,
+      leaveEdit,
+      editLift,
+      startLoading,
+      finishLoading,
     }),
     [
       state,
@@ -106,6 +131,10 @@ export function DeviceProvider({ children }: { children: ReactNode }) {
       consumeLogIntent,
       markJustFinished,
       clearJustFinished,
+      leaveEdit,
+      editLift,
+      startLoading,
+      finishLoading,
     ],
   );
 

@@ -100,6 +100,24 @@ export type LogIntent = {
 /** A day whose workout just finished: Home stamps its row and flickers its lamp once (SPEC §7). */
 export type JustFinished = { dayId: string; id: number };
 
+/**
+ * Device edit (PA2, screen 22): one lift's sets × reps on the device, opened from the editor
+ * sheet's chip. `back` is the editor's params, so leaving edit puts the same editor back.
+ */
+export type EditTarget = {
+  planId: string;
+  dayId: string;
+  exerciseId: string;
+  back: SheetParams;
+  id: number;
+};
+
+/** A plan going into the slot (Phase 6, SPEC §7 Plan activation) while `uiMode` is `loading`. */
+export type LoadingTarget = { planId: string; id: number; quiet?: boolean; dev?: InsertDevOptions };
+
+/** Development only (`/?insert=js&pause=1200&speed=0.25`): force an engine, freeze or slow the insert. */
+export type InsertDevOptions = { engine?: 'js' | 'native'; pauseAt?: number; speed?: number };
+
 export type DeviceState = {
   sheet: OpenSheet | null;
   uiMode: UiMode | null;
@@ -108,6 +126,10 @@ export type DeviceState = {
   logIntent: LogIntent | null;
   /** Set when the receipt closes (Phase 5); Home plays the stamp, then clears it. */
   justFinished: JustFinished | null;
+  /** The lift on the device while `uiMode` is `edit` (Phase 6). */
+  edit: EditTarget | null;
+  /** The plan being inserted while `uiMode` is `loading`. */
+  loading: LoadingTarget | null;
   /** Monotonic counter for `key` and `id`. */
   seq: number;
 };
@@ -118,6 +140,8 @@ export const initialDeviceState: DeviceState = {
   logMode: null,
   logIntent: null,
   justFinished: null,
+  edit: null,
+  loading: null,
   seq: 0,
 };
 
@@ -136,7 +160,17 @@ export type DeviceAction =
   /** A workout of this day just finished: Home stamps it in when it next shows. */
   | { type: 'markJustFinished'; dayId: string }
   /** Home played the stamp; `id` guards against clearing a newer one. */
-  | { type: 'clearJustFinished'; id: number };
+  | { type: 'clearJustFinished'; id: number }
+  /** The editor's sets × reps chip: the sheet hides and the device edits that lift. */
+  | { type: 'startEdit'; target: Omit<EditTarget, 'id'> }
+  /** The rocker in edit: another lift of the same day. */
+  | { type: 'editLift'; exerciseId: string }
+  /** Done, ‹ or the rocker's middle in edit: the editor sheet comes back where it was. */
+  | { type: 'leaveEdit' }
+  /** Use plan: the sheet closes and the device plays the insert (`loading`). */
+  | { type: 'startLoading'; planId: string; quiet?: boolean; dev?: InsertDevOptions }
+  /** The insert is over (or skipped, or the app came back): Home. `id` guards a newer one. */
+  | { type: 'finishLoading'; id: number };
 
 export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceState {
   switch (action.type) {
@@ -164,6 +198,47 @@ export function deviceReducer(state: DeviceState, action: DeviceAction): DeviceS
     }
     case 'clearJustFinished':
       return state.justFinished?.id === action.id ? { ...state, justFinished: null } : state;
+    case 'startEdit': {
+      const seq = state.seq + 1;
+      return { ...state, seq, sheet: null, uiMode: 'edit', edit: { ...action.target, id: seq } };
+    }
+    case 'editLift':
+      return state.edit && state.edit.exerciseId !== action.exerciseId
+        ? { ...state, edit: { ...state.edit, exerciseId: action.exerciseId } }
+        : state;
+    case 'startLoading': {
+      const seq = state.seq + 1;
+      return {
+        ...state,
+        seq,
+        sheet: null,
+        uiMode: 'loading',
+        edit: null,
+        loading: {
+          planId: action.planId,
+          id: seq,
+          ...(action.quiet ? { quiet: true } : {}),
+          ...(action.dev ? { dev: action.dev } : {}),
+        },
+      };
+    }
+    case 'finishLoading':
+      return state.loading?.id === action.id
+        ? { ...state, loading: null, uiMode: state.uiMode === 'loading' ? null : state.uiMode }
+        : state;
+    case 'leaveEdit': {
+      if (!state.edit) {
+        return state;
+      }
+      const seq = state.seq + 1;
+      return {
+        ...state,
+        seq,
+        uiMode: state.uiMode === 'edit' ? null : state.uiMode,
+        edit: null,
+        sheet: { kind: 'editor', params: state.edit.back, key: seq },
+      };
+    }
     default: {
       const exhaustive: never = action;
       return exhaustive;
@@ -176,10 +251,13 @@ export function deviceMode(state: DeviceState, logMode: LogMode | null = state.l
   return state.uiMode ?? logMode ?? 'home';
 }
 
-/** What `/` search params ask for: `?log=1&planId&dayId&exerciseId`, or `?sheet=…`. */
-export type DeviceCommand =
-  | { mode: 'log'; planId: string; dayId: string; exerciseId?: string; start?: boolean }
-  | { sheet: SheetKind; params?: SheetParams };
+export type LogCommand = { mode: 'log'; planId: string; dayId: string; exerciseId?: string; start?: boolean };
+export type SheetCommand = { sheet: SheetKind; params?: SheetParams };
+/** Device edit of one lift (Phase 6); `back` is the editor's params to return to. Never a link. */
+export type EditCommand = { mode: 'edit'; planId: string; dayId: string; exerciseId: string; back?: SheetParams };
+
+/** What `/` search params ask for (`?log=1&planId&dayId&exerciseId`, or `?sheet=…`), plus device edit. */
+export type DeviceCommand = LogCommand | SheetCommand | EditCommand;
 
 type RawParams = Readonly<Record<string, string | string[] | undefined>>;
 
@@ -217,6 +295,10 @@ export function commandFromParams(raw: RawParams): DeviceCommand | null {
 
 /** The reducer action a command maps to. */
 export function actionForCommand(command: DeviceCommand): DeviceAction {
+  if ('mode' in command && command.mode === 'edit') {
+    const { mode: _mode, back, ...target } = command;
+    return { type: 'startEdit', target: { ...target, back: back ?? { planId: command.planId } } };
+  }
   if ('mode' in command) {
     const { mode: _mode, ...intent } = command;
     return { type: 'requestLog', intent };
@@ -225,7 +307,7 @@ export function actionForCommand(command: DeviceCommand): DeviceAction {
 }
 
 /** `/` with the params for a command, for links into the device from routes and deep links. */
-export function deviceHref(command: DeviceCommand): `/?${string}` {
+export function deviceHref(command: LogCommand | SheetCommand): `/?${string}` {
   const params = new URLSearchParams();
   if ('mode' in command) {
     params.set('log', '1');

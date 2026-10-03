@@ -420,6 +420,32 @@ check('device state: justFinished is set, then cleared by its own id only', () =
   assert.equal(deviceReducer(marked, { type: 'clearJustFinished', id }).justFinished, null);
 });
 
+check('loading: Use plan closes the sheet; only its own finish ends it', () => {
+  const open = deviceReducer(initialDeviceState, { type: 'openSheet', kind: 'editor', params: { planId: 'p' } });
+  const loading = deviceReducer(open, { type: 'startLoading', planId: 'p' });
+  assert.equal(loading.sheet, null);
+  assert.equal(loading.uiMode, 'loading');
+  const id = loading.loading?.id ?? -1;
+  const again = deviceReducer(loading, { type: 'startLoading', planId: 'q' });
+  assert.equal(deviceReducer(again, { type: 'finishLoading', id }).uiMode, 'loading');
+  const done = deviceReducer(loading, { type: 'finishLoading', id });
+  assert.equal(done.uiMode, null);
+  assert.equal(done.loading, null);
+});
+
+check('edit: the rocker moves the lift; leaving puts the editor back', () => {
+  const editing = deviceReducer(initialDeviceState, {
+    type: 'startEdit',
+    target: { planId: 'p', dayId: 'd', exerciseId: 'a', back: { planId: 'p', dirty: '1' } },
+  });
+  const moved = deviceReducer(editing, { type: 'editLift', exerciseId: 'b' });
+  assert.equal(moved.edit?.exerciseId, 'b');
+  const left = deviceReducer(moved, { type: 'leaveEdit' });
+  assert.equal(left.uiMode, null);
+  assert.equal(left.sheet?.kind, 'editor');
+  assert.equal(left.sheet?.params.dirty, '1');
+});
+
 if (failures > 0) {
   // An uncaught error exits non-zero.
   throw new Error(`check-device-logic: ${failures} failed, ${passed} passed`);
