@@ -102,10 +102,13 @@ function LiftsView() {
   const positions = useSharedValue<Record<string, number>>(
     Object.fromEntries(ids.map((id, index) => [id, index])),
   );
+  /** The lifted row's id from pick-up until the session holds the new order; null when still. */
+  const settling = useSharedValue<string | null>(null);
   const [dropTick, setDropTick] = useState(0);
   useEffect(() => {
     positions.set(Object.fromEntries(idsKey.split('|').map((id, index) => [id, index])));
-  }, [idsKey, dropTick, positions]);
+    settling.set(null);
+  }, [idsKey, dropTick, positions, settling]);
 
   const onDrop = useCallback(
     (id: string, to: number) => {
@@ -152,6 +155,7 @@ function LiftsView() {
               current={current}
               rowHeight={rowHeight}
               positions={positions}
+              settling={settling}
               open={openId === draft.prescription.id}
               onMeasure={(height) => setRowHeight((value) => (height > value ? height : value))}
               onOpen={(open) => setOpenId(open ? draft.prescription.id : null)}
@@ -199,6 +203,7 @@ function LiftRow({
   current,
   rowHeight,
   positions,
+  settling,
   open,
   onMeasure,
   onOpen,
@@ -217,6 +222,7 @@ function LiftRow({
   current: boolean;
   rowHeight: number;
   positions: SharedValue<Record<string, number>>;
+  settling: SharedValue<string | null>;
   open: boolean;
   onMeasure: (height: number) => void;
   onOpen: (open: boolean) => void;
@@ -244,17 +250,39 @@ function LiftRow({
     if (!open) swipeX.set(withTiming(0, MOVE));
   }, [open, swipeX]);
 
+  /** This swipe began while nothing was settling. */
+  const armed = useSharedValue(false);
+  /** Where the finger went down, for the pick-up's stillness check. */
+  const pressX = useSharedValue(0);
+  const pressY = useSharedValue(0);
+
   const drag = useMemo(
     () =>
       Gesture.Pan()
         .activateAfterLongPress(DRAG_HOLD_MS)
+        // Moving before the hold is a swipe or a scroll: the pan's own long-press timer doesn't
+        // see movement before it activates, so step aside here.
+        .onTouchesDown((event) => {
+          pressX.set(event.allTouches[0]?.absoluteX ?? 0);
+          pressY.set(event.allTouches[0]?.absoluteY ?? 0);
+        })
+        .onTouchesMove((event, manager) => {
+          const touch = event.allTouches[0];
+          if (!touch || dragging.get()) return;
+          const moved = Math.max(Math.abs(touch.absoluteX - pressX.get()), Math.abs(touch.absoluteY - pressY.get()));
+          if (moved > SWIPE_SLOP) manager.fail();
+        })
         .onStart(() => {
+          // One row at a time: not while another drop is still settling.
+          if (settling.get() != null) return;
+          settling.set(id);
           const at = positions.get()[id] ?? 0;
           startY.set(at * rowHeight);
           dragY.set(at * rowHeight);
           dragging.set(true);
         })
         .onUpdate((event) => {
+          if (!dragging.get()) return;
           const y = Math.max(0, Math.min((count - 1) * rowHeight, startY.get() + event.translationY));
           dragY.set(y);
           const map = positions.get();
@@ -272,6 +300,7 @@ function LiftRow({
           positions.set(next);
         })
         .onEnd(() => {
+          if (!dragging.get()) return;
           const to = positions.get()[id] ?? 0;
           dragY.set(
             withTiming(to * rowHeight, MOVE, () => {
@@ -280,7 +309,7 @@ function LiftRow({
             }),
           );
         }),
-    [count, dragY, dragging, id, onDrop, positions, rowHeight, startY],
+    [count, dragY, dragging, id, onDrop, positions, pressX, pressY, rowHeight, settling, startY],
   );
 
   const swipe = useMemo(
@@ -288,19 +317,29 @@ function LiftRow({
       Gesture.Pan()
         .activeOffsetX([-SWIPE_SLOP, SWIPE_SLOP])
         .failOffsetY([-SWIPE_SLOP * 2, SWIPE_SLOP * 2])
+        // Not on a row that's still moving into place after a drop.
+        .onBegin(() => {
+          armed.set(settling.get() == null);
+        })
         .onStart(() => {
+          if (settling.get() != null) armed.set(false);
           swipeStart.set(swipeX.get());
         })
         .onUpdate((event) => {
+          if (!armed.get()) return;
           swipeX.set(Math.max(-actionsWidth, Math.min(0, swipeStart.get() + event.translationX)));
         })
         .onEnd((event) => {
+          if (!armed.get()) return;
           const shouldOpen = swipeX.get() < -actionsWidth / 2 || event.velocityX < -SWIPE_VELOCITY;
           const settle = shouldOpen && event.velocityX < SWIPE_VELOCITY;
           swipeX.set(withTiming(settle ? -actionsWidth : 0, MOVE));
           scheduleOnRN(onOpen, settle);
+        })
+        .onFinalize(() => {
+          armed.set(false);
         }),
-    [actionsWidth, onOpen, swipeStart, swipeX],
+    [actionsWidth, armed, onOpen, settling, swipeStart, swipeX],
   );
 
   // A flick too quick for the pan to take over (down, one move, up) still opens or closes.
@@ -310,17 +349,19 @@ function LiftRow({
         Gesture.Fling()
           .direction(Directions.LEFT)
           .onEnd(() => {
+            if (settling.get() != null) return;
             swipeX.set(withTiming(-actionsWidth, MOVE));
             scheduleOnRN(onOpen, true);
           }),
         Gesture.Fling()
           .direction(Directions.RIGHT)
           .onEnd(() => {
+            if (settling.get() != null) return;
             swipeX.set(withTiming(0, MOVE));
             scheduleOnRN(onOpen, false);
           }),
       ),
-    [actionsWidth, onOpen, swipeX],
+    [actionsWidth, onOpen, settling, swipeX],
   );
 
   const gesture = useMemo(() => Gesture.Race(drag, swipe, flick), [drag, flick, swipe]);

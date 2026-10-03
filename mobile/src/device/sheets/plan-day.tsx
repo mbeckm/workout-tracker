@@ -2,8 +2,9 @@ import { useLayoutEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  useAnimatedReaction,
   useAnimatedStyle,
-  withDelay,
+  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
@@ -64,6 +65,12 @@ function slotOffset(from: number, to: number, heights: readonly number[]): numbe
  * chip), then `Add lift` in orange. A row swipes left to remove (with Undo, by the caller) and
  * drags to a new place after a long press; Move up / Move down / Remove are its accessibility
  * actions.
+ *
+ * A gesture acts on the row under the finger at touch-down. While a drop is settling (the lifted
+ * row gliding into its slot, then the store's new order), the card's rows ignore new swipes and
+ * holds: nothing acts on a row that is still moving. The pick-up is a plain long-press pan, not
+ * a manually activated one: RNGH re-creates a manual-activation recognizer on every re-render,
+ * which could swallow the chip's tap.
  */
 export function DayLifts({
   exercises,
@@ -81,11 +88,13 @@ export function DayLifts({
   onChip: (exercise: ExercisePrescription) => void;
   onRemove: (exercise: ExercisePrescription) => void;
   onMove: (exercise: ExercisePrescription, delta: -1 | 1) => void;
-  onReorder: (from: number, to: number) => void;
+  /** A drop: the lift (by id) lands at index `to`. */
+  onReorder: (exerciseId: string, to: number) => void;
   onAdd: () => void;
   testID: string;
 }) {
   const heights = useSharedValue<number[]>([]);
+  /** The lifted row's index while it's dragged or settling into its slot; -1 when the card is still. */
   const dragFrom = useSharedValue(-1);
   const dragDy = useSharedValue(0);
   const order = exercises.map((item) => item.id).join('|');
@@ -96,6 +105,19 @@ export function DayLifts({
     dragFrom.set(-1);
     dragDy.set(0);
   }, [order, dragDy, dragFrom]);
+
+  // The drop, by identity: the row's index may be stale by the time the glide ends.
+  const commit = (exerciseId: string, to: number) => {
+    const from = exercises.findIndex((item) => item.id === exerciseId);
+    const slot = Math.max(0, Math.min(exercises.length - 1, to));
+    if (from < 0 || from === slot) {
+      // Nothing changes order, so no re-render lets go of the offsets: do it here.
+      dragFrom.set(-1);
+      dragDy.set(0);
+      return;
+    }
+    onReorder(exerciseId, slot);
+  };
 
   return (
     <View style={styles.card} testID={testID}>
@@ -111,7 +133,7 @@ export function DayLifts({
           onChip={() => onChip(exercise)}
           onRemove={() => onRemove(exercise)}
           onMove={(delta) => onMove(exercise, delta)}
-          onReorder={onReorder}
+          onCommit={commit}
           testID={`${testID}-lift-${index}`}
         />
       ))}
@@ -147,7 +169,7 @@ function LiftRow({
   onChip,
   onRemove,
   onMove,
-  onReorder,
+  onCommit,
   testID,
 }: {
   exercise: ExercisePrescription;
@@ -159,26 +181,35 @@ function LiftRow({
   onChip: () => void;
   onRemove: () => void;
   onMove: (delta: -1 | 1) => void;
-  onReorder: (from: number, to: number) => void;
+  onCommit: (exerciseId: string, to: number) => void;
   testID: string;
 }) {
   const chip = chipPrescription(exercise);
-  const { scrollGesture } = useSheetChrome();
+  const { scrollGesture, scrollY } = useSheetChrome();
+  const reduceMotion = useReducedMotion();
   /** The row's sideways offset while swiped (left only). */
   const swipeX = useSharedValue(0);
-  /** 0 while the finger has been down less than the long press, 1 after. */
-  const held = useSharedValue(0);
+  /** This row's place in the card, as the gestures see it (a drop can re-order the card mid-gesture). */
+  const at = useSharedValue(index);
+  /** The touch that began this swipe may move the row (false while the card is settling). */
+  const armed = useSharedValue(false);
+  /** The list's scroll offset when the finger went down. */
+  const touchScroll = useSharedValue(0);
+  /** A swipe has taken this touch (the pick-up then stays down). */
+  const swiping = useSharedValue(false);
+  /** Where the finger went down, for the pick-up's stillness check. */
   const pressX = useSharedValue(0);
   const pressY = useSharedValue(0);
+  /** Swiped away: the row is on its way out and takes no more touches. */
+  const gone = useSharedValue(false);
+  /** Where the other rows slide to make room for the lifted one. */
+  const shiftY = useSharedValue(0);
 
-  const commit = (from: number, to: number) => {
-    if (from === to) {
-      dragFrom.set(-1);
-      dragDy.set(0);
-      return;
-    }
-    onReorder(from, to);
-  };
+  useLayoutEffect(() => {
+    at.set(index);
+  }, [at, index]);
+
+  const id = exercise.id;
 
   // Swipe left past the Remove width to remove the lift (the caller offers Undo).
   const swipe = Gesture.Pan()
@@ -186,74 +217,114 @@ function LiftRow({
     .failOffsetY([-geo.swipeSlop, geo.swipeSlop])
     // The sheet's scroll view takes any touch that moves; a sideways one is still the row's.
     .simultaneousWithExternalGesture(scrollGesture)
+    .onBegin(() => {
+      armed.set(dragFrom.get() < 0 && !gone.get());
+      touchScroll.set(scrollY.get());
+    })
+    .onStart(() => {
+      // A list still gliding when the finger landed: that touch only stops it (as on iOS), so
+      // the swipe can't land on a row that slid under the finger.
+      if (dragFrom.get() >= 0 || Math.abs(scrollY.get() - touchScroll.get()) > geo.swipeSlop) armed.set(false);
+      swiping.set(armed.get());
+    })
     .onUpdate((event) => {
-      swipeX.set(Math.min(0, event.translationX));
+      if (armed.get()) swipeX.set(Math.min(0, event.translationX));
     })
     .onEnd((event) => {
-      // A flick counts for where it was heading.
-      const projected = swipeX.get() + event.velocityX * geo.swipeProjection;
-      if (-projected > geo.removeWidth) {
-        swipeX.set(withTiming(-geo.removeWidth * geo.swipeAway, SHIFT, (finished) => {
-          if (finished) scheduleOnRN(onRemove);
-        }));
+      if (!armed.get()) return;
+      const x = swipeX.get();
+      // Past the Remove width, or a flick that's already halfway there and heading on.
+      const projected = x + event.velocityX * geo.swipeProjection;
+      if (-x > geo.removeWidth || (-x > geo.removeWidth / 2 && -projected > geo.removeWidth)) {
+        gone.set(true);
+        swipeX.set(
+          withTiming(-geo.removeWidth * geo.swipeAway, SHIFT, (finished) => {
+            if (finished) scheduleOnRN(onRemove);
+          }),
+        );
         return;
       }
       swipeX.set(withSpring(0, SPRING.fling));
+    })
+    .onFinalize(() => {
+      armed.set(false);
+      swiping.set(false);
     });
 
-  // A long press picks the row up: held still for `dragLongPress`, then moved. Moving sooner is
-  // a swipe or a scroll, so the drag steps aside.
+  // A long press picks the row up: held still for `dragLongPress`. Moving sooner is a swipe or a
+  // scroll, so the pick-up steps aside (checked here: the pan's own long-press timer doesn't see
+  // movement before it activates). Not while another drop is still settling.
   const drag = Gesture.Pan()
-    .manualActivation(true)
+    .activateAfterLongPress(geo.dragLongPress)
     .onTouchesDown((event) => {
-      held.set(0);
-      held.set(withDelay(geo.dragLongPress, withTiming(1, { duration: DEVICE.SNAP })));
-      pressY.set(event.allTouches[0]?.absoluteY ?? 0);
       pressX.set(event.allTouches[0]?.absoluteX ?? 0);
+      pressY.set(event.allTouches[0]?.absoluteY ?? 0);
     })
     .onTouchesMove((event, manager) => {
       const touch = event.allTouches[0];
-      if (swipeX.get() !== 0) {
-        manager.fail();
-        return;
-      }
-      if (!touch || dragFrom.get() === index) {
-        return;
-      }
+      if (!touch || dragFrom.get() === at.get()) return;
       const moved = Math.max(Math.abs(touch.absoluteX - pressX.get()), Math.abs(touch.absoluteY - pressY.get()));
-      if (held.get() === 1) {
-        manager.activate();
-      } else if (moved > geo.swipeSlop) {
-        manager.fail();
-      }
+      if (moved > geo.swipeSlop || swiping.get()) manager.fail();
     })
     .onStart(() => {
-      dragFrom.set(index);
+      if (dragFrom.get() >= 0 || gone.get() || swiping.get() || swipeX.get() !== 0) return;
+      dragFrom.set(at.get());
       dragDy.set(0);
     })
     .onUpdate((event) => {
-      dragDy.set(event.translationY);
+      if (dragFrom.get() === at.get()) dragDy.set(event.translationY);
     })
     .onEnd(() => {
+      const from = at.get();
+      if (dragFrom.get() !== from) return;
       const list = heights.get();
-      const to = landingIndex(index, dragDy.get(), list);
+      const to = landingIndex(from, dragDy.get(), list);
+      const offset = slotOffset(from, to, list);
+      if (reduceMotion) {
+        dragDy.set(offset);
+        scheduleOnRN(onCommit, id, to);
+        return;
+      }
       dragDy.set(
-        withTiming(slotOffset(index, to, list), SHIFT, (finished) => {
-          if (finished) scheduleOnRN(commit, index, to);
+        withTiming(offset, SHIFT, (finished) => {
+          if (finished) {
+            scheduleOnRN(onCommit, id, to);
+          } else if (dragFrom.get() === from) {
+            // Interrupted (the day changed under it): put everything back.
+            dragFrom.set(-1);
+            dragDy.set(0);
+          }
         }),
       );
     });
 
-  // Both listen; each steps aside on its own (a swipe fails on vertical movement, the drag on
-  // any movement before the long press, or once the row is swiped).
+  // Both listen; each steps aside for the other (a pick-up never interrupts a swipe that has
+  // started, even if a re-render reaches the handlers mid-touch).
   const rowGesture = Gesture.Simultaneous(swipe, drag);
+
+  // The other rows slide out of the lifted one's way once per slot change (not every frame), so
+  // they settle with it instead of trailing behind.
+  useAnimatedReaction(
+    () => {
+      const from = dragFrom.get();
+      if (from < 0 || from === index) return 0;
+      const list = heights.get();
+      const to = landingIndex(from, dragDy.get(), list);
+      const size = list[from] ?? 0;
+      return index > from && index <= to ? -size : index < from && index >= to ? size : 0;
+    },
+    (target, previous) => {
+      if (target === previous) return;
+      // A reset (the new order is in) lands at once; a slot change glides.
+      shiftY.set(dragFrom.get() < 0 || reduceMotion ? target : withTiming(target, SHIFT));
+    },
+    [index, reduceMotion],
+  );
+
   const swipeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: swipeX.get() }] }));
 
   const style = useAnimatedStyle(() => {
     const from = dragFrom.get();
-    if (from < 0) {
-      return { zIndex: 0, transform: [{ translateY: 0 }, { scale: 1 }], boxShadow: [] };
-    }
     if (from === index) {
       return {
         zIndex: 2,
@@ -261,11 +332,7 @@ function LiftRow({
         boxShadow: [{ offsetX: 0, offsetY: geo.dragShadowY, blurRadius: geo.dragShadowBlur, color: plansColors.dragShadow }],
       };
     }
-    const list = heights.get();
-    const to = landingIndex(from, dragDy.get(), list);
-    const size = list[from] ?? 0;
-    const shift = index > from && index <= to ? -size : index < from && index >= to ? size : 0;
-    return { zIndex: 0, transform: [{ translateY: withTiming(shift, SHIFT) }, { scale: 1 }], boxShadow: [] };
+    return { zIndex: 0, transform: [{ translateY: from < 0 ? 0 : shiftY.get() }, { scale: 1 }], boxShadow: [] };
   });
 
   const actions = [

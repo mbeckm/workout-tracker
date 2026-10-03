@@ -554,6 +554,8 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 
 No other custom gestures (double-tap, two-finger, shake).
 
+Row gestures act only on what the finger landed on, and only once it has stopped moving: a gesture belongs to the row under the finger at touch-down; while a dropped row settles into its slot (≤ ~250 ms), the list's rows ignore new swipes and holds; a touch on a list that is still gliding only stops it (as on iOS). A destructive swipe (remove in the editor) needs real travel: past the `Remove` width, or a flick that is already halfway there. A hold picks a row up only if the finger stayed still (no pick-up mid-swipe or mid-scroll).
+
 ### States
 
 | State | Device | Sheets |
