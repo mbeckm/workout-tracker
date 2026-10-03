@@ -18,7 +18,7 @@ import { SettingsSheet } from './settings-sheet';
 import { TodaySheet } from './today-sheet';
 
 /** Sheets with a text field: their content ends above the keyboard. */
-const KEYBOARD_SHEETS: readonly SheetKind[] = ['settings', 'editor', 'add', 'goal', 'checkin'];
+const KEYBOARD_SHEETS: readonly SheetKind[] = ['settings', 'editor', 'add', 'goal', 'checkin', 'today'];
 
 export function sheetUsesKeyboard(kind: SheetKind): boolean {
   return KEYBOARD_SHEETS.includes(kind);

@@ -1,6 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type AccessibilityActionEvent } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, Text, View, type AccessibilityActionEvent } from 'react-native';
 import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -11,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { exercisePickerMeta, recordExerciseSelection } from '@/catalog';
+import { catalogKey, exercisePickerMeta, recordExerciseSelection } from '@/catalog';
 import { showToast } from '@/components/toast';
 import {
   fontScaleCap,
@@ -31,8 +30,8 @@ import { durationIsMinutes } from '@/domain/helpers';
 import type { DraftExercise } from '@/domain/log-session';
 import type { ExercisePrescription } from '@/domain/types';
 import { DEVICE, EASE_DISPLAY_FN, PRESS_SCALE } from '@/motion';
-import { openExerciseReplace } from '@/navigation/exercise-replace';
 
+import { ExercisePicker } from './exercise-picker';
 import { SheetCard, SheetHeader, SheetRow, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
@@ -82,38 +81,16 @@ function loggedLine(draft: DraftExercise, minutes: boolean): string {
 
 /** Today (M3, screen 07): the day's lifts, or the alternatives for one (Swap) in place. */
 export function TodaySheet({ params }: { params: SheetParams }) {
+  if (params.pick) {
+    return <PickView target={params.pick} />;
+  }
   return params.swap ? <SwapView exerciseId={params.swap} /> : <LiftsView />;
-}
-
-/** Opens the exercise picker in replace mode; the answer goes to `onPick` (`navigation/exercise-replace`). */
-function usePicker() {
-  const router = useRouter();
-  const { openDay } = useLogSession();
-  const pending = useRef<(() => void) | null>(null);
-  useEffect(() => () => pending.current?.(), []);
-  return useCallback(
-    (onPick: (exercise: ExercisePrescription) => void) => {
-      if (!openDay) return;
-      pending.current?.();
-      const request = openExerciseReplace(onPick);
-      pending.current = request.close;
-      const query = new URLSearchParams({
-        from: 'log',
-        replace: request.id,
-        planId: openDay.planId,
-        dayId: openDay.dayId,
-      });
-      router.push(`/exercises?${query.toString()}`);
-    },
-    [openDay, router],
-  );
 }
 
 function LiftsView() {
   const { close } = useSheetChrome();
   const { swapSheet } = useDevice();
   const log = useLogSession();
-  const pick = usePicker();
   const { drafts, day, exerciseIndex, mode, setLabel } = log;
 
   const [rowHeight, setRowHeight] = useState<number>(todayGeometry.rowHeight);
@@ -149,8 +126,7 @@ function LiftsView() {
     }
   };
 
-  // The picker records the choice in recents itself.
-  const addLift = () => pick((exercise) => log.addLift(exercise));
+  const addLift = () => swapSheet('today', { pick: ADD_LIFT });
 
   return (
     <SheetScroll
@@ -469,7 +445,6 @@ function LiftRow({
 function SwapView({ exerciseId }: { exerciseId: string }) {
   const { swapSheet } = useDevice();
   const log = useLogSession();
-  const pick = usePicker();
   const draft = log.drafts.find((item) => item.prescription.id === exerciseId);
   // Lifts already in today's session aren't alternatives.
   const alternatives = useMemo(() => {
@@ -508,8 +483,50 @@ function SwapView({ exerciseId }: { exerciseId: string }) {
         </SheetCard>
       ) : null}
       <SheetCard>
-        <SheetRow size="compact" title="Choose another" onPress={() => pick(swapTo)} />
+        <SheetRow size="compact" title="Choose another" onPress={() => swapSheet('today', { pick: exerciseId })} />
       </SheetCard>
+    </SheetScroll>
+  );
+}
+
+/** `pick` for adding a lift; otherwise it's the id of the lift being swapped. */
+const ADD_LIFT = 'add';
+
+/**
+ * The whole catalog in place (the picker in replace mode): one tap adds the lift to today's
+ * session, or swaps it in for `target`. The picker records the choice in recents itself.
+ */
+function PickView({ target }: { target: string }) {
+  const { swapSheet } = useDevice();
+  const log = useLogSession();
+  const adding = target === ADD_LIFT;
+  const draft = adding ? undefined : log.drafts.find((item) => item.prescription.id === target);
+  const takenKeys = useMemo(() => new Set(log.drafts.map((item) => catalogKey(item.prescription))), [log.drafts]);
+
+  const back = () => {
+    Keyboard.dismiss();
+    swapSheet('today', adding ? {} : { swap: target });
+  };
+
+  const onPick = (exercise: ExercisePrescription) => {
+    Keyboard.dismiss();
+    if (adding) {
+      log.addLift(exercise);
+    } else {
+      log.swapExercise(target, exercise);
+    }
+    swapSheet('today');
+  };
+
+  return (
+    <SheetScroll
+      header={
+        <SheetHeader
+          title={adding ? (log.day ? `Add to ${log.day.title}` : 'Add lift') : draft ? `Swap ${draft.prescription.name}` : 'Swap'}
+          left={{ kind: 'back', onPress: back }}
+        />
+      }>
+      <ExercisePicker mode="replace" onPick={onPick} takenKeys={takenKeys} />
     </SheetScroll>
   );
 }

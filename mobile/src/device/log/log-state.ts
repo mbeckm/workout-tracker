@@ -1,6 +1,6 @@
 /**
  * The open log's transitions (PLAN §4.2, §4.3): pure functions over `LogState`, ported from
- * `screens/log-workout.tsx` so the device and the old screen log exactly the same way.
+ * the old `screens/log-workout.tsx` (tag `archive/pre-gadget`), so the device logs exactly as it did.
  * No React, no `react-native`: checked with `npx tsx scripts/check-log-logic.ts`.
  *
  * What the device adds on top of the old screen (PLAN Phase 4):

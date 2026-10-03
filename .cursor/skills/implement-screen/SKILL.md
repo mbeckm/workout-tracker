@@ -8,8 +8,8 @@ description: Implements a Trim surface in mobile/ (a device mode, a sheet or a m
 ## Workflow
 
 1. Read `.cursor/skills/trim-ui/SKILL.md`: principles (§1), structure and the key map (§2), then the foundations you'll touch (type, geometry, color, motion, copy) and the surface's section in §13.
-2. Find the target: its file in `design/gadget/screens/` (and `frames/` for the insert), its state in `design/gadget/prototype/trim-gadget-prototype.html` (read its CSS and JS for any value SPEC doesn't list), and its numbers in `design/gadget/SPEC.md`. Precedence: `PLAN.md` > `SPEC.md` > prototype > boards > the old app. Paper and old screenshots are obsolete.
-3. Product rules come from `PRODUCT.md` (Principles, Control) and `PRODUCT-DECISIONS.md` (73). Domain logic lives in `mobile/src/domain/` and is reused, not rewritten (PLAN §4.3 says where each old screen's logic goes).
+2. Find the target: its file in `design/gadget/screens/` (and `frames/` for the insert), its state in `design/gadget/prototype/trim-gadget-prototype.html` (read its CSS and JS for any value SPEC doesn't list), and its numbers in `design/gadget/SPEC.md`. These are the specification history: `trim-ui` and the shipped code in `mobile/src/device/` win where they differ. Paper and old screenshots are obsolete.
+3. Product rules come from `PRODUCT.md` (Principles, Control) and `PRODUCT-DECISIONS.md` (73). Domain logic lives in `mobile/src/domain/` (and the pure `mobile/src/device/*-model.ts` files) and is reused, not rewritten.
 4. Build from the shared parts, never per-screen copies:
    - **Device parts** in `mobile/src/device/parts/`: `DeviceBody`, `RoundKey`, `TallKey`, `Rocker`, `Lamp`, `Display`, `Drum`, `BigKey`, `Well`, `HoldRing`, `Wheel`, `EngravedLabel`. Device state lives in `src/device/device-state.ts` (pure, no `react-native` import); logging logic in the `src/device/log/` hooks.
    - **Sheet primitives:** `SheetHost`, `SheetHeader`, `SheetCard`, `SheetRow`, `SectionLabel`, `PillButton`, `StickyActionBar`, `Chip`, `Segmented`, `ObjectIcon`, plus `Toast`. Open sheets through the device command API (`useDevice().open(...)`), never a route, `Modal` or `formSheet`.
@@ -29,10 +29,10 @@ Cloud sessions without a Simulator: the web export gives layout only (no native 
 
 ## Guardrails
 
-- Visual source of truth during the redesign: PLAN, then SPEC, then the prototype and `screens/`, then `trim-ui`. When they disagree with `trim-ui`, fix `trim-ui` in the same change.
+- Visual source of truth: `trim-ui`, then the shipped device code, then SPEC, the prototype and `screens/` as targets. When the code changes a rule, fix `trim-ui` in the same change.
 - Motion, haptics and sounds: only what `trim-ui` §8 lists, at SPEC's timings. A new one needs a purpose (faster, fluid, loveable), a spec and a row in §8.
 - Behaviour: never act on the user's behalf (`PRODUCT.md` → Control). Timers inform, they don't act.
 - Never mix layers: no bevels or gradients in sheets, no flat list on the device.
 - Guard native modules for web (`Platform.OS === 'ios'` or platform files) so the web smoke test can't crash.
 - `npm run check` must pass. Never raise the design-token baseline.
-- New features outside the redesign plan still go through Claude Design first (AGENTS.md → Design first); building a planned surface doesn't.
+- New features still go through Claude Design first (AGENTS.md → Design first).

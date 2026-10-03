@@ -503,7 +503,7 @@ function useDevInsertParam() {
 
 /**
  * `/` takes device commands as search params (`?sheet=settings`, `?log=1&planId&dayId`), so
- * deep links and old routes can reach into the device. Each command runs once, then the params
+ * deep links and the `/log` alias can reach into the device. Each command runs once, then the params
  * are cleared so the same link works again.
  */
 function useDeviceParams() {
