@@ -155,7 +155,7 @@ Read this before your first command. Each item cost real time once.
 - **RevenueCat:** project "Scratch" (`5a59d39e`), app `app80da402380`.
 - **PostHog:** EU cloud, project `285218`. Product analytics only; session replay and web analytics off; client IP discarded.
 - **Vercel:** `legal/` deploys to team `mbeckms-projects`, project `scratch-legal`. The Vercel MCP connector has no access to that team; use the CLI (`cd legal && vercel deploy --prod --yes`, needs `vercel login`).
-- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo". Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
+- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo" (the Start key icon and the other directions are on its *Gadget identity* page, decision 75). Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
 
 ### Steps only Marvin can do
 - Apple ID sign-in and two-factor codes, `sudo` commands, creating accounts (sandbox testers), and `vercel login`.
