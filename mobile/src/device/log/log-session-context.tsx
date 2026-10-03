@@ -171,6 +171,8 @@ export type LogSessionValue = {
   /** The current lift's set at `setIndex` (as the old `updateSet`). */
   updateSet: (setIndex: number, patch: Partial<LoggedSet>) => void;
   goToExercise: (index: number) => void;
+  /** ‹ / ›: one lift from the latest index, so quick presses before a render each move one. */
+  stepExercise: (delta: 1 | -1) => void;
   /** Undo last set: acts at once and returns what the toast's Undo needs (`relog`). */
   undoLastSet: () => UndoneSet | null;
   relog: (undone: UndoneSet) => void;
@@ -544,6 +546,11 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       setStageValues: (patch: Partial<SetValues>) => update((log) => patchStage(log, patch)),
       updateSet: (setIndex: number, patch: Partial<LoggedSet>) => update((log) => updateSet(log, setIndex, patch)),
       goToExercise: (index: number) => update((log) => (index === log.exerciseIndex && !log.finishing ? log : selectExercise(log, index))),
+      stepExercise: (delta: 1 | -1) =>
+        update((log) => {
+          const index = log.exerciseIndex + delta;
+          return index < 0 || index >= log.drafts.length ? log : selectExercise(log, index);
+        }),
       undoLastSet: (): UndoneSet | null => {
         const current = sessionRef.current;
         if (!current) {

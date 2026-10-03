@@ -201,6 +201,8 @@ export function useLogDevice() {
   const onLog = useCallback(() => {
     const result = log.completeSet();
     if (result.kind === 'needsWeight') {
+      // Nothing logged: the drum's frame blinks with a light tap, so the press still reads.
+      haptics.key();
       setFlash((value) => value + 1);
     } else if (result.kind === 'logged' || result.kind === 'saved') {
       haptics.logSet();

@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -176,13 +177,27 @@ function RockerEnd({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  // An end acts on touch-down, like a hardware rocker: the tilt, the haptic and the lift move
+  // land within a frame, and quick presses never wait on a release or the display's swap.
+  // VoiceOver activates with onPress alone; a touch's own onPress is skipped.
+  const actedOnPressIn = useRef(false);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
-      onPress={onPress}
+      onPressIn={() => {
+        actedOnPressIn.current = true;
+        onPress();
+      }}
+      onPress={() => {
+        if (!actedOnPressIn.current) onPress();
+      }}
+      // Pressability calls onPressOut after onPress (and alone on a cancelled touch).
+      onPressOut={() => {
+        actedOnPressIn.current = false;
+      }}
       style={[styles.end, styles.center, { opacity: disabled ? device.rockerEndDisabledOpacity : 1 }]}>
       <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.bigKeyLabel, styles.endGlyph]}>
         {glyph}
