@@ -15,6 +15,7 @@ import {
 import { useDevice } from '@/device/device-context';
 import { PRESS_SCALE } from '@/motion';
 import { useFinish } from '@/device/finish';
+import { trackedLiftCount } from '@/device/progress-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { ObjectIcon } from './object-icon';
@@ -35,16 +36,8 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
   const { swapSheet } = useDevice();
   const { activePlan, workoutHistory } = useWorkoutStore();
 
-  // Progress tracks every lift with a logged set; no rank line (D4).
-  const trackedLifts = useMemo(() => {
-    const names = new Set<string>();
-    for (const workout of workoutHistory) {
-      for (const exercise of workout.exercises) {
-        if (exercise.sets.length > 0) names.add(exercise.exerciseName.trim().toLowerCase());
-      }
-    }
-    return names.size;
-  }, [workoutHistory]);
+  // The lifts Progress lists (weighted sets); no rank line (D4).
+  const trackedLifts = useMemo(() => trackedLiftCount(workoutHistory), [workoutHistory]);
 
   const from = { from: 'menu' };
 
