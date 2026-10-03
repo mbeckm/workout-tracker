@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>A3 Chart above, wheel scrubs</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.disp{border-radius:24px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;position:relative;overflow:hidden}
+.dim{color:#7A3E1C}
+.lab{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.card{background:#FBFAF7;border-radius:28px;box-shadow:inset 0 1px 0 #fff,0 10px 24px rgba(60,50,30,.12),0 1px 2px rgba(60,50,30,.1)}
+.mut{color:#8E8B83}
+.chip{height:32px;padding:0 14px;border-radius:16px;background:#EFEDE8;font-size:15px;font-weight:800;display:inline-flex;align-items:center}
+.chip.on{background:#2A2925;color:#fff}
+.dock{border-radius:40px 40px 0 0;box-shadow:0 -1px 0 #fff,0 -12px 30px rgba(60,50,30,.16)}
+.hjog{border-radius:30px;background:repeating-linear-gradient(90deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 14px 0 16px rgba(0,0,0,.2),inset -14px 0 16px rgba(0,0,0,.2),0 3px 0 #A9A69E}
+@keyframes hroll{from{background-position:0 0}to{background-position:28px 0}}
+@keyframes draw{from{stroke-dashoffset:600}to{stroke-dashoffset:0}}
+</style>
+</head><body style="margin:0">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F2EE; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<div style="position: absolute; top: 62px; left: 24px; right: 24px">
+<div class="mut" style="font-size: 15px; font-weight: 800">Estimated max</div>
+<div style="font-size: 34px; line-height: 38px; font-weight: 800; letter-spacing: -0.6px">Bench Press</div>
+</div>
+<div style="position: absolute; top: 146px; left: 16px; right: 16px; display: flex; gap: 6px; overflow: hidden"><span class="chip on">Bench</span><span class="chip">Squat</span><span class="chip">Deadlift</span><span class="chip">OHP</span><span class="chip">Row</span></div>
+<div class="card" style="position: absolute; top: 196px; left: 16px; right: 16px; height: 350px; padding: 20px; box-sizing: border-box">
+<div style="display: flex; gap: 22px">
+<div><div class="mut" style="font-size: 14px; font-weight: 800">12 Aug</div><div style="font-size: 30px; font-weight: 800">85.0</div></div>
+<div><div style="font-size: 14px; font-weight: 800; color: #C2410C">Now</div><div style="font-size: 30px; font-weight: 800">92.5</div></div>
+</div>
+<svg width="318" height="210" viewBox="0 0 318 210" style="position: absolute; left: 20px; bottom: 26px">
+<line x1="0" y1="50" x2="318" y2="50" stroke="#ECEAE4" stroke-width="1"></line>
+<line x1="0" y1="110" x2="318" y2="110" stroke="#ECEAE4" stroke-width="1"></line>
+<line x1="0" y1="170" x2="318" y2="170" stroke="#ECEAE4" stroke-width="1"></line>
+<path d="M0 168 L40 160 L80 162 L120 140 L160 128 L200 120 L240 96 L280 80 L318 60 L318 210 L0 210 Z" fill="rgba(242,85,15,.08)"></path>
+<path d="M0 168 L40 160 L80 162 L120 140 L160 128 L200 120 L240 96 L280 80 L318 60" fill="none" stroke="#F2550F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="600" style="animation: draw 1.2s ease-out"></path>
+<line x1="120" y1="0" x2="120" y2="210" stroke="#2A2925" stroke-width="2"></line>
+<circle cx="120" cy="140" r="7" fill="#fff" stroke="#2A2925" stroke-width="3"></circle>
+<circle cx="318" cy="60" r="6" fill="#F2550F"></circle>
+</svg>
+</div>
+<div class="alu dock" style="position: absolute; left: 0; right: 0; bottom: 0; height: 270px">
+<div class="disp" style="position: absolute; top: 24px; left: 16px; right: 16px; height: 96px; padding: 16px 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center">
+<div><div class="dim" style="font-size: 14px">12 AUG</div><div style="font-size: 34px; margin-top: 4px">85.0</div></div>
+<div style="text-align: right"><div class="dim" style="font-size: 14px">TO NOW</div><div style="font-size: 34px; margin-top: 4px">+7.5</div></div>
+</div>
+<div style="position: absolute; top: 136px; left: 20px; right: 20px; display: flex; justify-content: space-between"><span class="lab">AUG</span><span class="lab">SEP</span><span class="lab">OCT</span></div>
+<div class="hjog" style="position: absolute; top: 158px; left: 16px; right: 16px; height: 72px; animation: hroll 1.6s ease-in-out infinite alternate"></div>
+</div>
+</div>
+</body></html>

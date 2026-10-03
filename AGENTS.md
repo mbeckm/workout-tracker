@@ -19,6 +19,16 @@ Ships: plan-first Home (next day, week progress, other days), plan creation (pic
 
 Does not ship: ad-hoc / empty workouts, custom transitions, achievements, heatmap, ExerciseDB data or media in production, accounts or cloud sync.
 
+## Gadget redesign (in progress)
+
+Trim is being rebuilt as a "device" app: one persistent metal device with a dot-matrix display, keys, a rocker and one wheel, plus dark sheets for everything list- or number-heavy. Everything needed to build it is in `design/gadget/`:
+- `PLAN.md`: the orchestrator's implementation plan
+- `SPEC.md`: exact tokens, motion, haptics and sounds
+- `prototype/`: the clickable source of truth; open the HTML in a browser
+- `screens/`, `frames/`, `boards/`, `fonts/`: visual targets, board history and font files
+
+During the redesign, `PLAN.md` and the prototype take precedence over the current `trim-ui` skill and over Paper for anything UI.
+
 ## Design first, in Claude Design
 
 New features, new screens and any real change to how something looks or works start in **Claude Design**, not in `mobile/`. Sketching is cheaper in tokens, faster to iterate, and keeps the app untouched until we know what we're building.

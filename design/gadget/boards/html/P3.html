@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>P3 Sets and reps on two wheels</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.lab{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+.go{border-radius:26px;background:radial-gradient(ellipse at 50% 15%,#FF8A45,#F2550F 75%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 0 #B83A05,0 12px 20px rgba(200,70,10,.25);color:#fff;font-weight:800}
+.card{background:#FBFAF7;border-radius:28px;box-shadow:inset 0 1px 0 #fff,0 10px 24px rgba(60,50,30,.12),0 1px 2px rgba(60,50,30,.1)}
+.mut{color:#8E8B83}
+.lock{position:relative;width:150px;height:300px;border-radius:30px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);overflow:hidden}
+.drum{position:absolute;left:14px;right:14px;top:0;bottom:0;background:linear-gradient(180deg,#5A5852,#D8D5CE 30%,#F4F3EF 50%,#D8D5CE 70%,#5A5852);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Doto',monospace;font-weight:900;color:#2A2925}
+.drum span{line-height:62px}
+.win{position:absolute;left:4px;right:4px;top:118px;height:64px;border-radius:14px;box-shadow:inset 0 0 0 3px #FF6A1A,0 0 14px rgba(255,106,26,.45)}
+.set{flex-grow:1;height:56px;border-radius:16px;background:#2A2925;color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="card" style="position: absolute; top: 56px; left: 16px; right: 16px; padding: 20px">
+<div class="mut" style="font-size: 15px; font-weight: 800">Upper A, lift 3</div>
+<div style="font-size: 28px; line-height: 32px; font-weight: 800; letter-spacing: -0.5px">Cable Fly</div>
+<div style="margin-top: 16px; display: flex; gap: 8px">
+<div class="set">12</div><div class="set">12</div><div class="set">12</div><div class="set" style="background: #EFEDE8; color: #F2550F; animation: pop .35s ease-out">12</div>
+</div>
+</div>
+<div style="position: absolute; top: 292px; left: 0; right: 0; display: flex; justify-content: center; gap: 30px"><span class="lab" style="width: 150px; text-align: center">SETS</span><span class="lab" style="width: 150px; text-align: center">REPS</span></div>
+<div style="position: absolute; top: 316px; left: 0; right: 0; display: flex; justify-content: center; gap: 30px">
+<div class="lock"><div class="drum"><span style="font-size: 36px; opacity: .5">2</span><span style="font-size: 36px; opacity: .8">3</span><span style="font-size: 58px; color: #121211">4</span><span style="font-size: 36px; opacity: .8">5</span><span style="font-size: 36px; opacity: .5">6</span></div><div class="win"></div></div>
+<div class="lock"><div class="drum"><span style="font-size: 36px; opacity: .5">8</span><span style="font-size: 36px; opacity: .8">10</span><span style="font-size: 58px; color: #121211">12</span><span style="font-size: 36px; opacity: .8">15</span><span style="font-size: 36px; opacity: .5">20</span></div><div class="win"></div></div>
+</div>
+<div style="position: absolute; top: 640px; left: 0; right: 0; text-align: center; font-size: 22px; font-weight: 800; color: #2A2925">4 × 12</div>
+<button class="go" style="position: absolute; left: 16px; right: 16px; bottom: 34px; height: 84px; font-size: 22px">Set, next lift</button>
+</div>
+</body></html>

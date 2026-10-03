@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>QB1 B: the device as a scope</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}button{font:inherit;color:inherit;border:0;background:none;padding:0}.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}.disp{position:absolute;border-radius:28px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;overflow:hidden;box-sizing:border-box}.dim{color:#7A3E1C}.rk{position:absolute;width:56px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E,0 6px 10px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center;color:#2A2925;font-weight:800;font-size:22px}.tall{width:64px;height:76px;border-radius:22px;font-size:15px}.rock{position:absolute;left:96px;top:56px;width:198px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E,0 6px 10px rgba(0,0,0,.1);display:flex;align-items:center}.rock .e{width:46px;text-align:center;font-size:24px;font-weight:800;color:#2A2925}.rock .m{flex:1;height:30px;border-radius:15px;background:#C9C6BE;box-shadow:inset 0 2px 4px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;gap:7px}.lamp{width:10px;height:10px;border-radius:5px;background:#8E8A80}.lamp.on{background:#FF6A1A;box-shadow:0 0 6px #FF6A1A}.jog{position:absolute;right:22px;top:588px;width:64px;height:180px;border-radius:24px;background:repeating-linear-gradient(180deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 0 16px 16px rgba(0,0,0,.22),inset 0 -16px 16px rgba(0,0,0,.22),0 3px 0 #A9A69E}.well{position:absolute;left:110px;top:590px;width:170px;height:170px;border-radius:50%;background:#C4C1B9;box-shadow:inset 0 4px 10px rgba(0,0,0,.28),0 1px 0 #fff}.big{position:absolute;left:122px;top:600px;width:146px;height:146px;border-radius:50%;background:radial-gradient(ellipse at 50% 22%,#FAF9F6,#D6D2CA 70%);box-shadow:inset 0 2px 0 #fff,0 6px 0 #A9A69E;color:#2A2925;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}.lab{position:absolute;font-size:10px;font-weight:800;letter-spacing:1.5px;color:#7C7A73;text-shadow:0 1px 0 rgba(255,255,255,.7);white-space:nowrap;text-align:center}
+@keyframes scan{0%,100%{transform:translateX(0)}50%{transform:translateX(-92px)}}
+@keyframes vroll{from{background-position:0 0}to{background-position:0 28px}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<button class="rk" style="left: 20px; top: 56px">‹</button>
+<div class="rock"><span class="e">‹</span><span class="m"><i class="lamp on"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i><i class="lamp"></i></span><span class="e">›</span></div>
+<button class="rk" style="right: 20px; top: 56px; font-size: 18px">◎</button>
+<div class="disp" style="top: 140px; left: 20px; right: 20px; height: 420px">
+<div class="dim" style="position: absolute; left: 22px; right: 22px; top: 20px; display: flex; justify-content: space-between; font-size: 15px"><span style="color: #FF6A1A">BENCH PRESS</span><span>EST MAX  3M</span></div>
+<div style="position: absolute; left: 22px; top: 50px; font-size: 64px; line-height: 64px">89.5</div>
+<div class="dim" style="position: absolute; left: 24px; top: 120px; font-size: 15px">18 SEP  85×8,7,7</div>
+<svg width="350" height="220" viewBox="0 0 350 220" style="position: absolute; left: 0; top: 160px">
+<g fill="#3A2214"><circle cx="20" cy="40" r="2"></circle><circle cx="20" cy="100" r="2"></circle><circle cx="20" cy="160" r="2"></circle><circle cx="330" cy="40" r="2"></circle><circle cx="330" cy="100" r="2"></circle><circle cx="330" cy="160" r="2"></circle></g>
+<g fill="#FF6A1A"><rect x="20" y="168" width="8" height="8"></rect><rect x="60" y="160" width="8" height="8"></rect><rect x="100" y="162" width="8" height="8"></rect><rect x="140" y="138" width="8" height="8"></rect><rect x="180" y="126" width="8" height="8"></rect><rect x="260" y="92" width="8" height="8"></rect><rect x="310" y="72" width="8" height="8"></rect></g>
+<g fill="#7A3E1C"><rect x="30" y="166" width="4" height="4"></rect><rect x="40" y="164" width="4" height="4"></rect><rect x="50" y="162" width="4" height="4"></rect><rect x="110" y="156" width="4" height="4"></rect><rect x="120" y="150" width="4" height="4"></rect><rect x="130" y="144" width="4" height="4"></rect><rect x="150" y="136" width="4" height="4"></rect><rect x="160" y="132" width="4" height="4"></rect><rect x="170" y="128" width="4" height="4"></rect><rect x="234" y="104" width="4" height="4"></rect><rect x="244" y="100" width="4" height="4"></rect><rect x="274" y="88" width="4" height="4"></rect><rect x="290" y="80" width="4" height="4"></rect></g>
+<rect x="216" y="20" width="16" height="180" fill="none" stroke="#FF6A1A" stroke-width="2" rx="4"></rect>
+<rect x="220" y="110" width="8" height="8" fill="#FFB48A"></rect>
+<g fill="#7A3E1C" font-size="11" font-family="Doto,monospace" font-weight="900"><text x="20" y="214">JUL</text><text x="160" y="214">AUG</text><text x="300" y="214">OCT</text></g>
+</svg>
+</div>
+<button class="rk tall" style="left: 22px; top: 592px">3M</button>
+<button class="rk tall" style="left: 22px; top: 680px">1Y</button>
+<div class="lab" style="left: 22px; top: 762px; width: 64px">RANGE</div>
+<div class="well"></div>
+<button class="big">Goal</button>
+<div class="jog" style="animation: vroll 1.6s ease-in-out infinite alternate"></div>
+<div class="lab" style="right: 22px; top: 774px; width: 64px">TIME</div>
+</div>
+</body></html>

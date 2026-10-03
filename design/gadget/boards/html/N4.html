@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Menu sheet over the device</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.rk{position:absolute;width:56px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E}
+.roller{position:absolute;border-radius:18px;background:repeating-linear-gradient(90deg,#F2F1ED 0 5px,#C4C1B9 5px 7px);box-shadow:inset 18px 0 16px rgba(0,0,0,.22),inset -18px 0 16px rgba(0,0,0,.22),0 3px 0 #A9A69E}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:38px 38px 0 0;background:#151514;color:#F3F2EE;box-shadow:0 -10px 30px rgba(0,0,0,.35);overflow:hidden}
+.st{position:absolute;left:0;right:0;top:24px;text-align:center;font-size:18px;font-weight:800}
+.ck{position:absolute;top:14px;width:40px;height:40px;border-radius:20px;background:#262624;display:flex;align-items:center;justify-content:center;color:#C9C6BF;font-size:18px;font-weight:800}
+.dc{background:#232321;border-radius:24px;box-sizing:border-box;position:relative}
+.sm{color:#8C8A84}
+.item{display:flex;align-items:center;gap:16px;padding:16px 18px;height:86px}
+.item b{display:block;font-size:20px;font-weight:800;letter-spacing:-.3px}
+.item span{display:block;font-size:15px;font-weight:600;color:#8C8A84;margin-top:2px}
+.obj{width:56px;height:56px;flex-shrink:0;position:relative}
+.pro{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:15px;border:2.5px solid #1C1B18;font-size:16px;font-weight:900;letter-spacing:1px}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="rk" style="left: 20px; top: 56px"></div><div class="roller" style="left: 100px; top: 52px; width: 190px; height: 64px"></div><div class="rk" style="right: 20px; top: 56px"></div>
+<div style="position: absolute; inset: 0; background: rgba(20,18,15,.35)"></div>
+<div class="sheet" style="top: 96px">
+<div class="st">Trim</div>
+<button class="ck" style="right: 16px">✕</button>
+<div class="dc" style="position: absolute; left: 12px; right: 12px; top: 72px; height: 210px; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, #3A2A20, #1E1915)">
+<div style="position: absolute; left: 50%; top: 22px; margin-left: -64px; width: 128px; height: 108px; border-radius: 22px; background: linear-gradient(180deg, #FF8A45, #E2480B); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 14px 24px rgba(0,0,0,.45); transform: rotate(-6deg)">
+<div style="position: absolute; left: 12px; right: 12px; top: 14px; height: 46px; border-radius: 10px; background: #121211; box-shadow: inset 0 2px 4px rgba(0,0,0,.8)"></div>
+<div style="position: absolute; left: 44px; bottom: 10px; width: 36px; height: 36px; border-radius: 18px; background: radial-gradient(circle at 50% 30%, #F4F3EF, #CFCBC3); box-shadow: 0 3px 0 #9E3A0A"></div>
+<div style="position: absolute; right: 10px; bottom: 10px; width: 14px; height: 36px; border-radius: 6px; background: repeating-linear-gradient(180deg, #F2F1ED 0 3px, #C4C1B9 3px 4px)"></div>
+</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 18px; text-align: center"><div style="font-size: 20px; font-weight: 800">Finish 305, Signal</div><div class="sm" style="font-size: 15px; font-weight: 600; margin-top: 2px">Unlocked at 10 workouts</div></div>
+</div>
+<div class="dc" style="position: absolute; left: 12px; right: 12px; top: 292px; height: 92px; background: linear-gradient(100deg, #FBFAF7 60%, #FFE2CF); color: #1C1B18; padding: 16px 18px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 900">Get <span class="pro">PRO</span></div>
+<div style="margin-top: 6px; font-size: 15px; font-weight: 700; color: #5E5B55">Unlimited plans, all of Progress, every finish</div>
+</div>
+<div class="dc item" style="position: absolute; left: 12px; right: 12px; top: 394px">
+<div class="obj"><div style="position: absolute; inset: 4px; border-radius: 50%; background: repeating-conic-gradient(#BDB8AD 0 3deg, #E4E0D7 3deg 6deg); box-shadow: 0 4px 0 #6E6B64"></div><div style="position: absolute; inset: 14px; border-radius: 50%; background: radial-gradient(circle at 40% 30%, #FAF9F6, #D9D6CF)"><i style="position: absolute; left: 12px; top: 3px; width: 4px; height: 10px; border-radius: 2px; background: #FF6A1A"></i></div></div>
+<div><b>Plan</b><span>Upper Lower, 4 days</span></div></div>
+<div class="dc item" style="position: absolute; left: 12px; right: 12px; top: 490px">
+<div class="obj"><div style="position: absolute; left: 2px; right: 2px; top: 8px; height: 44px; border-radius: 28px 28px 8px 8px; background: #121211; box-shadow: 0 0 0 3px #CFCBC3, 0 5px 0 3px #6E6B64"></div><i style="position: absolute; left: 27px; top: 18px; width: 3px; height: 26px; background: #FF6A1A; transform: rotate(38deg); transform-origin: 50% 100%; box-shadow: 0 0 6px #FF6A1A"></i></div>
+<div><b>Progress</b><span>Bench 92.5, top 36%</span></div></div>
+<div class="dc item" style="position: absolute; left: 12px; right: 12px; top: 586px">
+<div class="obj"><div style="position: absolute; left: 8px; right: 8px; top: 0; bottom: 4px; background: #FFFEFA; box-shadow: 0 5px 0 #6E6B64; clip-path: polygon(0 0,100% 0,100% 90%,88% 100%,75% 90%,62% 100%,50% 90%,38% 100%,25% 90%,12% 100%,0 90%)"></div><i style="position: absolute; left: 15px; right: 15px; top: 12px; height: 3px; background: #2A2925"></i><i style="position: absolute; left: 15px; right: 22px; top: 21px; height: 3px; background: #B9B6AE"></i><i style="position: absolute; left: 15px; right: 18px; top: 30px; height: 3px; background: #B9B6AE"></i></div>
+<div><b>History</b><span>38 workouts</span></div></div>
+</div>
+</div>
+</body></html>

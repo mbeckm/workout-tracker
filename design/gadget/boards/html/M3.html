@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>M3 Tap the name: today's lifts</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}
+.disp{position:absolute;border-radius:28px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;overflow:hidden;box-sizing:border-box}
+.dim{color:#7A3E1C}
+.rk{position:absolute;width:56px;height:56px;border-radius:28px;background:linear-gradient(180deg,#F4F3EF,#DEDBD4);box-shadow:inset 0 1px 0 #fff,0 3px 0 #A9A69E}
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:38px 38px 0 0;background:#151514;color:#F3F2EE;box-shadow:0 -10px 30px rgba(0,0,0,.35);overflow:hidden}
+.st{position:absolute;left:0;right:0;top:24px;text-align:center;font-size:18px;font-weight:800}
+.ck{position:absolute;top:14px;height:40px;min-width:40px;padding:0 14px;box-sizing:border-box;border-radius:20px;background:#262624;display:flex;align-items:center;justify-content:center;color:#C9C6BF;font-size:16px;font-weight:800}
+.dc{position:absolute;left:12px;right:12px;background:#232321;border-radius:24px;overflow:hidden}
+.ex{display:flex;align-items:center;gap:14px;padding:14px 16px;border-top:1px solid #2E2E2B}
+.ex:first-child{border-top:0}
+.ex.cur{background:#2C2A27;box-shadow:inset 3px 0 0 #FF6A1A}
+.ex b{display:block;font-size:17px;font-weight:800}
+.ex span.s{display:block;font-size:13px;font-weight:600;color:#8C8A84;margin-top:2px}
+.sets{display:flex;gap:4px;margin-left:auto}
+.sets i{width:16px;height:6px;border-radius:3px;background:#3A3936}
+.sets i.on{background:#FF6A1A}
+.info{width:30px;height:30px;border-radius:15px;background:#33322F;color:#C9C6BF;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-style:italic;flex-shrink:0}
+.grip{width:14px;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.grip i{height:2px;background:#4A4945;border-radius:1px}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="rk" style="left: 20px; top: 56px"></div><div class="rk" style="right: 20px; top: 56px"></div>
+<div class="disp" style="top: 140px; left: 20px; right: 20px; height: 120px; padding: 20px 22px"><div style="display: inline-flex; gap: 8px; align-items: center; font-size: 15px; padding: 4px 10px; margin-left: -10px; border-radius: 10px; box-shadow: inset 0 0 0 2px #FF6A1A">CABLE FLY ▾</div></div>
+<div style="position: absolute; inset: 0; background: rgba(20,18,15,.4)"></div>
+<div class="sheet" style="top: 220px">
+<div class="st">Push 1</div>
+<button class="ck" style="right: 16px">Done</button>
+<div class="dc" style="top: 72px">
+<div class="ex"><span class="grip"><i></i><i></i><i></i></span><div><b>Bench Press</b><span class="s">85 × 8, 8, 7</span></div><span class="sets"><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="info">i</span></div>
+<div class="ex cur"><span class="grip"><i></i><i></i><i></i></span><div><b>Cable Fly</b><span class="s">Now, set 1 of 3</span></div><span class="sets"><i></i><i></i><i></i></span><span class="info">i</span></div>
+<div class="ex"><span class="grip"><i></i><i></i><i></i></span><div><b>Overhead Press</b><span class="s">3 × 8 at 45</span></div><span class="sets"><i></i><i></i><i></i></span><span class="info">i</span></div>
+<div class="ex"><span class="grip"><i></i><i></i><i></i></span><div><b>Dips</b><span class="s">3 × 10</span></div><span class="sets"><i></i><i></i><i></i></span><span class="info">i</span></div>
+<div class="ex"><span class="grip"><i></i><i></i><i></i></span><div><b>Lateral Raise</b><span class="s">3 × 15 at 10</span></div><span class="sets"><i></i><i></i><i></i></span><span class="info">i</span></div>
+<div class="ex"><span class="grip"><i></i><i></i><i></i></span><div><b>Pushdown</b><span class="s">3 × 12 at 25</span></div><span class="sets"><i></i><i></i><i></i></span><span class="info">i</span></div>
+</div>
+<div style="position: absolute; left: 12px; right: 12px; bottom: 34px; display: flex; gap: 10px">
+<button style="flex: 1; height: 54px; border-radius: 27px; background: #262624; font-size: 16px; font-weight: 800">Add lift</button>
+<button style="flex: 1; height: 54px; border-radius: 27px; background: #262624; font-size: 16px; font-weight: 800">Swap Cable Fly</button>
+</div>
+</div>
+</div>
+</body></html>

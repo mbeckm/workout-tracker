@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>PB2 B: the plan loads into the device</title><style>
+@font-face{font-family:'Doto';font-weight:900;src:url('../../fonts/Doto-Black.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url('../../fonts/IBMPlexMono-Medium.ttf') format('truetype')}
+@font-face{font-family:'IBM Plex Mono';font-weight:700;src:url('../../fonts/IBMPlexMono-Bold.ttf') format('truetype')}
+</style>
+
+
+<style>
+body{margin:0}button{font:inherit;color:inherit;border:0;background:none;padding:0}.alu{background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 40%),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,rgba(0,0,0,.02) 1px 3px),linear-gradient(180deg,#E4E2DC,#D2CFC8)}.disp{position:absolute;border-radius:28px;background:#121211;box-shadow:inset 0 3px 10px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.7);color:#FF6A1A;font-family:'Doto',monospace;font-weight:900;overflow:hidden;box-sizing:border-box}.dim{color:#7A3E1C}.well{position:absolute;left:110px;top:590px;width:170px;height:170px;border-radius:50%;background:#C4C1B9;box-shadow:inset 0 4px 10px rgba(0,0,0,.28),0 1px 0 #fff}.big{position:absolute;left:122px;top:600px;width:146px;height:146px;border-radius:50%;background:radial-gradient(ellipse at 50% 22%,#FF8A45,#F2550F 70%);box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -6px 12px rgba(150,40,0,.25),0 6px 0 #B83A05,0 16px 26px rgba(200,70,10,.3);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}
+.slot{position:absolute;left:60px;right:60px;top:100px;height:16px;border-radius:8px;background:#1C1B18;box-shadow:inset 0 3px 5px rgba(0,0,0,.8),0 1px 0 #fff;z-index:3}
+.cart{position:absolute;width:56px;height:88px;border-radius:12px 12px 6px 6px;background:linear-gradient(180deg,#ECEAE4,#C9C5BC);box-shadow:inset 0 2px 0 #fff,0 6px 0 #6E6B64,0 12px 18px rgba(0,0,0,.2)}
+.cart i{position:absolute;left:7px;right:7px;top:9px;height:32px;border-radius:5px;background:#121211;color:#FF6A1A;font:900 11px/32px 'Doto',monospace;text-align:center;font-style:normal}
+.cart u{position:absolute;left:12px;right:12px;bottom:10px;height:12px;background:repeating-linear-gradient(90deg,#B9B4AA 0 2px,transparent 2px 4px)}
+.bar{display:flex;gap:4px}.bar i{flex:1;height:18px;background:#3A2214}.bar i.f{background:#FF6A1A}
+@keyframes insert{0%{transform:translateY(-60px)}60%,100%{transform:translateY(46px)}}
+</style>
+</head><body style="margin:0">
+<div class="alu" style="width: 390px; height: 844px; position: relative; overflow: hidden; color: #1C1B18; font-family: ui-rounded, -apple-system, sans-serif">
+<div class="cart" style="left: 58px; top: 20px; transform: translateY(46px)"><i>PL1</i><u></u></div>
+<div class="cart" style="left: 128px; top: 20px; transform: translateY(46px)"><i>LG1</i><u></u></div>
+<div class="cart" style="left: 198px; top: 20px; animation: insert 2.2s cubic-bezier(.5,0,.2,1) infinite"><i>PS1</i><u></u></div>
+<div class="cart" style="left: 268px; top: -40px; opacity: .9"><i>LG2</i><u></u></div>
+<div style="position: absolute; left: 0; right: 0; top: 108px; height: 40px; background: linear-gradient(180deg,#DCD9D2,#D7D4CD); z-index: 2"></div>
+<div class="slot"></div>
+<div class="disp" style="top: 150px; left: 20px; right: 20px; height: 410px; padding: 22px">
+<div class="dim" style="font-size: 15px">LOADING</div>
+<div style="margin-top: 14px; font-size: 40px; line-height: 44px">PUSH PULL<br>LEGS</div>
+<div style="margin-top: 26px; font-size: 18px; line-height: 32px">PULL 1  <span class="dim">3 LIFTS</span>  ✓<br>LEGS 1  <span class="dim">3 LIFTS</span>  ✓<br>PUSH 1  <span class="dim">3 LIFTS</span>  ▮<br><span class="dim">LEGS 2  3 LIFTS</span></div>
+<div class="bar" style="position: absolute; left: 22px; right: 22px; bottom: 22px"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i><i></i></div>
+</div>
+<div class="well"></div>
+<button class="big" style="opacity: .45">Start</button>
+</div>
+</body></html>
