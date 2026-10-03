@@ -443,7 +443,7 @@ function LiftRow({
             ]}
             onAccessibilityAction={onAction}
             style={({ pressed }) => [styles.jump, pressed && styles.jumpPressed]}>
-            <Text maxFontSizeMultiplier={fontScaleCap.text} numberOfLines={1} style={gadgetType.rowTitle}>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} numberOfLines={2} style={gadgetType.rowTitle}>
               {name}
             </Text>
             <Text maxFontSizeMultiplier={fontScaleCap.text} numberOfLines={1} style={[logType.liftSub, styles.sub]}>

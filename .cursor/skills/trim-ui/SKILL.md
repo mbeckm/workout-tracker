@@ -218,9 +218,11 @@ Color is by layer. Tokens only: no hex literals outside `theme.ts`.
 | --- | --- | --- | --- | --- |
 | body1 (top of gradient) | #E4E2DC | #3A3936 | #FF7A35 | #EFE6D3 |
 | body2 (bottom) | #D2CFC8 | #232220 | #DE470A | #D9CBB0 |
-| label (engraved text) | #7C7A73 | #8C8A84 | #FFE2CF | #7A6F5C |
-| labelShadow | rgba(255,255,255,.7) | rgba(0,0,0,.6) | rgba(120,30,0,.35) | rgba(255,255,255,.7) |
+| label (engraved text) | #7C7A73 | #C0BEB8 | #562209 | #7A6F5C |
+| labelShadow | rgba(255,255,255,.7) | rgba(0,0,0,.6) | rgba(255,226,207,.5) | rgba(255,255,255,.7) |
 | keyEdge | #A9A69E | #A9A69E | #9E3A0A | #A9A69E |
+
+**Engraved labels must read on every finish** (PLAN §11): at least 3:1 against the body right behind them, measured with the sheen and brushing (the top of the body is lighter than `body1`). SPEC's 101 `#8C8A84` (1.8:1 under `WEEK n`) and 305 `#FFE2CF` (1.9:1) failed, so they were raised (PRODUCT-DECISIONS 73). The rule for picking one: a light label with a dark shadow under it on a dark body (101), a dark label with a light highlight under it on a light or bright body (212, 408, 305). No light colour reaches 3:1 on the Signal sheen, which is why 305's engraving is a dark burnt brown. Check both the top (`WEEK n`) and the bottom (`KG`) of the body, which differ by up to 2× in luminance.
 
 **Shared by every finish:** key1 #F4F3EF, key2 #DEDBD4, keyInk #2A2925; wheel ridges #F2F1ED / #C4C1B9; well rgba(0,0,0,.14); plate (the rocker's recessed strip) #C9C6BE.
 
@@ -284,7 +286,7 @@ There is no light or dark mode (D2). Sheets and moments are always dark; the dev
 
 ### Contrast
 
-Measured: amber on lcd 6.5:1, ink on the sheet 16:1, muted on the sheet 5.3:1 and on a card 4.6:1. These carry everything you act on or must read mid-set. amberDim on lcd (2.3:1), `sectionLabel` on the sheet (3.5:1) and engraved labels (2.1:1 on Signal to 4.0:1 on Bone) are below AA, so they only carry facts that are said again elsewhere (the VoiceOver summary, the sheet). Never use them for something the user must read to act. Check every finish (PLAN §11).
+Measured: amber on lcd 6.5:1, ink on the sheet 16:1, muted on the sheet 5.3:1 and on a card 4.6:1. These carry everything you act on or must read mid-set. amberDim on lcd (2.3:1), `sectionLabel` on the sheet (3.5:1) and engraved labels (3.1:1 to 7.0:1, measured on device) are below AA, so they only carry facts that are said again elsewhere (the VoiceOver summary, the sheet). Never use them for something the user must read to act. Check every finish (PLAN §11).
 
 ---
 
@@ -511,14 +513,14 @@ Use these. Don't rebuild them per screen.
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
 | `Well` | 170 round recess around the big key. |
 | `HoldRing` | Stroke 6 at r80 around the well, amber with a soft glow. Fills linearly over 1100 ms while held, snaps back on release. |
-| `Wheel` | Pan on the UI thread; a notch every 16 pt; ridge texture and drum offset driven by shared values; per notch `scheduleOnRN(onNotch, ±1)` and the notch haptic. Commits to React state at most once per frame. An adjustable accessibility element. Stows on Home. |
+| `Wheel` | Pan on the UI thread; a notch every 16 pt; ridge texture and drum offset driven by shared values; per notch `scheduleOnRN(onNotch, ±1)` and the notch haptic. Commits to React state at most once per frame. An adjustable accessibility element. Stows on Home; once the stow lands, React's own props hide it (`parked`), so a dropped Reanimated settled-props sync can't bring it back, and a stowed wheel is hidden from VoiceOver. |
 | `EngravedLabel` | `engraved` type in the finish's `label` with its `labelShadow` (0 1 0). |
 
 ### Sheet primitives
 
 | Primitive | Rules |
 | --- | --- |
-| `SheetHost` | One controller, one visible sheet, content swaps in place (`open`, `swap`, `close`). An absolutely positioned Reanimated layer in the root view, above the device. Never RN `Modal` and never RNScreens `formSheet` (the device must stay mounted and visible, toasts and the paywall must sit above). Top-edge presets (§2), swipe-down and scrim tap to dismiss, a keyboard-aware variant. VoiceOver: `accessibilityViewIsModal`, focus on the header, the escape gesture closes. |
+| `SheetHost` | One controller, one visible sheet, content swaps in place (`open`, `swap`, `close`). An absolutely positioned Reanimated layer in the root view, above the device. Never RN `Modal` and never RNScreens `formSheet` (the device must stay mounted and visible, toasts and the paywall must sit above). Top-edge presets (§2), swipe-down and scrim tap to dismiss, a keyboard-aware variant. VoiceOver: `accessibilityViewIsModal`, focus on the header, the escape gesture closes; the device behind hides itself (`accessibilityElementsHidden`) while a sheet is up, since the modal flag only covers the sheet's own siblings. |
 | `SheetHeader` | Sticky, 68, `sheetTitle` centred, round 40 `control`s 16 from the edges: ‹ back, ✕ close, `Done`, +, `Edit`, `…`. |
 | `SheetCard` | `card`, r24, rows split by a 1 px `rule`. |
 | `SheetRow` | Two lanes: `rowTitle` over `rowSub`, trailing value, chip, tick or chevron. Pressed: `PRESSED_OPACITY`. |
