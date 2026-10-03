@@ -129,3 +129,43 @@ Picked while porting Family loop into `mobile/`. Trim is usable; these are the c
     - **Chips:** a done day wears a green badge (a filled circle with a ✓) that looks the same selected or not. When you pick another day, the day Trim suggests keeps a 2pt `brand` ring, so its suggestion stays in sight; the button always starts the selected day.
     - **Rows:** two lines, the name over the plan's prescription (`4 × 6`, reversing 68's "no prescription"), and the load trailing with `↑ 2.5 kg` under it where the Pro target rises, so the arrow says how much instead of only that. Cost: about 6 rows fit above Start instead of 7.
     - Kept: the greeting's metrics and place (66), the flame's gray → orange (61), the week moment (now the slot sweeping green), Start and the pager. Rules: `trim-ui` §4 rule 5, §5, §8 Week slot fills, §13 Home, Home states and Home week details. Code: `components/week-slots.tsx`, `weekSlots` in `domain/home-numbers.ts`, `screens/home.tsx`; `components/week-days.tsx` stays for the unused classic Home.
+73. **The device (Marvin, 2026-10-03; built on branch `gadget/main`).** Trim read like Duolingo, not a training tool. After many board rounds and a study of (Not Boring) Camera, Trim becomes one persistent metal device with a dot-matrix display, keys, a rocker, one wheel and a big round key; everything list- or number-heavy is a dark, flat sheet over it; and the physical style comes back only at moments. Assets, prototype and plan: `design/gadget/` (`PLAN.md` for what to build, `SPEC.md` for exact values, `prototype/trim-gadget-prototype.html` as the source of truth for look, motion and behaviour, `screens/` and `frames/` as visual targets, `boards/` for history).
+    - **Replaces:** the five-tab model (no tab bar; the menu key opens a menu sheet), Home as designed in 59–72 (greeting, slots, chips, the flame, the grabber and sheet rules), indigo as the brand hue (67), and the editor surface of 70 and 71 (the editor's behaviour, auto-naming and Undo stay). The log screen's layout in earlier decisions (strip, wells, `Log set`, Done) is replaced by the device; its rules (carry-forward, rest lengths, targets, prefill, first-set weight nudge) stay. The Control rules in `PRODUCT.md` are unchanged.
+    - **Closed (do not reopen):**
+        1. The device is the screen. Sheets carry lists and numbers. Moments carry the physical style.
+        2. Orange #FF6A1A (big key #F2550F) is the one brand hue. Green means done, yellow means record.
+        3. One wheel. Logging: wheel = weight, left keys = reps (`+` top, `−` bottom).
+        4. Home: stamped day rows on the display (board W1), the week as lamps in the rocker body, tap a row to pick a day. The wheel is stowed on Home.
+        5. Between lifts: the rocker `‹ ›`. Its middle opens Today (M3); the exercise name opens the exercise sheet (M4); the top-right key is Undo last set during a workout.
+        6. Finish: hold the big key until the ring closes (also to end early). Then the receipt prints.
+        7. History is a wall of receipts by week (HR1). The receipt spike (HR2) is for moments.
+        8. Plans: the rack (PB3), a list editor (PA1), sets × reps set on the device (PA2), the add lifts sheet (PA3). Saving files the cartridges onto the shelf; Use plan plays a 3D Game Boy-style insert with a click.
+        9. Progress: QA1 and QA2 as clean, readable sheets.
+        10. Finishes: 212 Aluminium, 101 Graphite, 305 Signal, 408 Bone, picked from the menu; the device changes live.
+        11. Expo stays. A local Swift Expo module adds Core Haptics, sounds and the SceneKit insert.
+        12. The tab bar goes. The menu key opens the menu sheet.
+    - **Defaults to confirm (D1–D22):**
+        - D1 Settings is a row at the bottom of the menu: Name, Weight units, Sounds, Trim Pro, Restore purchases, Contact support, Privacy Policy, Terms of Use, Clear history.
+        - D2 No Appearance setting: sheets and moments are always dark, the device look is the finish. A dark user gets 101 Graphite once on update.
+        - D3 Finishes 212 and 101 are free, 305 and 408 are Pro (reason `finishes`, feature row "Every finish"). A locked swatch previews; the paywall opens only from the "Get Trim Pro" pill.
+        - D4 No rank gauge and no "stronger than X%": it needs strength-standards data Trim doesn't have. Progress opens with Goals. TODO: decide on a strength-standards source before any rank ships (`// rank:` in code).
+        - D5 Exercise sheet figures are our own SVG movement patterns, plus a three-step how-to for the 40 most common lifts, in a catalog side map never stored on plans. No third-party media.
+        - D6 Rest at 0:00 blinks `GO` with the haptic for 2 s, then shows the same upcoming set. Nothing is logged or advanced.
+        - D7 The receipt sheet replaces Done, and carries the milestone and goals reached. The post-workout paywall opens from the receipt's Done.
+        - D8 Day preview, Weeks and the rename routes go. Plans and days are renamed inline in the editor; a day's actions live behind its `…`.
+        - D9 Long-press a receipt on the History wall to delete; it asks first, naming the workout.
+        - D10 Every tracking mode has a defined device layout (PLAN §6.6).
+        - D11 Body check-in keeps its logic as a dark sheet, reached from Progress.
+        - D12 Onboarding: Welcome, Name, Units, Days, Pick a plan (packs as cartridges, or Build my own), Pick your finish, the insert as Plan ready, then the paywall (template path).
+        - D13 The paywall keeps all its logic and rules, restyled with the knob hero (N9).
+        - D14 Sounds on by default, silenced by the silent switch, with a toggle in Settings.
+        - D15 A full week plays the receipt spike with a week report and Share, once. It replaces the flame.
+        - D16 The Live Activity keeps its behaviour, recoloured orange on dark.
+        - D17 Gadget JS ships only on the EAS channel `gadget` (build profile `testflight-gadget`), never `preview` or `production`.
+        - D18 Deleting the active plan activates the next one, as the store does today; `INSERT PLAN` shows only when no plans are left. This is the code debt 32 names, and it contradicts `PRODUCT.md` → Control ("leaves no active plan"); Marvin decides which one changes.
+        - D19 The wheel steps with the existing load increments; no history shows `--.-`; long-press the drum to type a weight.
+        - D20 The label under the rocker reads `WEEK n`, plus an orange `▲n` from a two-week streak. The receipt prints `TRIM` and the user's name.
+        - D21 Tapping a logged set in Today edits it on the device (`EDIT SET n`, Save, no rest).
+        - D22 Nothing waits on a moment: tapping skips the insert, the receipt's Done is live from the first frame.
+    - **Built (Phases 0–10, `gadget/main`):** the device route `mobile/src/app/index.tsx` → `src/device/device-screen.tsx`; device state `src/device/device-state.ts`; parts `src/device/parts/`; modes `src/device/home/`, `log/` (the session logic ported from `log-workout.tsx`), `edit/`, `insert/`; sheets `src/device/sheets/` behind `SheetHost`; moments `src/device/moment/` and `moments.ts`; pure models `src/device/*-model.ts` (checked by `npm run check`); the Swift module `mobile/modules/trim-device/`; tokens in `src/constants/theme.ts` and `src/motion.ts`. The tabbed app's screens, routes and components were deleted in Phase 10 (tag `archive/pre-gadget`). Today's `Add lift` and `Choose another` open the shared picker in place in the Today sheet instead of the old `/exercises` route.
+    - **Engraved label contrast (final evidence pass):** label tokens for 101/305 raised for contrast (PLAN §11, ≥ 3:1 on the body behind the label, sheen included); SPEC had 101 `#8C8A84` (1.8:1 under `WEEK n`) and 305 `#FFE2CF` with a `rgba(120,30,0,.35)` shadow (1.9:1; no light colour reaches 3:1 on the Signal sheen). Now 101 `#C0BEB8` (3.3:1) and 305 a dark burnt `#562209` with a peach highlight `rgba(255,226,207,.5)` under it (5.5:1 at `WEEK n`, 3.1:1 at `KG`). 212 and 408 are unchanged (5.3:1 and 7.0:1).

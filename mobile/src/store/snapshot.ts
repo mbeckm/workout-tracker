@@ -1,6 +1,7 @@
 import type { AppearancePreference, ColorScheme } from '@/constants/theme';
 import { migrateLegacyThigh, type BodyCheckIn } from '@/domain/check-in';
 import { normalizeBodyGoals, type BodyGoal } from '@/domain/body-goals';
+import { DARK_FINISH, normalizeFinish, type Finish } from '@/domain/finish';
 import { normalizeGoals, type Goal } from '@/domain/goals';
 import { normalizeLogSession, type LogSession } from '@/domain/log-session';
 import type {
@@ -41,6 +42,14 @@ export type WorkoutSnapshot = {
   goals: Goal[];
   /** Body goals (PRODUCT-DECISIONS 65): one per measurement, on its body detail. */
   bodyGoals: BodyGoal[];
+  /** The device's finish (PLAN §4.5), picked from the menu. */
+  finish: Finish;
+  /** Device sounds (D14). The silent switch still silences them. */
+  soundsOn: boolean;
+  /** D2: the one-time `appearance` → `finish` migration has run (or was never needed). */
+  appearanceMigratedToFinish: boolean;
+  /** ISO week keys whose week report already played (D15), so it shows once. */
+  weekMomentsShown: string[];
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -62,6 +71,10 @@ export const defaultSnapshot: WorkoutSnapshot = {
   milestonesShown: {},
   goals: [],
   bodyGoals: [],
+  finish: '212',
+  soundsOn: true,
+  appearanceMigratedToFinish: false,
+  weekMomentsShown: [],
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -69,6 +82,10 @@ function normalizeAppearance(value: unknown): AppearancePreference {
     return value;
   }
   return defaultSnapshot.appearance;
+}
+
+function normalizeWeekKeys(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((key): key is string => typeof key === 'string') : [];
 }
 
 function normalizeMilestones(value: unknown): Record<string, string> {
@@ -176,5 +193,30 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     // Snapshots from before goals have none.
     goals: normalizeGoals(data.goals),
     bodyGoals: normalizeBodyGoals(data.bodyGoals),
+    // Snapshots from before the Gadget redesign have none of these.
+    finish: normalizeFinish(data.finish),
+    soundsOn: data.soundsOn !== false,
+    appearanceMigratedToFinish: data.appearanceMigratedToFinish === true,
+    weekMomentsShown: normalizeWeekKeys(data.weekMomentsShown),
+  };
+}
+
+/**
+ * D2, once: a user who saw Trim dark (`dark`, or `system` on a dark phone) gets 101 Graphite.
+ * Only after onboarding; new installs set the flag when onboarding completes. `appearance` stays.
+ */
+export function withAppearanceMigratedToFinish(
+  snapshot: WorkoutSnapshot,
+  systemScheme: ColorScheme,
+): WorkoutSnapshot {
+  if (!snapshot.hasCompletedOnboarding || snapshot.appearanceMigratedToFinish) {
+    return snapshot;
+  }
+  const sawDark =
+    snapshot.appearance === 'dark' || (snapshot.appearance === 'system' && systemScheme === 'dark');
+  return {
+    ...snapshot,
+    finish: sawDark ? DARK_FINISH : snapshot.finish,
+    appearanceMigratedToFinish: true,
   };
 }

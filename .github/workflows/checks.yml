@@ -23,3 +23,17 @@ jobs:
         run: npx tsc --noEmit
       - name: Design tokens (trim-ui → Enforcement)
         run: node scripts/check-design-tokens.mjs
+      - name: Device logic (PLAN §10)
+        run: npx tsx scripts/check-device-logic.ts
+      - name: Log logic
+        run: npx tsx scripts/check-log-logic.ts
+      - name: Catalog info (D5)
+        run: npx tsx scripts/check-catalog-info.ts
+      - name: Receipt, History and moments logic (PLAN Phase 5)
+        run: npx tsx scripts/check-receipt-logic.ts
+      - name: Plans logic
+        run: npx tsx scripts/check-plans-logic.ts
+      - name: Progress logic
+        run: npx tsx scripts/check-progress-logic.ts
+      - name: Upgrade from pre-gadget snapshot (PLAN §11)
+        run: npx tsx scripts/check-upgrade.ts

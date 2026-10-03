@@ -50,6 +50,7 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.1",
     "expo-mcp": "~0.2.1",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -60,7 +61,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "check:design": "node scripts/check-design-tokens.mjs",
-    "check": "tsc --noEmit && node scripts/check-design-tokens.mjs"
+    "check": "tsc --noEmit && node scripts/check-design-tokens.mjs && tsx scripts/check-device-logic.ts && tsx scripts/check-log-logic.ts && tsx scripts/check-catalog-info.ts && tsx scripts/check-progress-logic.ts && tsx scripts/check-receipt-logic.ts && tsx scripts/check-plans-logic.ts"
   },
   "private": true
 }

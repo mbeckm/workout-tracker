@@ -9,8 +9,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { AppState } from 'react-native';
+import { Appearance, AppState } from 'react-native';
 
+import type { Finish } from '../domain/finish';
 import { withLoggedTenRM, workoutMilestone } from '../domain/helpers';
 import { newCheckIn, type BodyCheckIn } from '../domain/check-in';
 import {
@@ -42,8 +43,14 @@ import { setProCache, type ProReason } from '@/purchases/pro-gate';
 
 import { loadSnapshot, saveSnapshot } from './persistence';
 import { homeDemoMode, homeDemoSnapshot } from './home-demo';
+import { onboardingDemo } from './onboarding-demo';
 import { progressDemoSnapshot, shouldUseProgressDemo } from './progress-demo';
-import { defaultSnapshot, normalizeUserName, type WorkoutSnapshot } from './snapshot';
+import {
+  defaultSnapshot,
+  normalizeUserName,
+  withAppearanceMigratedToFinish,
+  type WorkoutSnapshot,
+} from './snapshot';
 
 export type PreviousExerciseLog = {
   completedAt: string;
@@ -158,6 +165,15 @@ type WorkoutStoreState = {
   /** Removes a body goal at once; pass the result to `restoreBodyGoal` for Undo. */
   removeBodyGoal: (id: string) => RemovedBodyGoal | null;
   restoreBodyGoal: (removed: RemovedBodyGoal) => void;
+  /** The device's finish (PLAN §4.5). */
+  finish: Finish;
+  setFinish: (finish: Finish) => void;
+  /** Device sounds (D14); haptics don't depend on it. */
+  soundsOn: boolean;
+  setSoundsOn: (soundsOn: boolean) => void;
+  /** ISO week keys whose week report already played (D15). */
+  weekMomentsShown: string[];
+  markWeekMomentShown: (weekKey: string) => void;
 };
 
 export type RemovedGoal = { goal: Goal; index: number };
@@ -179,13 +195,24 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void (async () => {
-      const loaded = await loadSnapshot();
+      const stored = await loadSnapshot();
       if (cancelled) {
         return;
       }
+      // D2: read the OS scheme only (never set it); the persisted copy covers a null answer.
+      const osScheme = Appearance.getColorScheme();
+      const loaded = stored
+        ? withAppearanceMigratedToFinish(
+            stored,
+            osScheme === 'dark' || osScheme === 'light' ? osScheme : stored.systemScheme,
+          )
+        : null;
 
       const homeDemo = homeDemoMode();
-      if (homeDemo) {
+      if (onboardingDemo()) {
+        // Dev only: a new install, in memory (never saved).
+        setSnapshot(defaultSnapshot);
+      } else if (homeDemo) {
         // Dev only, never saved (see the persistence effects below).
         setSnapshot(homeDemoSnapshot(loaded ?? defaultSnapshot, homeDemo));
       } else if (loaded) {
@@ -210,7 +237,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   // iOS may kill a backgrounded app without warning; don't leave the last 300ms unsaved.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || !hydratedRef.current || homeDemoMode()) {
+      if (state === 'active' || !hydratedRef.current || homeDemoMode() || shouldUseProgressDemo() || onboardingDemo()) {
         return;
       }
       if (persistTimeoutRef.current) {
@@ -223,8 +250,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // The Home demo fixture must never overwrite the user's saved data.
-    if (!isHydrated || homeDemoMode()) {
+    // The demo fixtures (Home, Progress) must never overwrite the user's saved data.
+    if (!isHydrated || homeDemoMode() || shouldUseProgressDemo() || onboardingDemo()) {
       return;
     }
 
@@ -582,7 +609,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   const saveLogSession = useCallback((session: LogSession, options?: { flush?: boolean }) => {
     setSnapshot((current) => {
       const next = { ...current, activeSession: session };
-      if (options?.flush && !homeDemoMode()) {
+      if (options?.flush && !homeDemoMode() && !onboardingDemo()) {
         // Backgrounding: write now instead of waiting for the debounce. Idempotent.
         void saveSnapshot(next);
       }
@@ -626,7 +653,25 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => ({
       ...current,
       hasCompletedOnboarding: true,
+      // New installs pick a finish in onboarding; there's no old appearance to migrate.
+      appearanceMigratedToFinish: true,
     }));
+  }, []);
+
+  const setFinish = useCallback((finish: Finish) => {
+    setSnapshot((current) => (current.finish === finish ? current : { ...current, finish }));
+  }, []);
+
+  const setSoundsOn = useCallback((soundsOn: boolean) => {
+    setSnapshot((current) => (current.soundsOn === soundsOn ? current : { ...current, soundsOn }));
+  }, []);
+
+  const markWeekMomentShown = useCallback((weekKey: string) => {
+    setSnapshot((current) =>
+      current.weekMomentsShown.includes(weekKey)
+        ? current
+        : { ...current, weekMomentsShown: [...current.weekMomentsShown, weekKey] },
+    );
   }, []);
 
   const markPaywallShown = useCallback((reason: ProReason) => {
@@ -661,7 +706,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyEntitlement = useCallback((entitlement: Entitlement) => {
-    if (entitlement.status === 'unknown') {
+    // A home demo (development) pins its own Pro state, so the gates act on the fixture.
+    if (entitlement.status === 'unknown' || homeDemoMode()) {
       return;
     }
     const isPro = entitlement.status === 'pro';
@@ -756,6 +802,12 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setBodyGoal,
       removeBodyGoal,
       restoreBodyGoal,
+      finish: snapshot.finish,
+      setFinish,
+      soundsOn: snapshot.soundsOn,
+      setSoundsOn,
+      weekMomentsShown: snapshot.weekMomentsShown,
+      markWeekMomentShown,
     };
   }, [
     snapshot,
@@ -797,6 +849,9 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setBodyGoal,
     removeBodyGoal,
     restoreBodyGoal,
+    setFinish,
+    setSoundsOn,
+    markWeekMomentShown,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

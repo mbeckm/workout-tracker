@@ -33,7 +33,14 @@ export type AnalyticsEvent =
         outcome: 'success' | 'cancelled' | 'pending' | 'error';
       };
     }
-  | { name: 'restore_finished'; props: { outcome: 'restored' | 'none' | 'error' } };
+  | { name: 'restore_finished'; props: { outcome: 'restored' | 'none' | 'error' } }
+  /** Gadget navigation (PLAN §9): which sheet opened, never what's in it. */
+  | { name: 'sheet_opened'; props: { sheet: string } }
+  | { name: 'finish_selected'; props: { finish: string } }
+  /** A plan went into the slot (PLAN §9): from the rack's editor, or onboarding. */
+  | { name: 'plan_activated'; props: { source: 'rack' | 'onboarding' } }
+  /** The week report played (D15). No contents. */
+  | { name: 'week_completed'; props: Record<string, never> };
 
 const KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || null;
 const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || 'https://eu.i.posthog.com';

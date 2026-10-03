@@ -562,3 +562,461 @@ export function bundledExerciseById(id: string): ExercisePrescription | undefine
 export function bundledSearchAliases(id: string | null | undefined): readonly string[] {
   return (id && aliasesById.get(id)) || [];
 }
+
+/* ----------------------------------------------------------------------------------------- *
+ * D5 side map: movement figures and how-to steps (PLAN §3 D5)
+ *
+ * Catalog-only, like the search aliases: keyed by `bundledExerciseId(name)` and never copied
+ * onto an `ExercisePrescription` (`clonePrescription` spreads rows into plans, so anything on
+ * the row would be persisted). Custom exercises never get a figure.
+ * ----------------------------------------------------------------------------------------- */
+
+/** The movement patterns Trim draws its own figures for (`src/device/figures`). */
+export type ExerciseFigure =
+  | 'press'
+  | 'squat'
+  | 'hinge'
+  | 'pull'
+  | 'row'
+  | 'fly'
+  | 'curl'
+  | 'extension'
+  | 'raise'
+  | 'carry';
+
+export type BundledExerciseInfo = {
+  figure?: ExerciseFigure;
+  howTo?: readonly [string, string, string];
+  /** `Barbell`, sentence case. Empty when the row has no equipment. */
+  kit: string;
+  /** Primary first, sentence case (`Chest`, `Front delts`). */
+  muscles: readonly string[];
+};
+
+/** Fallback by target muscle, for strength rows the name table doesn't cover. */
+const FIGURE_BY_TARGET: Readonly<Record<string, ExerciseFigure>> = {
+  Pectorals: 'press',
+  Lats: 'pull',
+  'Upper Back': 'row',
+  'Lower Back': 'hinge',
+  Traps: 'carry',
+  Delts: 'press',
+  'Side Delts': 'raise',
+  'Rear Delts': 'fly',
+  Biceps: 'curl',
+  Triceps: 'extension',
+  Forearms: 'curl',
+  Quads: 'squat',
+  Hamstrings: 'hinge',
+  Glutes: 'hinge',
+  Adductors: 'squat',
+};
+
+/** By name, where the target fallback would draw the wrong movement (`null`: no figure). */
+const FIGURE_BY_NAME: Readonly<Record<string, ExerciseFigure | null>> = {
+  'Dumbbell Pullover': null,
+  'Face Pulls': 'row',
+  'Front Raise': 'raise',
+  'Plate Front Raise': 'raise',
+  'Close-Grip Bench Press': 'press',
+  'Machine Dip': 'press',
+  'Bench Dip': 'press',
+  'Diamond Push-Up': 'press',
+  'Leg Extension': null,
+  'Leg Curl': null,
+  'Seated Leg Curl': null,
+  'Lying Leg Curl': null,
+  'Nordic Hamstring Curl': null,
+  'Cable Glute Kickback': null,
+  'Hip Adduction': null,
+  'Dumbbell Side Bend': 'carry',
+  'Dead Hang': 'pull',
+  'Wall Sit': 'squat',
+};
+
+type HowTo = { steps: readonly [string, string, string]; muscles: readonly string[] };
+
+// howTo: draft for Marvin's review. Plain English, one short sentence per step, the 40 most
+// common bundled lifts (big lifts first). Muscles: primary first, as the chips show them.
+const HOW_TO: Readonly<Record<string, HowTo>> = {
+  'Flat Barbell Bench Press': {
+    muscles: ['Chest', 'Front delts', 'Triceps'],
+    steps: [
+      'Eyes under the bar, feet flat, shoulder blades pinned back.',
+      'Lower the bar to mid-chest with elbows about 45° from your body.',
+      'Press up and slightly back until your arms are straight.',
+    ],
+  },
+  'Barbell Back Squat': {
+    muscles: ['Quads', 'Glutes', 'Adductors'],
+    steps: [
+      'Bar on the upper back, feet shoulder width, toes slightly out.',
+      'Sit down between your heels with knees tracking over your toes.',
+      'Drive up through the whole foot until you stand tall.',
+    ],
+  },
+  Deadlift: {
+    muscles: ['Glutes', 'Hamstrings', 'Lower back'],
+    steps: [
+      'Bar over mid-foot, shins close, grip just outside your legs.',
+      'Brace, flatten your back and push the floor away.',
+      'Stand tall with hips and knees locking out together.',
+    ],
+  },
+  'Overhead Press': {
+    muscles: ['Front delts', 'Triceps', 'Upper chest'],
+    steps: [
+      'Bar on the front of the shoulders, grip just outside them, glutes tight.',
+      'Press straight up, moving your head back so the bar passes your face.',
+      'Lock out with the bar over the middle of your feet.',
+    ],
+  },
+  'Barbell Row': {
+    muscles: ['Upper back', 'Lats', 'Biceps'],
+    steps: [
+      'Hinge forward to about 45° with the bar hanging at arm’s length.',
+      'Pull the bar to your lower ribs, driving your elbows back.',
+      'Lower it under control without standing up.',
+    ],
+  },
+  'Pull-Ups': {
+    muscles: ['Lats', 'Upper back', 'Biceps'],
+    steps: [
+      'Hang from the bar with hands just wider than your shoulders.',
+      'Pull your chest toward the bar, leading with your elbows.',
+      'Lower all the way until your arms are straight.',
+    ],
+  },
+  'Romanian Deadlift': {
+    muscles: ['Hamstrings', 'Glutes', 'Lower back'],
+    steps: [
+      'Stand tall with the bar at your hips, soft knees.',
+      'Push your hips back and slide the bar down your thighs.',
+      'Stop at a deep hamstring stretch and drive the hips forward.',
+    ],
+  },
+  'Incline Bench Press (Barbell)': {
+    muscles: ['Upper chest', 'Front delts', 'Triceps'],
+    steps: [
+      'Set the bench to about 30°, shoulder blades pinned back.',
+      'Lower the bar to your upper chest with elbows under the bar.',
+      'Press up until your arms are straight over your shoulders.',
+    ],
+  },
+  'Incline Dumbbell Press': {
+    muscles: ['Upper chest', 'Front delts', 'Triceps'],
+    steps: [
+      'Set the bench to about 30° and start with the dumbbells at your shoulders.',
+      'Press up and slightly in until your arms are straight.',
+      'Lower slowly until you feel a stretch across your chest.',
+    ],
+  },
+  'Dumbbell Bench Press': {
+    muscles: ['Chest', 'Front delts', 'Triceps'],
+    steps: [
+      'Lie back with the dumbbells at chest level, feet flat.',
+      'Press up until your arms are straight and the dumbbells nearly touch.',
+      'Lower under control to the sides of your chest.',
+    ],
+  },
+  'Lat Pulldown': {
+    muscles: ['Lats', 'Upper back', 'Biceps'],
+    steps: [
+      'Grip the bar just outside shoulder width, knees locked under the pad.',
+      'Pull the bar to your upper chest, driving your elbows down.',
+      'Let it rise slowly until your arms are straight.',
+    ],
+  },
+  'Seated Cable Row': {
+    muscles: ['Upper back', 'Lats', 'Biceps'],
+    steps: [
+      'Sit tall with soft knees and your arms straight.',
+      'Pull the handle to your stomach and squeeze your shoulder blades together.',
+      'Let your arms extend slowly without rounding forward.',
+    ],
+  },
+  'One-Arm Dumbbell Row': {
+    muscles: ['Lats', 'Upper back', 'Biceps'],
+    steps: [
+      'One knee and one hand on the bench, back flat.',
+      'Pull the dumbbell to your hip, elbow close to your body.',
+      'Lower it until your arm is straight.',
+    ],
+  },
+  'Chin-Up': {
+    muscles: ['Lats', 'Biceps', 'Upper back'],
+    steps: [
+      'Hang from the bar with palms facing you, hands shoulder width.',
+      'Pull until your chin clears the bar.',
+      'Lower all the way until your arms are straight.',
+    ],
+  },
+  Dip: {
+    muscles: ['Chest', 'Triceps', 'Front delts'],
+    steps: [
+      'Support yourself on the bars with your arms straight.',
+      'Lower until your upper arms are about level with the floor.',
+      'Press back up until your arms are straight.',
+    ],
+  },
+  'Push-Up': {
+    muscles: ['Chest', 'Front delts', 'Triceps'],
+    steps: [
+      'Hands just wider than your shoulders, body in one straight line.',
+      'Lower your chest to just above the floor, elbows about 45° out.',
+      'Push back up without letting your hips sag.',
+    ],
+  },
+  'Cable Chest Fly': {
+    muscles: ['Chest', 'Front delts'],
+    steps: [
+      'Set both pulleys at shoulder height and step forward into a split stance.',
+      'Keep a slight bend in the elbows and sweep the handles together in front of your chest.',
+      'Open back up slowly until you feel a stretch across the chest.',
+    ],
+  },
+  'Dumbbell Fly': {
+    muscles: ['Chest', 'Front delts'],
+    steps: [
+      'Lie back with the dumbbells over your chest, palms facing each other.',
+      'Open your arms wide with a slight bend in the elbows.',
+      'Bring them back together over your chest in the same arc.',
+    ],
+  },
+  'Pec Deck': {
+    muscles: ['Chest', 'Front delts'],
+    steps: [
+      'Set the seat so the handles sit at chest height.',
+      'Bring the handles together in front of you with soft elbows.',
+      'Open back up slowly until you feel a stretch across the chest.',
+    ],
+  },
+  'Seated Dumbbell Shoulder Press': {
+    muscles: ['Front delts', 'Side delts', 'Triceps'],
+    steps: [
+      'Sit tall with the dumbbells at shoulder height, palms forward.',
+      'Press up until your arms are straight overhead.',
+      'Lower slowly back to your shoulders.',
+    ],
+  },
+  'Lateral Raises': {
+    muscles: ['Side delts', 'Traps'],
+    steps: [
+      'Stand tall with the dumbbells at your sides.',
+      'Raise them out to the side until your arms are level with your shoulders.',
+      'Lower slowly without swinging.',
+    ],
+  },
+  'Face Pulls': {
+    muscles: ['Rear delts', 'Upper back'],
+    steps: [
+      'Set a rope at face height and step back with your arms straight.',
+      'Pull the rope toward your face, hands splitting past your ears.',
+      'Return slowly until your arms are straight.',
+    ],
+  },
+  'Reverse Dumbbell Fly': {
+    muscles: ['Rear delts', 'Upper back'],
+    steps: [
+      'Hinge forward with a flat back, dumbbells hanging under your chest.',
+      'Raise them out to the side, leading with the backs of your hands.',
+      'Lower slowly until they hang straight down.',
+    ],
+  },
+  'Barbell Curl': {
+    muscles: ['Biceps', 'Forearms'],
+    steps: [
+      'Stand tall with the bar at your thighs, palms forward.',
+      'Curl it up, keeping your elbows at your sides.',
+      'Lower slowly until your arms are straight.',
+    ],
+  },
+  'Dumbbell Curl': {
+    muscles: ['Biceps', 'Forearms'],
+    steps: [
+      'Stand tall with the dumbbells at your sides, palms forward.',
+      'Curl them up without moving your elbows forward.',
+      'Lower slowly until your arms are straight.',
+    ],
+  },
+  'Hammer Curl': {
+    muscles: ['Biceps', 'Forearms'],
+    steps: [
+      'Hold the dumbbells at your sides, palms facing in.',
+      'Curl them up, keeping your palms facing each other.',
+      'Lower slowly until your arms are straight.',
+    ],
+  },
+  'Tricep Pushdowns': {
+    muscles: ['Triceps'],
+    steps: [
+      'Grip the bar at chest height, elbows tucked at your sides.',
+      'Push down until your arms are straight.',
+      'Let it rise to chest height without moving your elbows.',
+    ],
+  },
+  'Overhead Dumbbell Tricep Extension': {
+    muscles: ['Triceps'],
+    steps: [
+      'Hold one dumbbell overhead with both hands, arms straight.',
+      'Lower it behind your head, elbows pointing up.',
+      'Extend back up until your arms are straight.',
+    ],
+  },
+  'Skull Crusher': {
+    muscles: ['Triceps'],
+    steps: [
+      'Lie back with the bar over your shoulders, arms straight.',
+      'Bend at the elbows to lower the bar toward your forehead.',
+      'Extend back up without moving your upper arms.',
+    ],
+  },
+  'Leg Press': {
+    muscles: ['Quads', 'Glutes'],
+    steps: [
+      'Feet shoulder width on the platform, back flat on the pad.',
+      'Lower the platform until your knees come toward your chest.',
+      'Press back up until your legs are almost straight.',
+    ],
+  },
+  'Front Squat': {
+    muscles: ['Quads', 'Glutes', 'Upper back'],
+    steps: [
+      'Rest the bar on the front of your shoulders, elbows high.',
+      'Sit straight down, keeping your chest up.',
+      'Drive up through the whole foot until you stand tall.',
+    ],
+  },
+  'Goblet Squat': {
+    muscles: ['Quads', 'Glutes'],
+    steps: [
+      'Hold one dumbbell at your chest, feet shoulder width.',
+      'Sit down between your heels, elbows inside your knees.',
+      'Stand back up, keeping your chest tall.',
+    ],
+  },
+  'Hack Squat': {
+    muscles: ['Quads', 'Glutes'],
+    steps: [
+      'Shoulders under the pads, feet shoulder width on the platform.',
+      'Lower until your thighs are about level with the platform.',
+      'Drive back up through your whole foot.',
+    ],
+  },
+  'Bulgarian Split Squat': {
+    muscles: ['Quads', 'Glutes'],
+    steps: [
+      'Rest your back foot on a bench, front foot a long step ahead.',
+      'Lower straight down until your back knee nearly touches the floor.',
+      'Drive up through your front foot.',
+    ],
+  },
+  'Walking Lunge': {
+    muscles: ['Quads', 'Glutes'],
+    steps: [
+      'Stand tall with the dumbbells at your sides.',
+      'Step forward and lower until both knees bend to about 90°.',
+      'Push through the front foot and step into the next lunge.',
+    ],
+  },
+  'Leg Extension': {
+    muscles: ['Quads'],
+    steps: [
+      'Sit back with the pad on your lower shins, knees in line with the pivot.',
+      'Straighten your legs until they are level.',
+      'Lower slowly to the start.',
+    ],
+  },
+  'Leg Curl': {
+    muscles: ['Hamstrings'],
+    steps: [
+      'Line your knees up with the machine pivot.',
+      'Curl the pad toward you without lifting your hips.',
+      'Lower under control to a full stretch.',
+    ],
+  },
+  'Hip Thrust': {
+    muscles: ['Glutes', 'Hamstrings'],
+    steps: [
+      'Upper back on a bench, bar across your hips, feet flat.',
+      'Drive your hips up until your body is straight from shoulders to knees.',
+      'Lower until your hips nearly touch the floor.',
+    ],
+  },
+  'Standing Calf Raise': {
+    muscles: ['Calves'],
+    steps: [
+      'Balls of your feet on a step, heels hanging off.',
+      'Rise up as high as you can onto your toes.',
+      'Lower slowly until your heels drop below the step.',
+    ],
+  },
+  'Hanging Leg Raise': {
+    muscles: ['Abs', 'Hip flexors'],
+    steps: [
+      'Hang from a bar with your arms straight.',
+      'Raise your legs until they are level with your hips.',
+      'Lower slowly without swinging.',
+    ],
+  },
+};
+
+const howToById = new Map<string, HowTo>(
+  Object.entries(HOW_TO).map(([name, entry]) => [bundledExerciseId(name), entry]),
+);
+const figureOverrideById = new Map<string, ExerciseFigure | null>(
+  Object.entries(FIGURE_BY_NAME).map(([name, figure]) => [bundledExerciseId(name), figure]),
+);
+
+/** Catalog words in sentence case (`Body Weight` → `Body weight`); acronyms stay (`EZ Bar` → `EZ bar`). */
+function sentenceCase(text: string): string {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((word, index) => (index === 0 || /^[A-Z0-9-]{2,}$/.test(word) ? word : word.toLowerCase()))
+    .join(' ');
+}
+
+/** A catalog target as a person names it (`Pectorals` → `Chest`); null for non-muscles. */
+export function muscleLabel(target: string | null | undefined): string | null {
+  const value = target?.trim();
+  if (!value || value === 'Cardiovascular') return null;
+  if (value === 'Pectorals') return 'Chest';
+  return sentenceCase(value);
+}
+
+/** Equipment as the kit line shows it; empty for `None`. */
+export function kitLabel(equipment: string | null | undefined): string {
+  const value = equipment?.trim();
+  return !value || value === 'None' ? '' : sentenceCase(value);
+}
+
+function figureFor(row: ExercisePrescription): ExerciseFigure | undefined {
+  const override = figureOverrideById.get(row.id);
+  if (override !== undefined) return override ?? undefined;
+  if (row.itemType !== 'strength') return undefined;
+  // Flys share their target with presses; the name tells them apart.
+  if (/\bfly\b|pec deck|pull-apart/i.test(row.name)) return 'fly';
+  const target = row.targetMuscles[0];
+  return (target && FIGURE_BY_TARGET[target]) || undefined;
+}
+
+/**
+ * The exercise sheet's catalog facts for a bundled lift (D5), keyed by
+ * `bundledExerciseId(name)`: the movement figure and the how-to steps where Trim has them,
+ * plus kit and muscles. Null when the name isn't a bundled row (custom exercises, renamed
+ * rows): the sheet then shows no figure panel and no HOW TO.
+ */
+export function bundledExerciseInfo(name: string): BundledExerciseInfo | null {
+  const row = BUNDLED_BY_ID.get(bundledExerciseId(name));
+  if (!row) return null;
+  const howTo = howToById.get(row.id);
+  const primary = muscleLabel(row.targetMuscles[0]);
+  const figure = figureFor(row);
+  return {
+    ...(figure ? { figure } : null),
+    ...(howTo ? { howTo: howTo.steps } : null),
+    kit: kitLabel(row.equipments[0]),
+    muscles: howTo?.muscles ?? (primary ? [primary] : []),
+  };
+}

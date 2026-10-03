@@ -1,22 +1,38 @@
 ---
 name: implement-screen
-description: Implements a Trim screen in mobile/ from trim-ui and the agreed Claude Design variation. Use when adding or changing a mobile/ screen, or visually QA'ing Workout, Plans, Progress, History, Settings, onboarding or the paywall.
+description: Implements a Trim surface in mobile/ (a device mode, a sheet or a moment) from trim-ui, design/gadget/SPEC.md and the prototype, and verifies it against design/gadget/screens side by side. Use when adding or changing anything in mobile/'s UI, or visually QA'ing Home, logging, rest, finish, plan edit, any sheet, onboarding or the paywall.
 ---
 
-# Implement a screen
+# Implement a surface
 
 ## Workflow
 
-1. Read `.cursor/skills/trim-ui/SKILL.md`: principles (§1), the screen job table (§2), then the foundations you'll touch (type, spacing, color, icons, motion, copy) and the screen's row in §11.
-2. Work from the variation Marvin picked in Claude Design and the screen's current code. In a local session with Paper open, the matching artboard (page **Deliberate empty**, or Family loop) is an extra, possibly outdated reference; in a cloud session skip it.
-3. Product rules come from `PRODUCT.md` and `PRODUCT-DECISIONS.md`. Domain logic lives in `mobile/src/domain/`.
-4. Implement in `mobile/` with Expo Router and tokens only: `type`, `space`, `radius`, `colors`, `iconSize`, `PRESSED_OPACITY` from `mobile/src/constants/theme.ts`, and `DURATION`, `SPRING`, easings from `mobile/src/motion.ts`. No raw font sizes, hex colors or off-scale spacing. If a screen you touch carries debt from `trim-ui` §15, fix it in the same change.
-5. Do not invent hierarchy. Match the artboard: one winner, fact captions only, one green, thumb CTA.
-6. Run it in the iOS Simulator and go through `trim-ui` §14 (QA) in light and dark, at default and large Dynamic Type. Fix mismatches; do not restyle toward Hevy or Strong.
+1. Read `.cursor/skills/trim-ui/SKILL.md`: principles (§1), structure and the key map (§2), then the foundations you'll touch (type, geometry, color, motion, copy) and the surface's section in §13.
+2. Find the target: its file in `design/gadget/screens/` (and `frames/` for the insert), its state in `design/gadget/prototype/trim-gadget-prototype.html` (read its CSS and JS for any value SPEC doesn't list), and its numbers in `design/gadget/SPEC.md`. These are the specification history: `trim-ui` and the shipped code in `mobile/src/device/` win where they differ. Paper and old screenshots are obsolete.
+3. Product rules come from `PRODUCT.md` (Principles, Control) and `PRODUCT-DECISIONS.md` (73). Domain logic lives in `mobile/src/domain/` (and the pure `mobile/src/device/*-model.ts` files) and is reused, not rewritten.
+4. Build from the shared parts, never per-screen copies:
+   - **Device parts** in `mobile/src/device/parts/`: `DeviceBody`, `RoundKey`, `TallKey`, `Rocker`, `Lamp`, `Display`, `Drum`, `BigKey`, `Well`, `HoldRing`, `Wheel`, `EngravedLabel`. Device state lives in `src/device/device-state.ts` (pure, no `react-native` import); logging logic in the `src/device/log/` hooks.
+   - **Sheet primitives:** `SheetHost`, `SheetHeader`, `SheetCard`, `SheetRow`, `SectionLabel`, `PillButton`, `StickyActionBar`, `Chip`, `Segmented`, `ObjectIcon`, plus `Toast`. Open sheets through the device command API (`useDevice().open(...)`), never a route, `Modal` or `formSheet`.
+   - A missing part or primitive is added to the shared set (and to the gallery), not drawn inline.
+5. Tokens only: the device palette per finish, `lcd`, `sheet`, `signal`, the type roles, the `device` geometry block, `space`, `radius`, `PRESSED_OPACITY`, `TOUCH_TARGET`, `fontScaleCap` from `mobile/src/constants/theme.ts`, and `DEVICE` durations and easings and `REST_GO_MS` from `mobile/src/motion.ts`. Haptics through `useHaptics()` and sounds through `TrimDevice`, with their named patterns (trim-ui §8). No raw font sizes, weights, hex colors, radii or off-scale spacing.
+6. Check new or changed parts in the dev gallery, `mobile/src/app/dev-gallery.tsx` (`__DEV__` only): every part in every state and finish at 390 × 844. Add your part's states there.
+7. Verify visually (below) and walk trim-ui §15 (QA): every finish where the device shows, the largest accessibility text size in sheets, Reduce Motion, VoiceOver, iPhone SE and Pro Max.
+
+## Visual verification (PLAN §10)
+
+1. `npx expo run:ios`, open the state, and take a screenshot with `xcrun simctl io booted screenshot <file>` (390 × 844 points: iPhone 13/14/15/16 base).
+2. Put it next to the target: `magick design/gadget/screens/<target>.jpg <actual>.png +append compare.png`. If ImageMagick isn't installed, use Pillow (`python3 -c` with `PIL.Image`: open both, scale to the same height, paste side by side). Read `compare.png`.
+3. List every visible difference: position, size, colour, type, radius, shadow.
+4. Fix it, or justify it in the ledger. Tolerance: 2 pt for layout, exact token colours, the same font roles.
+
+Cloud sessions without a Simulator: the web export gives layout only (no native fonts or shadow parity). Use EAS Simulator (`.agents/skills/eas-simulator/SKILL.md`) for iOS screenshots, or mark native-only checks `needs-device` and continue.
 
 ## Guardrails
 
-- Visual source of truth is `trim-ui`, then the current code, then Paper (frozen, local only). If they disagree, `trim-ui` wins; Paper is not updated.
-- Haptics and motion: only what `trim-ui` §8 lists. A new animation needs a purpose (faster, fluid, loveable), a spec and a row in the approved list.
-- Behavior: never act on the user's behalf (`PRODUCT.md` → Principles → Control).
-- Never skip design: critique → Claude Design (several variations, broad conceptual range; see AGENTS.md → Design first) → Marvin picks → then `mobile/`.
+- Visual source of truth: `trim-ui`, then the shipped device code, then SPEC, the prototype and `screens/` as targets. When the code changes a rule, fix `trim-ui` in the same change.
+- Motion, haptics and sounds: only what `trim-ui` §8 lists, at SPEC's timings. A new one needs a purpose (faster, fluid, loveable), a spec and a row in §8.
+- Behaviour: never act on the user's behalf (`PRODUCT.md` → Control). Timers inform, they don't act.
+- Never mix layers: no bevels or gradients in sheets, no flat list on the device.
+- Guard native modules for web (`Platform.OS === 'ios'` or platform files) so the web smoke test can't crash.
+- `npm run check` must pass. Never raise the design-token baseline.
+- New features still go through Claude Design first (AGENTS.md → Design first).

@@ -11,9 +11,11 @@ npx tsc --noEmit            # typecheck
 
 | Path | What it holds |
 |---|---|
-| `src/app/` | Routes (Expo Router) |
-| `src/screens/` | Screen components |
-| `src/components/` | Shared UI |
+| `src/app/` | Routes (Expo Router): the device (`index`), onboarding, `paywall`, the `/log` deep-link alias |
+| `src/device/` | The device: state, parts, modes, sheets, moments, pure models |
+| `src/screens/` | Onboarding steps and the paywall |
+| `src/components/` | Toast, confirm, paywall parts |
+| `modules/trim-device/` | Local Swift module: Core Haptics, sounds, the SceneKit insert |
 | `src/domain/` | Pure logic: sets, progress, targets, plan loop |
 | `src/store/` | App state and local persistence |
 | `src/purchases/` | RevenueCat, paywall, Pro gates |

@@ -77,3 +77,152 @@ export function enterUp(reduceMotion: boolean, delayMs = 0): EntryOrExitLayoutTy
 export function exitFade(reduceMotion: boolean): EntryOrExitLayoutType {
   return reduceMotion ? EXIT_REDUCED : EXIT;
 }
+
+/* ------------------------------------------------------------------------------------------ *
+ * Gadget motion (design/gadget/SPEC.md §7). Durations in ms. The `*_FN` easings are worklets
+ * (`Easing.bezierFn`) so they can run inside `withTiming` on the UI thread and in NumberFlow.
+ * ------------------------------------------------------------------------------------------ */
+
+/** Display content change and drum step: bezier(.2,.8,.3,1). */
+export const EASE_DISPLAY = Easing.bezier(0.2, 0.8, 0.3, 1);
+export const EASE_DISPLAY_FN = Easing.bezierFn(0.2, 0.8, 0.3, 1);
+/** Gadget sheets and the wheel stow: bezier(.2,.9,.3,1). */
+export const EASE_SHEET_GADGET = Easing.bezier(0.2, 0.9, 0.3, 1);
+export const EASE_SHEET_GADGET_FN = Easing.bezierFn(0.2, 0.9, 0.3, 1);
+/** Stamp landing: bezier(.2,1.6,.4,1) (overshoots on purpose). */
+export const EASE_STAMP = Easing.bezier(0.2, 1.6, 0.4, 1);
+export const EASE_STAMP_FN = Easing.bezierFn(0.2, 1.6, 0.4, 1);
+/** Cartridge filing: bezier(.3,1.4,.5,1). */
+export const EASE_FILE = Easing.bezier(0.3, 1.4, 0.5, 1);
+export const EASE_FILE_FN = Easing.bezierFn(0.3, 1.4, 0.5, 1);
+/** The paywall knob turned by hand: it gathers speed, then settles onto PRO. */
+export const EASE_KNOB_FN = Easing.bezierFn(0.45, 0, 0.2, 1);
+/** Plan insert pull-back: bezier(.6,0,.25,1). */
+export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
+/** Plan insert slide-in: bezier(.55,0,.8,.35). */
+export const EASE_INSERT_SLIDE_FN = Easing.bezierFn(0.55, 0, 0.8, 0.35);
+/** CSS `ease-out` (the insert's click settle and slot glow). */
+export const EASE_CSS_OUT_FN = Easing.bezierFn(0, 0, 0.58, 1);
+/** Key press (CSS `transition: transform .08s` uses `ease`). */
+export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
+/** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
+export const EASE_WEEK_DROP_FN = Easing.bezierFn(0.3, 1.3, 0.5, 1);
+export const LINEAR_FN = Easing.linear;
+
+export const DEVICE = {
+  /** Key press-in and release: translateY 3 (round), 6 (big key); the lip collapses. */
+  KEY_PRESS: 80,
+  /** Key disabled fade (`opacity .2s`). */
+  KEY_DISABLE: 200,
+  /** Display content change: fade and rise 8. */
+  DISPLAY: 220,
+  /** Weight drum step: translateY ±24 back to 0. */
+  DRUM: 160,
+  /** The drum frame's flash (no weight yet): each off/on step lasts this long. */
+  DRUM_FLASH: 120,
+  /** Long-press repeat on the tall keys: a step every REPEAT once the long press lands. */
+  REPEAT: 90,
+  /** The rest ring glides between the clock's ticks (`useRest` ticks every 250 ms). */
+  REST_TICK: 250,
+  /** Finish mode's `N MIN` refresh. */
+  MINUTE_TICK: 15000,
+  /** Sheet in/out. */
+  SHEET: 380,
+  /** Scrim fade. */
+  SCRIM: 300,
+  /** Rocker tilt rotateY ±10° on an end press: held for ROCKER, easing in and out over ROCKER_TILT. */
+  ROCKER: 160,
+  ROCKER_TILT: 120,
+  /** Lamp colour change (`transition: background .25s`). */
+  LAMP: 250,
+  /** Hold to finish: linear ring fill. */
+  HOLD: 1100,
+  /** The pause between the ring closing and finishing (prototype 120). */
+  HOLD_COMMIT: 120,
+  /** Receipt feed: 18 steps. */
+  FEED: 1800,
+  FEED_STEPS: 18,
+  /** Stamp: scale 2.4 → 1, rotate −12° → 7°, after a delay; the row fills over STAMP. */
+  STAMP: 500,
+  STAMP_DELAY: 450,
+  /**
+   * When the stamp lands, into STAMP: bezier(.2,1.6,.4,1) first reaches its end value at
+   * ~23% of the run, so the haptic and the sound play there (trim-ui §8 rule 3).
+   */
+  STAMP_LAND: 115,
+  ROW_FILL_DELAY: 100,
+  /** Lamp turns green: off, on, off, on in steps, after a delay. */
+  LAMP_LIT: 900,
+  LAMP_LIT_DELAY: 500,
+  /** Wheel stow on Home: translateX 40, scale .9, opacity 0. */
+  WHEEL_STOW: 350,
+  WHEEL_STOW_FADE: 300,
+  /** Cartridge filing, staggered. */
+  FILE: 550,
+  FILE_STAGGER: 120,
+  SHELF_FLASH: 1200,
+  /** Big key colour change between modes (`background .3s`). */
+  BIG_KEY_SWAP: 300,
+  /** Finish change on the body (`background-color .4s`). */
+  FINISH: 400,
+  /** Needle, goal ring, chart line. */
+  NEEDLE: 1400,
+  GOAL_RING: 1000,
+  CHART: 1000,
+  /** Plan insert (SPEC §7 table). */
+  INSERT_SCENE: 600,
+  INSERT_PULL: 750,
+  INSERT_CART_IN: 420,
+  INSERT_SLIDE: 430,
+  INSERT_CLICK: 300,
+  INSERT_DIP: 420,
+  INSERT_GLOW: 600,
+  INSERT_PULSE: 700,
+  INSERT_BOOT: 450,
+  INSERT_SWING: 700,
+  INSERT_DAY_TICK: 190,
+  /** Pauses in the insert (prototype `activate()`): before the slide, between the click and the swing. */
+  INSERT_HOLD: 180,
+  INSERT_SWING_DELAY: 520,
+  /** The ticks start this long after face-on; Home comes this long after the last one. */
+  INSERT_TICK_START: 120,
+  INSERT_HOME_DELAY: 450,
+  /** The lamps flick across at the click: the first after 60, then 55 apart, each lit 140. */
+  INSERT_LAMP_FIRST: 60,
+  INSERT_LAMP_STEP: 55,
+  INSERT_LAMP_ON: 140,
+  /** The grid floor slides one cell as the scene comes in. */
+  INSERT_GRID: 1400,
+  /** The scene's shadow grows in with it. */
+  INSERT_SHADOW: 800,
+  /** No `onSceneReady` from the native insert by then: the JS insert plays instead. */
+  INSERT_NATIVE_TIMEOUT: 1500,
+  /** Whoever awaits the insert (onboarding) stops waiting by then, whatever happened to the device. */
+  INSERT_MAX_WAIT: 15000,
+  /** The week moment (D15): the grid ground fades in, then the report drops onto the spike. */
+  WEEK_SCENE: 600,
+  WEEK_DROP: 700,
+  WEEK_DROP_DELAY: 250,
+  /** bezier(.3,1.3,.5,1) first reaches the spike at 45% of the drop: the thud plays there. */
+  WEEK_DROP_LAND: 315,
+  /** The moment fades away after Done. */
+  WEEK_SCENE_OUT: 300,
+  /** Blinking display text (INSERT PLAN, GO). */
+  BLINK: 1000,
+  /** A stepped change (CSS `steps(1)`): jumps, no tween. */
+  SNAP: 0,
+  /** Reduced-motion stand-in for every movement: a plain fade. */
+  REDUCED_FADE: 160,
+  /**
+   * The paywall knob (N9): turns once from FREE to PRO once the modal has landed (its slide-up
+   * takes ~500 ms), then the feature lamps light in turn.
+   */
+  KNOB_DELAY: 550,
+  KNOB_TURN: 1000,
+  KNOB_LAMP_STAGGER: 90,
+  /** The exercise figure's demonstration loop (prototype `lift` / `sweep`, 2.4 s ease-in-out). */
+  FIGURE_LOOP: 2400,
+} as const;
+
+/** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */
+export const REST_GO_MS = 2000;
