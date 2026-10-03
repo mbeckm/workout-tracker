@@ -357,7 +357,8 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Sheet in / out | 380 ms, bezier(.2,.9,.3,1); scrim 300 ms | |
 | Rocker press | rotateY ±10°, 160 ms | Tilts toward the end pressed |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
-| Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s | Tapping the paper completes it |
+| Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms) | Tapping the paper completes it. Plays from the wall too. Reduce Motion: the paper fades in where it ends |
+| Week moment (D15) | the grid ground fades in over 600 ms; 250 ms in, the report drops onto the spike from 120 above, −4° → 1.5°, 700 ms, bezier(.3,1.3,.5,1); Done fades it out over 300 ms | The thud at 315 ms into the drop (where the curve first meets the spike). A tap on the scene skips to the end |
 | Stamp (new PR or done day) | scale 2.4 → 1, rotate −12° → 7°, opacity 0 → 1, 500 ms, delay 450, bezier(.2,1.6,.4,1); the row fills from todo to done over 500 ms | When Home reappears after the receipt |
 | Lamp turns green (day finished) | flicker off, on, off, on over 900 ms (steps) | |
 | Wheel stow on Home | translateX 40, scale .9, opacity 0, 350 ms | |
@@ -395,7 +396,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Hold to finish | continuous, intensity .2 → .9 over 1.1 s, sharpness .3; release cancels | `impactAsync(Soft)` at the start, a heavy impact at the end |
 | Finish complete | transient 1.0 / .3 | `notificationAsync(Success)` |
 | Receipt printing | 18 transients .25 / .9, 100 ms apart (the feed's steps) | none |
-| Stamp lands | transient .9 / .2 | `impactAsync(Heavy)` |
+| Stamp lands; the week report lands on the spike | transient .9 / .2 | `impactAsync(Heavy)` |
 | Cartridge click | t0 transient 1.0 / 1.0 (latch), t65 transient 1.0 / .2 (seat), then continuous .3 / .1 for 80 ms | `impactAsync(Rigid)`, then `impactAsync(Heavy)` 65 ms later |
 | Day ticks in (loading) | transient .4 / .7 | `selectionAsync` |
 | Finish swatch picked | transient .5 / .6 | `selectionAsync` |
@@ -411,7 +412,7 @@ Short, dry, mechanical, never musical. Each under 1 s, 44.1 kHz mono, peak −3 
 | --- | --- | --- |
 | `cartridge` | a latch "clack" plus a thump, then at 65 ms a "thunk" plus a lower thump | The cartridge seats |
 | `print` | stepper chatter, 18 short ticks | The receipt prints |
-| `stamp` | a soft low thud | A PR or done stamp lands |
+| `stamp` | a soft low thud | A PR or done stamp lands; the week report lands on the spike |
 | `key` (optional) | a very quiet click | Key presses; off by default, decided in QA |
 
 No other sounds.
@@ -718,11 +719,17 @@ A 230 illustration panel (our own figure for the movement pattern, D5; no panel 
 
 ### History wall (HR1) [02]
 
-Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then a 3-column grid, gap 10, of mini receipts tilted 0 / 1.5 / −1 / 1 / −1.5°, each with a torn zigzag bottom: day, date, sets, kg, PR or minutes (Plex Mono 9 / 13). Tap prints the full receipt with ‹ back to the wall. Long-press deletes after an action sheet. Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts.
+Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then a 3-column grid, gap 10, of mini receipts tilted 0 / 1.5 / −1 / 1 / −1.5°, each with a torn zigzag bottom: day, date, sets, kg, PR or minutes (Plex Mono 9 / 13). Tap prints the full receipt with ‹ back to the wall (the wall keeps its scroll). Long-press deletes after an action sheet (`Delete Push 1 from Thu 2 Oct?`; VoiceOver: a Delete action). Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts (`SheetList`, FlashList: a week header or one row of three per item); minis are drawn without measuring (`SlipPaper`), so recycled cells never show stale paper.
+
+- The week header reads `WEEK n` in the active plan's weeks (Home's numbering); weeks before the plan existed read `WEEK OF 22 SEP`. Lamps are the plan's trainable days, lit by the week's workouts (capped).
+- The header has ✕; ‹ back to the menu only when it was opened from the menu (Home's History key opens it directly).
+- Workouts from deleted plans keep their own title. The PR line uses `workoutPersonalBests`, as the old History detail did.
 
 ### Receipt [13, 03]
 
-A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the day, `date  N MIN`; per lift the name and set count with an indented `w × r, r, r` line (or `w×r` per set when weights differ); `SETS`, `VOLUME`, the first lift's estimated max, the PR line in #C2410C; milestone and goal lines (D7). Actions: `Share` (dark pill, the receipt as text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`). Done triggers, in order: the Home stamp, the week moment, the post-workout paywall.
+A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the milestone (bold) when there is one, the day, `date N MIN`; per lift the name and set count with an indented `w × r, r, r` line (`compressSetLines`; `w×r` per set when weights differ); `SETS`, `VOLUME`, the estimated max of the first lift that has one (`BENCH E1RM`, the stamp word), one PR line per record lift (`BENCH PR ★`) in #C2410C, one `GOAL BENCH 100 ✓` line per goal reached (D7). Actions: `Share` (dark pill, the receipt as 32-column text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from the wall the header is the day's name with ‹. The fresh receipt claims its milestone (`claimMilestone`).
+
+Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue runs (`device/moments.ts`, `moment/moment-host.tsx`), one at a time: the Home stamp (`justFinished`; it waits until Home is in front and the stamp has played), the week moment if this workout filled the week and its ISO week isn't in `weekMomentsShown`, then the post-workout paywall. Phase 4's finish calls `openReceiptAfterFinish(workoutId)`.
 
 ### Plans rack (PB3) [20, 24]
 
@@ -762,7 +769,7 @@ A full-screen modal above any sheet, on the dark ground, with the knob hero (N9)
 
 ### Week moment (D15)
 
-After the receipt's Done, once per full week: a full-screen moment on the dark grid where the week's report prints onto the spike (HR2, QC2 content: lifts up, records, volume, best). `Share` and `Done`.
+After the receipt's Done, once per full week (`weekMomentsShown` keeps the ISO week key; `week_completed` is tracked): a full-screen moment above the device and sheets on the dark grid ground (#0E0E0D, 1 pt lines of white .04 every 28). The headline `Week 12 done` (30/34, 800) and `8 weeks in a row` under it once the streak counts; the spike with two blank slips, and the report (Plex Mono 12/18, 230 wide, a punched hole) dropping onto it: `WEEK 12` with the week's lamps, `29 SEP TO 5 OCT`, `LIFTS UP`, `RECORDS ★ n` (#A8780A), `VOLUME` (`38.9 T` from 10 t; pounds in full), `BEST SQUAT 127.5` (the week's best estimated max). `Share week` (dark) and `Done` (light). It replaces the flame celebration. Development: `/?moment=week`.
 
 ### Keypad (D19)
 

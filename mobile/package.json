@@ -61,7 +61,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "check:design": "node scripts/check-design-tokens.mjs",
-    "check": "tsc --noEmit && node scripts/check-design-tokens.mjs && tsx scripts/check-device-logic.ts"
+    "check": "tsc --noEmit && node scripts/check-design-tokens.mjs && tsx scripts/check-device-logic.ts && tsx scripts/check-receipt-logic.ts"
   },
   "private": true
 }

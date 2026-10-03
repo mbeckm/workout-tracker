@@ -13,6 +13,7 @@ import { HomeDisplay } from '@/device/home/home-display';
 import { useHome } from '@/device/home/use-home';
 import type { HomeModel } from '@/device/home-model';
 import { REFERENCE_WIDTH, fromReferenceTop } from '@/device/layout';
+import { MomentHost } from '@/device/moment/moment-host';
 import {
   BigKey,
   DeviceBody,
@@ -125,6 +126,7 @@ export function DeviceScreen() {
         </RoundKey>
       </DeviceBody>
       <SheetHost />
+      <MomentHost />
     </View>
   );
 }

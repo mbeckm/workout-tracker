@@ -2,7 +2,9 @@ import type { OpenSheet, SheetKind } from '@/device/device-state';
 
 import { EmptySheet } from './empty-sheet';
 import { FinishesSheet } from './finishes-sheet';
+import { HistorySheet } from './history-sheet';
 import { MenuSheet } from './menu-sheet';
+import { ReceiptSheet } from './receipt-sheet';
 import { SettingsSheet } from './settings-sheet';
 
 /** Sheets with a text field: their content ends above the keyboard. */
@@ -39,6 +41,10 @@ export function SheetContent({ sheet }: { sheet: OpenSheet }) {
       return <FinishesSheet key={sheet.key} />;
     case 'settings':
       return <SettingsSheet key={sheet.key} fromMenu={sheet.params.from === 'menu'} />;
+    case 'history':
+      return <HistorySheet key={sheet.key} params={sheet.params} />;
+    case 'receipt':
+      return <ReceiptSheet key={sheet.key} params={sheet.params} />;
     default:
       return <EmptySheet key={sheet.key} title={TITLES[sheet.kind]} params={sheet.params} />;
   }
