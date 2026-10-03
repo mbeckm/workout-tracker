@@ -133,6 +133,7 @@ Read this before your first command. Each item cost real time once.
 
 ### Expo and React Native
 - "Unimplemented component <RNSVG…>" or a crash on import means the installed dev build predates a native dependency. Rebuild (`npx expo prebuild --platform ios && npx expo run:ios`), don't debug the JS.
+- The runtime fingerprint hashes `mobile/package.json` **scripts**, so editing a script (even `check`) makes every installed build ignore new EAS updates. Between native builds, add new checks as their own step in `.github/workflows/checks.yml` instead of chaining them into `npm run check`. A `fingerprint.config.js` that skips package.json scripts lands with the next native build.
 - `expo run:ios` reuses `mobile/ios/`; it doesn't pick up `app.json` changes (icon, splash, plugins, name) until `npx expo prebuild` runs.
 - Anything that animates on the UI thread with a custom easing (NumberFlow, Reanimated `withTiming` in a worklet) needs a worklet easing (`EASE_OUT_FN` = `Easing.bezierFn`). A plain RN `Easing.bezier` throws "easing function is not a worklet" the first time it runs.
 - Sheets are `SheetHost` content (`src/device/sheets/`), never RN `Modal` or RNScreens `formSheet`: the device must stay mounted under them, and toasts and the paywall must sit above.
