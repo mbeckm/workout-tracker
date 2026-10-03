@@ -11,6 +11,7 @@ import {
   sheetColors,
   sheetGeometry,
   finishColors,
+  space,
 } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { PRESS_SCALE } from '@/motion';
@@ -128,9 +129,7 @@ function FinishCard({ onPress }: { onPress: () => void }) {
       accessibilityLabel={`Finish ${finish}, ${name}. Change finish`}
       testID="menu-finish"
       style={({ pressed }) => [styles.finishCard, pressed && styles.pressed]}>
-      <View style={styles.miniWrap}>
-        <MiniDevice />
-      </View>
+      <MiniDevice />
       <View style={styles.finishText}>
         <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.itemTitle, styles.center]}>
           {`Finish ${finish}, ${name}`}
@@ -193,8 +192,15 @@ function MiniDevice() {
 }
 
 const styles = StyleSheet.create({
+  // The figure on top, the text under it: at default size the card is 200 with the figure 22
+  // from the top and the text 16 from the bottom; large text grows the card, never overlaps.
   finishCard: {
-    height: sheetGeometry.finishCard,
+    minHeight: sheetGeometry.finishCard,
+    paddingTop: sheetGeometry.miniDeviceTop,
+    paddingBottom: space.inset,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.inline,
     borderRadius: gadgetRadius.card,
     borderCurve: 'continuous',
     marginBottom: sheetGeometry.cardGap,
@@ -203,7 +209,6 @@ const styles = StyleSheet.create({
     experimental_backgroundImage: `radial-gradient(ellipse at 50% 30%, ${sheetColors.finishGlowHi}, ${sheetColors.finishGlowLo})`,
   },
   pressed: { transform: [{ scale: PRESS_SCALE }] },
-  miniWrap: { position: 'absolute', left: 0, right: 0, top: 22, alignItems: 'center' },
   mini: {
     width: sheetGeometry.miniDeviceW,
     height: sheetGeometry.miniDeviceH,
@@ -211,6 +216,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     boxShadow: `inset 0 2px 0 ${deviceColors.bodyRim}, 0 14px 24px ${sheetColors.swatchShadow}`,
   },
-  finishText: { position: 'absolute', left: 0, right: 0, bottom: 16 },
+  finishText: { alignSelf: 'stretch', paddingHorizontal: space.inset },
   center: { textAlign: 'center' },
 });

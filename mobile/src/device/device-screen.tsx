@@ -126,6 +126,7 @@ function DeviceSurface() {
           ? 'home'
           : (work.view ?? 'home');
   const working = view === 'log' || view === 'rest' || view === 'finish';
+  const sheetUp = state.sheet != null;
 
   // Margins scale with the width (Pro Max); the keys keep their size.
   const edge = Math.round(device.edge * Math.max(1, width / REFERENCE_WIDTH));
@@ -194,7 +195,15 @@ function DeviceSurface() {
     <View style={styles.root}>
       <StatusBar style={onScene ? 'light' : finishColors[finish].statusBar} />
       {jsClock ? <InsertBackdrop clock={jsClock} width={width} height={height} /> : null}
-      <Animated.View style={[StyleSheet.absoluteFill, deviceMotion, hiddenStyle]}>
+      {/*
+        The sheet's own `accessibilityViewIsModal` only hides its siblings inside SheetHost, so
+        the device hides itself from VoiceOver while a sheet is up (trim-ui §10 SheetHost).
+      */}
+      <Animated.View
+        aria-hidden={sheetUp}
+        accessibilityElementsHidden={sheetUp}
+        importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
+        style={[StyleSheet.absoluteFill, deviceMotion, hiddenStyle]}>
         {jsClock && insert ? (
           <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
         ) : null}

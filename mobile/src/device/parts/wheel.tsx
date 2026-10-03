@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -112,12 +112,31 @@ export function Wheel({
     return { transform: [{ translateY: phase - PERIOD }] };
   });
 
+  /**
+   * The stow (SPEC §7) runs on the UI thread, but its resting state must not depend on it.
+   * Reanimated 4 hands settled animated props back to React only if the JS thread syncs them
+   * within a 1–2 s window (`FORCE_REACT_RENDER_FOR_SETTLED_ANIMATIONS`); after a long JS stall
+   * (finishing a workout) they're dropped, and the next React commit restores the wheel's
+   * static props: fully visible on Home. So once the stow lands, `parked` hides the wrapper in
+   * React's own props; it lifts a frame after an unstow starts, when the slide owns the frame.
+   */
+  const [parked, setParked] = useState(stowed);
+  const stowedRef = useRef(stowed);
+  const park = useCallback(() => {
+    if (stowedRef.current) setParked(true);
+  }, []);
   const stow = useSharedValue(stowed ? 1 : 0);
   useEffect(() => {
+    stowedRef.current = stowed;
     stow.set(
-      withTiming(stowed ? 1 : 0, { duration: DEVICE.WHEEL_STOW, easing: EASE_SHEET_GADGET_FN }),
+      withTiming(stowed ? 1 : 0, { duration: DEVICE.WHEEL_STOW, easing: EASE_SHEET_GADGET_FN }, (finished) => {
+        if (finished && stowed) scheduleOnRN(park);
+      }),
     );
-  }, [stow, stowed]);
+    if (stowed) return;
+    const frame = requestAnimationFrame(() => setParked(false));
+    return () => cancelAnimationFrame(frame);
+  }, [park, stow, stowed]);
   const stowStyle = useAnimatedStyle(() => {
     const t = stow.get();
     return reduceMotion
@@ -134,71 +153,74 @@ export function Wheel({
   const shape = { width: W, height: H, borderRadius: gadgetRadius.wheel, borderCurve: 'continuous' as const };
 
   return (
-    <Animated.View
+    <View
       pointerEvents={stowed ? 'none' : 'auto'}
+      aria-hidden={stowed}
       accessibilityElementsHidden={stowed}
       importantForAccessibility={stowed ? 'no-hide-descendants' : 'auto'}
-      style={[{ width: W }, stowStyle, style]}>
-      <View style={{ width: W, height: H }}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.abs,
-            shape,
-            {
-              top: device.wheelLip,
-              backgroundColor: palette.keyEdge,
-              boxShadow: `0 ${8 - device.wheelLip}px 14px ${palette.wheelDrop}`,
-            },
-          ]}
-        />
-        <GestureDetector gesture={pan}>
+      style={[{ width: W }, style, parked && styles.parked]}>
+      <Animated.View style={stowStyle}>
+        <View style={{ width: W, height: H }}>
           <View
-            accessible
-            accessibilityRole="adjustable"
-            accessibilityLabel={accessibilityLabel}
-            accessibilityValue={accessibilityValue ? { text: accessibilityValue } : undefined}
-            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-            onAccessibilityAction={(event) => {
-              // VoiceOver steps are deliberate; each is an ordinary notch.
-              if (event.nativeEvent.actionName === 'increment') handleNotch(1, 1);
-              if (event.nativeEvent.actionName === 'decrement') handleNotch(-1, 1);
-            }}
-            style={[styles.abs, shape, styles.clip, { backgroundColor: palette.wheelLight }]}>
-            <Animated.View style={[styles.ridges, ridgeStyle]}>
-              <Svg width={W} height={H + PERIOD * 2}>
-                <Defs>
-                  <Pattern id="ridge" width={W} height={PERIOD} patternUnits="userSpaceOnUse">
-                    <Rect x={0} y={0} width={W} height={device.wheelRidgeLight} fill={palette.wheelLight} />
-                    <Rect
-                      x={0}
-                      y={device.wheelRidgeLight}
-                      width={W}
-                      height={device.wheelRidgeDark}
-                      fill={palette.wheelDark}
-                    />
-                  </Pattern>
-                </Defs>
-                <Rect width={W} height={H + PERIOD * 2} fill="url(#ridge)" />
-              </Svg>
-            </Animated.View>
-            {/* The CSS inset 0 ±16 16 shadows; RN's inset boxShadow follows the radius as CSS does. */}
+            pointerEvents="none"
+            style={[
+              styles.abs,
+              shape,
+              {
+                top: device.wheelLip,
+                backgroundColor: palette.keyEdge,
+                boxShadow: `0 ${8 - device.wheelLip}px 14px ${palette.wheelDrop}`,
+              },
+            ]}
+          />
+          <GestureDetector gesture={pan}>
             <View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  borderRadius: gadgetRadius.wheel,
-                  borderCurve: 'continuous',
-                  boxShadow: `inset 0 ${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}, inset 0 -${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}`,
-                },
-              ]}
-            />
-          </View>
-        </GestureDetector>
-      </View>
-      {label ? <EngravedLabel style={styles.label}>{label}</EngravedLabel> : null}
-    </Animated.View>
+              accessible
+              accessibilityRole="adjustable"
+              accessibilityLabel={accessibilityLabel}
+              accessibilityValue={accessibilityValue ? { text: accessibilityValue } : undefined}
+              accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+              onAccessibilityAction={(event) => {
+                // VoiceOver steps are deliberate; each is an ordinary notch.
+                if (event.nativeEvent.actionName === 'increment') handleNotch(1, 1);
+                if (event.nativeEvent.actionName === 'decrement') handleNotch(-1, 1);
+              }}
+              style={[styles.abs, shape, styles.clip, { backgroundColor: palette.wheelLight }]}>
+              <Animated.View style={[styles.ridges, ridgeStyle]}>
+                <Svg width={W} height={H + PERIOD * 2}>
+                  <Defs>
+                    <Pattern id="ridge" width={W} height={PERIOD} patternUnits="userSpaceOnUse">
+                      <Rect x={0} y={0} width={W} height={device.wheelRidgeLight} fill={palette.wheelLight} />
+                      <Rect
+                        x={0}
+                        y={device.wheelRidgeLight}
+                        width={W}
+                        height={device.wheelRidgeDark}
+                        fill={palette.wheelDark}
+                      />
+                    </Pattern>
+                  </Defs>
+                  <Rect width={W} height={H + PERIOD * 2} fill="url(#ridge)" />
+                </Svg>
+              </Animated.View>
+              {/* The CSS inset 0 ±16 16 shadows; RN's inset boxShadow follows the radius as CSS does. */}
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    borderRadius: gadgetRadius.wheel,
+                    borderCurve: 'continuous',
+                    boxShadow: `inset 0 ${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}, inset 0 -${device.wheelShade}px ${device.wheelShade}px ${palette.wheelInset}`,
+                  },
+                ]}
+              />
+            </View>
+          </GestureDetector>
+        </View>
+        {label ? <EngravedLabel style={styles.label}>{label}</EngravedLabel> : null}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -207,4 +229,5 @@ const styles = StyleSheet.create({
   clip: { overflow: 'hidden' },
   ridges: { position: 'absolute', left: 0, top: 0 },
   label: { marginTop: device.labelGap, width: W },
+  parked: { opacity: 0 },
 });

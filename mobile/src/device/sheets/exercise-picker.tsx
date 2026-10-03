@@ -312,7 +312,7 @@ function PickRow({
       style={({ pressed }) => [styles.row, !first && styles.rule, pressed && styles.pressed]}>
       <View style={styles.rowText}>
         <Text
-          numberOfLines={1}
+          numberOfLines={2}
           maxFontSizeMultiplier={fontScaleCap.text}
           style={[plansType.pickName, taken && styles.takenName]}>
           {name}

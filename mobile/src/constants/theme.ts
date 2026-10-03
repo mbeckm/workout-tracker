@@ -157,7 +157,8 @@ export const finishColors: Record<FinishId, FinishColors> = {
   '101': {
     body1: '#3A3936',
     body2: '#232220',
-    label: '#8C8A84',
+    // Raised from SPEC's #8C8A84 (1.8:1 under the sheen) to 3.3:1 on the body behind `WEEK n` (trim-ui §5).
+    label: '#C0BEB8',
     labelShadow: 'rgba(0,0,0,0.6)',
     keyEdge: '#A9A69E',
     bigKeyHi: '#FF8A45',
@@ -174,8 +175,10 @@ export const finishColors: Record<FinishId, FinishColors> = {
   '305': {
     body1: '#FF7A35',
     body2: '#DE470A',
-    label: '#FFE2CF',
-    labelShadow: 'rgba(120,30,0,0.35)',
+    // SPEC's light #FFE2CF can't reach 3:1 on the sheen (white tops out at 2.3:1): a dark burnt
+    // engraving with a peach highlight under it, 5.5:1 at the top and 3.1:1 by the wheel (trim-ui §5).
+    label: '#562209',
+    labelShadow: 'rgba(255,226,207,0.5)',
     keyEdge: '#9E3A0A',
     // On Signal the primary big key is graphite (an orange key on an orange body disappears).
     bigKeyHi: '#4A4843',
@@ -580,6 +583,8 @@ export const sheetGeometry = {
   swatchLift: 4,
   swatchRing: 3,
   finishCard: 200,
+  /** The menu's mini device sits 22 under the finish card's top (prototype menu). */
+  miniDeviceTop: 22,
   miniDeviceW: 128,
   miniDeviceH: 104,
   miniDeviceTilt: -6,
