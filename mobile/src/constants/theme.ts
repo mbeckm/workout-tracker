@@ -1675,3 +1675,179 @@ export const insertType = {
   cartDays: { ...lcdRole(10, 15), color: lcd.amberDim },
   brand: { ...roundedRole(11, 13, weight.heavy, 2), color: insertColors.cartBack },
 } as const;
+
+/* ----------------------------------------------------------------------------------------- *
+ * Finishes, onboarding and the paywall (Phase 8; SPEC §6 Finishes, boards N7, N9, N10, PB1).
+ * ----------------------------------------------------------------------------------------- */
+
+/** Onboarding and paywall type (PB1, N9, N10). Sentence case, SF Rounded. */
+export const onboardingType = {
+  /** A step's question (PB1 `Pick a plan` 30/34, N10 `Pick your finish`). */
+  title: { ...roundedRole(30, 34, weight.heavy, -0.5), color: sheetColors.ink },
+  /** Welcome's wordmark. */
+  hero: { ...roundedRole(54, 58, weight.heavy, -1.5), color: sheetColors.ink },
+  /** One line under a title (PB1 `4 days a week`, Welcome's lede). */
+  sub: { ...roundedRole(17, 22, weight.semibold), color: sheetColors.muted },
+  /** A pack's name (PB1 `.pack b`). */
+  packTitle: { ...roundedRole(20, 24, weight.heavy, -0.3), color: sheetColors.ink },
+  /** A pack's fact line (`.pack span.s`). */
+  packSub: { ...roundedRole(14, 18, weight.semibold), color: sheetColors.muted },
+  /** A cartridge's label window (Doto 9). */
+  cartLabel: lcdRole(9, 11),
+  /** The `+` in an empty cartridge slot. */
+  cartPlus: { ...roundedRole(22, 26, weight.heavy), color: sheetColors.sectionLabel },
+  /** Units and days: the chosen value and the others (residue). */
+  choice: { ...roundedRole(64, 68, weight.heavy, -1.5), color: sheetColors.ink },
+  choiceResidue: { ...roundedRole(28, 32, weight.heavy, -0.5), color: sheetColors.sectionLabel },
+  /** The name field (no line height: a TextInput). */
+  field: { fontFamily: fontFamily.rounded, fontSize: 22, fontWeight: weight.bold, color: sheetColors.ink },
+  /** The `PRO` mark on a locked swatch. */
+  lock: lcdRole(10, 12),
+  /** The paywall: the headline, a plan card's price and sub, feature rows, small print. */
+  headline: { ...roundedRole(26, 30, weight.heavy, -0.5), color: sheetColors.ink },
+  planPrice: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.ink },
+  planSub: { ...roundedRole(13, 17, weight.semibold), color: sheetColors.muted },
+  featureTitle: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
+  featureDetail: { ...roundedRole(14, 18, weight.semibold), color: sheetColors.muted },
+  note: { ...roundedRole(13, 17, weight.semibold), color: sheetColors.muted },
+  link: { ...roundedRole(13, 17, weight.bold), color: sheetColors.controlInk },
+  terms: { ...roundedRole(11, 15, weight.semibold), color: sheetColors.sectionLabel },
+  /** `Not now` (top right). */
+  notNow: { ...roundedRole(16, 20, weight.bold), color: sheetColors.controlInk },
+  /** The knob's FREE and PRO marks (Doto, spaced). */
+  knobMark: { ...lcdRole(15, 18), letterSpacing: 2 },
+} as const;
+
+/** Onboarding geometry (PB1, N10; 390 × 844 reference). */
+export const onboardingGeometry = {
+  /** Side margin of a step. */
+  gutter: 16,
+  /** The title's top under the back control. */
+  titleTop: 16,
+  subTop: 8,
+  /** The light Continue pill: full width, 60 tall (PB1 `.cta`). */
+  ctaHeight: 60,
+  ctaBottom: 34,
+  /** A pack (PB1 `.pack`): 150 tall, r26, 16 × 18 padding, the selected one ringed 3pt orange. */
+  packHeight: 150,
+  packRadius: 26,
+  packPadY: 16,
+  packPadX: 18,
+  packGap: 12,
+  packRing: 3,
+  /** Cartridges (`.cart`): 40 × 64, r9 at the top and r5 at the bottom, a 5pt lip, 6 apart. */
+  cartW: 40,
+  cartH: 64,
+  cartRadiusTop: 9,
+  cartRadiusBottom: 5,
+  cartLip: 5,
+  cartGap: 6,
+  cartWindowInset: 5,
+  cartWindowTop: 7,
+  cartWindowH: 24,
+  cartWindowRadius: 4,
+  cartGripInset: 9,
+  cartGripBottom: 7,
+  cartGripH: 10,
+  cartGripPeriod: 4,
+  cartGripRidge: 2,
+  cartBlankRing: 2,
+  /** Characters a label window holds (Doto 9 in 30pt). */
+  cartLabelChars: 5,
+  /** The name field: 56 tall, r20. */
+  fieldHeight: 56,
+  fieldRadius: 20,
+  fieldPadX: 18,
+  /** Units and days: the hero's box, so the baseline never moves. */
+  choiceHeight: 68,
+  choiceResidueDrop: 5,
+  /** Welcome's device object, at most this share of the screen's height. */
+  welcomeDeviceShare: 0.5,
+  /** Pick your finish: the device object takes what's left above the swatches. */
+  finishDeviceShare: 0.56,
+  /** The lock mark on a locked swatch (top right, 12 in). */
+  lockInset: 10,
+  lockPadX: 6,
+  lockHeight: 18,
+  lockRadius: 9,
+} as const;
+
+/** The device drawn as an object on the grid (onboarding): its body corner and drop shadow. */
+export const deviceObject = {
+  /** The reference frame the object is laid out in, then scaled. */
+  width: 390,
+  padTop: 28,
+  padBottom: 30,
+  displayHeight: 300,
+  radius: 56,
+  shadow: 'rgba(0,0,0,0.55)',
+  shadowY: 24,
+  shadowBlur: 48,
+  /** Welcome: the object fades in and rises this far. */
+  rise: 16,
+} as const;
+
+/** The paywall (N9, D13). */
+export const paywallGeometry = {
+  topBar: 44,
+  gutter: 16,
+  /** The knob hero: the knob, its ridged ring and cap, the pointer, the arc and the marks. */
+  knob: 128,
+  knobRidges: 72,
+  knobCapInset: 17,
+  knobLip: 6,
+  pointerW: 6,
+  pointerH: 28,
+  pointerTop: 10,
+  arcGap: 12,
+  arcStroke: 3,
+  /** The knob's angle at FREE and at PRO (degrees; 0 points up). */
+  freeAngle: -70,
+  proAngle: 0,
+  markGap: 6,
+  /** The ridge count the turn ticks through (a detent haptic per step). */
+  detents: 7,
+  /** Feature rows: a lamp, then the title over its line. */
+  featureGap: 8,
+  featureLamp: 10,
+  featureLampTop: 5,
+  /** Plan pill cards (N9 `.plan`): 64 tall, r20, a 2pt quiet ring; selected 3pt orange. */
+  planHeight: 64,
+  planRadius: 20,
+  planPadX: 18,
+  planGap: 8,
+  planRing: 2,
+  planRingOn: 3,
+  /** Trial timeline nodes. */
+  node: 24,
+  nodeRail: 2,
+  ctaHeight: 56,
+} as const;
+
+/** Paywall colours (N9). */
+export const paywallColors = {
+  /** The warm glow behind the knob (N9 `.sheet` gradient top). */
+  glow: '#2A2018',
+  glowClear: 'rgba(42,32,24,0)',
+  /** A plan card's quiet ring (`inset 0 0 0 2px #3A3936`). */
+  planRing: '#3A3936',
+  /** The arc from FREE (unlit). */
+  arcOff: '#6E5A3A',
+  /** The knob's pointer glow. */
+  pointerGlow: 'rgba(255,106,26,0.8)',
+  /** The knob's cast shadow. */
+  knobShadow: 'rgba(0,0,0,0.6)',
+  /** A lamp before each feature, off then lit. */
+  lampOff: '#3A2214',
+} as const;
+
+/** Plan packs (PB1): the pack card and its cartridges. */
+export const packColors = {
+  /** `.pack` ground (the rack's shelf colour). */
+  pack: '#1C1C1A',
+  packHighlight: 'rgba(255,255,255,0.06)',
+  cartHighlight: '#FFFFFF',
+  cartGrip: '#B9B4AA',
+  /** An empty slot's ring (`.cart.blank`). */
+  blankRing: '#3A3936',
+} as const;

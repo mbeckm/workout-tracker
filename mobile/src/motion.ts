@@ -95,6 +95,8 @@ export const EASE_STAMP_FN = Easing.bezierFn(0.2, 1.6, 0.4, 1);
 /** Cartridge filing: bezier(.3,1.4,.5,1). */
 export const EASE_FILE = Easing.bezier(0.3, 1.4, 0.5, 1);
 export const EASE_FILE_FN = Easing.bezierFn(0.3, 1.4, 0.5, 1);
+/** The paywall knob turned by hand: it gathers speed, then settles onto PRO. */
+export const EASE_KNOB_FN = Easing.bezierFn(0.45, 0, 0.2, 1);
 /** Plan insert pull-back: bezier(.6,0,.25,1). */
 export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
 /** Plan insert slide-in: bezier(.55,0,.8,.35). */
@@ -209,6 +211,13 @@ export const DEVICE = {
   SNAP: 0,
   /** Reduced-motion stand-in for every movement: a plain fade. */
   REDUCED_FADE: 160,
+  /**
+   * The paywall knob (N9): turns once from FREE to PRO once the modal has landed (its slide-up
+   * takes ~500 ms), then the feature lamps light in turn.
+   */
+  KNOB_DELAY: 550,
+  KNOB_TURN: 1000,
+  KNOB_LAMP_STAGGER: 90,
   /** The exercise figure's demonstration loop (prototype `lift` / `sweep`, 2.4 s ease-in-out). */
   FIGURE_LOOP: 2400,
 } as const;

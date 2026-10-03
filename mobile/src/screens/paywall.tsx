@@ -1,21 +1,34 @@
-import * as Haptics from 'expo-haptics';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button, HeaderActions } from '@/components/button';
 import { paywallPreview } from '@/components/paywall/dev-preview';
 import { FeatureRow } from '@/components/paywall/feature-row';
+import { KnobHero } from '@/components/paywall/knob';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
 import { TrialTimeline } from '@/components/paywall/trial-timeline';
 import { ToastHost } from '@/components/toast';
-import { PRESSED_OPACITY, TOUCH_TARGET, fontScaleCap, space } from '@/constants/theme';
+import {
+  device,
+  fontScaleCap,
+  onboardingType,
+  paywallColors,
+  paywallGeometry as geo,
+  sheetColors,
+  space,
+  TOUCH_TARGET,
+  PRESSED_OPACITY,
+} from '@/constants/theme';
+import { GridGround } from '@/device/moment/grid-ground';
+import { haptics } from '@/device/haptics';
+import { PRESS_SCALE } from '@/motion';
 import { billedPerPeriod } from '@/purchases/offers';
-import { proFeaturesFor } from '@/purchases/pro-features';
+import { PRO_FEATURES, proFeaturesFor } from '@/purchases/pro-features';
 import type { ProReason } from '@/purchases/pro-gate';
 import { usePaywallController, type PaywallController } from '@/purchases/use-paywall-controller';
-import { useTheme } from '@/theme/theme-context';
 
 /**
  * What happened, or what they tried to do. Facts; no hype. One line, no subheading: the
@@ -28,6 +41,7 @@ const REASON_HEADLINE: Record<ProReason, string> = {
   switch_plan: 'Switch plans with Pro.',
   progress_history: 'See all of your progress.',
   targets: 'Get a target for every set.',
+  finishes: 'Every finish, with Pro.',
   settings: 'Trim Pro',
 };
 
@@ -39,13 +53,22 @@ export function PaywallScreen({ reason, session }: { reason: ProReason; session?
   return <PaywallView paywall={paywall} />;
 }
 
+/**
+ * The paywall (D13, trim-ui §12 Paywall): a full-screen modal on the dark grid with the knob
+ * hero (N9), the reason's headline, one lamp-led row per Pro feature, the plans as pill cards,
+ * the trial as a timeline, and the light CTA with what happens to money under it. `Not now` is
+ * top right from the first frame; Restore, Terms and Privacy sit under the CTA. All selling
+ * logic lives in `usePaywallController`; this only draws it.
+ */
 function PaywallView({ paywall }: { paywall: PaywallController }) {
-  const { colors, type } = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = Boolean(useReducedMotion());
   const [footerHeight, setFooterHeight] = useState(0);
+  // 1 once the knob reaches PRO; the feature lamps light from it.
+  const turned = useSharedValue(reduceMotion ? 1 : 0);
 
   const headline = REASON_HEADLINE[paywall.reason];
-  const features = proFeaturesFor(paywall.reason);
+  const features = proFeaturesFor(paywall.reason, PRO_FEATURES, PRO_FEATURES.length);
   const busy = paywall.busy !== null;
   const { load, selected, trial, message } = paywall;
   const failed = paywall.loadError != null;
@@ -54,9 +77,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
     if (offer.id === selected?.id) {
       return;
     }
-    if (process.env.EXPO_OS === 'ios') {
-      void Haptics.selectionAsync();
-    }
+    haptics.swatch();
     paywall.select(offer.id);
   };
 
@@ -68,6 +89,7 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         : load.status === 'loading'
           ? 'Loading prices…'
           : paywall.ctaTitle;
+  const ctaDisabled = failed ? load.status === 'loading' : !paywall.canPurchase;
 
   // Under the button: what happens to money.
   const ctaNote = selected
@@ -77,90 +99,47 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
     : null;
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: colors.systemBackground }}
-      onAccessibilityEscape={busy ? undefined : paywall.close}>
-      {/* `Not now` is a native toolbar item on the system glass, always reachable, never hidden
-          or delayed; content scrolls under it with the scroll-edge effect (trim-ui §13 Paywall). */}
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerTitle: '',
-          headerBackVisible: false,
-          headerTintColor: colors.label,
-          title: 'Trim Pro',
-          // Toolbar items are iOS-only; elsewhere the plain button below is the way out.
-          headerRight:
-            process.env.EXPO_OS === 'ios'
-              ? undefined
-              : () => (
-                  <Pressable
-                    accessibilityRole="button"
-                    testID="paywall-not-now"
-                    disabled={busy}
-                    onPress={paywall.close}
-                    style={({ pressed }) => ({
-                      minHeight: TOUCH_TARGET,
-                      paddingHorizontal: space.inline,
-                      justifyContent: 'center',
-                      opacity: pressed ? PRESSED_OPACITY : 1,
-                    })}>
-                    <Text style={[type.body, { color: busy ? colors.tertiaryLabel : colors.secondaryLabel }]}>
-                      Not now
-                    </Text>
-                  </Pressable>
-                ),
-        }}
-      />
-      {process.env.EXPO_OS === 'ios' ? (
-        <HeaderActions right={{ title: 'Not now', variant: 'plain', disabled: busy, onPress: paywall.close }} />
-      ) : null}
+    <View style={styles.root} onAccessibilityEscape={busy ? undefined : paywall.close}>
+      <StatusBar style="light" />
+      <GridGround />
+      <View pointerEvents="none" style={styles.glow} />
+
       <ScrollView
-        style={{ flex: 1 }}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{
-          paddingTop: space.related,
-          paddingHorizontal: space.gutter,
-          paddingBottom: space.gutter,
-          gap: space.section,
-        }}>
+        style={styles.fill}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.tight }]}>
+        <KnobHero turned={turned} />
+
         <Text
-          style={type.displayCompact}
-          maxFontSizeMultiplier={fontScaleCap.display}
           accessibilityRole="header"
+          maxFontSizeMultiplier={fontScaleCap.title}
+          style={[onboardingType.headline, styles.headline]}
           testID="paywall-headline">
           {headline}
         </Text>
 
-        <View style={{ gap: space.inset }} testID="paywall-features">
-          {features.map((feature) => (
-            <FeatureRow key={feature.id} title={feature.title} detail={feature.detail} symbol={feature.symbol} />
+        <View style={styles.features} testID="paywall-features">
+          {features.map((feature, index) => (
+            <FeatureRow key={feature.id} title={feature.title} detail={feature.detail} order={index} turned={turned} />
           ))}
         </View>
 
-        {/* The price block: options 8 apart, the selected option's trial timeline 16 under them. */}
-        <View style={{ gap: space.inset }}>
+        <View style={styles.prices}>
           {load.status === 'loading' ? (
-            <View
-              accessible
-              accessibilityLabel="Loading prices"
-              accessibilityRole="progressbar"
-              style={{ gap: space.related }}>
-              <PlanOptionPlaceholder tall />
+            <View accessible accessibilityLabel="Loading prices" accessibilityRole="progressbar" style={styles.plans}>
+              <PlanOptionPlaceholder />
               <PlanOptionPlaceholder />
             </View>
           ) : null}
 
           {failed ? (
-            <Text style={[type.caption, { color: colors.systemRed }]} accessibilityLiveRegion="polite">
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.note, styles.error]} accessibilityLiveRegion="polite">
               {paywall.loadError}
             </Text>
           ) : null}
 
           {paywall.offers.length > 0 ? (
-            <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={{ gap: space.related }}>
+            <View accessibilityRole="radiogroup" accessibilityLabel="Subscription" style={styles.plans}>
               {paywall.offers.map((offer) => (
                 <PlanOption
                   key={offer.id}
@@ -177,61 +156,64 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
         </View>
 
         {paywall.termsText ? (
-          <Text style={type.footnote} testID="paywall-terms">
+          <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.terms, styles.terms]} testID="paywall-terms">
             {paywall.termsText}
           </Text>
         ) : null}
       </ScrollView>
 
+      {/* Leaving is always easy (rule 13): visible from the first frame, never delayed. */}
+      <View style={[styles.topBar, { top: insets.top }]} pointerEvents="box-none">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: busy }}
+          disabled={busy}
+          onPress={paywall.close}
+          hitSlop={space.related}
+          testID="paywall-not-now"
+          style={({ pressed }) => [styles.notNow, { opacity: busy ? device.keyDisabledOpacity : pressed ? PRESSED_OPACITY : 1 }]}>
+          <Text maxFontSizeMultiplier={fontScaleCap.title} style={onboardingType.notNow}>
+            Not now
+          </Text>
+        </Pressable>
+      </View>
+
       <View
         onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
-        style={{
-          paddingTop: space.inline,
-          paddingHorizontal: space.gutter,
-          paddingBottom: Math.max(insets.bottom, space.related),
-          backgroundColor: colors.systemBackground,
-        }}>
+        style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.inline) }]}>
         {message ? (
           <Text
             maxFontSizeMultiplier={fontScaleCap.text}
-            style={[
-              type.caption,
-              { textAlign: 'center', paddingBottom: space.related },
-              message.error ? { color: colors.systemRed } : null,
-            ]}
+            style={[onboardingType.note, styles.message, message.error ? styles.error : null]}
             accessibilityLiveRegion="polite"
             testID="paywall-message">
             {message.text}
           </Text>
         ) : null}
 
-        <Button
-          title={ctaTitle}
-          variant="black"
-          maxFontSizeMultiplier={fontScaleCap.text}
-          testID="paywall-cta"
-          disabled={failed ? load.status === 'loading' : !paywall.canPurchase}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: ctaDisabled }}
+          disabled={ctaDisabled}
           onPress={failed ? paywall.retry : paywall.purchase}
-        />
-        {ctaNote ? (
+          testID="paywall-cta"
+          style={({ pressed }) => [styles.cta, ctaDisabled && styles.ctaDisabled, pressed && styles.ctaPressed]}>
           <Text
-            maxFontSizeMultiplier={fontScaleCap.text}
-            style={[type.footnote, { textAlign: 'center', paddingTop: space.related, fontVariant: ['tabular-nums'] }]}
-            testID="paywall-cta-note">
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            maxFontSizeMultiplier={fontScaleCap.title}
+            style={[onboardingType.planPrice, ctaDisabled ? styles.ctaInkDisabled : styles.ctaInk]}>
+            {ctaTitle}
+          </Text>
+        </Pressable>
+        {ctaNote ? (
+          <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.note, styles.center, styles.tabular]} testID="paywall-cta-note">
             {ctaNote}
           </Text>
         ) : null}
 
-        {/* Three quiet links separated by air, not dots (trim-ui §9). Each keeps a 44pt target. */}
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            alignItems: 'center',
-            columnGap: space.related,
-            paddingTop: space.tight,
-          }}>
+        {/* Three quiet links separated by air, not dots. Each keeps a 44pt target. */}
+        <View style={styles.links}>
           <FooterLink
             title={paywall.busy === 'restore' ? 'Restoring…' : 'Restore'}
             accessibilityLabel="Restore purchases"
@@ -260,7 +242,6 @@ function FooterLink({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const { type } = useTheme();
   return (
     <Pressable
       accessibilityRole="link"
@@ -268,15 +249,57 @@ function FooterLink({
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: TOUCH_TARGET,
-        paddingHorizontal: space.related,
-        justifyContent: 'center',
-        opacity: pressed ? PRESSED_OPACITY : 1,
-      })}>
-      <Text style={type.footnote} maxFontSizeMultiplier={fontScaleCap.text}>
+      style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}>
+      <Text maxFontSizeMultiplier={fontScaleCap.text} style={onboardingType.link}>
         {title}
       </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: sheetColors.sheet },
+  fill: { flex: 1 },
+  glow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '45%',
+    experimental_backgroundImage: `radial-gradient(ellipse at 50% 0%, ${paywallColors.glow}, ${paywallColors.glowClear})`,
+  },
+  content: { paddingHorizontal: geo.gutter, paddingBottom: space.gutter },
+  headline: { textAlign: 'center', marginTop: space.inline },
+  features: { gap: geo.featureGap, marginTop: space.inset },
+  prices: { marginTop: space.inset, gap: space.inline },
+  plans: { gap: geo.planGap },
+  error: { color: sheetColors.inkSoft },
+  terms: { marginTop: space.gutter },
+  topBar: {
+    position: 'absolute',
+    right: geo.gutter,
+    height: geo.topBar,
+    justifyContent: 'center',
+  },
+  notNow: { minHeight: TOUCH_TARGET, justifyContent: 'center' },
+  footer: { paddingHorizontal: geo.gutter, paddingTop: space.related, gap: space.related },
+  message: { textAlign: 'center' },
+  cta: {
+    height: geo.ctaHeight,
+    borderRadius: geo.ctaHeight / 2,
+    borderCurve: 'continuous',
+    backgroundColor: sheetColors.pillLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.gutter,
+  },
+  ctaDisabled: { backgroundColor: sheetColors.pillDark },
+  ctaPressed: { transform: [{ scale: PRESS_SCALE }] },
+  ctaInk: { color: sheetColors.pillLightInk },
+  ctaInkDisabled: { color: sheetColors.muted },
+  center: { textAlign: 'center' },
+  tabular: { fontVariant: ['tabular-nums'] },
+  links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: space.related },
+  link: { minHeight: TOUCH_TARGET, paddingHorizontal: space.related, justifyContent: 'center' },
+  linkPressed: { opacity: PRESSED_OPACITY },
+});

@@ -1,23 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { TextInput } from 'react-native';
+import { StyleSheet, TextInput } from 'react-native';
 
-import { radius, space } from '@/constants/theme';
+import { fontScaleCap, onboardingGeometry, onboardingType, sheetColors, signal, space } from '@/constants/theme';
 import { USER_NAME_MAX_LENGTH } from '@/store/snapshot';
 import { useWorkoutStore } from '@/store/workout-store';
-import { useTheme } from '@/theme/theme-context';
 
 import { OnboardingFrame } from './frame';
 
-/** The field's height: the Continue pill's, so the stage's two controls match. */
-const FIELD_HEIGHT = 52;
-
 /**
- * Step 2: the name Home greets with. Optional: an empty field continues with no name.
- * Saved on Continue (or Return), so Back keeps it.
+ * Step 2: the name the receipt prints under TRIM (D20). Optional: an empty field continues with
+ * no name. Saved on Continue (or Return), so Back keeps it. Dark keyboard, orange cursor.
  */
 export function OnboardingName() {
-  const { colors, type } = useTheme();
   const router = useRouter();
   const { userName, setUserName } = useWorkoutStore();
   const [text, setText] = useState(userName);
@@ -28,15 +23,12 @@ export function OnboardingName() {
   };
 
   return (
-    <OnboardingFrame
-      title="What should we call you?"
-      action={{ title: 'Continue', onPress: next }}
-      testID="onboarding-name">
+    <OnboardingFrame title="What should we call you?" action={{ title: 'Continue', onPress: next }} testID="onboarding-name">
       <TextInput
         value={text}
         onChangeText={setText}
         placeholder="Name"
-        placeholderTextColor={colors.tertiaryLabel}
+        placeholderTextColor={sheetColors.sectionLabel}
         autoFocus
         autoCapitalize="words"
         autoCorrect={false}
@@ -45,22 +37,28 @@ export function OnboardingName() {
         returnKeyType="next"
         onSubmitEditing={next}
         maxLength={USER_NAME_MAX_LENGTH}
-        selectionColor={colors.brand}
+        keyboardAppearance="dark"
+        // The field keeps a fixed height, so its text stops growing at the title cap.
+        maxFontSizeMultiplier={fontScaleCap.title}
+        selectionColor={signal.orange}
         accessibilityLabel="Name"
         testID="onboarding-name-field"
         // No lineHeight on a TextInput (AGENTS.md): iOS applies it to typed text but not the placeholder.
-        style={{
-          ...type.body,
-          lineHeight: undefined,
-          color: colors.label,
-          height: FIELD_HEIGHT,
-          marginTop: space.section,
-          paddingHorizontal: space.inset,
-          paddingVertical: 0,
-          borderRadius: radius.md,
-          backgroundColor: colors.secondarySystemBackground,
-        }}
+        style={[onboardingType.field, styles.field]}
       />
     </OnboardingFrame>
   );
 }
+
+const styles = StyleSheet.create({
+  field: {
+    height: onboardingGeometry.fieldHeight,
+    marginTop: space.section,
+    paddingHorizontal: onboardingGeometry.fieldPadX,
+    paddingVertical: 0,
+    borderRadius: onboardingGeometry.fieldRadius,
+    borderCurve: 'continuous',
+    backgroundColor: sheetColors.card,
+    textAlign: 'center',
+  },
+});
