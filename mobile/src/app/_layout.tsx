@@ -193,7 +193,8 @@ function RootNav() {
   return (
     <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
       {/* The device (PLAN §4.1): the app's one home. Sheets live inside it. */}
-      <Stack.Screen name="index" options={{ headerShown: false, title: 'Trim' }} />
+      {/* Onboarding hands over with a fade into the dark of the insert, never a slide past Home. */}
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Trim', animation: 'fade' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen
         name="paywall"
