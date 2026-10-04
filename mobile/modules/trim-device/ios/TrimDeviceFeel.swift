@@ -188,6 +188,15 @@ final class TrimDeviceFeel: @unchecked Sendable {
       ],
       "dayTick": [transient(0, 0.6, 0.7)],
       "swatch": [transient(0, 0.8, 0.6), transient(0.025, 0.35, 0.3)],
+      // A tap on the display (a day row, the drum): lighter and sharper than a key.
+      "displayTap": [transient(0, 0.45, 0.95)],
+      // A plan has loaded: three quick rising taps, then a firm landing (with the `ready` sound).
+      "planReady": [
+        transient(0, 0.55, 0.8),
+        transient(0.09, 0.7, 0.85),
+        transient(0.18, 1.0, 0.4),
+        continuous(0.18, 0.5, 0.2, duration: 0.12),
+      ],
       // The wheel hits 2 or 6 days in onboarding: a dull, heavy end stop.
       "wheelStop": [transient(0, 0.9, 0.1), transient(0.05, 0.35, 0.1)],
       // First open: a part snaps onto the body (latch, then a softer seat).
@@ -288,13 +297,13 @@ final class TrimDeviceFeel: @unchecked Sendable {
     // First open (D74).
     "arrive", "charge", "bang", "boot",
     // Keys, wheel, rocker, swatches (feel pass).
-    "press", "rocker", "notch", "swatch",
+    "press", "rocker", "notch", "swatch", "blip", "ready",
     "snap-1", "snap-2", "snap-3", "snap-4", "snap-5", "snap-6", "snap-7",
   ]
   /// The key click is meant to be barely there (SPEC §9); every WAV itself peaks at −3 dBFS.
   /// First open: the bang is the loudest thing in the scene, everything before it builds to it.
   private static let soundVolumes: [String: Float] = [
-    "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6,
+    "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6, "blip": 0.3, "ready": 0.75,
     "arrive": 0.6, "charge": 0.65, "boot": 0.45,
     "snap-1": 0.5, "snap-2": 0.5, "snap-3": 0.5, "snap-4": 0.5, "snap-5": 0.5, "snap-6": 0.5, "snap-7": 0.5,
   ]

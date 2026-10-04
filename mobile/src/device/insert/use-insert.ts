@@ -44,6 +44,8 @@ export type InsertController = {
   clock: SharedValue<number> | null;
   /** The native scene is up and drawing: the JS device hides under it. */
   nativeShowing: boolean;
+  /** Onboarding: a dark curtain over the device until the native scene is fully in. */
+  curtain: boolean;
   /** Development: freeze the native view's timeline here. */
   pauseAt?: number;
   speed?: number;
@@ -93,6 +95,8 @@ export function useInsert(): InsertController | null {
     ticked: number;
     lamps: LampState[];
     nativeShowing: boolean;
+    /** Onboarding: dark over the device until the native scene has faded in, so Home never flashes. */
+    curtain: boolean;
   } | null>(null);
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -121,6 +125,8 @@ export function useInsert(): InsertController | null {
     cancelAnimation(clock);
     clock.set(0);
     finishLoading(current);
+    // The machine is ready: a celebratory chime and haptic as Home takes over.
+    latest.current.haptics.planReady();
     if (currentPlan && !current.quiet) showToast({ title: activatedToast(currentPlan) });
     insertDone();
   }, [clearTimers, clock, finishLoading]);
@@ -130,7 +136,7 @@ export function useInsert(): InsertController | null {
     clearTimers();
     const n = latest.current.days.length;
     setRun((current) =>
-      current ? { ...current, phase: 'ticking', display: 'loaded', nativeShowing: false, lamps: current.lamps.map(() => 'off') } : current,
+      current ? { ...current, phase: 'ticking', display: 'loaded', nativeShowing: false, curtain: false, lamps: current.lamps.map(() => 'off') } : current,
     );
     for (let i = 0; i < n; i += 1) {
       later(DEVICE.INSERT_TICK_START + i * DEVICE.INSERT_DAY_TICK, () => {
@@ -203,6 +209,7 @@ export function useInsert(): InsertController | null {
       ticked: 0,
       lamps: currentDays.map(() => 'off'),
       nativeShowing: false,
+      curtain: engine === 'native',
     });
     if (engine === 'none') {
       seat(true);
@@ -212,7 +219,7 @@ export function useInsert(): InsertController | null {
     if (engine === 'native') {
       // The view never drew (a broken build): play the JS version instead.
       later(DEVICE.INSERT_NATIVE_TIMEOUT, () =>
-        setRun((value) => (value && value.engine === 'native' && !value.nativeShowing && value.phase === 'scene' ? { ...value, engine: 'js' } : value)),
+        setRun((value) => (value && value.engine === 'native' && !value.nativeShowing && value.phase === 'scene' ? { ...value, engine: 'js', curtain: false } : value)),
       );
       return;
     }
@@ -266,10 +273,11 @@ export function useInsert(): InsertController | null {
     tick();
   }, [clearTimers, clock, finish, run, seat, tick]);
 
-  const onNativeReady = useCallback(
-    () => setRun((current) => (current && current.engine === 'native' && current.phase === 'scene' ? { ...current, nativeShowing: true } : current)),
-    [],
-  );
+  const onNativeReady = useCallback(() => {
+    setRun((current) => (current && current.engine === 'native' && current.phase === 'scene' ? { ...current, nativeShowing: true } : current));
+    // The scene fades in over INSERT_SCENE; the curtain lifts once it's fully there.
+    later(DEVICE.INSERT_SCENE, () => setRun((current) => (current ? { ...current, curtain: false } : current)));
+  }, [later]);
   // The native view plays the click's haptic and sound itself.
   const onNativeSeated = useCallback(() => seat(false), [seat]);
   const onNativeFinished = useCallback(() => {
@@ -289,6 +297,7 @@ export function useInsert(): InsertController | null {
     lamps: run.lamps,
     clock: run.engine === 'js' ? clock : null,
     nativeShowing: run.nativeShowing,
+    curtain: run.curtain,
     pauseAt: dev?.pauseAt,
     speed: dev?.speed,
     skip,

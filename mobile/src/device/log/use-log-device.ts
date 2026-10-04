@@ -244,7 +244,7 @@ export function useLogDevice() {
   }, [currentId, openSheet]);
 
   const openKeypad = useCallback(() => {
-    haptics.key();
+    haptics.displayTap();
     openSheet('keypad');
   }, [haptics, openSheet]);
 

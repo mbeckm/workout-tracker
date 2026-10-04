@@ -27,6 +27,10 @@ export const haptics = {
   /** Every 5th notch, or a whole 10 kg. */
   wheelNotchMajor: pressed('wheelNotchMajor', 'notch'),
   key: pressed('key', 'key'),
+  /** A tap on the display (a day row, the drum): its own blip, not a key's click. */
+  displayTap: pressed('displayTap', 'blip'),
+  /** A plan has loaded and the days have ticked in: the machine is ready. */
+  planReady: pressed('planReady', 'ready'),
   bigKeyPress: pressed('bigKeyPress', 'press'),
   logSet: pattern('logSet'),
   rockerMove: pressed('rockerMove', 'rocker'),
