@@ -243,6 +243,21 @@ enum WorkoutItemType: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    var availableTrackingModes: [ExerciseTrackingMode] {
+        switch self {
+        case .strength:
+            [.weightAndReps, .counterweightAndReps, .reps, .duration]
+        case .cardio:
+            [.duration, .distanceAndDuration, .reps, .repsAndDuration]
+        case .mobility, .stability:
+            [.reps, .duration, .repsAndDuration]
+        case .stretch:
+            [.duration, .reps]
+        case .timer:
+            [.duration, .repsAndDuration]
+        }
+    }
+
     init(from decoder: Decoder) throws {
         let rawValue = try decoder.singleValueContainer().decode(String.self).lowercased()
         self = switch rawValue {
@@ -304,8 +319,10 @@ struct CustomExerciseDefinition: Identifiable, Equatable, Codable {
             trackingMode: trackingMode,
             targetWeight: nil,
             targetCounterweight: nil,
-            durationSeconds: trackingMode.planPrescriptionMetrics.contains(.duration) ? 30 : nil,
-            distanceMeters: trackingMode.planPrescriptionMetrics.contains(.distance) ? 100 : nil,
+            durationSeconds: trackingMode.planPrescriptionMetrics.contains(.duration)
+                ? (exerciseType == .cardio ? 20 * 60 : 30)
+                : nil,
+            distanceMeters: trackingMode.planPrescriptionMetrics.contains(.distance) ? 1_000 : nil,
             customExerciseID: id,
             localImageAssetName: imageAssetName
         )
@@ -662,6 +679,31 @@ struct ExerciseSetSummary: Identifiable, Equatable {
     var id: String { exerciseName.normalizedStatsKey }
     var exerciseName: String
     var setCount: Int
+}
+
+struct ExerciseProgressSummary: Identifiable, Equatable {
+    var id: String { exerciseName.normalizedStatsKey }
+    var exerciseName: String
+    var percentageChange: Double
+}
+
+struct WeeklyExerciseVolume: Identifiable, Equatable {
+    var id: Date { weekStart }
+    var weekStart: Date
+    var setCount: Int
+}
+
+struct ExerciseVolumeSummary: Identifiable, Equatable {
+    var id: String { exerciseName.normalizedStatsKey }
+    var rank: Int
+    var exerciseName: String
+    var totalSetCount: Int
+    var weeklyVolumes: [WeeklyExerciseVolume]
+}
+
+struct StatsOverview: Equatable {
+    var progressLeaders: [ExerciseProgressSummary]
+    var mostLoggedExercises: [ExerciseVolumeSummary]
 }
 
 struct ExerciseStatsPoint: Identifiable, Equatable {

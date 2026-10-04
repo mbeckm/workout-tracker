@@ -3,6 +3,7 @@ version: alpha
 name: Scratch
 description: ScratchWorkout design system for a dark, plan-first iOS workout tracker.
 platform: iOS / SwiftUI
+last-updated: "2026-07-20"
 source:
   figma: https://www.figma.com/design/NRr5uUZX4oAK3enRLXZi7j/Scratch
   product: PRODUCT.md
@@ -13,9 +14,11 @@ colors:
   surface-1: "#1A1A1A"
   surface-2: "#242424"
   border: "#2E2E2E"
+  surface-outline: "white at 8% opacity"
+  image-outline: "white at 10% opacity"
   text-primary: "#FFFFFF"
-  text-secondary: "#8A8A8A"
-  text-tertiary: "#4A4A4A"
+  text-secondary: "#969696"
+  text-tertiary: "#707070"
   accent: "#A8FF3E"
   destructive: "#FF6B6B"
 typography:
@@ -41,7 +44,7 @@ typography:
     swiftToken: AppFont.subheading
   body:
     fontFamily: Inter
-    fontSize: 15pt
+    fontSize: 16pt
     fontWeight: regular
     swiftToken: AppFont.body
   label:
@@ -54,6 +57,21 @@ typography:
     fontSize: 12pt
     fontWeight: regular
     swiftToken: AppFont.caption
+  metric:
+    fontFamily: Inter
+    fontSize: 24pt
+    fontWeight: semibold
+    swiftToken: AppFont.metric
+  hero-metric:
+    fontFamily: Inter
+    fontSize: 96pt
+    fontWeight: bold
+    swiftToken: AppFont.heroMetric
+  frequency-metric:
+    fontFamily: Inter
+    fontSize: 128pt
+    fontWeight: bold
+    swiftToken: AppFont.frequencyMetric
 spacing:
   1: 4pt
   2: 8pt
@@ -70,8 +88,9 @@ layout:
   horizontal-padding: 24pt
   content-width: 354pt
   screen-title-top: 66pt
-  screen-title-height: 38pt
-  section-title-height: 30pt
+  screen-title-height: 38pt visual minimum; 44pt when paired with controls
+  section-title-height: 30pt visual minimum; 44pt when paired with controls
+  interaction-min-target: 44pt
   card-gap: 12pt
   section-gap: 24pt
   large-section-gap: 36pt
@@ -100,6 +119,7 @@ rounded:
   progress: 6pt
   control: 12pt
   panel: 20pt
+  concentric-panel: 28pt
   full: 999pt
 components:
   app-screen:
@@ -108,12 +128,12 @@ components:
     horizontalPadding: "{layout.horizontal-padding}"
   card:
     backgroundColor: "{colors.surface-1}"
-    borderColor: "{colors.border}"
+    borderColor: "{colors.surface-outline}"
     rounded: "{rounded.control}"
     padding: 16pt
   panel:
     backgroundColor: "{colors.surface-1}"
-    borderColor: "{colors.border}"
+    borderColor: "{colors.surface-outline}"
     rounded: "{rounded.panel}"
     padding: 24pt
   cta-button:
@@ -122,7 +142,7 @@ components:
     typography: "{typography.h1}"
     rounded: "{rounded.control}"
     width: "{layout.bottom-cta-width}"
-    height: "{layout.bottom-cta-height}"
+    minHeight: "{layout.bottom-cta-height}"
   floating-bottom-chrome:
     fadeHeight: "{layout.floating-chrome-fade}"
     fadeGradient: "base transparent to base 88% opacity"
@@ -135,7 +155,7 @@ components:
     height: 24pt
   tab-bar:
     backgroundColor: "{colors.surface-1}"
-    borderColor: "{colors.border}"
+    borderColor: "{colors.surface-outline}"
     activeColor: "{colors.accent}"
     inactiveColor: "{colors.text-secondary}"
     height: "{layout.bottom-tab-height}"
@@ -149,7 +169,7 @@ Scratch is a focused strength-training tracker. The UI should feel fast in the g
 
 The product centers on a repeated loop: see the active plan, start the next workout, log sets with minimal attention, finish with a compact confirmation, and return to the plan. Every screen should make the next action obvious.
 
-Use the Figma file as the visual source of truth and `Theme.swift` / `Components.swift` as the implementation source of truth. New UI should extend those tokens and components before introducing local styling.
+Use the Figma file as the default-size visual reference and `Theme.swift` / `Components.swift` as the implementation source of truth. Figma dimensions establish rhythm, not hard ceilings: content, localization, and Dynamic Type are allowed to expand them. New UI should extend existing tokens and components before introducing local styling.
 
 ## Principles
 
@@ -159,6 +179,22 @@ Use the Figma file as the visual source of truth and `Theme.swift` / `Components
 - One main action: most screens get one bright green CTA near the bottom.
 - State is structural: show active, completed, empty, loading, and destructive states with copy, iconography, shape, and placement, not color alone.
 - Dark athletic posture: black base, charcoal surfaces, crisp white type, muted gray metadata, and neon green emphasis.
+- Hierarchy before decoration: improve contrast, spacing, copy, and grouping before adding effects or new visual vocabulary.
+- Frequency sets the energy: repeated gym actions should be immediate and quiet; rare achievements may spend more of the motion and visual delight budget.
+- Accessibility is a design constraint: large text, Reduce Motion, contrast, and 44pt targets shape the component from the start rather than being patched in later.
+
+## Decision Framework
+
+Before adding or changing a pattern, answer these questions in order:
+
+1. What task is the person trying to complete, and how distracted or physically occupied are they likely to be?
+2. How often does this interaction happen? Frequent actions should be faster, calmer, and more predictable than rare milestones.
+3. What is the semantic hierarchy? Establish the primary action, primary content, metadata, and state before choosing color or motion.
+4. Does an existing `AppColor`, `AppFont`, layout token, component, or screen pattern already express this role? Extend shared primitives before adding a local exception.
+5. What happens with a long exercise name, localized copy, empty data, loading, errors, accessibility-sized text, and Reduce Motion?
+6. Does motion explain cause and effect, maintain spatial continuity, confirm input, or reward a rare result? If it does none of these, leave the interface still.
+
+Prefer the smallest change that resolves the hierarchy or usability problem. A polished Scratch screen should feel inevitable, not decorated.
 
 ## Color
 
@@ -167,18 +203,24 @@ Use `AppColor` names directly in SwiftUI. Do not create parallel color constants
 - `base` is the full-screen background and the text color on green CTAs.
 - `surface1` is the default card, tab bar, search field, account card, table, and chart surface.
 - `surface2` is for secondary circular controls, inactive adjacent day state, and lower-emphasis filled buttons.
-- `border` is for card strokes, dividers, empty progress cells, inactive heatmap cells, and subtle structure.
+- `border` is for dividers, empty progress cells, inactive heatmap cells, and subtle internal structure.
+- `surfaceOutline` is the standard 1pt ring around dark cards, panels, fields, and controls. Its translucent white reads consistently across dark surfaces without producing a heavy gray box.
+- `imageOutline` is the slightly stronger 1pt ring around exercise media, where separation from the card surface must survive both dark and light image content.
 - `primaryText` is for titles, exercise names, numbers, and committed logged values.
 - `secondaryText` is for labels, metadata, tab labels, dates, helper copy, and inactive icons.
-- `tertiaryText` is for missing workout table values and very low emphasis placeholders.
+- `tertiaryText` is for non-essential missing values and low-emphasis placeholders. Do not use it for small text that someone must read to complete a task.
 - `accent` is reserved for primary CTAs, active tabs, progress completion, heatmap activity, chart lines, signed-in sync success, and major success icons.
 - `destructive` is reserved for destructive account actions. Swipe delete can use a red overlay, but keep it subdued on the dark surface.
 
-Avoid decorative gradients, color washes, generic fitness imagery, and extra accent colors. The green works because it is rare.
+Do not reduce semantic text colors with additional opacity. `secondaryText` is already calibrated to remain readable on `base`, `surface1`, and `surface2`; stacking opacity recreates the contrast problem the token is meant to solve. Chart axes and other small labels use the full token.
+
+Use 4.5:1 as the minimum contrast target for normal readable text and 3:1 for large text, essential icons, and control boundaries. The current `secondaryText` maintains at least 5.25:1 across the dark surface stack. `tertiaryText` maintains at least 3.13:1 and therefore remains unsuitable for small essential copy.
+
+Avoid decorative gradients, color washes, generic fitness imagery, and extra accent colors. The green works because it is rare. When evaluating a new color, test it on every surface where it will appear rather than against `base` alone.
 
 ## Typography
 
-Inter is the only product typeface. Use `AppFont` tokens rather than raw font modifiers, except for intentional numeric display moments already established in the code.
+Inter is the only product typeface. Use `AppFont` tokens rather than raw font modifiers, including numeric display moments.
 
 - `display` is for screen titles and large summary numbers.
 - `h1` is for section titles and primary CTA labels.
@@ -187,16 +229,23 @@ Inter is the only product typeface. Use `AppFont` tokens rather than raw font mo
 - `body` is for helper copy, table cells, and short explanatory text.
 - `label` is for metadata such as sets, reps, dates, provider attribution, and card secondary lines.
 - `caption` is for tab labels, tiny axis labels, and compact status text.
+- `metric` is for changing workout values inside tables and controls.
+- `heroMetric` is for rare result and achievement numbers.
+- `frequencyMetric` is reserved for the workouts-per-week choice in plan creation.
 
 Numbers are product content. Keep workout counts, weight, reps, sets, duration, and chart values stable in width so controls do not jump when values change. Use `contentTransition(.numericText())` where values animate.
 
-Long exercise names should stay on one line in compact lists. Use truncation or a targeted `minimumScaleFactor` where the screen cannot afford wrapping.
+Use `monospacedDigit()` for changing numeric values. Keep type roles semantic with `relativeTo:` so custom Inter fonts participate in Dynamic Type.
+
+Text-bearing components use minimum heights, not exact or maximum height ceilings. Preserve the default Figma height with `minHeight`, then allow titles, metadata, fields, cards, and buttons to grow. Fixed frames remain appropriate for non-text geometry such as progress cells, icons, media thumbnails, and decorative lines.
+
+Allow two lines when the name is identity-critical, including plan cards and exercise identity surfaces. Reserve one-line truncation or a targeted `minimumScaleFactor` for genuinely dense tables and controls where wrapping would obscure the task.
 
 ## Layout
 
-The Figma reference frame is 402x874pt. Preserve the mobile-first geometry unless there is a concrete device reason to adapt.
+The Figma reference frame is 402x874pt. Preserve its mobile-first rhythm, but treat its text-bearing heights as default-size measurements rather than immutable geometry.
 
-- Reserve the top 46pt for the status area. Screen titles start at y=66pt and are 38pt tall.
+- Reserve the top 46pt for the status area. Screen titles start at y=66pt and have a 38pt visual minimum; title rows containing controls provide at least a 44pt interaction height.
 - Use 24pt horizontal screen padding. This creates the standard 354pt content rail.
 - The custom bottom tab bar is 82pt tall at y=792pt. Its inner nav rail is 310pt wide, starts at x=46pt, and has 12pt top padding.
 - Bottom CTAs are 312x56pt at x=45pt and y=712pt. They leave 24pt before the tab bar and 106pt from the bottom of the frame.
@@ -207,18 +256,18 @@ The Figma reference frame is 402x874pt. Preserve the mobile-first geometry unles
 - Cards and controls should span the available content width unless the Figma intentionally centers a fixed control, such as the frequency stepper.
 - Avoid floating card stacks inside cards. Cards are for repeated objects, panels, tables, modals, and contained tools.
 
-Use stable dimensions for repeated controls: 24pt progress cells, 36pt tab icons, 45pt circular steppers, 56pt CTA height, 80/84/102pt list cards, and 354pt content width inside the 24pt margins.
+Use stable dimensions for repeated non-text geometry: 24pt progress cells, 36pt tab icons, 45pt circular steppers, and the 354pt content rail inside 24pt margins. Treat 56pt CTA and 80/84/102pt card heights as minimums so text can grow without clipping.
 
 ## Figma Sizing & Spacing
 
-These values come from the Scratch Figma frames and should be treated as the default sizing system for new SwiftUI work.
+These values come from the Scratch Figma frames and are the default-size system for new SwiftUI work. A listed height is a minimum whenever the component contains text.
 
 - Screen frame: 402x874pt.
 - Main rail: x=24pt, width=354pt.
 - Primary action rail: x=45pt, width=312pt.
 - Status reservation: y=0pt, height=46pt.
-- Screen title: x=24pt, y=66pt, height=38pt.
-- Section title: height=30pt.
+- Screen title: x=24pt, y=66pt, 38pt visual minimum and 44pt minimum with controls.
+- Section title: 30pt visual minimum and 44pt minimum with controls.
 - Section-to-card gap: 12pt.
 - Major section gap: 24pt after a card or compact group.
 - Overview heatmap-to-next-section gap: 36-38pt.
@@ -231,11 +280,11 @@ These values come from the Scratch Figma frames and should be treated as the def
 
 Card rules:
 
-- Overview compact plan cards are 354x80pt.
-- Plan inventory cards are 354x102pt.
-- Exercise rows are 354x84pt.
-- Empty-day panels are 354x142pt.
-- Search fields are 354x56pt before expansion.
+- Overview compact plan cards are 354pt wide with an 80pt minimum height.
+- Plan inventory cards are 354pt wide with a 102pt minimum height.
+- Exercise rows are 354pt wide with an 84pt minimum height.
+- Empty-day panels are 354pt wide with a 142pt default height; their content may expand them.
+- Search fields are 354pt wide with a 56pt minimum height before expansion.
 - Expanded search/result panels keep 16pt side padding, 16pt row gaps, 26pt result rows, and a 322pt divider.
 - Card interior padding is 16pt for list cards and 24pt for larger panels/draft surfaces.
 - Trailing card icons use a 36x36pt box at x=302pt, leaving 16pt right padding.
@@ -254,9 +303,9 @@ Progress and selection rules:
 
 Form and control rules:
 
-- Frequency selection is a centered 221x105pt group at x=93pt, y=361pt.
+- Frequency selection is a centered 221x105pt default-size group at x=93pt, y=361pt.
 - Frequency stepper buttons are 45x45pt, vertically centered at y=30pt inside that group.
-- The frequency number is 83x105pt with 24pt gaps to each circular button.
+- The frequency number has an 83x105pt minimum frame with 24pt gaps to each circular button.
 - The `Workouts per week` label sits 16pt below the stepper.
 - Circular buttons are 45x45pt.
 - Search rows use a 22pt icon, 16pt icon-to-text gap, and 26pt row height.
@@ -279,7 +328,7 @@ Full-screen flows are appropriate for active tasks: create plan, edit plan, star
 
 Use `AppScreen` for every product screen. It applies the dark base and primary text color.
 
-Use `CardShell` for plan cards, exercise cards, frequent exercise cards, empty cards, history rows, chart cards, set tables, and summary cards. Default radius is 12pt, padding is 16pt, stroke is 1pt `border`.
+Use `CardShell` for plan cards, exercise cards, frequent exercise cards, empty cards, history rows, chart cards, set tables, and summary cards. Default radius is 12pt, padding is 16pt, stroke is 1pt `surfaceOutline`, and the supplied height is a minimum.
 
 Use `CTAButton` for the single primary action at the bottom of task screens. Keep labels direct: `New Plan`, `Next`, `Save Day`, `Save Plan`, `Start Workout`, `Log`, `Finish`, `Sync Now`.
 
@@ -294,6 +343,8 @@ Use `NumberStepper`, `RoundStepButton`, and `DraftRoundButton` for numeric chang
 Use `PlanEntrySurface` and `StatsSearchSurface` for exercise search. Search expands inside the card, shows at most five visible result rows, includes loading/empty messages, and preserves provider attribution.
 
 Use `ExerciseDraftSurface` when configuring sets and reps. It is a 20pt-radius panel, 24pt padding, with a two-step sets-to-reps flow and an accent confirmation control.
+
+Nested rounded surfaces should be concentric. When a 12pt-radius control sits 16pt inside a panel, use a 28pt outer radius. Do not pick parent and child radii independently; outer radius should generally equal inner radius plus the inset between them.
 
 Use `EditableExerciseCard` for edit mode only. Swipe left reveals a subdued destructive affordance; tap edits; drag/drop reorders.
 
@@ -321,14 +372,28 @@ Account is a secondary sheet. It should reuse the app shell, dark cards, concise
 
 ## Motion & Haptics
 
-Motion should clarify transitions and state changes. Use the existing spring family unless a platform component supplies its own motion.
+Motion should clarify cause and effect, preserve spatial continuity, confirm input, or reward a rare result. Use the named `AppMotion` and `AppNavigationAnimation` tokens; do not introduce local spring values for routine state changes.
 
-- Small UI state: spring response around 0.22-0.28, damping 0.86-0.88.
-- Route changes and major flow transitions: response around 0.42-0.50, damping 0.80-0.86.
-- Matched geometry is appropriate for search/draft surfaces and activation prompts.
-- Numeric values can animate with `.numericText()`.
-- Disable decorative looping motion. Workout logging should never wait on animation.
-- Use light haptics for tab/step taps and medium haptics for primary actions, saves, starts, and confirmations.
+- `stateChange`: 0.22 response, 0.94 damping for small, contextual state feedback.
+- `searchExpansion`: 0.22 response, 0.92 damping for opening and closing search surfaces.
+- `settle`: 0.22 response, 0.96 damping for quiet gesture completion.
+- `archiveExit`: 0.20-second directional timing curve for completing a committed swipe along its gesture path.
+- `AppNavigationAnimation.push`: 0.28-second push curve for directional routes.
+- Reduced Motion uses a short 0.16-second ease-out or opacity replacement rather than spatial movement.
+
+Calibrate motion by frequency:
+
+- Search filtering, steppers, set logging, tab changes, and other repeated actions should feel immediate. Do not animate their containing layout on every update.
+- Use `.numericText()` and `monospacedDigit()` for changing values instead of scaling or moving the whole row.
+- Use contextual SF Symbol replacement for state changes such as upcoming, active, and completed. The icon should feel like one object changing state, not two unrelated icons cross-fading.
+- Press feedback may scale a tappable surface to 0.96. Disable that spatial scale under Reduce Motion and avoid scaling static or already gesture-driven surfaces.
+- Swipe completion should continue in the direction and velocity implied by the gesture. A committed action should not snap backward before disappearing.
+- Screen-load entrance animation is usually inappropriate for Home, Plans, Workout, and Stats because these surfaces are visited frequently.
+- Reserve more expressive motion for workout completion, achievements, and similarly rare milestones. This is the product's delight budget, not a default transition style.
+
+Matched geometry is appropriate only when the user can understand the source and destination as the same object. Disable decorative loops, ambient pulsing, and animation added solely because an opportunity exists. Workout logging should never wait on animation.
+
+Use light haptics for tab and step taps, medium haptics for primary actions, saves, starts, and confirmations, and success feedback for completed outcomes. Haptics reinforce a visible state change; they do not replace it.
 
 ## Voice & Content
 
@@ -344,7 +409,7 @@ Copy is short, direct, and training-native.
 
 ## Accessibility
 
-Maintain strong contrast on the dark theme. White and neon green are high emphasis; gray metadata is acceptable only for secondary information.
+Maintain strong contrast on every dark surface, not only the full-screen base. White and neon green are high emphasis. `secondaryText` is the default readable gray for metadata and small chart labels; `tertiaryText` is limited to non-essential low-emphasis state.
 
 Interactive targets should be at least 44pt. Existing circular controls are 45pt, tab icons are 36pt within larger tab targets, and CTAs are 56pt high.
 
@@ -352,7 +417,13 @@ Every icon-only control needs an accessibility label. Every selected tab should 
 
 Do not rely on accent color alone. Pair state with text, iconography, structure, or position. Examples: selected tab uses icon plus label color; complete screen uses checkmark plus summary; empty states use text plus action.
 
-Respect Dynamic Type where possible through `AppFont` relative styles, but protect fixed-format controls from breaking by using stable frames, truncation, and minimum scale only where necessary.
+All `AppFont` roles use relative text styles and should participate in Dynamic Type. Text containers use minimum heights and content-driven vertical growth. Use truncation and `minimumScaleFactor` only after wrapping or expansion has been shown to damage a genuinely dense task.
+
+At accessibility text sizes, compact data visualizations may use a shorter equivalent label rather than shrinking below legibility. The monthly calendar uses one-letter weekday symbols instead of allowing three-letter symbols to become ellipses.
+
+Validate new and materially changed screens at the default content size and at least `accessibility-medium`. Check the largest supported size before release for primary workout, plan creation, and account flows. Confirm that the final row remains reachable above floating bottom chrome.
+
+Respect Reduce Motion in every custom spatial transition, press scale, gesture completion, and celebration. The reduced variant should preserve state clarity through opacity, symbol replacement, or immediate updates.
 
 ## Do's And Don'ts
 
@@ -362,10 +433,31 @@ Respect Dynamic Type where possible through `AppFont` relative styles, but prote
 - Do keep active workout logging stripped down to the current exercise and set entry.
 - Do use cards for repeated plans, exercises, stats rows, tables, summaries, and contained entry surfaces.
 - Do keep search, draft configuration, and activation prompts compact and contextual.
+- Do use semantic text and color tokens at full strength; change the token when the hierarchy is wrong instead of patching individual call sites with opacity.
+- Do treat Figma text-bearing heights as minimums and test long content plus Dynamic Type.
+- Do use named motion tokens and decide animation energy from interaction frequency.
+- Do keep nested corner radii concentric.
 - Do use `FloatingBottomChrome` so bottom actions float above content with a translucent fade; never block scrollable cards with a solid base footer.
 - Don't introduce a light theme, marketing hero, image-heavy wellness surface, or separate design system.
 - Don't use green as decoration or general body text.
 - Don't add large shadows, blurred glass, ornamental texture, or decorative gradients beyond the subtle dark base and the bottom-chrome fade scrim.
-- Don't make dense workout rows expand unpredictably when labels, numbers, or search results change.
+- Don't use hard height ceilings on text-bearing cards, fields, buttons, or title rows.
+- Don't make dense workout rows move unpredictably when numbers or search results change; grow only when the content itself requires it.
+- Don't animate collection layout on every search keystroke, stepper tap, or set update.
 - Don't hide primary actions behind menus during workout or plan creation flows.
 - Don't add new root product names, duplicate app targets, or legacy project language.
+
+## Documenting Design Decisions
+
+`DESIGN.md` is a living decision system, not a screenshot inventory or changelog. Update it in the same pull request whenever a change introduces or materially revises a reusable token, component rule, screen pattern, motion behavior, accessibility requirement, or product-wide exception.
+
+For a meaningful design decision, record:
+
+- Problem: what user or consistency problem required a decision?
+- Context and frequency: where does it occur, and how often does the interaction repeat?
+- Decision: what rule or shared primitive will we use going forward?
+- Alternatives rejected: which plausible options were considered, and why were they worse for Scratch?
+- Accessibility: what happens with Dynamic Type, contrast, Reduce Motion, localization, and 44pt targets?
+- Validation: which screens, states, devices, and content sizes were inspected?
+
+Keep the durable rule here and the implementation narrative in the pull request. If code and this document disagree, verify the intended behavior, then update both rather than treating either as silently authoritative.

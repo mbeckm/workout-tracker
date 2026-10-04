@@ -393,7 +393,6 @@ struct ScreenTitle: View {
             .frame(
                 maxWidth: .infinity,
                 minHeight: AppLayout.screenTitleHeight,
-                maxHeight: AppLayout.screenTitleHeight,
                 alignment: .leading
             )
     }
@@ -411,7 +410,6 @@ struct ScreenTitleBar<Accessory: View>: View {
                 .frame(
                     maxWidth: .infinity,
                     minHeight: AppLayout.screenTitleHeight,
-                    maxHeight: AppLayout.screenTitleHeight,
                     alignment: .leading
                 )
 
@@ -419,8 +417,7 @@ struct ScreenTitleBar<Accessory: View>: View {
         }
         .frame(
             maxWidth: .infinity,
-            minHeight: AppLayout.screenTitleHeight,
-            maxHeight: AppLayout.screenTitleHeight,
+            minHeight: 44,
             alignment: .leading
         )
     }
@@ -441,9 +438,9 @@ struct ScreenNavigationTitle: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(AppColor.primaryText)
-                    .frame(width: 36, height: AppLayout.screenTitleHeight)
+                    .frame(width: 44, height: 44)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
             .accessibilityLabel(backAccessibilityLabel)
 
             Text(title)
@@ -452,7 +449,7 @@ struct ScreenNavigationTitle: View {
                 .minimumScaleFactor(minimumScaleFactor)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: AppLayout.screenTitleHeight, alignment: .leading)
+        .frame(minHeight: 44, alignment: .leading)
     }
 }
 
@@ -464,7 +461,7 @@ struct SectionTitle: View {
             .font(AppFont.h1)
             .lineLimit(1)
             .foregroundStyle(AppColor.primaryText)
-            .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+            .frame(minHeight: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 }
 
@@ -480,7 +477,7 @@ struct ScreenSectionRow<Trailing: View>: View {
 
             trailing()
         }
-        .frame(height: AppLayout.sectionTitleHeight, alignment: .leading)
+        .frame(minHeight: AppLayout.sectionTitleHeight, alignment: .leading)
     }
 }
 
@@ -492,6 +489,7 @@ struct MetricLabel: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value)
                 .font(AppFont.display)
+                .monospacedDigit()
                 .lineLimit(1)
 
             Text(label)
@@ -536,6 +534,7 @@ struct SuccessMetricStrip: View {
                 VStack(spacing: 4) {
                     Text(metric.value)
                         .font(AppFont.h1)
+                        .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
@@ -566,11 +565,15 @@ struct SuccessSecondaryButton: View {
                 .font(AppFont.h1)
                 .foregroundStyle(AppColor.primaryText)
                 .lineLimit(1)
-                .frame(width: width, height: AppLayout.bottomCTAHeight)
+                .frame(
+                    minWidth: width,
+                    maxWidth: width,
+                    minHeight: AppLayout.bottomCTAHeight
+                )
                 .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 }
         }
         .buttonStyle(AppPressFeedbackStyle())
@@ -594,11 +597,11 @@ struct CardShell<Content: View>: View {
     var body: some View {
         content
             .padding(16)
-            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .center)
+            .frame(maxWidth: .infinity, minHeight: height, alignment: .center)
             .background(fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(AppColor.border, lineWidth: 1)
+                    .stroke(AppColor.surfaceOutline, lineWidth: 1)
             )
     }
 }
@@ -615,7 +618,7 @@ struct PlanCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(AppFont.h2)
-                        .lineLimit(1)
+                        .lineLimit(2)
 
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(lines, id: \.self) { line in
@@ -654,6 +657,9 @@ struct SwipeablePlanCard: View {
     var onDelete: () -> Void
 
     @State private var horizontalOffset: CGFloat = 0
+    @State private var cardWidth: CGFloat = 0
+    @State private var isCommittingArchive = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -677,10 +683,21 @@ struct SwipeablePlanCard: View {
                 date: nil
             )
             .offset(x: horizontalOffset)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            cardWidth = proxy.size.width
+                        }
+                        .onChange(of: proxy.size.width) { _, newWidth in
+                            cardWidth = newWidth
+                        }
+                }
+            }
             .contentShape(Rectangle())
             .onTapGesture {
                 if horizontalOffset < -1 {
-                    withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                    withAnimation(AppMotion.settle) {
                         horizontalOffset = 0
                     }
                 } else {
@@ -691,22 +708,35 @@ struct SwipeablePlanCard: View {
             .simultaneousGesture(
                 DragGesture(minimumDistance: 20)
                     .onChanged { value in
+                        guard !isCommittingArchive else {
+                            return
+                        }
+
                         guard abs(value.translation.width) > abs(value.translation.height) else {
                             return
                         }
 
-                        horizontalOffset = min(0, value.translation.width)
+                        let horizontal = value.translation.width
+                        horizontalOffset = horizontal > 0
+                            ? appRubberBanded(horizontal, dimension: max(cardWidth, 1))
+                            : horizontal
                     }
                     .onEnded { value in
-                        guard value.translation.width < -90 else {
-                            withAnimation(.spring(response: 0.2, dampingFraction: 0.88)) {
+                        guard !isCommittingArchive else {
+                            return
+                        }
+
+                        let shouldArchive = value.translation.width < -90
+                            || value.predictedEndTranslation.width < -160
+
+                        guard shouldArchive else {
+                            withAnimation(AppMotion.settle) {
                                 horizontalOffset = 0
                             }
                             return
                         }
 
-                        Haptics.tap(.medium)
-                        onDelete()
+                        commitArchive()
                     }
             )
         }
@@ -719,6 +749,27 @@ struct SwipeablePlanCard: View {
 
     private var deleteBackgroundOpacity: Double {
         min(1, max(0, Double(-horizontalOffset / 48)))
+    }
+
+    private func commitArchive() {
+        guard !isCommittingArchive else {
+            return
+        }
+
+        Haptics.tap(.medium)
+
+        guard !reduceMotion else {
+            onDelete()
+            return
+        }
+
+        isCommittingArchive = true
+
+        withAnimation(AppMotion.archiveExit, completionCriteria: .logicallyComplete) {
+            horizontalOffset = -(max(cardWidth, 320) + 40)
+        } completion: {
+            onDelete()
+        }
     }
 }
 
@@ -747,7 +798,7 @@ struct CollapsibleSectionHeader: View {
                     .animation(.snappy(duration: 0.2, extraBounce: 0), value: isExpanded)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(title)
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
     }
@@ -784,7 +835,7 @@ struct ExerciseCard: View {
                 Spacer(minLength: 8)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(exercise.sets) sets")
+                    Text(exercise.planVolumeSummary)
                     Text(exercise.prescriptionSummary)
                 }
                 .font(AppFont.caption)
@@ -817,7 +868,8 @@ struct CTAButton: View {
                 .font(AppFont.h1)
                 .foregroundStyle(AppColor.base)
                 .lineLimit(1)
-                .frame(width: width, height: 56)
+                .contentTransition(.opacity)
+                .frame(minWidth: width, maxWidth: width, minHeight: 56)
                 .background(AppColor.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(AppPressFeedbackStyle())
@@ -828,16 +880,43 @@ struct CTAButton: View {
 struct AppPressFeedbackStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var pressedScale: CGFloat = 0.97
+    var isStatic = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? pressedScale : 1))
+            .scaleEffect(reduceMotion || isStatic ? 1 : (configuration.isPressed ? 0.96 : 1))
             .opacity(configuration.isPressed ? 0.82 : 1)
             .animation(
                 .easeOut(duration: configuration.isPressed ? 0.1 : 0.14),
                 value: configuration.isPressed
             )
+    }
+}
+
+struct ContextualSymbol: View {
+    var activeSymbol: String
+    var inactiveSymbol: String
+    var isActive: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            symbol(activeSymbol, isVisible: isActive)
+            symbol(inactiveSymbol, isVisible: !isActive)
+        }
+        .animation(
+            reduceMotion ? nil : .timingCurve(0.2, 0, 0, 1, duration: 0.3),
+            value: isActive
+        )
+        .accessibilityHidden(true)
+    }
+
+    private func symbol(_ name: String, isVisible: Bool) -> some View {
+        Image(systemName: name)
+            .scaleEffect(isVisible || reduceMotion ? 1 : 0.25)
+            .opacity(isVisible ? 1 : 0)
+            .blur(radius: isVisible || reduceMotion ? 0 : 4)
     }
 }
 
@@ -848,13 +927,15 @@ struct StepProgress: View {
     var width: CGFloat
     var spacing: CGFloat
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: spacing) {
             ForEach(0..<count, id: \.self) { index in
                 progressBar(at: index)
             }
         }
-        .animation(.spring(response: 0.38, dampingFraction: 0.78), value: progressAnimationToken)
+        .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: progressAnimationToken)
     }
 
     private var progressAnimationToken: String {
@@ -898,7 +979,7 @@ struct RoundStepButton: View {
                 .frame(width: 45, height: 45)
                 .background(fill, in: Circle())
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(accessibilityLabel ?? defaultAccessibilityLabel)
     }
 
@@ -935,6 +1016,7 @@ struct NumberStepper: View {
 
                 Text("\(value)")
                     .font(AppFont.display)
+                    .monospacedDigit()
                     .foregroundStyle(AppColor.primaryText)
                     .lineLimit(1)
                     .contentTransition(.numericText())
@@ -948,7 +1030,6 @@ struct NumberStepper: View {
                 }
             }
             .frame(width: 164, alignment: .center)
-            .animation(.spring(response: 0.22, dampingFraction: 0.88), value: value)
         }
         .frame(width: 164, alignment: .leading)
         .accessibilityElement(children: .contain)
@@ -974,10 +1055,10 @@ private struct RepeatingRoundStepButton: View {
                 .background(AppColor.surface2, in: Circle())
                 .overlay(
                     Circle()
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 )
         }
-        .buttonStyle(AppPressFeedbackStyle(pressedScale: 0.94))
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(accessibilityLabel)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)

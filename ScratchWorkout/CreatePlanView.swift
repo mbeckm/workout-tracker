@@ -63,22 +63,22 @@ private struct EmptyDayState: View {
                         .lineLimit(1)
                 }
                 .foregroundStyle(AppColor.primaryText)
-                .frame(width: 294, height: 56)
+                .frame(minWidth: 294, maxWidth: 294, minHeight: 56)
                 .background(AppColor.surface2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(AppColor.border, lineWidth: 1)
+                        .stroke(AppColor.surfaceOutline, lineWidth: 1)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(AppPressFeedbackStyle())
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 24)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
         .accessibilityLabel("No exercises yet")
     }
@@ -88,6 +88,8 @@ struct ExerciseDraftSurface: View {
     @Binding var draft: ExerciseDraft
     @Binding var step: ExerciseDraftStep
     var onAdvance: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -114,6 +116,7 @@ struct ExerciseDraftSurface: View {
 
                     Text("\(currentValue)")
                         .font(AppFont.display)
+                        .monospacedDigit()
                         .foregroundStyle(AppColor.primaryText)
                         .lineLimit(1)
                         .contentTransition(.numericText())
@@ -139,10 +142,9 @@ struct ExerciseDraftSurface: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: step)
-        .animation(.spring(response: 0.2, dampingFraction: 0.88), value: currentValue)
+        .animation(AppMotion.stateChange(reduceMotion: reduceMotion), value: step)
         .accessibilityElement(children: .contain)
     }
 
@@ -189,7 +191,7 @@ private struct DraftRoundButton: View {
                         .stroke(stroke, lineWidth: strokeWidth)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel(accessibilityLabel)
     }
 }
@@ -276,13 +278,15 @@ struct PlanEntrySurface: View {
     var autoFocus = true
     var onConfigure: (ExercisePrescription) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isExpanded: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var resultViewportHeight: CGFloat {
         let visibleRows = max(1, min(results.count + statusRowCount, 5))
-        return CGFloat(visibleRows * 26 + max(0, visibleRows - 1) * 16)
+        return CGFloat(visibleRows * 44 + max(0, visibleRows - 1) * 8)
     }
 
     private var statusMessage: String? {
@@ -311,19 +315,19 @@ struct PlanEntrySurface: View {
                     .transition(.opacity)
 
                 ScrollView(showsIndicators: results.count > 5) {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
                         if let statusMessage {
                             Text(statusMessage)
                                 .font(AppFont.h2)
                                 .foregroundStyle(AppColor.secondaryText)
-                                .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         }
 
                         if results.isEmpty && statusMessage == nil {
                             Text("No matching exercises")
                                 .font(AppFont.h2)
                                 .foregroundStyle(AppColor.secondaryText)
-                                .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         } else {
                             ForEach(results) { exercise in
                                 Button {
@@ -333,10 +337,10 @@ struct PlanEntrySurface: View {
                                         .font(AppFont.h2)
                                         .foregroundStyle(AppColor.primaryText)
                                         .lineLimit(1)
-                                        .frame(maxWidth: .infinity, minHeight: 26, alignment: .leading)
+                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                                         .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(AppPressFeedbackStyle())
                             }
                         }
                     }
@@ -344,7 +348,11 @@ struct PlanEntrySurface: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: resultViewportHeight, maxHeight: resultViewportHeight, alignment: .topLeading)
                 .scrollDismissesKeyboard(.interactively)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(
+                    reduceMotion
+                        ? .opacity
+                        : .opacity.combined(with: .offset(y: -12))
+                )
 
                 providerAttribution
             }
@@ -355,10 +363,9 @@ struct PlanEntrySurface: View {
         .background(AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
+                .stroke(AppColor.surfaceOutline, lineWidth: 1)
         )
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: isExpanded)
-        .animation(.spring(response: 0.22, dampingFraction: 0.88), value: results.count)
+        .animation(AppMotion.searchExpansion(reduceMotion: reduceMotion), value: isExpanded)
     }
 
     private var providerAttribution: some View {
@@ -448,7 +455,7 @@ struct DayStepProgress: View {
             }
             .frame(width: proxy.size.width, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .leading)
         .animation(.spring(response: 0.24, dampingFraction: 0.86), value: completed)
         .animation(.spring(response: 0.22, dampingFraction: 0.88), value: current)
     }
@@ -461,8 +468,10 @@ struct DayStepProgress: View {
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(fill(for: index))
                 .frame(width: width, height: 24)
+                .frame(width: width, height: 44)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(AppPressFeedbackStyle())
         .accessibilityLabel("Day \(index + 1)")
 
         if onReorder != nil || onDelete != nil {
