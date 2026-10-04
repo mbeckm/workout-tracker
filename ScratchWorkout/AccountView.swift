@@ -28,7 +28,7 @@ struct AccountEntryButton: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Account")
+        .accessibilityLabel("iCloud Sync")
     }
 
     private var iconName: String {
@@ -36,7 +36,7 @@ struct AccountEntryButton: View {
         case .loading:
             "hourglass"
         case .signedOut:
-            "person.crop.circle"
+            "icloud.slash"
         case .signedIn:
             syncState == .syncing ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill"
         }
@@ -47,7 +47,7 @@ struct AccountEntryButton: View {
         case .loading:
             "Account"
         case .signedOut:
-            "Sign in"
+            "Local"
         case .signedIn:
             syncState.label
         }
@@ -82,6 +82,7 @@ struct AccountView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingDeletion = false
+    @State private var isPrivacyNoticePresented = false
 
     var body: some View {
         AppScreen {
@@ -99,6 +100,10 @@ struct AccountView: View {
             }
         }
         .presentationDetents([.large])
+        .sheet(isPresented: $isPrivacyNoticePresented) {
+            PrivacyNoticeView()
+                .preferredColorScheme(.dark)
+        }
         .alert("Account", isPresented: alertBinding) {
             Button("OK", role: .cancel) {
                 controller.alertMessage = nil
@@ -107,21 +112,21 @@ struct AccountView: View {
         } message: {
             Text(controller.alertMessage ?? controller.authError?.localizedDescription ?? "")
         }
-        .confirmationDialog("Delete account?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
-            Button("Delete Account", role: .destructive) {
+        .confirmationDialog("Delete iCloud data?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
+            Button("Delete iCloud Data", role: .destructive) {
                 Task {
-                    await controller.deleteAccount()
+                    await controller.deleteCloudData(localSnapshot: currentSnapshot)
                 }
             }
 
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This removes the account session and saved account workout data for this preview backend.")
+            Text("This deletes ScratchWorkout's backup from iCloud. Workouts saved on this iPhone remain available.")
         }
     }
 
     private var header: some View {
-        ScreenTitleBar(title: "Account") {
+        ScreenTitleBar(title: "iCloud Sync") {
             Button {
                 Haptics.tap()
                 dismiss()
@@ -137,7 +142,7 @@ struct AccountView: View {
                     )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Close account")
+            .accessibilityLabel("Close iCloud Sync")
         }
         .padding(.top, 42)
     }
@@ -158,30 +163,33 @@ struct AccountView: View {
             }
         case .signedOut:
             signedOutContent
-        case .signedIn(let user):
-            signedInContent(user)
+        case .signedIn:
+            signedInContent
         }
     }
 
     private var signedOutContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Sign in")
+            Text("Saved on this iPhone")
                 .font(AppFont.h1)
 
-            Text("Save plans and logged workouts to your account.")
+            Text("Your workouts are safe locally. Sign in to iCloud in Settings to back them up and keep them in sync across your Apple devices.")
                 .font(AppFont.body)
                 .foregroundStyle(AppColor.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(spacing: 12) {
-                providerButton(.apple)
-                providerButton(.google)
-            }
-            .padding(.top, 8)
+            Text("To enable sync, open the Settings app and sign in to your Apple Account. ScratchWorkout will detect iCloud the next time it opens.")
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+
+            privacySection
+                .padding(.top, 8)
         }
     }
 
-    private func signedInContent(_ user: AccountUser) -> some View {
+    private var signedInContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             if controller.pendingMigration != nil {
                 migrationPrompt
@@ -189,16 +197,11 @@ struct AccountView: View {
 
             accountCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(user.displayName)
+                    Text("iCloud Sync")
                         .font(AppFont.h1)
                         .lineLimit(1)
 
-                    accountDetail(label: "Provider", value: user.provider.title)
-
-                    if let email = user.email {
-                        accountDetail(label: "Email", value: email)
-                    }
-
+                    accountDetail(label: "Storage", value: "Private iCloud")
                     accountDetail(label: "Status", value: controller.syncState.label)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -219,20 +222,12 @@ struct AccountView: View {
             .buttonStyle(.plain)
             .disabled(controller.isWorking)
 
-            Button {
-                Task {
-                    await controller.signOut()
-                }
-            } label: {
-                accountActionLabel(title: "Sign Out", foreground: AppColor.primaryText, fill: AppColor.surface1)
-            }
-            .buttonStyle(.plain)
-            .disabled(controller.isWorking)
+            privacySection
 
             Button {
                 isConfirmingDeletion = true
             } label: {
-                accountActionLabel(title: "Delete Account", foreground: Color(hex: 0xFF6B6B), fill: AppColor.surface1)
+                accountActionLabel(title: "Delete iCloud Data", foreground: Color(hex: 0xFF6B6B), fill: AppColor.surface1)
             }
             .buttonStyle(.plain)
             .disabled(controller.isWorking)
@@ -245,7 +240,7 @@ struct AccountView: View {
                 Text("Sync this device?")
                     .font(AppFont.subheading)
 
-                Text("Your account has no saved workout data yet. Upload plans and history from this device?")
+                Text("No ScratchWorkout backup exists in iCloud yet. Upload the plans and history from this iPhone?")
                     .font(AppFont.body)
                     .foregroundStyle(AppColor.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -277,53 +272,6 @@ struct AccountView: View {
         }
     }
 
-    private func providerButton(_ provider: AccountProvider) -> some View {
-        Button {
-            Task {
-                await controller.signIn(with: provider, snapshot: currentSnapshot)
-            }
-        } label: {
-            HStack(spacing: 12) {
-                providerGlyph(provider)
-                    .frame(width: 28, height: 28)
-
-                Text(provider.buttonTitle)
-                    .font(AppFont.subheading)
-                    .lineLimit(1)
-
-                Spacer(minLength: 12)
-
-                if controller.isWorking {
-                    ProgressView()
-                        .tint(AppColor.primaryText)
-                }
-            }
-            .foregroundStyle(provider == .apple ? AppColor.base : AppColor.primaryText)
-            .padding(.horizontal, 16)
-            .frame(height: 56)
-            .background(provider == .apple ? AppColor.primaryText : AppColor.surface1, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(provider == .apple ? Color.clear : AppColor.border, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(controller.isWorking)
-        .accessibilityLabel(provider.buttonTitle)
-    }
-
-    @ViewBuilder
-    private func providerGlyph(_ provider: AccountProvider) -> some View {
-        switch provider {
-        case .apple:
-            Image(systemName: "apple.logo")
-                .font(.system(size: 22, weight: .semibold))
-        case .google:
-            Text("G")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-        }
-    }
-
     private func accountDetail(label: String, value: String) -> some View {
         HStack {
             Text(label)
@@ -336,6 +284,28 @@ struct AccountView: View {
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.primaryText)
                 .lineLimit(1)
+        }
+    }
+
+    private var privacySection: some View {
+        accountCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Privacy & Data")
+                    .font(AppFont.subheading)
+
+                Text("Workout data stays on this iPhone. With iCloud Sync, an encrypted backup is stored in your private iCloud database.")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button("Read Privacy Details") {
+                    isPrivacyNoticePresented = true
+                }
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.accent)
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the ScratchWorkout privacy notice")
+            }
         }
     }
 
@@ -373,5 +343,68 @@ struct AccountView: View {
                 }
             }
         )
+    }
+}
+
+private struct PrivacyNoticeView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        AppScreen {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 24) {
+                    ScreenTitleBar(title: "Privacy") {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(AppColor.primaryText)
+                                .frame(width: 42, height: 42)
+                                .background(AppColor.surface1, in: Circle())
+                                .overlay(Circle().stroke(AppColor.border, lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Close privacy details")
+                    }
+
+                    privacyBlock(
+                        title: "Workout data",
+                        text: "Plans, exercises, logged sets, and workout history are saved locally on this iPhone. ScratchWorkout does not require a separate account."
+                    )
+
+                    privacyBlock(
+                        title: "iCloud Sync",
+                        text: "If iCloud is available, ScratchWorkout stores an encrypted workout snapshot in your private iCloud database so your data can be restored on your Apple devices. You can delete that cloud copy from the iCloud Sync screen without deleting local workouts."
+                    )
+
+                    privacyBlock(
+                        title: "Exercise search",
+                        text: "App Store builds use the built-in exercise catalog and do not send exercise searches to a third-party service."
+                    )
+
+                    privacyBlock(
+                        title: "Analytics and advertising",
+                        text: "ScratchWorkout does not include third-party analytics or advertising SDKs."
+                    )
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 42)
+                .padding(.bottom, 40)
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private func privacyBlock(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(AppFont.subheading)
+
+            Text(text)
+                .font(AppFont.body)
+                .foregroundStyle(AppColor.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

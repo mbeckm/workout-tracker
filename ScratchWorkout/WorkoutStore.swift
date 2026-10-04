@@ -12,6 +12,8 @@ struct WorkoutStore {
     private(set) var customExercises: [CustomExerciseDefinition]
     private(set) var workoutHistory: [LoggedWorkout]
     private(set) var nextDayIndex: Int
+    private(set) var lastModifiedAt: Date
+    private(set) var hasPersistedSnapshot: Bool
     private let persistence: WorkoutSnapshotPersistence
 
     var nextWorkoutDay: WorkoutDay {
@@ -50,7 +52,7 @@ struct WorkoutStore {
             customExercises: customExercises,
             workoutHistory: workoutHistory,
             nextDayIndex: normalizedNextDayIndex,
-            capturedAt: Date()
+            capturedAt: lastModifiedAt
         )
     }
 
@@ -170,6 +172,8 @@ struct WorkoutStore {
             customExercises = snapshot.customExercises ?? []
             workoutHistory = snapshot.workoutHistory
             nextDayIndex = snapshot.nextDayIndex ?? 0
+            lastModifiedAt = snapshot.lastModifiedAt ?? .distantPast
+            hasPersistedSnapshot = true
         } else {
             activePlan = SampleData.activePlan
             savedPlans = Self.defaultSavedPlans
@@ -177,6 +181,8 @@ struct WorkoutStore {
             customExercises = []
             workoutHistory = []
             nextDayIndex = 0
+            lastModifiedAt = .distantPast
+            hasPersistedSnapshot = false
         }
     }
 
@@ -187,7 +193,8 @@ struct WorkoutStore {
         customExercises = Self.mergedCustomExercises(remote: snapshot.customExercises, local: customExercises)
         workoutHistory = snapshot.workoutHistory
         nextDayIndex = snapshot.nextDayIndex
-        persist()
+        lastModifiedAt = snapshot.capturedAt
+        persist(markModified: false)
     }
 
     mutating func savePlan(_ plan: WorkoutPlan, activate: Bool) {
@@ -284,14 +291,20 @@ struct WorkoutStore {
         persistence.flush()
     }
 
-    private func persist() {
+    private mutating func persist(markModified: Bool = true) {
+        if markModified {
+            lastModifiedAt = Date()
+        }
+        hasPersistedSnapshot = true
+
         let snapshot = WorkoutSnapshot(
             activePlan: activePlan,
             savedPlans: savedPlans,
             archivedPlans: archivedPlans,
             customExercises: customExercises,
             workoutHistory: workoutHistory,
-            nextDayIndex: normalizedNextDayIndex
+            nextDayIndex: normalizedNextDayIndex,
+            lastModifiedAt: lastModifiedAt
         )
 
         persistence.schedule(snapshot)
@@ -508,6 +521,7 @@ private struct WorkoutSnapshot: Codable {
     var customExercises: [CustomExerciseDefinition]?
     var workoutHistory: [LoggedWorkout]
     var nextDayIndex: Int?
+    var lastModifiedAt: Date?
 }
 
 private final class WorkoutSnapshotPersistence: @unchecked Sendable {

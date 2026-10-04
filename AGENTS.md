@@ -19,9 +19,10 @@
 - Open in Xcode: `open ScratchWorkout.xcodeproj`, then Run (Cmd+R) against an iPhone simulator.
 - Command-line build:
   `xcodebuild -project ScratchWorkout.xcodeproj -scheme ScratchWorkout -destination 'platform=iOS Simulator,name=iPhone 15' build`
-- Tests: the project currently has no test target; there is no `xcodebuild test` scheme configured.
+- Tests: `ScratchWorkoutTests` is included in the shared `ScratchWorkout` scheme. Run:
+  `xcodebuild test -project ScratchWorkout.xcodeproj -scheme ScratchWorkout -destination 'platform=iOS Simulator,name=iPhone 15'`
 
 ### Runtime/behavior notes
 
-- Persistence is local `UserDefaults` (JSON snapshots); there is no backend, database, or server to run. Auth/cloud sync are stubbed locally (`LocalPreviewAuthService`, `LocalPreviewWorkoutRepository` in `AccountServices.swift`).
+- Persistence is local-first `UserDefaults` (JSON snapshots). Release/device builds can sync an encrypted snapshot through the user's private CloudKit database; Debug and Simulator builds intentionally use local-only mode. There is no developer-operated backend or separate application authentication system.
 - Exercise search uses the public OSS ExerciseDB API (`https://oss.exercisedb.dev`), overridable via the `EXERCISE_CATALOG_BASE_URL` env var or the `ExerciseCatalogBaseURL` Info.plist key. It is optional: failures fall back to on-disk cache and then a built-in seed catalog, so all core flows work offline.

@@ -11,9 +11,9 @@ Current project facts:
 - Apple development team set in the project: `494ATHBZ74`
 - Marketing version: `1.0`
 - Build number: `1`
-- Storage today: local `UserDefaults` persistence for workout data
-- Exercise search provider: free OSS ExerciseDB API at `https://oss.exercisedb.dev`
-- Current permissions found in source: no HealthKit, location, camera, photos, notifications, accounts, or analytics
+- Storage today: local `UserDefaults` persistence plus optional private iCloud/CloudKit sync
+- Exercise search in Release builds: built-in offline catalog. Debug builds may use the non-commercial OSS ExerciseDB API for development only.
+- Current permissions found in source: iCloud/CloudKit; no HealthKit, location, camera, photos, notifications, application accounts, or analytics
 - Privacy manifest: `ScratchWorkout/PrivacyInfo.xcprivacy` is included in the app target for UserDefaults required-reason API usage
 - Current app icon state: an `AppIcon.appiconset` exists, but it only has `Contents.json`; a real 1024 x 1024 app icon image still needs to be added
 
@@ -222,7 +222,7 @@ workout,strength,gym,fitness,training,sets,reps,tracker,logging,plans
 Review notes:
 
 ```text
-No account is required. The reviewer can create a workout plan, add exercises, log sets, and reopen the app to verify local persistence. Workout data is stored locally on device. The app does not currently use HealthKit, location, camera, notifications, analytics, or a backend service.
+No ScratchWorkout account or login is required. The reviewer can create a workout plan, add built-in exercises, log sets, and reopen the app to verify local persistence. If the review device is signed in to iCloud, the Release build can also store an encrypted workout snapshot in its private CloudKit database. The app does not use HealthKit, location, camera, notifications, analytics, or a third-party backend.
 ```
 
 Support URL page should include:
@@ -235,14 +235,13 @@ Support URL page should include:
 Privacy policy should say, for the current app:
 
 - Workout entries are stored locally on the user's device.
-- The app does not require an account.
-- The app does not transmit workout data to a server.
-- Exercise search terms are sent to the ExerciseDB/AscendAPI provider to return exercise suggestions.
-- Provider exercise metadata may include exercise names, target muscles, equipment, body parts, instructions, and GIF media URLs.
+- The app does not create or require a ScratchWorkout account.
+- Optional sync stores workout data in the user's private iCloud/CloudKit database.
+- Release builds use a built-in exercise catalog and do not transmit exercise search terms.
 - The app does not use third-party analytics or advertising SDKs.
 - Users can delete app data by deleting the app, unless you add an in-app reset option.
 
-If you add analytics, accounts, cloud sync, HealthKit, ads, crash reporting, or subscriptions later, update this policy and App Store privacy answers.
+If you add analytics, application accounts, HealthKit, ads, crash reporting, or subscriptions later, update this policy and App Store privacy answers. Before this release, update the policy for the implemented private iCloud sync.
 
 ## Phase 5: Create the App Record in App Store Connect
 

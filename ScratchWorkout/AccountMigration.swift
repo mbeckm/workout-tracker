@@ -19,7 +19,7 @@ final class RepositoryMigrationCoordinator: AccountMigrating {
     func migrate(_ snapshot: WorkoutCloudSnapshot, for user: AccountUser) async throws {
         try await repository.saveSnapshot(snapshot, for: user)
         let verified = try await repository.loadSnapshot(for: user)
-        guard verified != nil else {
+        guard verified == snapshot else {
             throw AccountError.migrationFailed
         }
     }

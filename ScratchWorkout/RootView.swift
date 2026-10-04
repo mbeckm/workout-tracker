@@ -29,6 +29,7 @@ struct RootView: View {
         }
         .task {
             await accountController.restoreSession()
+            accountController.prepareInitialSync(localSnapshot: store.cloudSnapshot)
         }
         .onAppear {
             guard !didTraceFirstRender else { return }
@@ -37,7 +38,17 @@ struct RootView: View {
         }
         .onChange(of: accountController.hydratedSnapshot) { _, newValue in
             if let snap = newValue {
-                store.hydrate(from: snap)
+                let decision = WorkoutSnapshotConflictPolicy.decide(
+                    hasPersistedLocalSnapshot: store.hasPersistedSnapshot,
+                    localModifiedAt: store.lastModifiedAt,
+                    remoteCapturedAt: snap.capturedAt
+                )
+
+                if decision == .useRemote {
+                    store.hydrate(from: snap)
+                } else {
+                    accountController.enqueueSync(snapshot: store.cloudSnapshot, reason: .manual)
+                }
                 accountController.hydratedSnapshot = nil
             }
         }
@@ -608,7 +619,7 @@ struct ScratchWorkoutScreenPreviews: PreviewProvider {
                     nextWorkout: WorkoutDay(title: "Push", exercises: SampleData.pushExercises),
                     recentWorkout: PreviewFixtures.recentWorkout,
                     workoutDaysThisMonth: previewWorkoutDays,
-                    accountSession: .signedIn(AccountUser(id: "preview-apple", displayName: "Apple Account", email: nil, provider: .apple, createdAt: Date())),
+                    accountSession: .signedIn(AccountUser(id: "preview-icloud", displayName: "iCloud", email: nil, provider: .iCloud, createdAt: Date())),
                     accountSyncState: .synced(Date()),
                     onOpenActivePlan: {},
                     onOpenNextWorkout: {},

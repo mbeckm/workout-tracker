@@ -26,8 +26,6 @@
 		A10000000000000000000020 /* AccountModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* AccountModels.swift */; };
 		A10000000000000000000021 /* AccountServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* AccountServices.swift */; };
 		A10000000000000000000022 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* AccountView.swift */; };
-		A10000000000000000000023 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* SessionStore.swift */; };
-		A10000000000000000000024 /* AuthConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* AuthConfig.swift */; };
 		A10000000000000000000025 /* AccountMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* AccountMigration.swift */; };
 		A10000000000000000000026 /* NavigationMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* NavigationMotion.swift */; };
 		A10000000000000000000027 /* Achievements.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* Achievements.swift */; };
@@ -37,7 +35,18 @@
 		A10000000000000000000033 /* CreatePlanRedesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* CreatePlanRedesign.swift */; };
 		A10000000000000000000034 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* Assets.xcassets */; };
 		A10000000000000000000035 /* PerformanceTrace.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* PerformanceTrace.swift */; };
+		B10000000000000000000001 /* AccountCloudTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* AccountCloudTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B70000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A70000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = ScratchWorkout;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* ScratchWorkoutApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScratchWorkoutApp.swift; sourceTree = "<group>"; };
@@ -62,8 +71,6 @@
 		A20000000000000000000020 /* AccountModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountModels.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* AccountServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountServices.swift; sourceTree = "<group>"; };
 		A20000000000000000000022 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
-		A20000000000000000000023 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
-		A20000000000000000000024 /* AuthConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthConfig.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* AccountMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountMigration.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* Achievements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievements.swift; sourceTree = "<group>"; };
 		A20000000000000000000028 /* AchievementCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCardView.swift; sourceTree = "<group>"; };
@@ -74,10 +81,19 @@
 		A20000000000000000000032 /* ScratchWorkout-Debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ScratchWorkout-Debug.entitlements"; sourceTree = "<group>"; };
 		A20000000000000000000033 /* CreatePlanRedesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePlanRedesign.swift; sourceTree = "<group>"; };
 		A20000000000000000000035 /* PerformanceTrace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTrace.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* AccountCloudTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountCloudTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* ScratchWorkoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScratchWorkoutTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A30000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B30000000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -91,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				A40000000000000000000002 /* ScratchWorkout */,
+				B40000000000000000000001 /* ScratchWorkoutTests */,
 				A40000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -117,8 +134,6 @@
 				A20000000000000000000020 /* AccountModels.swift */,
 				A20000000000000000000021 /* AccountServices.swift */,
 				A20000000000000000000022 /* AccountView.swift */,
-				A20000000000000000000023 /* SessionStore.swift */,
-				A20000000000000000000024 /* AuthConfig.swift */,
 				A20000000000000000000025 /* AccountMigration.swift */,
 				A20000000000000000000027 /* Achievements.swift */,
 				A20000000000000000000028 /* AchievementCardView.swift */,
@@ -139,8 +154,17 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000014 /* ScratchWorkout.app */,
+				B20000000000000000000002 /* ScratchWorkoutTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B40000000000000000000001 /* ScratchWorkoutTests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* AccountCloudTests.swift */,
+			);
+			path = ScratchWorkoutTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -163,6 +187,23 @@
 			productReference = A20000000000000000000014 /* ScratchWorkout.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B50000000000000000000001 /* ScratchWorkoutTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B90000000000000000000001 /* Build configuration list for PBXNativeTarget "ScratchWorkoutTests" */;
+			buildPhases = (
+				B60000000000000000000001 /* Sources */,
+				B30000000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B52000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = ScratchWorkoutTests;
+			productName = ScratchWorkoutTests;
+			productReference = B20000000000000000000002 /* ScratchWorkoutTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -174,6 +215,14 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
+					};
+					B50000000000000000000001 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -192,6 +241,7 @@
 			projectRoot = "";
 			targets = (
 				A50000000000000000000001 /* ScratchWorkout */,
+				B50000000000000000000001 /* ScratchWorkoutTests */,
 			);
 		};
 /* End PBXProject section */
@@ -234,8 +284,6 @@
 				A10000000000000000000020 /* AccountModels.swift in Sources */,
 				A10000000000000000000021 /* AccountServices.swift in Sources */,
 				A10000000000000000000022 /* AccountView.swift in Sources */,
-				A10000000000000000000023 /* SessionStore.swift in Sources */,
-				A10000000000000000000024 /* AuthConfig.swift in Sources */,
 				A10000000000000000000025 /* AccountMigration.swift in Sources */,
 				A10000000000000000000027 /* Achievements.swift in Sources */,
 				A10000000000000000000028 /* AchievementCardView.swift in Sources */,
@@ -244,7 +292,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B60000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* AccountCloudTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B52000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* ScratchWorkout */;
+			targetProxy = B70000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A80000000000000000000001 /* Debug */ = {
@@ -389,6 +453,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) LOCAL_ONLY_BUILD EXERCISE_CATALOG_REMOTE_ENABLED";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -426,6 +491,54 @@
 			};
 			name = Release;
 		};
+		B80000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 494ATHBZ74;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.marvinbeckmann.ScratchWorkoutTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScratchWorkout.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScratchWorkout";
+			};
+			name = Debug;
+		};
+		B80000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 494ATHBZ74;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.marvinbeckmann.ScratchWorkoutTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScratchWorkout.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScratchWorkout";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -443,6 +556,15 @@
 			buildConfigurations = (
 				A80000000000000000000003 /* Debug */,
 				A80000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B90000000000000000000001 /* Build configuration list for PBXNativeTarget "ScratchWorkoutTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B80000000000000000000001 /* Debug */,
+				B80000000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,15 +1,21 @@
 import Foundation
 import Combine
+import CloudKit
 
-protocol AuthProviderAuthorizing {
-    func authorize(_ provider: AccountProvider) async throws -> AuthProviderCredential
+private enum CloudConfiguration {
+    static let containerIdentifier = "iCloud.com.marvinbeckmann.ScratchWorkout"
+
+    static func makeContainer() -> CKContainer? {
+        #if LOCAL_ONLY_BUILD || targetEnvironment(simulator)
+        nil
+        #else
+        CKContainer(identifier: containerIdentifier)
+        #endif
+    }
 }
 
 protocol AuthServicing {
-    func restoreSession() async throws -> StoredSession?
-    func signIn(with credential: AuthProviderCredential) async throws -> StoredSession
-    func signOut() async throws
-    func deleteAccount(for user: AccountUser) async throws
+    func restoreUser() async throws -> AccountUser?
 }
 
 protocol CloudWorkoutRepository {
@@ -18,65 +24,185 @@ protocol CloudWorkoutRepository {
     func deleteData(for user: AccountUser) async throws
 }
 
-final class LocalPreviewProviderAuthorizer: AuthProviderAuthorizing {
-    func authorize(_ provider: AccountProvider) async throws -> AuthProviderCredential {
-        try await Task.sleep(nanoseconds: 250_000_000)
+/// Uses the device's existing iCloud account. ScratchWorkout does not create or
+/// store a separate application account for the user.
+final class ICloudAccountService: AuthServicing {
+    private let container: CKContainer?
 
-        return AuthProviderCredential(
-            provider: provider,
-            idToken: "preview-id-token-\(UUID().uuidString)",
-            authorizationCode: "preview-auth-code",
-            nonce: nil,
-            displayName: nil,
-            email: nil
+    init(container: CKContainer? = CloudConfiguration.makeContainer()) {
+        self.container = container
+    }
+
+    func restoreUser() async throws -> AccountUser? {
+        guard container != nil else {
+            return nil
+        }
+        let status = try await accountStatus()
+        guard status == .available else {
+            return nil
+        }
+
+        return AccountUser(
+            id: "icloud-private-database",
+            displayName: "iCloud",
+            email: nil,
+            provider: .iCloud,
+            createdAt: Date()
         )
+    }
+
+    private func accountStatus() async throws -> CKAccountStatus {
+        guard let container else {
+            return .couldNotDetermine
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            container.accountStatus { status, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: status)
+                }
+            }
+        }
     }
 }
 
-final class LocalPreviewAuthService: AuthServicing {
-    private let sessionStore: SessionStoring
-
-    init(sessionStore: SessionStoring = KeychainSessionStore()) {
-        self.sessionStore = sessionStore
+actor CloudKitWorkoutRepository: CloudWorkoutRepository {
+    private enum Schema {
+        static let recordType = "WorkoutSnapshot"
+        static let recordName = "primary"
+        static let snapshot = "snapshot"
+        static let capturedAt = "capturedAt"
     }
 
-    func restoreSession() async throws -> StoredSession? {
-        try sessionStore.load()
+    private let database: CKDatabase?
+    private let recordID = CKRecord.ID(recordName: Schema.recordName)
+
+    init(container: CKContainer? = CloudConfiguration.makeContainer()) {
+        database = container?.privateCloudDatabase
     }
 
-    func signIn(with credential: AuthProviderCredential) async throws -> StoredSession {
-        try await Task.sleep(nanoseconds: 250_000_000)
-
-        let user = AccountUser(
-            id: "preview-\(credential.provider.rawValue)",
-            displayName: credential.displayName ?? "\(credential.provider.title) Account",
-            email: credential.email,
-            provider: credential.provider,
-            createdAt: Date()
-        )
-
-        let session = StoredSession(
-            user: user,
-            tokens: AuthTokens(
-                accessToken: UUID().uuidString,
-                refreshToken: UUID().uuidString,
-                idToken: credential.idToken,
-                expiresAt: Date().addingTimeInterval(3600)
-            ),
-            issuedAt: Date()
-        )
-
-        try sessionStore.save(session)
-        return session
+    func loadSnapshot(for user: AccountUser) async throws -> WorkoutCloudSnapshot? {
+        do {
+            let record = try await fetchRecord()
+            let data: Data
+            if let asset = record[Schema.snapshot] as? CKAsset,
+               let fileURL = asset.fileURL {
+                data = try Data(contentsOf: fileURL)
+            } else if let inlineData = record.encryptedValues[Schema.snapshot] as? Data {
+                // Backward-compatible with development records written before
+                // snapshots moved to CKAsset storage.
+                data = inlineData
+            } else {
+                throw AccountError.backendFailed("Your iCloud workout backup could not be read.")
+            }
+            return try JSONDecoder().decode(WorkoutCloudSnapshot.self, from: data)
+        } catch let error as CKError where error.code == .unknownItem {
+            return nil
+        } catch {
+            throw mapCloudKitError(error)
+        }
     }
 
-    func signOut() async throws {
-        try sessionStore.clear()
+    func saveSnapshot(_ snapshot: WorkoutCloudSnapshot, for user: AccountUser) async throws {
+        do {
+            let record: CKRecord
+            do {
+                record = try await fetchRecord()
+            } catch let error as CKError where error.code == .unknownItem {
+                record = CKRecord(recordType: Schema.recordType, recordID: recordID)
+            }
+
+            let uploadURL = try makeUploadFile(for: snapshot)
+            defer { try? FileManager.default.removeItem(at: uploadURL) }
+
+            // CloudKit encrypts CKAsset fields automatically. CKAsset must be
+            // assigned as a normal record value, not through encryptedValues.
+            record[Schema.snapshot] = CKAsset(fileURL: uploadURL)
+            record[Schema.capturedAt] = snapshot.capturedAt as CKRecordValue
+            _ = try await saveRecord(record)
+        } catch {
+            throw mapCloudKitError(error)
+        }
     }
 
-    /// Real implementation will also revoke provider tokens at the identity provider.
-    func deleteAccount(for user: AccountUser) async throws {
-        try sessionStore.clear()
+    func deleteData(for user: AccountUser) async throws {
+        do {
+            _ = try await deleteRecord()
+        } catch let error as CKError where error.code == .unknownItem {
+            return
+        } catch {
+            throw mapCloudKitError(error)
+        }
+    }
+
+    private func fetchRecord() async throws -> CKRecord {
+        guard let database else {
+            throw AccountError.iCloudUnavailable
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            database.fetch(withRecordID: recordID) { record, error in
+                if let record {
+                    continuation.resume(returning: record)
+                } else {
+                    continuation.resume(throwing: error ?? AccountError.backendFailed("iCloud returned no workout backup."))
+                }
+            }
+        }
+    }
+
+    private func saveRecord(_ record: CKRecord) async throws -> CKRecord {
+        guard let database else {
+            throw AccountError.iCloudUnavailable
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            database.save(record) { saved, error in
+                if let saved {
+                    continuation.resume(returning: saved)
+                } else {
+                    continuation.resume(throwing: error ?? AccountError.backendFailed("iCloud did not save the workout backup."))
+                }
+            }
+        }
+    }
+
+    private func deleteRecord() async throws -> CKRecord.ID {
+        guard let database else {
+            throw AccountError.iCloudUnavailable
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            database.delete(withRecordID: recordID) { deletedID, error in
+                if let deletedID {
+                    continuation.resume(returning: deletedID)
+                } else {
+                    continuation.resume(throwing: error ?? AccountError.backendFailed("iCloud did not delete the workout backup."))
+                }
+            }
+        }
+    }
+
+    private func makeUploadFile(for snapshot: WorkoutCloudSnapshot) throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ScratchWorkoutCloudUploads", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let fileURL = directory.appendingPathComponent("snapshot-\(UUID().uuidString).json")
+        try JSONEncoder().encode(snapshot).write(to: fileURL, options: .atomic)
+        return fileURL
+    }
+
+    private func mapCloudKitError(_ error: Error) -> AccountError {
+        guard let cloudError = error as? CKError else {
+            return .backendFailed(error.localizedDescription)
+        }
+
+        switch cloudError.code {
+        case .networkFailure, .networkUnavailable, .serviceUnavailable, .requestRateLimited, .zoneBusy:
+            return .network
+        case .notAuthenticated, .accountTemporarilyUnavailable:
+            return .iCloudUnavailable
+        default:
+            return .backendFailed(cloudError.localizedDescription)
+        }
     }
 }
 
@@ -121,22 +247,27 @@ final class AccountController: ObservableObject {
     @Published var hydratedSnapshot: WorkoutCloudSnapshot?
 
     private let authService: AuthServicing
-    private let providerAuthorizer: AuthProviderAuthorizing
     private let repository: CloudWorkoutRepository
     private let migrationCoordinator: AccountMigrating
     private var didRestoreSession = false
     private var pendingSync: PendingWorkoutSync?
     private var syncWorker: Task<Void, Never>?
 
+    convenience init() {
+        let repository = CloudKitWorkoutRepository()
+        self.init(
+            authService: ICloudAccountService(),
+            repository: repository
+        )
+    }
+
     init(
-        authService: AuthServicing = LocalPreviewAuthService(),
-        providerAuthorizer: AuthProviderAuthorizing = LocalPreviewProviderAuthorizer(),
-        repository: CloudWorkoutRepository = LocalPreviewWorkoutRepository(),
+        authService: AuthServicing,
+        repository: CloudWorkoutRepository,
         migrationCoordinator: AccountMigrating? = nil
     ) {
         let repo = repository
         self.authService = authService
-        self.providerAuthorizer = providerAuthorizer
         self.repository = repo
         self.migrationCoordinator = migrationCoordinator ?? RepositoryMigrationCoordinator(repository: repo)
     }
@@ -155,8 +286,7 @@ final class AccountController: ObservableObject {
         }
 
         do {
-            if let stored = try await authService.restoreSession() {
-                let user = stored.user
+            if let user = try await authService.restoreUser() {
                 session = .signedIn(user)
 
                 if let remote = try await repository.loadSnapshot(for: user) {
@@ -173,24 +303,6 @@ final class AccountController: ObservableObject {
             session = .signedOut
             syncState = .signedOut
             setAuthError(from: error)
-        }
-    }
-
-    func signIn(with provider: AccountProvider, snapshot localSnapshot: WorkoutCloudSnapshot) async {
-        await performAccountWork {
-            let credential = try await providerAuthorizer.authorize(provider)
-            let stored = try await authService.signIn(with: credential)
-            session = .signedIn(stored.user)
-
-            let remote = try await repository.loadSnapshot(for: stored.user)
-            if let remote {
-                hydratedSnapshot = remote
-                syncState = .synced(Date())
-                pendingMigration = nil
-            } else {
-                pendingMigration = MigrationRequest(localSnapshot: localSnapshot)
-                syncState = .idle
-            }
         }
     }
 
@@ -211,28 +323,25 @@ final class AccountController: ObservableObject {
         pendingMigration = nil
     }
 
-    func signOut() async {
-        await performAccountWork {
-            try await authService.signOut()
-            session = .signedOut
-            syncState = .signedOut
-            pendingMigration = nil
+    func prepareInitialSync(localSnapshot: WorkoutCloudSnapshot) {
+        guard session.user != nil, syncState == .idle, pendingMigration == nil else {
+            return
         }
+        pendingMigration = MigrationRequest(localSnapshot: localSnapshot)
     }
 
-    func deleteAccount() async {
+    func deleteCloudData(localSnapshot: WorkoutCloudSnapshot) async {
         guard let user = session.user else {
-            authError = .missingSession
+            authError = .iCloudUnavailable
             alertMessage = authError?.localizedDescription
             return
         }
 
         await performAccountWork {
             try await repository.deleteData(for: user)
-            try await authService.deleteAccount(for: user)
-            session = .signedOut
-            syncState = .signedOut
-            pendingMigration = nil
+            syncState = .idle
+            pendingMigration = MigrationRequest(localSnapshot: localSnapshot)
+            alertMessage = "Your workout backup was deleted from iCloud. Workouts on this device were not removed."
         }
     }
 
@@ -314,6 +423,7 @@ final class AccountController: ObservableObject {
 
         return error.localizedDescription
     }
+
 }
 
 private struct PendingWorkoutSync {

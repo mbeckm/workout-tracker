@@ -315,7 +315,7 @@ Workout Complete is a compact success moment. The checkmark and summary card can
 
 Stats is for history and discovery. Lead with most logged exercises, keep search anchored near the bottom, and use exercise detail for the chart and history list. Charts should be simple, high contrast, and sparse.
 
-Account is a secondary sheet. It should reuse the app shell, dark cards, concise provider buttons, and restrained status messages.
+iCloud Sync is a secondary sheet. It should reuse the app shell, dark cards, concise sync actions, and restrained status messages. The local-only state should never look like a blocked login screen.
 
 ## Motion & Haptics
 

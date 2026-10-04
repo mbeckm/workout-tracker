@@ -109,11 +109,15 @@ protocol ExerciseCatalogService: Sendable {
 
 enum ExerciseCatalogServiceFactory {
     static func live() -> any ExerciseCatalogService {
+        #if EXERCISE_CATALOG_REMOTE_ENABLED
         LiveExerciseCatalogService(
             provider: OpenExerciseDBProvider(configuration: .appDefault),
             seedProvider: SeedExerciseCatalogProvider(),
             cache: ExerciseCatalogCache()
         )
+        #else
+        SeedExerciseCatalogService(provider: SeedExerciseCatalogProvider())
+        #endif
     }
 
     static func seed() -> any ExerciseCatalogService {
