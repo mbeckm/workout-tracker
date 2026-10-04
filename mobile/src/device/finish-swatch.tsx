@@ -85,7 +85,8 @@ export function FinishSwatch({
       accessibilityState={{ selected }}
       accessibilityLabel={`Finish ${id}, ${colors.name}${locked ? ', Trim Pro' : ''}`}
       testID={testID ?? `finish-${id}`}>
-      <Animated.View style={[styles.frame, { width }, liftStyle]}>
+      {/* One bitmap with clear room around it, so the tilt draws smooth edges (swatchEdgePad). */}
+      <Animated.View shouldRasterizeIOS style={[styles.frame, { width: width + PAD * 2 }, liftStyle]}>
         <Animated.View pointerEvents="none" style={[styles.ring, ringStyle]} />
         <View
           style={[
@@ -120,15 +121,16 @@ export function FinishSwatch({
 }
 
 const RING = sheetGeometry.swatchRing;
+const PAD = sheetGeometry.swatchEdgePad;
 
 const styles = StyleSheet.create({
-  frame: { height: sheetGeometry.swatchH },
+  frame: { height: sheetGeometry.swatchH + PAD * 2, margin: -PAD, padding: PAD },
   ring: {
     position: 'absolute',
-    top: -RING,
-    left: -RING,
-    right: -RING,
-    bottom: -RING,
+    top: PAD - RING,
+    left: PAD - RING,
+    right: PAD - RING,
+    bottom: PAD - RING,
     borderRadius: gadgetRadius.swatch + RING,
     borderCurve: 'continuous',
     borderWidth: RING,

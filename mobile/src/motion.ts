@@ -173,21 +173,21 @@ export const DEVICE = {
   NEEDLE: 1400,
   GOAL_RING: 1000,
   CHART: 1000,
-  /** Plan insert (SPEC §7 table). */
+  /** Plan insert (SPEC §7 table, stretched in the feel pass: more anticipation, a longer swing; seat at 2400, end 4100). */
   INSERT_SCENE: 600,
-  INSERT_PULL: 750,
-  INSERT_CART_IN: 420,
-  INSERT_SLIDE: 430,
+  INSERT_PULL: 1000,
+  INSERT_CART_IN: 500,
+  INSERT_SLIDE: 600,
   INSERT_CLICK: 300,
-  INSERT_DIP: 420,
-  INSERT_GLOW: 600,
-  INSERT_PULSE: 700,
-  INSERT_BOOT: 450,
-  INSERT_SWING: 700,
-  INSERT_DAY_TICK: 190,
+  INSERT_DIP: 520,
+  INSERT_GLOW: 900,
+  INSERT_PULSE: 1000,
+  INSERT_BOOT: 600,
+  INSERT_SWING: 900,
+  INSERT_DAY_TICK: 240,
   /** Pauses in the insert (prototype `activate()`): before the slide, between the click and the swing. */
-  INSERT_HOLD: 180,
-  INSERT_SWING_DELAY: 520,
+  INSERT_HOLD: 300,
+  INSERT_SWING_DELAY: 800,
   /** The ticks start this long after face-on; Home comes this long after the last one. */
   INSERT_TICK_START: 120,
   INSERT_HOME_DELAY: 450,
@@ -230,50 +230,52 @@ export const DEVICE = {
 
 /**
  * First open (D74): the machine is born. One clock from 0 to `END`; every part reads its place
- * from it. The beats land faster and faster, then the Start key charges and slams (`BANG`).
- * Haptics and sounds play at the same times (trim-ui §8 rule 3). Under 3 s to Continue.
+ * from it. Shown once per install, so it takes its time (exempt from the 4 s moment budget,
+ * feel pass): a slow approach out of space, the parts landing faster and faster, a long charge
+ * with the camera pushing in, then the bang. Haptics and sounds play at the same times
+ * (trim-ui §8 rule 3). About 6.5 s to Continue; a tap skips.
  */
 export const ASSEMBLY = {
-  /** The body floats in out of the dark; its outline flashes as it lands. */
-  ARRIVE: 500,
-  TRACE_AT: 470,
-  TRACE: 500,
+  /** The body approaches out of the dark, tumbling; its outline flashes as it lands. */
+  ARRIVE: 1600,
+  TRACE_AT: 1560,
+  TRACE: 600,
   /** When each part lands; each flies for `FLY` before. */
-  DISPLAY_AT: 620,
-  MENU_AT: 860,
-  HISTORY_AT: 1020,
-  ROCKER_AT: 1140,
-  PLUS_AT: 1240,
-  MINUS_AT: 1320,
-  WHEEL_AT: 1390,
-  FLY: 180,
+  DISPLAY_AT: 2000,
+  MENU_AT: 2420,
+  HISTORY_AT: 2760,
+  ROCKER_AT: 3040,
+  PLUS_AT: 3260,
+  MINUS_AT: 3440,
+  WHEEL_AT: 3590,
+  FLY: 200,
   /** Spark at each landing; the body's recoil. */
-  SPARK: 320,
-  KICK: 64,
-  /** The wheel spins up as it lands. */
-  WHEEL_SPIN: 700,
-  /** The well fades in, then the Start key hovers, trembles and slams. */
-  WELL_AT: 1420,
-  WELL: 200,
-  CHARGE_AT: 1420,
-  BANG: 2120,
+  SPARK: 360,
+  KICK: 70,
+  /** The well fades in, then the Start key hovers, trembles and slams while the camera pushes in. */
+  WELL_AT: 3640,
+  WELL: 220,
+  CHARGE_AT: 3660,
+  BANG: 4900,
   /** The share of the charge that's hover; the rest is the slam. */
-  HOVER_SHARE: 0.72,
-  SHAKE: 500,
-  RING: 800,
-  BURST: 500,
+  HOVER_SHARE: 0.8,
+  SHAKE: 700,
+  RING: 900,
+  /** The second shockwave follows the first. */
+  RING_2_DELAY: 140,
+  BURST: 650,
   /** The grid floor lights at the bang. */
-  GRID: 300,
+  GRID: 500,
   /** The display boots: a scan line, then SLOT EMPTY flickers on. */
-  SCAN_AT: 2200,
-  SCAN: 350,
-  BOOT_AT: 2250,
-  BOOT: 500,
+  SCAN_AT: 5000,
+  SCAN: 380,
+  BOOT_AT: 5060,
+  BOOT: 600,
   /** The words, then Continue. */
-  WORDS_AT: 2550,
-  ACTION_AT: 2800,
+  WORDS_AT: 5600,
+  ACTION_AT: 6300,
   /** The scene is over: everything goes static. */
-  END: 3000,
+  END: 6500,
 } as const;
 
 /** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */

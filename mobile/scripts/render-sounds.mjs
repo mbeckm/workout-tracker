@@ -209,18 +209,23 @@ const SOUNDS = {
     hit(voice, 0, 4200, 2.0, 1.0, 0.006);
     return voice;
   },
-  // First open (the machine is born): the body floats in out of the dark, a soft airy swell.
+  // First open (the machine is born): the body approaches out of the dark, a long airy swell
+  // that lands in a low thump.
   arrive() {
-    const voice = makeVoice(0.6, 5);
-    sweep(voice, 0, 0.58, 260, 1400, 1.2, 0.8, (p) => Math.sin(Math.PI * p) ** 2);
-    thump(voice, 0.46, 90, 50, 0.35, 0.1);
+    const voice = makeVoice(1.7, 5);
+    sweep(voice, 0, 1.6, 120, 1600, 1.1, 0.8, (p) => Math.pow(Math.sin((Math.PI * p) / 2), 3));
+    glide(voice, 0, 1.6, 45, 70, 0.35, (p) => p * p);
+    thump(voice, 1.56, 110, 42, 0.9, 0.14);
     return voice;
   },
-  // The machine charging before the Start key slams in: rising air over a rising hum.
+  // The machine charging before the Start key slams in: rising air over a rising hum, faster ticks.
   charge() {
-    const voice = makeVoice(0.72, 6);
-    sweep(voice, 0, 0.7, 220, 2600, 1.4, 0.7, (p) => p * p);
-    glide(voice, 0, 0.7, 70, 210, 0.45, (p) => 0.2 + 0.8 * p);
+    const voice = makeVoice(1.25, 6);
+    sweep(voice, 0, 1.22, 200, 3200, 1.4, 0.7, (p) => p * p);
+    glide(voice, 0, 1.22, 60, 240, 0.45, (p) => 0.15 + 0.85 * p);
+    for (let t = 0, step = 0.14; t < 1.15; t += step, step = Math.max(0.045, step * 0.86)) {
+      hit(voice, t, 2600 + t * 1400, 2.4, 0.15 + 0.35 * (t / 1.15), 0.006);
+    }
     return voice;
   },
   // The Start key slams home: a heavy low thud, a sharp metal hit and a short ring.
@@ -240,6 +245,36 @@ const SOUNDS = {
     const voice = makeVoice(0.22, 8);
     glide(voice, 0, 0.045, 1320, 1320, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
     glide(voice, 0.09, 0.06, 1980, 1980, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
+    return voice;
+  },
+  // The big key pressed: a heavy mechanical clunk.
+  press() {
+    const voice = makeVoice(0.2, 20);
+    hit(voice, 0, 1400, 1.4, 0.8, 0.02);
+    thump(voice, 0, 170, 70, 0.9, 0.09);
+    hit(voice, 0.005, 520, 0.9, 0.4, 0.04);
+    return voice;
+  },
+  // The rocker tilts: a short tick with a little body.
+  rocker() {
+    const voice = makeVoice(0.08, 21);
+    hit(voice, 0, 2200, 2.0, 1.0, 0.01);
+    thump(voice, 0, 320, 180, 0.3, 0.03);
+    return voice;
+  },
+  // One wheel detent: a tiny dry click.
+  notch() {
+    const voice = makeVoice(0.035, 22);
+    hit(voice, 0, 3600, 3.0, 1.0, 0.004);
+    hit(voice, 0.002, 1500, 2.0, 0.4, 0.006);
+    return voice;
+  },
+  // A finish swatch picked: a metal tile set down.
+  swatch() {
+    const voice = makeVoice(0.22, 23);
+    hit(voice, 0, 2800, 1.8, 1.0, 0.015);
+    thump(voice, 0, 240, 120, 0.5, 0.05);
+    ring(voice, 0.002, 1900, 0.05, 0.06);
     return voice;
   },
 };

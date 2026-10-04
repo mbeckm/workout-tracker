@@ -37,19 +37,19 @@ final class CartridgeInsertView: ExpoView {
   // MARK: Timeline (SPEC §7, ms)
 
   enum T {
-    static let pullEnd = 750.0
-    static let appearStart = 750.0
-    static let appearEnd = 1170.0
-    static let insertStart = 1350.0
-    static let seat = 1780.0
+    static let pullEnd = 1000.0
+    static let appearStart = 1000.0
+    static let appearEnd = 1500.0
+    static let insertStart = 1800.0
+    static let seat = 2400.0
     static let settle = 300.0
-    static let dip = 420.0
-    static let glow = 600.0
-    static let pulse = 700.0
-    static let boot = 450.0
-    static let swingStart = 2300.0
-    static let swing = 700.0
-    static let end = 3000.0
+    static let dip = 520.0
+    static let glow = 900.0
+    static let pulse = 1000.0
+    static let boot = 600.0
+    static let swingStart = 3200.0
+    static let swing = 900.0
+    static let end = 4100.0
     static let sceneFade = 600.0
     static let gridScroll = 1400.0
     static let shadowFade = 800.0

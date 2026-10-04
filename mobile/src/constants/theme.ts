@@ -584,6 +584,12 @@ export const sheetGeometry = {
   swatchTilt: -4,
   swatchLift: 4,
   swatchRing: 3,
+  /**
+   * Transparent room around a swatch that's drawn as one bitmap: a rotated layer's edges alias
+   * on iOS, a rotated bitmap with clear pixels around it is smoothed (feel pass). Holds the ring
+   * and its drop shadow.
+   */
+  swatchEdgePad: 28,
   finishCard: 200,
   /** The menu's mini device sits 22 under the finish card's top (prototype menu). */
   miniDeviceTop: 22,
@@ -1437,7 +1443,7 @@ export const onboardingType = {
   /** The name field (no line height: a TextInput). */
   field: { fontFamily: fontFamily.rounded, fontSize: 22, fontWeight: weight.bold, color: sheetColors.ink },
   /** Days a week (D74): the wheel's number in SF Mono heavy, the steps around it dim. */
-  wheelNumber: { fontFamily: fontFamily.mono, fontSize: 168, lineHeight: 176, fontWeight: weight.heavy, letterSpacing: -6, color: sheetColors.ink },
+  wheelNumber: { fontFamily: fontFamily.mono, fontSize: 168, lineHeight: 176, fontWeight: weight.heavy, color: sheetColors.ink },
   /** The `PRO` mark on a locked swatch. */
   lock: lcdRole(10, 12),
   /** The paywall: the headline, a plan card's price and sub, feature rows, small print. */
@@ -1592,16 +1598,18 @@ export const assemblyGeometry = {
   perspective: 900,
   /** The body floats in from deep space: small, tilted and turned; visible after this share of it. */
   arriveFade: 0.15,
-  arriveScale: 0.22,
-  arriveTilt: 24,
-  arriveTurn: -10,
-  arriveY: -40,
+  arriveScale: 0.06,
+  arriveTilt: 48,
+  arriveTurn: -28,
+  arriveY: -120,
   /** Parts fly in from off the body: the display and the rocker from above, the rest from the sides. */
   fromTop: -820,
   fromSide: 440,
   fromSpin: 25,
   /** The whole body recoils this much on every hit. */
-  kick: 1.035,
+  kick: 1.045,
+  /** The camera pushes in while the Start key charges, and snaps back at the bang. */
+  pushIn: 1.08,
   /** The outline flash once the body has landed: up over this share, then down. */
   traceWidth: 2,
   traceGlow: 26,
@@ -1618,7 +1626,7 @@ export const assemblyGeometry = {
   keyHover: 2.7,
   keyHold: 2.2,
   keyLast: 2.06,
-  tremble: [-2, 2, -2.5, 3, -3.5, 4] as readonly number[],
+  tremble: [-1.5, 1.5, -2, 2.5, -3, 3.5, -4, 4.5, -5, 5.5] as readonly number[],
   /** The glow building behind the Start key. */
   chargeGlow: 200,
   chargeFrom: 0.6,
@@ -1639,15 +1647,18 @@ export const assemblyGeometry = {
   burstOpacity: 0.55,
   /** The bang (screen points): the shake, the shockwave ring, the scan line on the display. */
   shake: [
-    [-9, 7],
-    [8, -6],
-    [-5, 4],
-    [3, -2],
-    [-1, 1],
+    [-16, 12],
+    [14, -11],
+    [-11, 9],
+    [9, -7],
+    [-6, 5],
+    [4, -3],
+    [-2, 2],
+    [1, -1],
   ] as readonly (readonly [number, number])[],
   ring: 300,
   ringFrom: 0.7,
-  ringTo: 2.6,
+  ringTo: 3.2,
   ringWidth: 2,
   scan: 30,
 } as const;

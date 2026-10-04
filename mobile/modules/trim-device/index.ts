@@ -21,13 +21,26 @@ export type HapticPattern =
   | 'assemblyArrive'
   | 'assemblyBang';
 
-export type ContinuousPattern = 'holdFinish' | 'assemblyCharge';
+export type ContinuousPattern = 'holdFinish' | 'assemblyCharge' | 'assemblyApproach';
 
 /** First open (D74): the parts snap on a whole step higher each time. */
 export type SnapSound = 'snap-1' | 'snap-2' | 'snap-3' | 'snap-4' | 'snap-5' | 'snap-6' | 'snap-7';
 
 /** SPEC §9. `print` is 18 stepper ticks 100 ms apart, played natively. */
-export type DeviceSound = 'cartridge' | 'print' | 'stamp' | 'key' | 'arrive' | 'charge' | 'bang' | 'boot' | SnapSound;
+export type DeviceSound =
+  | 'cartridge'
+  | 'print'
+  | 'stamp'
+  | 'key'
+  | 'press'
+  | 'rocker'
+  | 'notch'
+  | 'swatch'
+  | 'arrive'
+  | 'charge'
+  | 'bang'
+  | 'boot'
+  | SnapSound;
 
 type TrimDeviceNative = {
   supportsHaptics: boolean;
@@ -102,8 +115,8 @@ export function startContinuous(pattern: ContinuousPattern): void {
     native.startContinuous(pattern);
     return;
   }
-  // The charge has no fallback: the bang right after it says it all.
-  if (pattern === 'assemblyCharge') return;
+  // The first-open swells have no fallback: the hits around them say it all.
+  if (pattern === 'assemblyCharge' || pattern === 'assemblyApproach') return;
   clearHoldTimer();
   impact(Haptics.ImpactFeedbackStyle.Soft);
   holdTimer = setTimeout(() => {
