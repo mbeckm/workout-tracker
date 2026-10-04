@@ -117,7 +117,7 @@ function DayRows({
               }}
               onPress={() => {
                 if (row.selected) return;
-                haptics.key();
+                haptics.displayTap();
                 onPick(row.dayId);
               }}
             />

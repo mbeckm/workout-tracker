@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CartridgeInsert } from '../../modules/trim-device';
 
-import { device, editGeometry, finishColors, insertGeometry, gadgetType, logGeometry, signal, space } from '@/constants/theme';
+import { device, editGeometry, finishColors, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { commandFromParams, deviceMode } from '@/device/device-state';
 import { EditDisplay } from '@/device/edit/edit-display';
@@ -440,6 +440,10 @@ function DeviceSurface() {
       </Animated.View>
       <SheetHost />
       <MomentHost />
+      {/* Onboarding's "Plan ready": the dark of the finish step holds until the insert scene is in, so Home never flashes. */}
+      {state.uiMode === 'loading' && state.loading?.quiet && (!insert || insert.curtain) ? (
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.curtain]} />
+      ) : null}
       {insert?.engine === 'native' && insert.phase === 'scene' ? (
         <CartridgeInsert
           style={StyleSheet.absoluteFill}
@@ -569,6 +573,7 @@ function WeekRocker({ model }: { model: HomeModel }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  curtain: { backgroundColor: momentColors.ground },
   hidden: { opacity: 0 },
   column: { flex: 1 },
   topRow: {

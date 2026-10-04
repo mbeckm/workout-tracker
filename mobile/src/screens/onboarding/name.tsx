@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useNavigation, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
 
 import { fontScaleCap, onboardingGeometry, onboardingType, sheetColors, signal, space } from '@/constants/theme';
@@ -10,12 +10,25 @@ import { OnboardingFrame } from './frame';
 
 /**
  * Step 2: the name the receipt prints under TRIM (D20). Optional: an empty field continues with
- * no name. Saved on Continue (or Return), so Back keeps it. Dark keyboard, orange cursor.
+ * no name. Saved on Continue (or Return), so Back keeps it. Dark keyboard, orange cursor; the
+ * keyboard rises after the push has landed.
  */
 export function OnboardingName() {
   const router = useRouter();
   const { userName, setUserName } = useWorkoutStore();
   const [text, setText] = useState(userName);
+  const field = useRef<TextInput>(null);
+  const navigation = useNavigation();
+
+  // The keyboard comes up once the push has landed: rising during it, it and the Continue pill
+  // riding it fought the transition (feel pass).
+  useEffect(
+    () =>
+      navigation.addListener('transitionEnd' as never, (event: { data?: { closing?: boolean } }) => {
+        if (!event.data?.closing) field.current?.focus();
+      }),
+    [navigation],
+  );
 
   const next = () => {
     setUserName(text);
@@ -29,7 +42,7 @@ export function OnboardingName() {
         onChangeText={setText}
         placeholder="Name"
         placeholderTextColor={sheetColors.sectionLabel}
-        autoFocus
+        ref={field}
         autoCapitalize="words"
         autoCorrect={false}
         autoComplete="given-name"

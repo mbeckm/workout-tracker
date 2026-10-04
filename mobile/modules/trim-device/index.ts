@@ -19,7 +19,9 @@ export type HapticPattern =
   | 'wheelStop'
   | 'assemblySnap'
   | 'assemblyArrive'
-  | 'assemblyBang';
+  | 'assemblyBang'
+  | 'displayTap'
+  | 'planReady';
 
 export type ContinuousPattern = 'holdFinish' | 'assemblyCharge' | 'assemblyApproach';
 
@@ -36,6 +38,8 @@ export type DeviceSound =
   | 'rocker'
   | 'notch'
   | 'swatch'
+  | 'blip'
+  | 'ready'
   | 'arrive'
   | 'charge'
   | 'bang'
@@ -81,6 +85,8 @@ const FALLBACK: Record<HapticPattern, () => void> = {
   wheelStop: () => impact(Haptics.ImpactFeedbackStyle.Heavy),
   assemblySnap: () => impact(Haptics.ImpactFeedbackStyle.Rigid),
   assemblyArrive: () => impact(Haptics.ImpactFeedbackStyle.Soft),
+  displayTap: selection,
+  planReady: success,
   assemblyBang: () => {
     impact(Haptics.ImpactFeedbackStyle.Heavy);
     setTimeout(() => impact(Haptics.ImpactFeedbackStyle.Medium), 110);

@@ -375,7 +375,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 
 ### Plan activation (the insert, SPEC §7)
 
-The sheet closes; the scene fades in over 600 ms (dark radial backdrop, a perspective grid floor of 44 pt cells, a vignette); the display shows `SLOT EMPTY` and a blinking `INSERT PLAN`. 0–1000 ms the device pulls back and turns (about 44 pt thick). 1000–1500 ms the cartridge appears above the top edge. After a 300 ms hold, 1800–2400 ms it slides in. **At 2400 ms, the click:** overshoot and settle, the device dips and rebounds, an orange glow along the slot, a pulse ring, the lamps flick across, the display powers on to `LOADED` and the plan name, haptic `cartridgeClick` and sound `cartridge` on that frame. 3200–4100 ms the device swings back and the scene fades. From 4100 ms the days tick onto the display 240 ms apart (a tick haptic each), the lamps light, Home renders with the toast "<Plan> is your plan". The feel pass stretched it (more anticipation, a longer glow and swing); SPEC §7 has the original table; `frames/a–g` is the visual target.
+The sheet closes; the scene fades in over 600 ms (dark radial backdrop, a perspective grid floor of 44 pt cells, a vignette); the display shows `SLOT EMPTY` and a blinking `INSERT PLAN`. 0–1000 ms the device pulls back and turns (about 44 pt thick). 1000–1500 ms the cartridge appears above the top edge. After a 300 ms hold, 1800–2400 ms it slides in. **At 2400 ms, the click:** overshoot and settle, the device dips and rebounds, an orange glow along the slot, a pulse ring, the lamps flick across, the display powers on to `LOADED` and the plan name, haptic `cartridgeClick` and sound `cartridge` on that frame. 3200–4100 ms the device swings back and the scene fades. From 4100 ms the days tick onto the display 240 ms apart (a tick haptic each), the lamps light, Home renders with the `ready` chime and haptic and the toast "<Plan> is your plan". From onboarding the device fades in under a dark curtain that holds until the native scene is fully in, so Home never flashes. The feel pass stretched it (more anticipation, a longer glow and swing); SPEC §7 has the original table; `frames/a–g` is the visual target.
 
 Who plays it (`device/insert/use-insert.ts`): the SceneKit view (`CartridgeInsert`) when the build has it; the JS 2.5D version (`device/insert/insert-scene.tsx`, one clock in `timeline.ts`) on web, in older builds, or when the native view hasn't drawn within 1.5 s; nobody under Reduce Motion (straight to `LOADED`, haptic and sound kept). Either way the JS device takes over face-on for the ticks. In the JS version depth is faked in the face's plane (22 layers shifted where a point that deep would land), and anything flat that shares the screen with the turned device sits far behind it (a `matrix` z of −2000): Core Animation depth-sorts 3D layers against flat siblings, so a backdrop at z 0 cuts away the half of the device that leans back. A tap in the first 380 ms (the second tap of a double tap on Use plan) doesn't skip. Dev: `/?insert=js|native|auto&pause=<ms>&speed=<x>`, `/dev-insert?fallback=1`.
 
@@ -398,6 +398,8 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | --- | --- | --- |
 | Wheel notch (weight, time, reps) | transient, intensity .7, sharpness .9; every 5th notch or whole 10 kg: intensity 1.0; with the `notch` click | `selectionAsync` |
 | Key press (any key) | transient .85 / .6, with the `key` click | `impactAsync(Light)` |
+| A tap on the display (a day row, the drum) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
+| A plan has loaded (the days have ticked in, Home takes over) | transients .55, .7 and 1.0, 90 ms apart, then .5 / .2 for 120 ms; with the `ready` chime | `notificationAsync(Success)` |
 | Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
 | Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
@@ -435,6 +437,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `rocker` | a short tick with a little body | The rocker tilts |
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
 | `swatch` | a metal tile set down | A finish picked |
+| `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
+| `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
 | `snap-1` … `snap-7` | a metal latch, each a whole step higher than the last | First open: each part snaps on. The one place a sound climbs in pitch: the build gathers energy (D74) |
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |

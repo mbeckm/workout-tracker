@@ -277,6 +277,30 @@ const SOUNDS = {
     ring(voice, 0.002, 1900, 0.05, 0.06);
     return voice;
   },
+  // A tap on the display (a day row, the drum): a soft electronic blip, not a key's click.
+  blip() {
+    const voice = makeVoice(0.05, 24);
+    glide(voice, 0, 0.035, 2400, 2600, 0.5, (p) => (p < 0.15 ? p / 0.15 : 1 - p));
+    return voice;
+  },
+  // A plan loaded and the days have ticked in: the machine is ready. Three rising display tones,
+  // a mechanical latch under the last, and a short metal shimmer.
+  ready() {
+    const voice = makeVoice(0.9, 25);
+    const tone = (at, freq, length) => {
+      const env = (p) => (p < 0.08 ? p / 0.08 : Math.pow(1 - p, 1.5));
+      glide(voice, at, length, freq, freq, 0.42, env);
+      glide(voice, at, length, freq * 2, freq * 2, 0.12, env);
+    };
+    tone(0, 988, 0.07);
+    tone(0.09, 1319, 0.07);
+    tone(0.18, 1976, 0.32);
+    hit(voice, 0.18, 2600, 1.6, 0.6, 0.02);
+    thump(voice, 0.18, 180, 70, 0.6, 0.1);
+    ring(voice, 0.2, 2960, 0.04, 0.16);
+    ring(voice, 0.2, 3950, 0.025, 0.12);
+    return voice;
+  },
 };
 
 // The parts snapping on, each a whole step higher than the last (D74: the build climbs).
