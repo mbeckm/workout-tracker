@@ -1,5 +1,5 @@
 /**
- * The wheel's load step (PRODUCT-DECISIONS 79): how far one notch moves the weight. Each lift
+ * The wheel's load step (PRODUCT-DECISIONS 80): how far one notch moves the weight. Each lift
  * starts on its default step and a tap on the drum cycles finer ones (kg: 2.5 or 2 → 1 → 0.5;
  * lbs: 5 → 2.5 → 1). A chosen step is saved with the exercise (by name, like "last time"),
  * per unit, so it comes back every session. Pure: no React, no storage.

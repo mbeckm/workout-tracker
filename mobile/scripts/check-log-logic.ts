@@ -530,7 +530,7 @@ check('VoiceOver: one summary line for the display', () => {
   assert.equal(spokenValue('weight', { weight: null }, 'kg'), 'no weight');
 });
 
-check('Load step (79): dumbbells step 1 kg, a tap cycles finer, saved per lift and unit', () => {
+check('Load step (80): dumbbells step 1 kg, a tap cycles finer, saved per lift and unit', () => {
   const bench = lift('Bench press');
   const press = lift('Dumbbell shoulder press', 3, 8, { equipments: ['dumbbell'] });
   assert.equal(defaultLoadStep(press, 'kg'), 1);

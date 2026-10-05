@@ -175,7 +175,7 @@ type WorkoutStoreState = {
   /** ISO week keys whose week report already played (D15). */
   weekMomentsShown: string[];
   markWeekMomentShown: (weekKey: string) => void;
-  /** Wheel steps chosen on the drum, per exercise (PRODUCT-DECISIONS 79). Selectors: `domain/load-step.ts`. */
+  /** Wheel steps chosen on the drum, per exercise (PRODUCT-DECISIONS 80). Selectors: `domain/load-step.ts`. */
   loadSteps: LoadSteps;
   /** Saves this lift's wheel step in the current unit; its default step clears it. */
   setLoadStep: (name: string, step: number, defaultStep: number) => void;

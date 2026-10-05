@@ -73,7 +73,7 @@ function stepTagY(layout: DrumLayout, height: number): number | null {
 /**
  * Log (V2, screens 04, 05, 09): the lift name ▾ and the set label, the drum (the wheel's value),
  * the keys' value (`×8`) and the reference fact (`LAST 80×8`, `TARGET 87.5×8`, `TARGET ›`).
- * Tapping the drum cycles the lift's wheel step, shown as `±2` under the frame (79);
+ * Tapping the drum cycles the lift's wheel step, shown as `±2` under the frame (80);
  * long-pressing it opens the keypad (D19).
  */
 export function LogDisplay({
@@ -265,15 +265,15 @@ export function RestDisplay({ onName }: { onName: () => void }) {
 }
 
 /**
- * The ring's box and top in a display `height` tall: screen 08's 230 at y74 wherever it fits,
- * else as big as fits between the header and the footer (iPhone SE), centred.
+ * The ring's box and top in a display `height` tall: screen 08's 230 wherever it fits, else as
+ * big as fits (iPhone SE), always centred between the header and the footer.
  */
 function restRingLayout(height: number): { box: number; top: number } {
-  if (height <= 0) return { box: logGeometry.restRingBox, top: logGeometry.restRingTop };
+  if (height <= 0) return { box: logGeometry.restRingBox, top: HEADER_BOTTOM + logGeometry.restRingClear };
   const footerTop = logGeometry.restFooterY + gadgetType.lcdSmall.lineHeight;
-  const room = height - HEADER_BOTTOM - footerTop - 2 * logGeometry.restRingClear;
-  const box = Math.min(logGeometry.restRingBox, room);
-  return { box, top: Math.min(logGeometry.restRingTop, Math.round((height - box) / 2)) };
+  const room = height - HEADER_BOTTOM - footerTop;
+  const box = Math.min(logGeometry.restRingBox, room - 2 * logGeometry.restRingClear);
+  return { box, top: HEADER_BOTTOM + Math.round((room - box) / 2) };
 }
 
 /** Blinking display text (`GO`): on for half the period, dim for the other half, as CSS steps(1). */

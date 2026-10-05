@@ -51,7 +51,7 @@ export type WorkoutSnapshot = {
   appearanceMigratedToFinish: boolean;
   /** ISO week keys whose week report already played (D15), so it shows once. */
   weekMomentsShown: string[];
-  /** Wheel steps chosen on the drum, saved per exercise (PRODUCT-DECISIONS 79). */
+  /** Wheel steps chosen on the drum, saved per exercise (PRODUCT-DECISIONS 80). */
   loadSteps: LoadSteps;
 };
 

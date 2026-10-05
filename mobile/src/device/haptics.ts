@@ -34,8 +34,8 @@ export const haptics = {
   bigKeyPress: pressed('bigKeyPress', 'press'),
   logSet: pattern('logSet'),
   rockerMove: pressed('rockerMove', 'rocker'),
-  /** Rest reaches 0:00. */
-  restGo: pattern('restGo'),
+  /** Rest reaches 0:00: an alarm, beep-beep … beep-beep. */
+  restGo: pressed('restGo', 'alarm'),
   finishComplete: pattern('finishComplete'),
   /** 18 ticks 100 ms apart, matching the receipt's feed steps. */
   receiptPrint: pattern('receiptPrint'),
