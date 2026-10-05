@@ -288,6 +288,7 @@ function DeviceSurface() {
                   flash={work.flash}
                   onName={work.openExercise}
                   onKeypad={work.openKeypad}
+                  onStep={work.cycleLoadStep}
                 />
               ) : view === 'rest' ? (
                 <RestDisplay onName={work.openExercise} />

@@ -177,7 +177,10 @@ final class TrimDeviceFeel: @unchecked Sendable {
       "bigKeyPress": [transient(0, 1.0, 0.45), transient(0.03, 0.5, 0.2)],
       "logSet": [transient(0, 1.0, 0.6), transient(0.04, 0.4, 0.3)],
       "rockerMove": [transient(0, 0.9, 0.8)],
-      "restGo": [transient(0, 0.8, 0.5), transient(0.12, 0.8, 0.5), transient(0.24, 0.8, 0.5)],
+      // Rest reaches 0:00: an alarm, beep-beep … beep-beep (with the `alarm` sound).
+      "restGo": ([0, 0.14, 0.5, 0.64] as [TimeInterval]).flatMap { t -> [CHHapticEvent] in
+        [transient(t, 1.0, 0.85), continuous(t, 0.75, 0.7, duration: 0.08)]
+      },
       "finishComplete": [transient(0, 1.0, 0.3)],
       "receiptPrint": (0..<18).map { transient(Double($0) * 0.1, 0.25, 0.9) },
       "stamp": [transient(0, 0.9, 0.2)],
@@ -298,12 +301,14 @@ final class TrimDeviceFeel: @unchecked Sendable {
     "arrive", "charge", "bang", "boot",
     // Keys, wheel, rocker, swatches (feel pass).
     "press", "rocker", "notch", "swatch", "blip", "ready",
+    // Rest reaches 0:00.
+    "alarm",
     "snap-1", "snap-2", "snap-3", "snap-4", "snap-5", "snap-6", "snap-7",
   ]
   /// The key click is meant to be barely there (SPEC §9); every WAV itself peaks at −3 dBFS.
   /// First open: the bang is the loudest thing in the scene, everything before it builds to it.
   private static let soundVolumes: [String: Float] = [
-    "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6, "blip": 0.3, "ready": 0.75,
+    "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6, "blip": 0.3, "ready": 0.75, "alarm": 0.6,
     "arrive": 0.6, "charge": 0.65, "boot": 0.45,
     "snap-1": 0.5, "snap-2": 0.5, "snap-3": 0.5, "snap-4": 0.5, "snap-5": 0.5, "snap-6": 0.5, "snap-7": 0.5,
   ]

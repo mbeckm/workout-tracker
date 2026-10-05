@@ -404,7 +404,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
 | Rocker move | transient .9 / .8, with the `rocker` tick | `impactAsync(Light)` |
-| Rest reaches 0:00 | 3 transients .8 / .5, 120 ms apart | `notificationAsync(Success)` |
+| Rest reaches 0:00 | an alarm, beep-beep … beep-beep: four beeps at 0, 140, 500 and 640 ms, each a transient 1.0 / .85 over continuous .75 / .7 for 80 ms; with the `alarm` sound | four heavy impacts at the same times |
 | Hold to finish | continuous, intensity .2 → .9 over 1.1 s, sharpness .3; release cancels | `impactAsync(Soft)` at the start, a heavy impact at the end |
 | Finish complete | transient 1.0 / .3 | `notificationAsync(Success)` |
 | Receipt printing | 18 transients .25 / .9, 100 ms apart (the feed's steps) | none |
@@ -439,6 +439,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `swatch` | a metal tile set down | A finish picked |
 | `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
+| `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
 | `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
 | `snap-1` … `snap-7` | a metal latch, each a whole step higher than the last | First open: each part snaps on. The one place a sound climbs in pitch: the build gathers energy (D74) |
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
@@ -533,7 +534,7 @@ Use these. Don't rebuild them per screen.
 | `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts toward the pressed end in 2D (scaleX 0.985, rotate 1.5°): a rotateY with perspective left stale rectangles on iOS. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
 | `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7 while they fit the rocker's 106pt strip (up to 6); then 8 with gap 4 (up to 8); beyond that the strip shows `n/m` text. |
 | `Display` | The lcd panel, r28, inset shadow, 22 padding. Owns the 220 ms content change and the one summary VoiceOver label per mode. |
-| `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
+| `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Tap cycles the lift's wheel step (`±2` → `±1` → `±0.5`; lbs `±5` → `±2.5` → `±1`), shown in `lcdSmall` right-aligned under the frame, `amberDim` on the default step and amber once chosen (80). Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
 | `Well` | 170 round recess around the big key. |
 | `HoldRing` | Stroke 6 at r80 around the well, amber with a soft glow. Fills linearly over 1100 ms while held, snaps back on release. |
@@ -570,6 +571,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | Action | Paths |
 | --- | --- |
 | Change the weight | Wheel + long-press the drum for the keypad; VoiceOver increment / decrement on the wheel |
+| Change the wheel's step | Tap the drum + the display's `Change step` VoiceOver action |
 | Move between lifts | Rocker ends + tap a row in Today |
 | Swap or remove a lift today | Swipe a Today row left + its VoiceOver actions |
 | Close a sheet | Swipe down + scrim tap + ✕ / `Done` |
@@ -717,7 +719,7 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Rest [08]
 
-- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
+- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12, centred between the header and the footer at every display height: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
 - Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s, label `TIME`); big key `Skip` (metal); Undo stays.
 - At 0:00: a blinking `GO` with the rest haptic for 2 s (`REST_GO_MS`), then the log view for the same upcoming set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
 
@@ -744,11 +746,11 @@ Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard wo
 
 ### Today (M3) [07]
 
-Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump (the sheet closes); "i" opens the exercise sheet (‹ comes back); hold a row, then drag to reorder (writes the plan, with today's swaps written back as the plan's own lifts). Swipe a row left for its two actions, `Swap` (dark) and `Remove` (orange); both are also VoiceOver actions, with Move up / Move down and Exercise info. Swap swaps the sheet in place to the lift's alternatives plus `Choose another` (the picker in replace mode). A swap is today only (D79): sets already logged stay with the lift they were done on (an orphan row just before the slot), the new lift takes the sets still to do, no dialog; the receipt asks whether the plan keeps it. `Add lift` (orange text under the card) swaps the sheet in place to the picker (`Add to Push 1`, replace mode: one tap appends to the day and the session, then back to the list). `Choose another` swaps to the same picker titled `Swap <lift>`; ‹ returns to the alternatives. Lifts already in today's session read `In this day`. Remove takes the lift out of today only, with an Undo toast. Tap a logged set bar to edit it on the device (`EDIT SET n`, big key `Save`, no rest; ↶ cancels the edit). An edit started during rest shows the log view; rest keeps running and returns after Save.
+Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85`), set bars (16 × 6, amber when logged), an "i". The current row has a 3 px orange inset on the left. Tap a row to jump (the sheet closes); "i" opens the exercise sheet (‹ comes back); hold a row, then drag to reorder (writes the plan, with today's swaps written back as the plan's own lifts). Swipe a row left for its two actions, `Swap` (dark) and `Remove` (orange); both are also VoiceOver actions, with Move up / Move down and Exercise info. Swap swaps the sheet in place to the lift's alternatives plus `Choose another` (the picker in replace mode). A swap is today only (D81): sets already logged stay with the lift they were done on (an orphan row just before the slot), the new lift takes the sets still to do, no dialog; the receipt asks whether the plan keeps it. `Add lift` (orange text under the card) swaps the sheet in place to the picker (`Add to Push 1`, replace mode: one tap appends to the day and the session, then back to the list). `Choose another` swaps to the same picker titled `Swap <lift>`; ‹ returns to the alternatives. Lifts already in today's session read `In this day`. Remove takes the lift out of today only, with an Undo toast. Tap a logged set bar to edit it on the device (`EDIT SET n`, big key `Save`, no rest; ↶ cancels the edit). An edit started during rest shows the log view; rest keeps running and returns after Save.
 
 ### Exercise (M4) [06]
 
-A 230 illustration panel (our own figure for the movement pattern, D5; no panel without a figure), the name (30/800), the kit and muscle line, muscle chips (primary orange), `HOW TO` with 3 numbered steps (only where written), then, for a lift in the open workout, `SWAP FOR`: up to 3 alternatives (`Cable, side delts`; lifts already in today's session left out) and `Choose another` in its own card (the picker in place, ‹ back). One tap swaps for today (D79) and closes the sheet (‹ to Today when opened from it). Then `YOU` with the estimated max and best today or last time. No rank. The display's lift name ▾ opens this sheet, so swapping mid-set is two taps.
+A 230 illustration panel (our own figure for the movement pattern, D5; no panel without a figure), the name (30/800), the kit and muscle line, muscle chips (primary orange), `HOW TO` with 3 numbered steps (only where written), then, for a lift in the open workout, `SWAP FOR`: up to 3 alternatives (`Cable, side delts`; lifts already in today's session left out) and `Choose another` in its own card (the picker in place, ‹ back). One tap swaps for today (D81) and closes the sheet (‹ to Today when opened from it). Then `YOU` with the estimated max and best today or last time. No rank. The display's lift name ▾ opens this sheet, so swapping mid-set is two taps.
 
 ### History wall (HR1) [02]
 
@@ -760,7 +762,7 @@ Training weeks (Monday start), newest first: a Doto week header with that week's
 
 ### Receipt [13, 03]
 
-A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the milestone (bold) when there is one, the day, `date N MIN`; per lift the name and set count with an indented `w × r, r, r` line (`compressSetLines`; `w×r` per set when weights differ); `SETS`, `VOLUME`, the estimated max of the first lift that has one (`BENCH E1RM`, the stamp word), one PR line per record lift (`BENCH PR ★`) in #C2410C, one `GOAL BENCH 100 ✓` line per goal reached (D7). On a fresh receipt, one card per lift swapped today that got a set (D79), between the paper and the actions: `Cable Lateral Raise in Push 1?` (row title), `Instead of Lateral Raises` (row sub), and two pills, `Keep in plan` (light; writes the plan's slot with its own sets and reps, toast `Push 1 updated`) and `Just today` (dark). Answered cards go; unanswered ones leave the plan as it was. Actions: `Share` (dark pill, the receipt as 32-column text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from the wall the header is the day's name with ‹. The fresh receipt claims its milestone (`claimMilestone`).
+A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the milestone (bold) when there is one, the day, `date N MIN`; per lift the name and set count with an indented `w × r, r, r` line (`compressSetLines`; `w×r` per set when weights differ); `SETS`, `VOLUME`, the estimated max of the first lift that has one (`BENCH E1RM`, the stamp word), one PR line per record lift (`BENCH PR ★`) in #C2410C, one `GOAL BENCH 100 ✓` line per goal reached (D7). On a fresh receipt, one card per lift swapped today that got a set (D81), between the paper and the actions: `Cable Lateral Raise in Push 1?` (row title), `Instead of Lateral Raises` (row sub), and two pills, `Keep in plan` (light; writes the plan's slot with its own sets and reps, toast `Push 1 updated`) and `Just today` (dark). Answered cards go; unanswered ones leave the plan as it was. Actions: `Share` (dark pill, the receipt as 32-column text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from the wall the header is the day's name with ‹. The fresh receipt claims its milestone (`claimMilestone`).
 
 Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue runs (`device/moments.ts`, `moment/moment-host.tsx`), one at a time: the Home stamp (`justFinished`; it waits until Home is in front and the stamp has played), the week moment if this workout filled the week and its ISO week isn't in `weekMomentsShown`, then the post-workout paywall. Phase 4's finish calls `openReceiptAfterFinish(workoutId)`.
 

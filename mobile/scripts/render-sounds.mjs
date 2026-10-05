@@ -301,6 +301,16 @@ const SOUNDS = {
     ring(voice, 0.2, 3950, 0.025, 0.12);
     return voice;
   },
+  // Rest reaches 0:00: a digital watch alarm, beep-beep … beep-beep (in step with `restGo`).
+  alarm() {
+    const voice = makeVoice(0.74, 26);
+    const env = (p) => (p < 0.05 ? p / 0.05 : p > 0.85 ? (1 - p) / 0.15 : 1);
+    for (const at of [0, 0.14, 0.5, 0.64]) {
+      glide(voice, at, 0.08, 2730, 2730, 0.6, env);
+      glide(voice, at, 0.08, 8190, 8190, 0.12, env);
+    }
+    return voice;
+  },
 };
 
 // The parts snapping on, each a whole step higher than the last (D74: the build climbs).
