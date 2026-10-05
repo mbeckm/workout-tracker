@@ -60,23 +60,39 @@ function assistY(layout: DrumLayout): number {
 }
 
 /**
+ * Where the drum's step tag (`±2`) sits: right-aligned just under the frame, or null when a
+ * short display has no room for it above the `×8` footer.
+ */
+function stepTagY(layout: DrumLayout, height: number): number | null {
+  const top = layout.frameY + device.drumFrameHeight + device.drumClear;
+  if (height <= 0) return top;
+  const footerTop = height - device.repsFooterY - gadgetType.lcdReps.lineHeight;
+  return top + gadgetType.lcdSmall.lineHeight + device.drumClear <= footerTop ? top : null;
+}
+
+/**
  * Log (V2, screens 04, 05, 09): the lift name ▾ and the set label, the drum (the wheel's value),
  * the keys' value (`×8`) and the reference fact (`LAST 80×8`, `TARGET 87.5×8`, `TARGET ›`).
- * Long-pressing the drum opens the keypad (D19).
+ * Tapping the drum cycles the lift's wheel step, shown as `±2` under the frame (79);
+ * long-pressing it opens the keypad (D19).
  */
 export function LogDisplay({
   nudge,
   flash,
   onName,
   onKeypad,
+  onStep,
 }: {
   nudge: DrumNudge | null;
   flash: number;
   onName: () => void;
   onKeypad: () => void;
+  onStep: () => void;
 }) {
-  const { current, drum, keysText, setLabel, footer, controls, unlockTargets } = useLogSession();
-  const layout = drumLayout(useDisplayHeight());
+  const { current, drum, keysText, setLabel, footer, controls, loadStep, unlockTargets } = useLogSession();
+  const height = useDisplayHeight();
+  const layout = drumLayout(height);
+  const tagY = loadStep ? stepTagY(layout, height) : null;
   if (!current || !drum || !controls) {
     return null;
   }
@@ -96,9 +112,17 @@ export function LogDisplay({
       />
       <Pressable
         accessible={false}
+        onPress={onStep}
         onLongPress={onKeypad}
         style={[styles.drumHit, { top: layout.frameY }]}
       />
+      {loadStep && tagY != null ? (
+        <Text
+          maxFontSizeMultiplier={1}
+          style={[gadgetType.lcdSmall, !loadStep.chosen && styles.dim, styles.stepTag, { top: tagY }]}>
+          {loadStep.text}
+        </Text>
+      ) : null}
       <View style={styles.header} pointerEvents="box-none">
         <LiftName name={current.prescription.name} onPress={onName} />
         <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
@@ -391,6 +415,7 @@ const styles = StyleSheet.create({
     height: device.drumFrameHeight,
   },
   assist: { position: 'absolute', right: device.displayPad },
+  stepTag: { position: 'absolute', right: device.displayPad },
   footer: {
     position: 'absolute',
     left: device.displayPad,

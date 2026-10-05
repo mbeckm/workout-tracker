@@ -248,6 +248,11 @@ export function useLogDevice() {
     openSheet('keypad');
   }, [haptics, openSheet]);
 
+  /** A tap on the drum: the lift's next wheel step (`±2` → `±1` → `±0.5`). */
+  const cycleLoadStep = useCallback(() => {
+    if (log.cycleLoadStep()) haptics.displayTap();
+  }, [haptics, log]);
+
   // --- VoiceOver: one summary per mode, the display's tappable words as actions ---------------
   const minutes = log.current ? durationIsMinutes(log.current.prescription) : false;
   let summary: string | undefined;
@@ -255,6 +260,7 @@ export function useLogDevice() {
   if (view === 'log') {
     summary = log.summary ?? undefined;
     actions.push({ name: 'exercise', label: 'Exercise info' }, { name: 'keypad', label: 'Type a value' });
+    if (log.loadStep) actions.push({ name: 'step', label: `Change step, now ${log.loadStep.text.slice(1)} ${log.units}` });
     if (log.footer?.targetLocked) actions.push({ name: 'targets', label: 'Show targets' });
   } else if (view === 'rest' && log.current) {
     const next = log.stage ? spokenShortSet(log.stage.values, minutes) : null;
@@ -290,6 +296,7 @@ export function useLogDevice() {
     const name = event.nativeEvent.actionName;
     if (name === 'exercise') openExercise();
     if (name === 'keypad') openKeypad();
+    if (name === 'step') cycleLoadStep();
     if (name === 'targets') void log.unlockTargets();
   };
 
@@ -308,6 +315,7 @@ export function useLogDevice() {
     finishWorkout,
     openExercise,
     openKeypad,
+    cycleLoadStep,
     wheel,
     display: { summary, actions, onAction: onDisplayAction },
   };

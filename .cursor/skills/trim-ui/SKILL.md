@@ -533,7 +533,7 @@ Use these. Don't rebuild them per screen.
 | `Rocker` | `variant: 'week' \| 'lifts'`. Ends `‹ ›` (46 wide), a middle strip with lamps. Tilts toward the pressed end in 2D (scaleX 0.985, rotate 1.5°): a rotateY with perspective left stale rectangles on iOS. Disabled ends at the first and last lift. Week variant: no ends, not pressable. |
 | `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7 while they fit the rocker's 106pt strip (up to 6); then 8 with gap 4 (up to 8); beyond that the strip shows `n/m` text. |
 | `Display` | The lcd panel, r28, inset shadow, 22 padding. Owns the 220 ms content change and the one summary VoiceOver label per mode. |
-| `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
+| `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Tap cycles the lift's wheel step (`±2` → `±1` → `±0.5`; lbs `±5` → `±2.5` → `±1`), shown in `lcdSmall` right-aligned under the frame, `amberDim` on the default step and amber once chosen (79). Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
 | `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
 | `Well` | 170 round recess around the big key. |
 | `HoldRing` | Stroke 6 at r80 around the well, amber with a soft glow. Fills linearly over 1100 ms while held, snaps back on release. |
@@ -570,6 +570,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | Action | Paths |
 | --- | --- |
 | Change the weight | Wheel + long-press the drum for the keypad; VoiceOver increment / decrement on the wheel |
+| Change the wheel's step | Tap the drum + the display's `Change step` VoiceOver action |
 | Move between lifts | Rocker ends + tap a row in Today |
 | Swap or remove a lift today | Swipe a Today row left + its VoiceOver actions |
 | Close a sheet | Swipe down + scrim tap + ✕ / `Done` |

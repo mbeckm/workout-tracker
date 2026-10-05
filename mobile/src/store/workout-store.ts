@@ -20,6 +20,7 @@ import {
   type BodyGoal,
   type BodyGoalInput,
 } from '../domain/body-goals';
+import { withLoadStep, type LoadSteps } from '../domain/load-step';
 import { MAX_PINNED_GOALS, withGoal, withReachedGoals, type Goal, type GoalInput } from '../domain/goals';
 import {
   clearedSession,
@@ -174,6 +175,10 @@ type WorkoutStoreState = {
   /** ISO week keys whose week report already played (D15). */
   weekMomentsShown: string[];
   markWeekMomentShown: (weekKey: string) => void;
+  /** Wheel steps chosen on the drum, per exercise (PRODUCT-DECISIONS 79). Selectors: `domain/load-step.ts`. */
+  loadSteps: LoadSteps;
+  /** Saves this lift's wheel step in the current unit; its default step clears it. */
+  setLoadStep: (name: string, step: number, defaultStep: number) => void;
 };
 
 export type RemovedGoal = { goal: Goal; index: number };
@@ -666,6 +671,13 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => (current.soundsOn === soundsOn ? current : { ...current, soundsOn }));
   }, []);
 
+  const setLoadStep = useCallback((name: string, step: number, defaultStep: number) => {
+    setSnapshot((current) => ({
+      ...current,
+      loadSteps: withLoadStep(current.loadSteps, name, current.units, step, defaultStep),
+    }));
+  }, []);
+
   const markWeekMomentShown = useCallback((weekKey: string) => {
     setSnapshot((current) =>
       current.weekMomentsShown.includes(weekKey)
@@ -808,6 +820,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setSoundsOn,
       weekMomentsShown: snapshot.weekMomentsShown,
       markWeekMomentShown,
+      loadSteps: snapshot.loadSteps,
+      setLoadStep,
     };
   }, [
     snapshot,
@@ -852,6 +866,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setFinish,
     setSoundsOn,
     markWeekMomentShown,
+    setLoadStep,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

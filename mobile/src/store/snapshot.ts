@@ -3,6 +3,7 @@ import { migrateLegacyThigh, type BodyCheckIn } from '@/domain/check-in';
 import { normalizeBodyGoals, type BodyGoal } from '@/domain/body-goals';
 import { DARK_FINISH, normalizeFinish, type Finish } from '@/domain/finish';
 import { normalizeGoals, type Goal } from '@/domain/goals';
+import { normalizeLoadSteps, type LoadSteps } from '@/domain/load-step';
 import { normalizeLogSession, type LogSession } from '@/domain/log-session';
 import type {
   CustomExerciseDefinition,
@@ -50,6 +51,8 @@ export type WorkoutSnapshot = {
   appearanceMigratedToFinish: boolean;
   /** ISO week keys whose week report already played (D15), so it shows once. */
   weekMomentsShown: string[];
+  /** Wheel steps chosen on the drum, saved per exercise (PRODUCT-DECISIONS 79). */
+  loadSteps: LoadSteps;
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -75,6 +78,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   soundsOn: true,
   appearanceMigratedToFinish: false,
   weekMomentsShown: [],
+  loadSteps: {},
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -198,6 +202,8 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     soundsOn: data.soundsOn !== false,
     appearanceMigratedToFinish: data.appearanceMigratedToFinish === true,
     weekMomentsShown: normalizeWeekKeys(data.weekMomentsShown),
+    // Snapshots from before chosen wheel steps have none.
+    loadSteps: normalizeLoadSteps(data.loadSteps),
   };
 }
 
