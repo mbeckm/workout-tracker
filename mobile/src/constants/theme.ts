@@ -889,9 +889,8 @@ export const logGeometry = {
   namePadX: 8,
   namePadY: 2,
   nameRadius: 8,
-  /** Rest: the ring's 230 box at y74 in the display (r95, stroke 12; the track dashed 3 on, 7 off). */
+  /** Rest: the ring's 230 box, centred between header and footer (r95, stroke 12; the track dashed 3 on, 7 off). */
   restRingBox: 230,
-  restRingTop: 74,
   restRingDash: '3 7',
   /** The rest footer sits 20 from the bottom. */
   restFooterY: 20,

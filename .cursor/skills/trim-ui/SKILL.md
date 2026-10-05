@@ -717,7 +717,7 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Rest [08]
 
-- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
+- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12, centred between the header and the footer at every display height: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
 - Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s, label `TIME`); big key `Skip` (metal); Undo stays.
 - At 0:00: a blinking `GO` with the rest haptic for 2 s (`REST_GO_MS`), then the log view for the same upcoming set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
 
