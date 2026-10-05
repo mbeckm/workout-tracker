@@ -50,11 +50,15 @@ import {
   reorderDrafts,
   restPhase,
   restoreDraft,
+  sessionSwaps,
   stageOf,
+  swapInDrafts,
+  swappedPrescription,
+  planExercisesFrom,
   type CompleteContext,
   type LogState,
 } from '@/device/log/log-state';
-import { buildDrafts, unloggedSetCount, type DraftExercise } from '@/domain/log-session';
+import { buildDrafts, restoreDrafts, unloggedSetCount, type DraftExercise } from '@/domain/log-session';
 import { loadIncrement } from '@/domain/targets';
 import type { ExercisePrescription, LoggedSet } from '@/domain/types';
 
@@ -341,6 +345,60 @@ check('add lift goes before orphans; reorder keeps the display on its lift', () 
   const reordered = reorderDrafts({ ...state, exerciseIndex: 1 }, 1, 0);
   assert.equal(reordered.drafts[0]?.prescription.name, 'Row');
   assert.equal(reordered.exerciseIndex, 0);
+});
+
+const swapContext = { previousSetsForExercise: () => [], targetsFor: null, newId: () => id('kept') };
+
+function swapTo(state: LogState, index: number, name: string): LogState {
+  const target = state.drafts[index]!.prescription;
+  return swapInDrafts(state, target.id, swappedPrescription(target, lift(name)), swapContext)!;
+}
+
+check('swap before any set: the slot takes the new lift and remembers the plan\'s', () => {
+  const state = stateFor([lift('Lateral raises', 3), lift('Row')]);
+  const swapped = swapTo(state, 0, 'Cable lateral raise');
+  assert.equal(swapped.drafts.length, 2);
+  assert.equal(swapped.drafts[0]?.prescription.name, 'Cable lateral raise');
+  assert.equal(swapped.drafts[0]?.prescription.id, state.drafts[0]?.prescription.id);
+  assert.equal(swapped.drafts[0]?.swappedFrom?.name, 'Lateral raises');
+  assert.equal(swapped.drafts[0]?.sets.length, 3);
+  // The plan keeps its own lift until Keep in plan.
+  assert.deepEqual(planExercisesFrom(swapped.drafts).map((item) => item.name), ['Lateral raises', 'Row']);
+  // Nothing logged on the new lift: the receipt asks nothing.
+  assert.equal(sessionSwaps(swapped.drafts).length, 0);
+});
+
+check('swap mid-lift: logged sets stay with their lift, the new one takes the sets to do', () => {
+  const state = log(stateFor([lift('Lateral raises', 3), lift('Row')]));
+  const swapped = swapTo(state, 0, 'Cable lateral raise');
+  assert.equal(swapped.drafts.length, 3);
+  assert.equal(swapped.drafts[0]?.prescription.name, 'Lateral raises');
+  assert.equal(swapped.drafts[0]?.orphan, true);
+  assert.equal(swapped.drafts[0]?.sets.length, 1);
+  assert.equal(swapped.drafts[1]?.prescription.name, 'Cable lateral raise');
+  assert.equal(swapped.drafts[1]?.sets.length, 2);
+  assert.equal(swapped.exerciseIndex, 1);
+  // The new lift has no history here, so it needs a weight before Log takes the set.
+  const done = log(patchStage(swapped, { weight: 10 }));
+  const swaps = sessionSwaps(done.drafts);
+  assert.equal(swaps.length, 1);
+  assert.equal(swaps[0]?.from.name, 'Lateral raises');
+  assert.equal(swaps[0]?.to.name, 'Cable lateral raise');
+});
+
+check('swapping back to the plan\'s lift forgets the swap', () => {
+  const state = stateFor([lift('Lateral raises', 3)]);
+  const twice = swapTo(swapTo(state, 0, 'Cable lateral raise'), 0, 'Lateral raises');
+  assert.equal(twice.drafts[0]?.swappedFrom, undefined);
+});
+
+check('a saved session restores a swap against the plan\'s lift', () => {
+  const plan = [lift('Lateral raises', 3), lift('Row')];
+  const swapped = log(patchStage(swapTo(stateFor(plan), 0, 'Cable lateral raise'), { weight: 10 }));
+  const restored = restoreDrafts({ drafts: swapped.drafts }, { id: 'd', title: 'Push 1', exercises: plan } as never, () => []);
+  assert.equal(restored[0]?.prescription.name, 'Cable lateral raise');
+  assert.equal(restored[0]?.sets.filter((set) => set.done).length, 1);
+  assert.equal(restored[0]?.swappedFrom?.name, 'Lateral raises');
 });
 
 check('Live Activity focus on a removed lift falls back to the first lift with work', () => {

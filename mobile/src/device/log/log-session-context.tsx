@@ -80,6 +80,7 @@ import {
   restoreDraft,
   restPhase,
   selectExercise,
+  sessionSwaps,
   stageOf,
   swapInDrafts,
   swappedPrescription,
@@ -87,6 +88,7 @@ import {
   type CompleteResult,
   type LogState,
   type RemovedLift,
+  type SessionSwap,
   type SetValues,
   type Stage,
   type UndoneSet,
@@ -95,6 +97,9 @@ import { useLiveActivitySync } from './use-live-activity-sync';
 
 /** Set changes settle before they are written; set logs land within this too. */
 const SESSION_WRITE_DEBOUNCE_MS = 400;
+
+/** The swaps of the workout just finished, until the receipt answers Keep in plan or Just today. */
+export type PlanSwaps = { workoutId: string; planId: string; dayId: string; dayTitle: string; swaps: SessionSwap[] };
 
 export type LogLink = { planId: string; dayId: string; exerciseId?: string; start?: boolean };
 
@@ -183,7 +188,7 @@ export type LogSessionValue = {
   adjustRest: (seconds: number) => void;
   skipRest: () => void;
   alternativesFor: (exerciseId: string) => ExercisePrescription[];
-  /** Swap a lift (keeps logged sets, writes the plan, no dialog). */
+  /** Swap a lift for today (logged sets stay with their lift; the plan is asked on the receipt). */
   swapExercise: (targetId: string, next: ExercisePrescription) => void;
   /** Appends a lift to the day in the plan and to today's session. Returns its index. */
   addLift: (exercise: ExercisePrescription) => number;
@@ -200,6 +205,10 @@ export type LogSessionValue = {
   unlockTargets: () => Promise<boolean>;
   /** Saves the workout and closes the log. The new workout's id, or null when nothing was logged. */
   finish: () => string | null;
+  /** Today's swaps, held for the fresh receipt of `workoutId`. */
+  planSwaps: PlanSwaps | null;
+  /** The receipt's answer for one swap: Keep in plan writes the plan's slot; Just today drops it. */
+  answerSwap: (slotId: string, keep: boolean) => void;
   /** Asks first ("Discard workout?"), then closes the log without saving. Resolves true when discarded. */
   discard: () => Promise<boolean>;
 };
@@ -265,6 +274,8 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
   // Pro targets: computed for free users too; the quiet `TARGET ›` appears only where one exists.
   const [targetsUnlocked, setTargetsUnlocked] = useState(false);
   const [targetOfferDismissed, setTargetOfferDismissed] = useState(false);
+  const [planSwaps, setPlanSwaps] = useState<PlanSwaps | null>(null);
+  const planSwapsRef = useRef<PlanSwaps | null>(null);
   const showTargets = isPro || targetsUnlocked;
   const showTargetsRef = useRef(showTargets);
   /** The rest window (by `endsAtMs`) whose GO is showing. */
@@ -585,15 +596,11 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         const log = swapInDrafts(current.log, targetId, swapped, {
           previousSetsForExercise: storeRef.current.previousSetsForExercise,
           targetsFor: showTargetsRef.current ? targetsFor : null,
+          newId,
         });
-        if (!log) {
-          return;
+        if (log) {
+          commit({ open: current.open, log });
         }
-        commit({ open: current.open, log });
-        writeDay((day) => ({
-          ...day,
-          exercises: day.exercises.map((item) => (item.id === targetId ? swapped : item)),
-        }));
       },
       addLift: (exercise: ExercisePrescription) => {
         const current = sessionRef.current;
@@ -681,6 +688,12 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
           dayId: found.day.id,
         });
         clearLogSession({ planId: found.plan.id, dayId: found.day.id });
+        const swaps = sessionSwaps(current.log.drafts);
+        planSwapsRef.current =
+          swaps.length > 0
+            ? { workoutId: workout.id, planId: found.plan.id, dayId: found.day.id, dayTitle: found.day.title, swaps }
+            : null;
+        setPlanSwaps(planSwapsRef.current);
         track('workout_completed', {
           exercises: workout.exercises.length,
           sets: workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0),
@@ -690,6 +703,29 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         void endWorkoutLiveActivity();
         close();
         return workout.id;
+      },
+      answerSwap: (slotId: string, keep: boolean) => {
+        const pending = planSwapsRef.current;
+        const swap = pending?.swaps.find((item) => item.slotId === slotId);
+        if (!pending || !swap) {
+          return;
+        }
+        const plan = keep ? storeRef.current.plans.find((item) => item.id === pending.planId) : undefined;
+        if (plan) {
+          // Only while the slot still holds the lift it replaced (the plan may have changed since).
+          storeRef.current.updatePlan(
+            withDay(plan, pending.dayId, (day) => ({
+              ...day,
+              exercises: day.exercises.map((item) =>
+                item.id === slotId && sameName(item.name, swap.from.name) ? swappedPrescription(item, swap.to) : item,
+              ),
+            })),
+          );
+        }
+        const swaps = pending.swaps.filter((item) => item.slotId !== slotId);
+        const next = swaps.length > 0 ? { ...pending, swaps } : null;
+        planSwapsRef.current = next;
+        setPlanSwaps(next);
       },
       discard: () =>
         new Promise<boolean>((resolve) => {
@@ -793,6 +829,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
             })
           : null,
       units,
+      planSwaps,
       open,
       ...actions,
     }),
@@ -807,6 +844,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       needsWeight,
       offerTargets,
       open,
+      planSwaps,
       previous,
       rest,
       restGo,
@@ -823,6 +861,10 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
 }
 
 const EMPTY_DRAFTS: DraftExercise[] = [];
+
+function sameName(left: string, right: string): boolean {
+  return left.trim().toLowerCase() === right.trim().toLowerCase();
+}
 
 function sessionFromOpened(
   link: { planId: string; dayId: string },

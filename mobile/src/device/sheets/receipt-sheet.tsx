@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Pressable, Share, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   ReduceMotion,
   cancelAnimation,
@@ -9,17 +9,19 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { receiptColors, receiptGeometry as g } from '@/constants/theme';
+import { showToast } from '@/components/toast';
+import { fontScaleCap, gadgetType, receiptColors, receiptGeometry as g, sheetGeometry, space } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
 import { useHaptics, useSounds } from '@/device/haptics';
+import { useLogSession } from '@/device/log';
 import { Paper, ReceiptRows } from '@/device/receipt/paper';
 import { freshReceiptTitle, receiptModel } from '@/device/receipt-model';
 import type { LoggedWorkout } from '@/domain/types';
 import { DEVICE, LINEAR_FN } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
-import { PillButton, SheetHeader, SheetScroll } from './primitives';
+import { PillButton, SheetCard, SheetHeader, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
 /** The workout a receipt shows: by id, `latest` (development links), or the one just finished. */
@@ -39,7 +41,9 @@ export function useReceiptWorkout(workoutId: string | undefined): LoggedWorkout 
  * paper completes it, and Done is live from the first frame. Fresh after a workout (`fresh=1`):
  * the header states the week and Done closes (the moments queue runs when it's gone). From the
  * History wall (`from=history`): the day's name with ‹ back to the wall. Reduce Motion: the paper
- * fades in where it ends; the haptic and the sound stay.
+ * fades in where it ends; the haptic and the sound stay. Under a fresh receipt, one card per lift
+ * swapped today asks whether the plan keeps it (Keep in plan / Just today); leaving it unanswered
+ * keeps the plan as it was.
  */
 export function ReceiptSheet({ params }: { params: SheetParams }) {
   const { close } = useSheetChrome();
@@ -47,6 +51,8 @@ export function ReceiptSheet({ params }: { params: SheetParams }) {
   const { workoutHistory, units, userName, goals, milestoneFor, claimMilestone, activePlan } = useWorkoutStore();
   const workout = useReceiptWorkout(params.workoutId);
   const fresh = params.fresh === '1';
+  const { planSwaps, answerSwap } = useLogSession();
+  const swaps = fresh && workout && planSwaps?.workoutId === workout.id ? planSwaps : null;
   const fromHistory = params.from === 'history';
 
   const milestone = workout ? milestoneFor(workout) : null;
@@ -94,6 +100,34 @@ export function ReceiptSheet({ params }: { params: SheetParams }) {
       ) : (
         <View style={styles.clip} />
       )}
+      {swaps?.swaps.map((swap) => (
+        <SheetCard key={swap.slotId} style={styles.swap}>
+          <View style={styles.swapBody}>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={gadgetType.rowTitle}>
+              {`${swap.to.name} in ${swaps.dayTitle}?`}
+            </Text>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowSub, styles.swapSub]}>
+              {`Instead of ${swap.from.name}`}
+            </Text>
+            <View style={styles.swapActions}>
+              <PillButton
+                title="Keep in plan"
+                onPress={() => {
+                  answerSwap(swap.slotId, true);
+                  showToast({ title: `${swaps.dayTitle} updated` });
+                }}
+                style={styles.swapPill}
+              />
+              <PillButton
+                title="Just today"
+                variant="dark"
+                onPress={() => answerSwap(swap.slotId, false)}
+                style={styles.swapPill}
+              />
+            </View>
+          </View>
+        </SheetCard>
+      ))}
       <View style={styles.actions}>
         {receipt ? (
           <PillButton title="Share" variant="dark" onPress={share} style={styles.share} testID="receipt-share" />
@@ -184,4 +218,9 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', justifyContent: 'center', gap: g.actionGap },
   share: { width: g.shareWidth, marginTop: 0 },
   done: { width: g.doneWidth, marginTop: 0 },
+  swap: { marginHorizontal: g.paperInset },
+  swapBody: { paddingHorizontal: sheetGeometry.itemPadX, paddingVertical: sheetGeometry.itemPadY },
+  swapSub: { marginTop: space.pair },
+  swapActions: { flexDirection: 'row', gap: g.actionGap, marginTop: space.inset },
+  swapPill: { flex: 1, width: 'auto', marginTop: 0 },
 });
