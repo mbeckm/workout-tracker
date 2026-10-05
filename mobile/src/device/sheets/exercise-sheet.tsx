@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { catalogKey, exercisePickerMeta, recordExerciseSelection } from '@/catalog';
 import {
   bundledExerciseById,
   bundledExerciseInfo,
@@ -31,7 +32,8 @@ import type { CustomExerciseDefinition, ExercisePrescription, LoggedSet } from '
 import { DEVICE } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
-import { SectionLabel, SheetCard } from './primitives';
+import { ExercisePicker } from './exercise-picker';
+import { SectionLabel, SheetCard, SheetHeader, SheetRow, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
 /** What the sheet shows about the lift, from the catalog side map (D5) or the row itself. */
@@ -48,7 +50,9 @@ type Stat = { value: string; label: string };
 /**
  * The exercise sheet (M4, SPEC §6 Exercise, screen 06): the movement figure when Trim has
  * one, the name, kit and muscles, HOW TO where it's written, and YOU (estimated max, then
- * best today or last time). No rank (D4).
+ * best today or last time). No rank (D4). For a lift in the open workout, SWAP FOR under HOW TO:
+ * its alternatives, then Choose another (the picker in place, ‹ back). A swap is today only;
+ * the receipt asks whether the plan keeps it.
  *
  * Params: `exerciseId` (a session, plan, bundled or custom id), optional `name` as a
  * fallback, and `from`: a sheet kind to go back to with ‹ (Today), else ✕ closes.
@@ -100,6 +104,35 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
   }, [focusKey]);
 
   const back = from ? () => swapSheet(from) : close;
+
+  const [picking, setPicking] = useState(false);
+  const swappable = draft != null && !draft.orphan && log.mode != null;
+  // Lifts already in today's session aren't alternatives.
+  const alternatives = useMemo(() => {
+    if (!swappable || !exerciseId) return [];
+    const inDay = new Set(log.drafts.map((item) => item.prescription.name.trim().toLowerCase()));
+    return log.alternativesFor(exerciseId).filter((item) => !inDay.has(item.name.trim().toLowerCase()));
+  }, [exerciseId, log, swappable]);
+  const swapTo = (exercise: ExercisePrescription) => {
+    if (exerciseId) log.swapExercise(exerciseId, exercise);
+    back();
+  };
+
+  if (picking && swappable && draft) {
+    return (
+      <SwapPicker
+        title={`Swap ${draft.prescription.name}`}
+        onBack={() => {
+          Keyboard.dismiss();
+          setPicking(false);
+        }}
+        onPick={(exercise) => {
+          Keyboard.dismiss();
+          swapTo(exercise);
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.fill}>
@@ -174,6 +207,31 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
                 </>
               ) : null}
 
+              {swappable ? (
+                <>
+                  <SectionLabel>Swap for</SectionLabel>
+                  {alternatives.length > 0 ? (
+                    <SheetCard>
+                      {alternatives.map((exercise) => (
+                        <SheetRow
+                          key={exercise.id}
+                          size="compact"
+                          title={exercise.name}
+                          sub={exercisePickerMeta(exercise)}
+                          onPress={() => {
+                            void recordExerciseSelection(exercise);
+                            swapTo(exercise);
+                          }}
+                        />
+                      ))}
+                    </SheetCard>
+                  ) : null}
+                  <SheetCard>
+                    <SheetRow size="compact" title="Choose another" onPress={() => setPicking(true)} />
+                  </SheetCard>
+                </>
+              ) : null}
+
               {stats.length > 0 ? (
                 <>
                   <SectionLabel>You</SectionLabel>
@@ -213,6 +271,25 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
         </Text>
       </Pressable>
     </View>
+  );
+}
+
+/** Choose another (in place): the whole catalog through the picker in replace mode. */
+function SwapPicker({
+  title,
+  onBack,
+  onPick,
+}: {
+  title: string;
+  onBack: () => void;
+  onPick: (exercise: ExercisePrescription) => void;
+}) {
+  const log = useLogSession();
+  const takenKeys = useMemo(() => new Set(log.drafts.map((item) => catalogKey(item.prescription))), [log.drafts]);
+  return (
+    <SheetScroll header={<SheetHeader title={title} left={{ kind: 'back', onPress: onBack }} />}>
+      <ExercisePicker mode="replace" onPick={onPick} takenKeys={takenKeys} />
+    </SheetScroll>
   );
 }
 

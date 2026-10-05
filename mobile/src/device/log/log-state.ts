@@ -9,6 +9,7 @@
  * - A finished lift shows a pending `EXTRA SET`; Log appends it as `extra: true`.
  * - Finish mode (`finishing`) is entered by the workout's last set or End workout.
  * - Lifts can be added to (plan and session) or removed from today's session (Undo-able).
+ * - Swaps are today-only; the receipt asks whether the plan keeps them (`sessionSwaps`).
  */
 import { clonePrescription, emptyLoggedSet, usesWeight } from '@/domain/helpers';
 import {
@@ -609,7 +610,8 @@ export function reorderDrafts(state: LogState, from: number, to: number): LogSta
 
 /** The plan day's lifts in session order. Orphans (left the plan, kept for their logged sets) never go back into it. */
 export function planExercisesFrom(drafts: readonly DraftExercise[]): ExercisePrescription[] {
-  return drafts.filter((item) => !item.orphan).map((item) => item.prescription);
+  // A lift swapped today goes back as the plan's own lift (Keep in plan is the receipt's).
+  return drafts.filter((item) => !item.orphan).map((item) => item.swappedFrom ?? item.prescription);
 }
 
 /** `next` in place of `targetId`'s lift: same id, slot, sets and reps. */
@@ -624,8 +626,10 @@ export function swappedPrescription(target: ExercisePrescription, next: Exercise
 }
 
 /**
- * Swap (Alternatives, or another lift from the picker): logged sets stay; untouched lifts
- * re-prefill for the new one (with targets when they're shown). Returns null when the lift is gone.
+ * Swap (the exercise sheet's Swap for, or Today): today only, the plan keeps its lift
+ * (`swappedFrom`) until the receipt's Keep in plan. Sets already logged stay with the lift they
+ * were done on, as an orphan just before the slot; the new lift takes the sets still to do
+ * (re-prefilled, with targets when they're shown). Returns null when the lift is gone.
  */
 export function swapInDrafts(
   state: LogState,
@@ -634,32 +638,62 @@ export function swapInDrafts(
   context: {
     previousSetsForExercise: (name: string) => LoggedSet[];
     targetsFor: ((exercise: DraftExercise) => readonly (SetValues | null)[] | null) | null;
+    newId: () => string;
   },
 ): LogState | null {
-  const target = state.drafts.find((item) => item.prescription.id === targetId);
+  const index = state.drafts.findIndex((item) => item.prescription.id === targetId);
+  const target = state.drafts[index];
   if (!target) {
     return null;
   }
-  const hadLogs = target.sets.some((set) => set.done);
-  const drafts = state.drafts.map((exercise) =>
-    exercise.prescription.id !== targetId
-      ? exercise
-      : {
-          prescription: swapped,
-          sets: hadLogs
-            ? exercise.sets
-            : (buildDrafts([swapped], context.previousSetsForExercise)[0]?.sets ?? exercise.sets),
-        },
-  );
+  const original = target.swappedFrom ?? target.prescription;
+  const backToPlan = sameLift(original, swapped);
+  const done = target.sets.filter((set) => set.done);
+  const toDo = target.sets.filter((set) => !set.done && !set.extra).length;
+  const fresh = buildDrafts([swapped], context.previousSetsForExercise)[0]?.sets ?? [];
+  const slot: DraftExercise = {
+    prescription: swapped,
+    sets: done.length > 0 && toDo > 0 ? fresh.slice(0, toDo) : fresh,
+    ...(backToPlan ? {} : { swappedFrom: original }),
+  };
+  const kept: DraftExercise[] =
+    done.length > 0
+      ? [{ prescription: { ...target.prescription, id: context.newId() }, sets: done, orphan: true }]
+      : [];
+  let drafts = [...state.drafts.slice(0, index), ...kept, slot, ...state.drafts.slice(index + 1)];
+  if (context.targetsFor) {
+    drafts = prefillTargets(drafts, context.targetsFor, context.previousSetsForExercise);
+  }
+  const currentId = state.drafts[state.exerciseIndex]?.prescription.id;
+  const current = currentId ? drafts.findIndex((item) => item.prescription.id === currentId) : -1;
   return {
     ...state,
     edit: null,
     extra: null,
-    drafts:
-      context.targetsFor && !hadLogs
-        ? prefillTargets(drafts, context.targetsFor, context.previousSetsForExercise)
-        : drafts,
+    drafts,
+    exerciseIndex: current >= 0 ? current : state.exerciseIndex,
   };
+}
+
+function sameLift(left: ExercisePrescription, right: ExercisePrescription): boolean {
+  return left.name.trim().toLowerCase() === right.name.trim().toLowerCase();
+}
+
+/** A swap made today, for the receipt's Keep in plan. */
+export type SessionSwap = {
+  /** The plan slot (the prescription id). */
+  slotId: string;
+  from: ExercisePrescription;
+  to: ExercisePrescription;
+};
+
+/** Today's swaps that left logged sets on the new lift (one skipped entirely asks nothing). */
+export function sessionSwaps(drafts: readonly DraftExercise[]): SessionSwap[] {
+  return drafts.flatMap((item) =>
+    item.swappedFrom && !item.orphan && item.sets.some((set) => set.done)
+      ? [{ slotId: item.prescription.id, from: item.swappedFrom, to: item.prescription }]
+      : [],
+  );
 }
 
 /** Add lift: the new lift goes after the plan's lifts (before any orphans). Returns its index. */

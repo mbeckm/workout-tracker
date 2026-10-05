@@ -34,6 +34,11 @@ export type DraftExercise = {
    * because it has logged sets; never written back to the plan.
    */
   orphan?: boolean;
+  /**
+   * The plan's lift this slot held before a swap during the session. Swaps are today-only
+   * until the receipt's Keep in plan writes them; the plan still holds this lift.
+   */
+  swappedFrom?: ExercisePrescription;
 };
 
 export type RestWindow = {
@@ -137,6 +142,11 @@ export function restoreDrafts(
     saved.delete(prescription.id);
     if (match && sameExercise(match.prescription, prescription)) {
       restored.push({ prescription, sets: match.sets });
+      continue;
+    }
+    // Swapped today: the plan still holds the lift it replaced.
+    if (match?.swappedFrom && sameExercise(match.swappedFrom, prescription)) {
+      restored.push({ prescription: match.prescription, sets: match.sets, swappedFrom: prescription });
       continue;
     }
     if (match && match.sets.some((set) => set.done)) {
@@ -315,6 +325,7 @@ function normalizeDraftExercise(raw: unknown): DraftExercise | null {
   if (typeof prescription.id !== 'string' || typeof prescription.name !== 'string') {
     return null;
   }
+  const swappedFrom = isRecord(raw.swappedFrom) ? (raw.swappedFrom as ExercisePrescription) : null;
   const sets = raw.sets
     .map((set, index) => normalizeDraftSet(set, index))
     .filter((set): set is DraftSet => set != null);
@@ -322,21 +333,28 @@ function normalizeDraftExercise(raw: unknown): DraftExercise | null {
     return null;
   }
   return {
-    prescription: {
-      ...prescription,
-      bodyParts: Array.isArray(prescription.bodyParts) ? prescription.bodyParts : [],
-      targetMuscles: Array.isArray(prescription.targetMuscles) ? prescription.targetMuscles : [],
-      secondaryMuscles: Array.isArray(prescription.secondaryMuscles)
-        ? prescription.secondaryMuscles
-        : [],
-      equipments: Array.isArray(prescription.equipments) ? prescription.equipments : [],
-      imageURLs: {},
-      thumbnailURL: null,
-      imageURL: null,
-      videoURL: null,
-    },
+    prescription: normalizeDraftPrescription(prescription),
     sets,
     ...(raw.orphan === true ? { orphan: true } : {}),
+    ...(swappedFrom && typeof swappedFrom.id === 'string' && typeof swappedFrom.name === 'string'
+      ? { swappedFrom: normalizeDraftPrescription(swappedFrom) }
+      : {}),
+  };
+}
+
+function normalizeDraftPrescription(prescription: ExercisePrescription): ExercisePrescription {
+  return {
+    ...prescription,
+    bodyParts: Array.isArray(prescription.bodyParts) ? prescription.bodyParts : [],
+    targetMuscles: Array.isArray(prescription.targetMuscles) ? prescription.targetMuscles : [],
+    secondaryMuscles: Array.isArray(prescription.secondaryMuscles)
+      ? prescription.secondaryMuscles
+      : [],
+    equipments: Array.isArray(prescription.equipments) ? prescription.equipments : [],
+    imageURLs: {},
+    thumbnailURL: null,
+    imageURL: null,
+    videoURL: null,
   };
 }
 

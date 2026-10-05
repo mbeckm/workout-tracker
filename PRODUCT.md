@@ -77,11 +77,12 @@ The device is the one persistent screen: a metal body in the chosen finish (212 
 
 One lift, one set at a time, on the device:
 
-- The display shows the lift's name (tap it for the exercise sheet: figure, muscles, how-to, your numbers), `SET n/m` (or `EXTRA SET`), the weight on the drum and `×reps`, and `LAST 80×8` (Pro: `TARGET 87.5×8`).
+- The display shows the lift's name (tap it for the exercise sheet: figure, muscles, how-to, swap for an alternative, your numbers), `SET n/m` (or `EXTRA SET`), the weight on the drum and `×reps`, and `LAST 80×8` (Pro: `TARGET 87.5×8`).
 - The wheel sets the weight in the lift's load steps; a tap on the drum makes the step finer (`±2` → `±1` → `±0.5`), saved per lift, and a long press types a weight; the `+` and `−` keys set reps. The big key is Log.
 - The rocker's `‹ ›` move between lifts, and its lamps show each lift done, part-done or current. Its middle opens Today: jump to a lift, reorder, swap, add or remove a lift, or edit a logged set.
 - The top-right key is Undo last set: immediate, with an Undo toast.
 - After a set, rest runs as a ring on the display: the keys and the wheel add or take 15 s, the big key is Skip. At 0:00 the display blinks `GO` with a haptic and returns to the same next set; nothing else happens.
+- A swap is for today only. If the new lift got a set, the receipt asks whether the plan keeps it (Keep in plan / Just today).
 - After the last set, or End workout from the menu, the device is in finish mode: hold the big key until the ring closes. The receipt prints out of the device; Done returns to Home with the day stamped.
 - A session in progress survives leaving or killing the app, and shows as a Live Activity.
 
