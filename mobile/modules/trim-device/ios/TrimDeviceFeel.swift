@@ -124,10 +124,17 @@ final class TrimDeviceFeel: @unchecked Sendable {
   }
 
   private func startContinuousPattern(_ name: String) {
-    guard name == "holdFinish", let engine = ensureEngine() else { return }
+    guard let engine = ensureEngine() else { return }
+    let build: () throws -> CHHapticPattern
+    switch name {
+    case "holdFinish": build = Self.holdFinishPattern
+    case "assemblyCharge": build = Self.assemblyChargePattern
+    case "assemblyApproach": build = Self.assemblyApproachPattern
+    default: return
+    }
     try? continuousPlayer?.stop(atTime: CHHapticTimeImmediate)
     do {
-      let player = try engine.makeAdvancedPlayer(with: Self.holdFinishPattern())
+      let player = try engine.makeAdvancedPlayer(with: build())
       try player.start(atTime: CHHapticTimeImmediate)
       continuousPlayer = player
     } catch {
@@ -164,12 +171,12 @@ final class TrimDeviceFeel: @unchecked Sendable {
   /// SPEC §8, one entry per named pattern (keep in step with `HapticPattern` in index.ts).
   private static func buildPatterns() -> [String: CHHapticPattern] {
     let events: [String: [CHHapticEvent]] = [
-      "wheelNotch": [transient(0, 0.5, 0.9)],
-      "wheelNotchMajor": [transient(0, 0.8, 0.9)],
-      "key": [transient(0, 0.6, 0.5)],
-      "bigKeyPress": [transient(0, 0.9, 0.4)],
+      "wheelNotch": [transient(0, 0.7, 0.9)],
+      "wheelNotchMajor": [transient(0, 1.0, 0.9)],
+      "key": [transient(0, 0.85, 0.6)],
+      "bigKeyPress": [transient(0, 1.0, 0.45), transient(0.03, 0.5, 0.2)],
       "logSet": [transient(0, 1.0, 0.6), transient(0.04, 0.4, 0.3)],
-      "rockerMove": [transient(0, 0.7, 0.8)],
+      "rockerMove": [transient(0, 0.9, 0.8)],
       "restGo": [transient(0, 0.8, 0.5), transient(0.12, 0.8, 0.5), transient(0.24, 0.8, 0.5)],
       "finishComplete": [transient(0, 1.0, 0.3)],
       "receiptPrint": (0..<18).map { transient(Double($0) * 0.1, 0.25, 0.9) },
@@ -179,8 +186,33 @@ final class TrimDeviceFeel: @unchecked Sendable {
         transient(0.065, 1.0, 0.2),
         continuous(0.065, 0.3, 0.1, duration: 0.08),
       ],
-      "dayTick": [transient(0, 0.4, 0.7)],
-      "swatch": [transient(0, 0.5, 0.6)],
+      "dayTick": [transient(0, 0.6, 0.7)],
+      "swatch": [transient(0, 0.8, 0.6), transient(0.025, 0.35, 0.3)],
+      // A tap on the display (a day row, the drum): lighter and sharper than a key.
+      "displayTap": [transient(0, 0.45, 0.95)],
+      // A plan has loaded: three quick rising taps, then a firm landing (with the `ready` sound).
+      "planReady": [
+        transient(0, 0.55, 0.8),
+        transient(0.09, 0.7, 0.85),
+        transient(0.18, 1.0, 0.4),
+        continuous(0.18, 0.5, 0.2, duration: 0.12),
+      ],
+      // The wheel hits 2 or 6 days in onboarding: a dull, heavy end stop.
+      "wheelStop": [transient(0, 0.9, 0.1), transient(0.05, 0.35, 0.1)],
+      // First open: a part snaps onto the body (latch, then a softer seat).
+      "assemblySnap": [transient(0, 1.0, 0.9), transient(0.018, 0.6, 0.4)],
+      // First open: the body settles after floating in.
+      "assemblyArrive": [transient(0, 1.0, 0.25), transient(0.04, 0.5, 0.2)],
+      // First open: the Start key slams home. A hard hit, a short body of rumble, two aftershocks.
+      "assemblyBang": [
+        transient(0, 1.0, 0.2),
+        transient(0.01, 1.0, 1.0),
+        continuous(0, 1.0, 0.1, duration: 0.45),
+        transient(0.12, 0.7, 0.3),
+        transient(0.22, 0.5, 0.3),
+        transient(0.34, 0.35, 0.3),
+        transient(0.48, 0.2, 0.3),
+      ],
     ]
     var built: [String: CHHapticPattern] = [:]
     for (name, list) in events {
@@ -208,12 +240,73 @@ final class TrimDeviceFeel: @unchecked Sendable {
     )
   }
 
+  /// First open: the rumble while the Start key charges, .2 → 1.0 over 1.2 s, getting sharper,
+  /// with ticks that come faster and harder. It runs out right as the key slams (`assemblyBang`).
+  private static func assemblyChargePattern() throws -> CHHapticPattern {
+    let duration: TimeInterval = 1.2
+    var events = [continuous(0, 1.0, 0.2, duration: duration)]
+    var t: TimeInterval = 0
+    var step: TimeInterval = 0.14
+    while t < duration - 0.05 {
+      events.append(transient(t, Float(0.3 + 0.7 * t / duration), 0.7))
+      t += step
+      step = max(0.045, step * 0.86)
+    }
+    let intensity = CHHapticParameterCurve(
+      parameterID: .hapticIntensityControl,
+      controlPoints: [
+        CHHapticParameterCurve.ControlPoint(relativeTime: 0, value: 0.2),
+        CHHapticParameterCurve.ControlPoint(relativeTime: duration, value: 1.0),
+      ],
+      relativeTime: 0
+    )
+    let sharpness = CHHapticParameterCurve(
+      parameterID: .hapticSharpnessControl,
+      controlPoints: [
+        CHHapticParameterCurve.ControlPoint(relativeTime: 0, value: -0.2),
+        CHHapticParameterCurve.ControlPoint(relativeTime: duration, value: 0.5),
+      ],
+      relativeTime: 0
+    )
+    return try CHHapticPattern(events: events, parameterCurves: [intensity, sharpness])
+  }
+
+  /// First open: the body approaching out of the dark, a deep swell .05 → .7 over 1.5 s that
+  /// hands over to `assemblyArrive`.
+  private static func assemblyApproachPattern() throws -> CHHapticPattern {
+    let duration: TimeInterval = 1.5
+    let intensity = CHHapticParameterCurve(
+      parameterID: .hapticIntensityControl,
+      controlPoints: [
+        CHHapticParameterCurve.ControlPoint(relativeTime: 0, value: 0.05),
+        CHHapticParameterCurve.ControlPoint(relativeTime: duration, value: 0.7),
+      ],
+      relativeTime: 0
+    )
+    return try CHHapticPattern(
+      events: [continuous(0, 1.0, 0.05, duration: duration)],
+      parameterCurves: [intensity]
+    )
+  }
+
   // MARK: - Sounds
 
   /// `print` is 18 stepper ticks 100 ms apart (one `print-tick` file), in step with the feed.
-  private static let soundFiles = ["cartridge", "print-tick", "stamp", "key"]
-  /// The key click is meant to be barely there (SPEC §9); the WAV itself peaks at −3 dBFS.
-  private static let soundVolumes: [String: Float] = ["key": 0.3]
+  private static let soundFiles = [
+    "cartridge", "print-tick", "stamp", "key",
+    // First open (D74).
+    "arrive", "charge", "bang", "boot",
+    // Keys, wheel, rocker, swatches (feel pass).
+    "press", "rocker", "notch", "swatch", "blip", "ready",
+    "snap-1", "snap-2", "snap-3", "snap-4", "snap-5", "snap-6", "snap-7",
+  ]
+  /// The key click is meant to be barely there (SPEC §9); every WAV itself peaks at −3 dBFS.
+  /// First open: the bang is the loudest thing in the scene, everything before it builds to it.
+  private static let soundVolumes: [String: Float] = [
+    "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6, "blip": 0.3, "ready": 0.75,
+    "arrive": 0.6, "charge": 0.65, "boot": 0.45,
+    "snap-1": 0.5, "snap-2": 0.5, "snap-3": 0.5, "snap-4": 0.5, "snap-5": 0.5, "snap-6": 0.5, "snap-7": 0.5,
+  ]
 
   private func prepareAudio() {
     // Ambient: mixes with the user's music and is silenced by the silent switch (D14).

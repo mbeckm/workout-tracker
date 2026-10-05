@@ -108,6 +108,10 @@ export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
 /** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
 export const EASE_WEEK_DROP_FN = Easing.bezierFn(0.3, 1.3, 0.5, 1);
 export const LINEAR_FN = Easing.linear;
+/** First open (D74): the body floats in and just overshoots; parts accelerate into their hit; the Start key slams. */
+export const EASE_ARRIVE_FN = Easing.bezierFn(0.2, 0.9, 0.25, 1.04);
+export const EASE_HIT_FN = Easing.bezierFn(0.55, 0, 1, 0.6);
+export const EASE_SLAM_FN = Easing.bezierFn(0.8, 0, 1, 0.5);
 
 export const DEVICE = {
   /** Key press-in and release: translateY 3 (round), 6 (big key); the lip collapses. */
@@ -169,21 +173,21 @@ export const DEVICE = {
   NEEDLE: 1400,
   GOAL_RING: 1000,
   CHART: 1000,
-  /** Plan insert (SPEC §7 table). */
+  /** Plan insert (SPEC §7 table, stretched in the feel pass: more anticipation, a longer swing; seat at 2400, end 4100). */
   INSERT_SCENE: 600,
-  INSERT_PULL: 750,
-  INSERT_CART_IN: 420,
-  INSERT_SLIDE: 430,
+  INSERT_PULL: 1000,
+  INSERT_CART_IN: 500,
+  INSERT_SLIDE: 600,
   INSERT_CLICK: 300,
-  INSERT_DIP: 420,
-  INSERT_GLOW: 600,
-  INSERT_PULSE: 700,
-  INSERT_BOOT: 450,
-  INSERT_SWING: 700,
-  INSERT_DAY_TICK: 190,
+  INSERT_DIP: 520,
+  INSERT_GLOW: 900,
+  INSERT_PULSE: 1000,
+  INSERT_BOOT: 600,
+  INSERT_SWING: 900,
+  INSERT_DAY_TICK: 240,
   /** Pauses in the insert (prototype `activate()`): before the slide, between the click and the swing. */
-  INSERT_HOLD: 180,
-  INSERT_SWING_DELAY: 520,
+  INSERT_HOLD: 300,
+  INSERT_SWING_DELAY: 800,
   /** The ticks start this long after face-on; Home comes this long after the last one. */
   INSERT_TICK_START: 120,
   INSERT_HOME_DELAY: 450,
@@ -222,6 +226,56 @@ export const DEVICE = {
   KNOB_LAMP_STAGGER: 90,
   /** The exercise figure's demonstration loop (prototype `lift` / `sweep`, 2.4 s ease-in-out). */
   FIGURE_LOOP: 2400,
+} as const;
+
+/**
+ * First open (D74): the machine is born. One clock from 0 to `END`; every part reads its place
+ * from it. Shown once per install, so it takes its time (exempt from the 4 s moment budget,
+ * feel pass): a slow approach out of space, the parts landing faster and faster, a long charge
+ * with the camera pushing in, then the bang. Haptics and sounds play at the same times
+ * (trim-ui §8 rule 3). About 6.5 s to Continue; a tap skips.
+ */
+export const ASSEMBLY = {
+  /** The body approaches out of the dark, tumbling; its outline flashes as it lands. */
+  ARRIVE: 1600,
+  TRACE_AT: 1560,
+  TRACE: 600,
+  /** When each part lands; each flies for `FLY` before. */
+  DISPLAY_AT: 2000,
+  MENU_AT: 2420,
+  HISTORY_AT: 2760,
+  ROCKER_AT: 3040,
+  PLUS_AT: 3260,
+  MINUS_AT: 3440,
+  WHEEL_AT: 3590,
+  FLY: 200,
+  /** Spark at each landing; the body's recoil. */
+  SPARK: 360,
+  KICK: 70,
+  /** The well fades in, then the Start key hovers, trembles and slams while the camera pushes in. */
+  WELL_AT: 3640,
+  WELL: 220,
+  CHARGE_AT: 3660,
+  BANG: 4900,
+  /** The share of the charge that's hover; the rest is the slam. */
+  HOVER_SHARE: 0.8,
+  SHAKE: 700,
+  RING: 900,
+  /** The second shockwave follows the first. */
+  RING_2_DELAY: 140,
+  BURST: 650,
+  /** The grid floor lights at the bang. */
+  GRID: 500,
+  /** The display boots: a scan line, then SLOT EMPTY flickers on. */
+  SCAN_AT: 5000,
+  SCAN: 380,
+  BOOT_AT: 5060,
+  BOOT: 600,
+  /** The words, then Continue. */
+  WORDS_AT: 5600,
+  ACTION_AT: 6300,
+  /** The scene is over: everything goes static. */
+  END: 6500,
 } as const;
 
 /** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */

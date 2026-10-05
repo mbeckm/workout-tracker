@@ -30,8 +30,8 @@ Trim is one persistent metal device with a dot-matrix display, keys, a rocker an
 `design/gadget/` (PLAN, SPEC, the prototype, screens, frames and boards) is history: how the device was specified. When it disagrees with the code or `trim-ui`, they win. The pre-gadget app is at git tag `archive/pre-gadget`.
 
 - **Obsolete for UI:** Paper and the old screenshots of the tabbed app describe the old interface.
-- **Branches:** until `gadget/main` is merged into `main`, gadget work lives there, one branch per task (`gadget/<slug>`) with a PR into `gadget/main`.
-- **Shipping to Marvin's phone:** until that merge, gadget JS goes only to the EAS channel `gadget`, built with the `testflight-gadget` profile: `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"`, and `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit` for native changes. Never publish gadget JS to `preview` or `production`.
+- **Branches:** the gadget is the only app now. `main` is the trunk: one branch per task with a PR into `main`. Unmerged pre-gadget branches and worktrees are preserved in tag `archive/pre-cleanup-2026-10-04` (one commit whose parents are every archived tip; its message lists name → sha, restore with `git branch <name> <sha>`).
+- **Shipping to Marvin's phone:** his phone runs a `testflight-gadget` build, which listens on the EAS channel `gadget`: `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"`, and `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit` for native changes. `preview` serves only old pre-gadget binaries; never publish to it or to `production`.
 - **Self-check:** `npm run check`, then the web smoke test: `node scripts/web-smoke.mjs /tmp/trim-web / "/?sheet=plans" "/?sheet=progress" "/?sheet=history" "/?sheet=settings" /paywall` (Settings and the rest are sheets, opened by `?sheet=`).
 
 ## Design first, in Claude Design
@@ -101,11 +101,11 @@ Cloud sessions (claude.ai/code) can't run the iOS Simulator. Marvin tests on his
 
 - **Setup:** `npm ci` in `mobile/`. The environment needs `EXPO_TOKEN` and network access to `expo.dev` / `api.expo.dev` / `u.expo.dev`.
 - **Self-check:** `npm run check`, then a web smoke test: `npx expo export --platform web --output-dir /tmp/trim-web && node scripts/web-smoke.mjs /tmp/trim-web /` (add `"/?sheet=settings"` and the other sheets, see *The device*). It catches crashes and broken flows; native fonts, shadows, haptics and the SceneKit insert don't render faithfully on web, so it says nothing about look and feel.
-- **Ship to Marvin's phone:** `npx eas-cli update --channel preview --platform ios --environment production --message "<what changed>"` (gadget work uses the `gadget` channel instead; see *The device*). Marvin closes and reopens Trim (the update downloads on launch and applies on the next launch, so sometimes twice).
-- **Native changes** (new native module, `app.json` plugins, icon, splash, Expo SDK) change the runtime fingerprint, and old builds ignore the update. Build a new preview binary: `npx eas-cli build --platform ios --profile testflight-preview --auto-submit`.
+- **Ship to Marvin's phone:** `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"` (see *The device*). Marvin closes and reopens Trim (the update downloads on launch and applies on the next launch, so sometimes twice).
+- **Native changes** (new native module, `app.json` plugins, icon, splash, Expo SDK) change the runtime fingerprint, and old builds ignore the update. Build a new binary: `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit`.
 - **Agent QA on a real iOS Simulator** (optional, paid, limited access): EAS Simulator runs one on Expo's servers; see `.agents/skills/eas-simulator/SKILL.md`. Check `simulator:availability` first, and always stop the session.
-- **Channels:** `testflight-preview` builds listen on `preview`; `production` builds (App Store) listen on `production`. Never publish to `production` unless Marvin asks for a hotfix.
-- **Env vars:** `EXPO_PUBLIC_REVENUECAT_API_KEY` and `EXPO_PUBLIC_POSTHOG_KEY` live in the EAS `production` environment (also `development`; `preview` is empty). Both build profiles pin `"environment": "production"`, and every `eas update` passes `--environment production`, or the update ships without purchases and analytics.
+- **Channels:** `testflight-gadget` builds listen on `gadget`; old `testflight-preview` builds listen on `preview`; `production` builds (App Store) listen on `production`. Never publish to `production` unless Marvin asks for a hotfix.
+- **Env vars:** `EXPO_PUBLIC_REVENUECAT_API_KEY` and `EXPO_PUBLIC_POSTHOG_KEY` live in the EAS `production` environment (also `development`; `preview` is empty). The store build profiles (`production` and the `testflight-*` ones that extend it) pin `"environment": "production"`, and every `eas update` passes `--environment production`, or the update ships without purchases and analytics.
 
 ## Exercise catalog
 
@@ -155,7 +155,7 @@ Read this before your first command. Each item cost real time once.
 - **RevenueCat:** project "Scratch" (`5a59d39e`), app `app80da402380`.
 - **PostHog:** EU cloud, project `285218`. Product analytics only; session replay and web analytics off; client IP discarded.
 - **Vercel:** `legal/` deploys to team `mbeckms-projects`, project `scratch-legal`. The Vercel MCP connector has no access to that team; use the CLI (`cd legal && vercel deploy --prod --yes`, needs `vercel login`).
-- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo". Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
+- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo" (the Start key icon and the other directions are on its *Gadget identity* page, decision 75). Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
 
 ### Steps only Marvin can do
 - Apple ID sign-in and two-factor codes, `sudo` commands, creating accounts (sandbox testers), and `vercel login`.

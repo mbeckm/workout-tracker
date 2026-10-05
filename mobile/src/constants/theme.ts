@@ -412,6 +412,8 @@ export const fontFamily = {
   rounded: Platform.OS === 'web' ? 'ui-rounded, "SF Pro Rounded", system-ui, sans-serif' : 'ui-rounded',
   receipt: 'IBMPlexMono-Medium',
   receiptBold: 'IBMPlexMono-Bold',
+  // iOS resolves `ui-monospace` to SF Mono (the onboarding wheel's number, D74).
+  mono: Platform.OS === 'web' ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'ui-monospace',
 } as const;
 
 const lcdRole = (fontSize: number, lineHeight = fontSize) => ({
@@ -582,6 +584,12 @@ export const sheetGeometry = {
   swatchTilt: -4,
   swatchLift: 4,
   swatchRing: 3,
+  /**
+   * Transparent room around a swatch that's drawn as one bitmap: a rotated layer's edges alias
+   * on iOS, a rotated bitmap with clear pixels around it is smoothed (feel pass). Holds the ring
+   * and its drop shadow.
+   */
+  swatchEdgePad: 28,
   finishCard: 200,
   /** The menu's mini device sits 22 under the finish card's top (prototype menu). */
   miniDeviceTop: 22,
@@ -1434,6 +1442,8 @@ export const onboardingType = {
   choiceResidue: { ...roundedRole(28, 32, weight.heavy, -0.5), color: sheetColors.sectionLabel },
   /** The name field (no line height: a TextInput). */
   field: { fontFamily: fontFamily.rounded, fontSize: 22, fontWeight: weight.bold, color: sheetColors.ink },
+  /** Days a week (D74): the wheel's number in SF Mono heavy, the steps around it dim. */
+  wheelNumber: { fontFamily: fontFamily.mono, fontSize: 168, lineHeight: 176, fontWeight: weight.heavy, color: sheetColors.ink },
   /** The `PRO` mark on a locked swatch. */
   lock: lcdRole(10, 12),
   /** The paywall: the headline, a plan card's price and sub, feature rows, small print. */
@@ -1496,6 +1506,31 @@ export const onboardingGeometry = {
   choiceResidueDrop: 5,
   /** Welcome's device object, at most this share of the screen's height. */
   welcomeDeviceShare: 0.5,
+  /**
+   * Days a week (D74): a tall wheel in a metal bezel on the right, the number drum on the left.
+   * One day per `daysStep` of travel; past 2 or 6 the wheel gives at `daysBand` of the finger.
+   */
+  daysWheelWidth: 104,
+  daysWheelMaxHeight: 500,
+  daysWheelBezel: 10,
+  daysWheelRadius: 38,
+  daysStep: 46,
+  daysBand: 0.3,
+  /** The rubber band never gives more than this (days), so the end number stays in view. */
+  daysBandMax: 0.45,
+  /** How far the release velocity throws the wheel (seconds of travel) before it settles. */
+  daysThrow: 0.09,
+  /** The drum: one row per day, the steps around the current one smaller and dimmer. */
+  daysRow: 132,
+  daysStepScale: 0.5,
+  daysStepFade: 0.62,
+  /** The amber notch between the drum and the wheel. */
+  daysNotch: 10,
+  /** The wheel's end stop fires this far past 2 or 6 (days). */
+  daysStopAt: 0.12,
+  /** The tall wheel's ridges (the device wheel's are 5 and 2). */
+  daysRidgeLight: 7,
+  daysRidgeDark: 4,
   /** Pick your finish: the device object takes what's left above the swatches. */
   finishDeviceShare: 0.56,
   /** The lock mark on a locked swatch (top right, 12 in). */
@@ -1518,6 +1553,114 @@ export const deviceObject = {
   shadowBlur: 48,
   /** Welcome: the object fades in and rises this far. */
   rise: 16,
+} as const;
+
+/** Days a week (D74): the tall wheel's cylinder shading, dark at both ends with a glint in the middle. */
+export const daysWheelColors = {
+  shade: '#000000',
+  shadeOpacity: 0.55,
+  glint: '#FFFFFF',
+  glintOpacity: 0.14,
+} as const;
+
+/** First open (D74): the machine assembles itself in space. */
+export const assemblyColors = {
+  /** Space, darker than the moments' grid ground; the grid only appears at the bang. */
+  ground: '#050505',
+  star: '#FFFFFF',
+  starWarm: '#FFDCBE',
+  starOpacity: 0.55,
+  starLargeOpacity: 0.3,
+  haze: '#FF7832',
+  hazeOpacity: 0.12,
+  hazeCool: '#7890FF',
+  hazeCoolOpacity: 0.07,
+  /** The light behind the body, so its edges glow. */
+  rim: '#FFECD2',
+  rimOuter: '#FF8C3C',
+  rimOpacity: 0.5,
+  /** Amber: the outline flash, the sparks, the charge, the burst and the ring. */
+  amber: lcd.amber,
+  spark: '#FFDCB4',
+  ring: 'rgba(255,106,26,0.55)',
+} as const;
+
+/** First open (D74): distances, scales and sizes, in the device object's 390 frame unless noted. */
+export const assemblyGeometry = {
+  /** The stars: two seeded layers drifting up at different speeds (screen points). */
+  starCount: 70,
+  starLargeCount: 18,
+  starSize: 2,
+  starLargeSize: 5,
+  starDrift: 300,
+  starLargeDrift: 640,
+  /** The camera's distance for the body's tilt (perspective). */
+  perspective: 900,
+  /** The body floats in from deep space: small, tilted and turned; visible after this share of it. */
+  arriveFade: 0.15,
+  arriveScale: 0.06,
+  arriveTilt: 48,
+  arriveTurn: -28,
+  arriveY: -120,
+  /** Parts fly in from off the body: the display and the rocker from above, the rest from the sides. */
+  fromTop: -820,
+  fromSide: 440,
+  fromSpin: 25,
+  /** The whole body recoils this much on every hit. */
+  kick: 1.045,
+  /** The camera pushes in while the Start key charges, and snaps back at the bang. */
+  pushIn: 1.08,
+  /** The outline flash once the body has landed: up over this share, then down. */
+  traceWidth: 2,
+  traceGlow: 26,
+  traceUp: 0.1,
+  /** The light behind the body: its size against the body, while floating in, and at rest. */
+  rimOverhang: 1.35,
+  rimArrive: 0.7,
+  rimRest: 0.2,
+  /** A spark where each part lands. */
+  spark: 90,
+  sparkGrow: 1.6,
+  /** The Start key hovers huge and trembles (degrees, alternating) before it slams; it fades in over `keyFade` of the hover. */
+  keyFade: 0.12,
+  keyHover: 2.7,
+  keyHold: 2.2,
+  keyLast: 2.06,
+  tremble: [-1.5, 1.5, -2, 2.5, -3, 3.5, -4, 4.5, -5, 5.5] as readonly number[],
+  /** The glow building behind the Start key. */
+  chargeGlow: 200,
+  chargeFrom: 0.6,
+  chargePeak: 1.5,
+  chargeGrow: 2.6,
+  /** The glow's flash fades this long after the bang (ms). */
+  chargeOut: 180,
+  /** The display boots like the plan insert's: off, on, flicker, on (opacity steps over the boot). */
+  bootSteps: [
+    [0, 0],
+    [0.2, 1],
+    [0.35, 0.1],
+    [0.5, 1],
+    [0.65, 0.3],
+    [0.8, 1],
+  ] as readonly (readonly [number, number])[],
+  scanOpacity: 0.45,
+  burstOpacity: 0.55,
+  /** The bang (screen points): the shake, the shockwave ring, the scan line on the display. */
+  shake: [
+    [-16, 12],
+    [14, -11],
+    [-11, 9],
+    [9, -7],
+    [-6, 5],
+    [4, -3],
+    [-2, 2],
+    [1, -1],
+  ] as readonly (readonly [number, number])[],
+  ring: 300,
+  ringFrom: 0.7,
+  ringTo: 3.2,
+  ringWidth: 2,
+  scan: 30,
 } as const;
 
 /** The paywall (N9, D13). */

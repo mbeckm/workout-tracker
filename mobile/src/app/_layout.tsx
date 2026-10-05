@@ -7,6 +7,7 @@ import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { useDeviceSoundsSetting } from '@/device/haptics';
 import { KeyboardProvider } from '@/keyboard';
 
 import { gadgetType, sheetColors, signal, space } from '@/constants/theme';
@@ -154,6 +155,9 @@ function RootNav() {
     }
   }, [hasCompletedOnboarding, isHydrated, open]);
 
+  // Every key's click follows Settings → Sounds.
+  useDeviceSoundsSetting();
+
   // Live Activity taps open scratchworkout://…/log?planId&dayId&exerciseId. `+native-intent`
   // keeps the router on the device; here the same URL puts the device in log mode.
   useEffect(() => {
@@ -189,7 +193,8 @@ function RootNav() {
   return (
     <Stack screenOptions={{ animation: reduceMotion ? 'fade' : 'default' }}>
       {/* The device (PLAN §4.1): the app's one home. Sheets live inside it. */}
-      <Stack.Screen name="index" options={{ headerShown: false, title: 'Trim' }} />
+      {/* Onboarding hands over with a fade into the dark of the insert, never a slide past Home. */}
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Trim', animation: 'fade' }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
       <Stack.Screen
         name="paywall"

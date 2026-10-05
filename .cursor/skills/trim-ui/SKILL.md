@@ -120,13 +120,14 @@ A surface with "none" has no pill. Rows are the actions.
 
 ## 3. Typography
 
-Three families, each with one job:
+Three families, each with one job, plus SF Mono for one number:
 
 | Family | `fontFamily` | Job |
 | --- | --- | --- |
 | **Doto Black** (dot matrix) | `'Doto-Black'` | Everything on the display, sheet section labels, cartridge labels, the editor's sets × reps chips, chart labels on lcd panels, finish numbers |
 | **SF Rounded** (system) | `'ui-rounded'` (or the `roundedFontName()` PostScript names from `TrimDevice` if RN doesn't resolve it; PLAN §4.6) | Key labels, engraved labels, all sheet text |
 | **IBM Plex Mono** Medium / Bold | `'IBMPlexMono-Medium'`, `'IBMPlexMono-Bold'` | Receipts only |
+| **SF Mono** heavy (system) | `'ui-monospace'` (`fontFamily.mono`) | The days drum in onboarding only (`onboardingType.wheelNumber`, D74): a machined number that never shifts as the drum turns |
 
 Never bundle SF font files. Doto and Plex Mono are registered through the `expo-font` plugin (and `useFonts` on web).
 
@@ -347,6 +348,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | **Every set** | Key presses, wheel notches, the drum, the rocker, Log, rest ticking | 80–220 ms, or none. No waits, no flourish. |
 | **Every workout** | Sheets, hold to finish, the receipt, a stamp, filing | Standard: the SPEC timings below. Skippable where longer than a tap. |
 | **Rare** | Plan activation (the insert), the finished week, onboarding, the paywall knob, a purchase | The delight budget: up to 4 s, sound allowed, always skippable. |
+| **Once** | First open (D74) | Shown once per install, so it takes its time: about 6.5 s, an epic, immersive scene with the strongest haptics in the app. Always skippable with a tap. |
 
 ### Motion table (SPEC §7; durations in `DEVICE`, `motion.ts`)
 
@@ -368,10 +370,12 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Goal ring | fills from 0 over 1 s | |
 | Chart line | draws in over 1 s | |
 | Needle (progress gauge) | −70° to its value over 1.4 s, bezier(.2,.8,.3,1) | Not shipped while there's no rank data (D4) |
+| First open (D74) | One clock, 0 → 6500 ms (`ASSEMBLY`, `motion.ts`). 0–1600 the body approaches out of space (scale .06 → 1, tilted 48°, turned −28°, bezier(.2,.9,.25,1.04)) under a deep haptic swell; it lands with a thump and its outline flashes amber. Parts land at 2000 (display, from above), 2420 (menu, left), 2760 (history, right), 3040 (rocker, above), 3260 (+), 3440 (−), 3590 (wheel, right), each flying 200 ms, bezier(.55,0,1,.6), with a spark, a click a step higher, and a 4.5 % recoil of the stage. 3660–4900 the Start key hovers at 2.7× and trembles harder and harder (±1.5° → ±5.5°) while a glow and a stuttering rumble build and the camera pushes in to 1.08×; it slams in the last 20 % (bezier(.8,0,1,.5)). **At 4900, the bang:** the push snaps back, a double shockwave, a long shake, an amber burst, and the grid floor lights over space. 5000 a scan line, 5060 the display boots, 5600 the words, 6300 Continue | A tap anywhere skips to the end. Reduce Motion: the device fades in whole; the bang's haptic and sound stay |
+| Days wheel (onboarding, D74) | A tall wheel and a drum of numbers ride the finger 1:1, one day per 46 pt; a flick carries on (velocity × 0.09 s) and settles with `SPRING.fling`; past 2 or 6 it gives like a rubber band (30 % of the finger at first, never more than half a day) | Each day passed clicks, while dragging and while settling |
 
 ### Plan activation (the insert, SPEC §7)
 
-The sheet closes; the scene fades in over 600 ms (dark radial backdrop, a perspective grid floor of 44 pt cells, a vignette); the display shows `SLOT EMPTY` and a blinking `INSERT PLAN`. 0–750 ms the device pulls back and turns (about 44 pt thick). 750–1170 ms the cartridge appears above the top edge. 1350–1780 ms it slides in. **At 1780 ms, the click:** overshoot and settle, the device dips and rebounds, an orange glow along the slot, a pulse ring, the lamps flick across, the display powers on to `LOADED` and the plan name, haptic `cartridgeClick` and sound `cartridge` on that frame. 2300–3000 ms the device swings back and the scene fades. From 3000 ms the days tick onto the display 190 ms apart (a tick haptic each), the lamps light, Home renders with the toast "<Plan> is your plan". SPEC §7 has the exact table; `frames/a–g` is the visual target.
+The sheet closes; the scene fades in over 600 ms (dark radial backdrop, a perspective grid floor of 44 pt cells, a vignette); the display shows `SLOT EMPTY` and a blinking `INSERT PLAN`. 0–1000 ms the device pulls back and turns (about 44 pt thick). 1000–1500 ms the cartridge appears above the top edge. After a 300 ms hold, 1800–2400 ms it slides in. **At 2400 ms, the click:** overshoot and settle, the device dips and rebounds, an orange glow along the slot, a pulse ring, the lamps flick across, the display powers on to `LOADED` and the plan name, haptic `cartridgeClick` and sound `cartridge` on that frame. 3200–4100 ms the device swings back and the scene fades. From 4100 ms the days tick onto the display 240 ms apart (a tick haptic each), the lamps light, Home renders with the `ready` chime and haptic and the toast "<Plan> is your plan". From onboarding the device fades in under a dark curtain that holds until the native scene is fully in, so Home never flashes. The feel pass stretched it (more anticipation, a longer glow and swing); SPEC §7 has the original table; `frames/a–g` is the visual target.
 
 Who plays it (`device/insert/use-insert.ts`): the SceneKit view (`CartridgeInsert`) when the build has it; the JS 2.5D version (`device/insert/insert-scene.tsx`, one clock in `timeline.ts`) on web, in older builds, or when the native view hasn't drawn within 1.5 s; nobody under Reduce Motion (straight to `LOADED`, haptic and sound kept). Either way the JS device takes over face-on for the ticks. In the JS version depth is faked in the face's plane (22 layers shifted where a point that deep would land), and anything flat that shares the screen with the turned device sits far behind it (a `matrix` z of −2000): Core Animation depth-sorts 3D layers against flat siblings, so a backdrop at z 0 cuts away the half of the device that leans back. A tap in the first 380 ms (the second tap of a double tap on Use plan) doesn't skip. Dev: `/?insert=js|native|auto&pause=<ms>&speed=<x>`, `/dev-insert?fallback=1`.
 
@@ -382,7 +386,7 @@ Who plays it (`device/insert/use-insert.ts`): the SceneKit view (`CartridgeInser
 3. **Haptic, sound and visual on the same frame,** at the causal moment (the notch catches, the set lands, the cartridge seats), never when an animation finishes.
 4. **The device never navigates.** Modes change in place (the display's fade and rise). One sheet at a time; ‹ swaps the sheet's content in place and doesn't stack. No page transitions.
 5. **No idle motion.** Nothing loops while the user isn't doing anything, with two exceptions that are information: blinking text for a state waiting on the user (`INSERT PLAN`, `GO` for `REST_GO_MS`), and the exercise figure, which demonstrates the movement while its sheet is open.
-6. **Coming back is instant.** No launch or foreground animation. A moment interrupted by backgrounding jumps to its end state on return; the device is never stuck in `loading`.
+6. **Coming back is instant.** No launch or foreground animation (first open is onboarding, not a launch: it plays once, D74). A moment interrupted by backgrounding jumps to its end state on return; the device is never stuck in `loading`.
 7. **Reduced motion** (SPEC §7): movement becomes fades. The receipt shows without the feed, the insert is skipped (straight to the loaded state), the figure stands still. Haptics and sounds stay.
 8. **React holds every resting state.** Reanimated 4 hands a worklet style's values to React only once they've held still for 1 s, and drops them if the JS thread is busy in the next second. A dropped hand-over comes back on the next commit: the wheel on Home, no wheel in the log, the whole device invisible after a plan activation (all seen with a 2.6 s stall). So a part with more than one resting state (stowed, hidden) gets it from React: a Reanimated CSS transition or a plain style, never a worklet style. A worklet style may only hold still at its one resting value; a hold anywhere else keeps moving (a held key drifts imperceptibly, `press.ts`), or the part unmounts when it ends (the insert scene, the week moment).
 
@@ -392,35 +396,54 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 
 | Event | Pattern | Fallback |
 | --- | --- | --- |
-| Wheel notch (weight, time, reps) | transient, intensity .5, sharpness .9; every 5th notch or whole 10 kg: intensity .8 | `selectionAsync` |
-| Key press (any key) | transient .6 / .5 | `impactAsync(Light)` |
+| Wheel notch (weight, time, reps) | transient, intensity .7, sharpness .9; every 5th notch or whole 10 kg: intensity 1.0; with the `notch` click | `selectionAsync` |
+| Key press (any key) | transient .85 / .6, with the `key` click | `impactAsync(Light)` |
+| A tap on the display (a day row, the drum) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
+| A plan has loaded (the days have ticked in, Home takes over) | transients .55, .7 and 1.0, 90 ms apart, then .5 / .2 for 120 ms; with the `ready` chime | `notificationAsync(Success)` |
 | Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
-| Big key press-in | transient .9 / .4 | `impactAsync(Medium)` |
+| Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
-| Rocker move | transient .7 / .8 | `impactAsync(Light)` |
+| Rocker move | transient .9 / .8, with the `rocker` tick | `impactAsync(Light)` |
 | Rest reaches 0:00 | 3 transients .8 / .5, 120 ms apart | `notificationAsync(Success)` |
 | Hold to finish | continuous, intensity .2 → .9 over 1.1 s, sharpness .3; release cancels | `impactAsync(Soft)` at the start, a heavy impact at the end |
 | Finish complete | transient 1.0 / .3 | `notificationAsync(Success)` |
 | Receipt printing | 18 transients .25 / .9, 100 ms apart (the feed's steps) | none |
 | Stamp lands; the week report lands on the spike | transient .9 / .2 | `impactAsync(Heavy)` |
 | Cartridge click | t0 transient 1.0 / 1.0 (latch), t65 transient 1.0 / .2 (seat), then continuous .3 / .1 for 80 ms | `impactAsync(Rigid)`, then `impactAsync(Heavy)` 65 ms later |
-| Day ticks in (loading) | transient .4 / .7 | `selectionAsync` |
-| Finish swatch picked | transient .5 / .6 | `selectionAsync` |
+| Day ticks in (loading) | transient .6 / .7, with the `notch` click | `selectionAsync` |
+| Finish swatch picked | transient .8 / .6, then 25 ms later .35 / .3; with the `swatch` clack | `selectionAsync` |
 | A cartridge files onto its shelf (one per cartridge, where its drop lands) | `key` | `impactAsync(Light)` |
+| Onboarding days wheel: each day passed; 6 days | the wheel notch; at 6 the major notch | `selectionAsync` |
+| Onboarding days wheel: past 2 or 6 (`wheelStop`) | transient .9 / .1, then 50 ms later .35 / .1 | `impactAsync(Heavy)` |
+| First open: the body approaches (`assemblyApproach`), then lands (`assemblyArrive`) | continuous .05 → .7 over 1.5 s; then transients 1.0 / .25 and .5 / .2 at 40 ms | `impactAsync(Soft)` on landing |
+| First open: a part snaps on (`assemblySnap`) | transient 1.0 / .9, then 18 ms later .6 / .4 | `impactAsync(Rigid)` |
+| First open: the Start key charges (`assemblyCharge`) | continuous .2 → 1.0 over 1.2 s, sharpness rising, with ticks that come faster and harder; runs out at the bang | none |
+| First open: the bang (`assemblyBang`) | transients 1.0 / .2 and 1.0 / 1.0, continuous 1.0 / .1 for 450 ms, aftershocks .7, .5, .35, .2 at 120, 220, 340, 480 ms | `impactAsync(Heavy)`, then `impactAsync(Medium)` 110 ms later |
 | Sheet open / close | none | |
 
 A haptic confirms something the body did. Nothing else buzzes: no haptic on navigation, errors or sheets.
 
 ### Sounds (SPEC §9)
 
-Short, dry, mechanical, never musical. Each under 1 s, 44.1 kHz mono, peak −3 dBFS, rendered by `mobile/scripts/render-sounds.mjs`. Played through `TrimDevice.playSound` on the ambient session: mixed with music, off when the silent switch is on, and off when Settings → Sounds is off (on by default, D14).
+Short, dry, mechanical, never musical (first open is the exception: its build climbs and swells). Each under 1 s (first open's approach and charge run longer), 44.1 kHz mono, peak −3 dBFS, rendered by `mobile/scripts/render-sounds.mjs`. Played through `TrimDevice.playSound` on the ambient session: mixed with music, off when the silent switch is on, and off when Settings → Sounds is off (on by default, D14).
 
 | Sound | Character | When |
 | --- | --- | --- |
 | `cartridge` | a latch "clack" plus a thump, then at 65 ms a "thunk" plus a lower thump | The cartridge seats |
 | `print` | stepper chatter, 18 short ticks | The receipt prints |
 | `stamp` | a soft low thud | A PR or done stamp lands; the week report lands on the spike |
-| `key` (optional) | a very quiet click | Key presses; off by default, decided in QA |
+| `key` | a short click | Every key press (round keys, tall keys) |
+| `press` | a heavy mechanical clunk | The big key pressed |
+| `rocker` | a short tick with a little body | The rocker tilts |
+| `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
+| `swatch` | a metal tile set down | A finish picked |
+| `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
+| `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
+| `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
+| `snap-1` … `snap-7` | a metal latch, each a whole step higher than the last | First open: each part snaps on. The one place a sound climbs in pitch: the build gathers energy (D74) |
+| `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
+| `bang` | a heavy low thud, a sharp metal hit and a short ring | First open: the Start key slams home |
+| `boot` | two tiny electronic blips | First open: the display boots |
 
 No other sounds.
 
@@ -450,7 +473,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 | Empty-state fact | `No lifts yet`, `NO WORKOUTS YET` (on the blank receipt) |
 | Error: what happened, and what to do, in one line | `Couldn't load prices. Try again.` |
 | Legal | Auto-renewal terms on the paywall |
-| Headline, onboarding and paywall only | `A plan. Then the gym.` |
+| What Trim is, under the wordmark on Welcome only (D74) | `A workout machine.` |
 
 ### Banned
 
@@ -603,7 +626,7 @@ We study the highest-converting apps and use their principles, never their dark 
 
 | Moment | What happens |
 | --- | --- |
-| **First open** | Welcome on the dark grid; the device fades in. |
+| **First open** (D74) | The machine is born: it floats in out of space, its parts snap on on a quickening beat, the Start key hovers and trembles while it charges, then slams home with a bang, and the grid floor lights. From that moment it's yours. About 6.5 s to Continue (shown once, so it takes its time); a tap skips it. |
 | **Plan ready** (onboarding and every activation) | The cartridge insert (§8): the click, the display boots, the days tick in, the lamps light. The plan the user picked is the reward. |
 | **A workout finished** | Hold to finish, then the receipt prints out of the slot with the print haptic and sound. On Home the day stamps in and its lamp flickers green. |
 | **A new personal record** | The PR line on the receipt (`BENCH PR ★`), and the PR stamp on Home's row. |
@@ -771,7 +794,7 @@ A dark sheet reached from the menu's last row, built like the menu and editor: c
 
 ### Onboarding (D12)
 
-Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome: the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) fades in and rises 16 over the grid with its slot empty (`SLOT EMPTY`, blinking `INSERT PLAN`), then `Trim` and the lede. Days: the week rocker above the numbers lights one lamp per day. Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the four swatches in a 2 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
+Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the four swatches in a 2 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
 
 ### Paywall (D13)
 

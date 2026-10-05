@@ -89,6 +89,59 @@ function thump(voice, at, from, to, gain, duration) {
   }
 }
 
+/** Noise through a bandpass whose centre glides from `from` to `to`, under `envelope(progress)`. */
+function sweep(voice, at, duration, from, to, q, gain, envelope) {
+  const n = Math.floor(duration * RATE);
+  const start = Math.floor(at * RATE);
+  const block = 128;
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  for (let b = 0; b < n; b += block) {
+    const progress = b / n;
+    const freq = from * Math.pow(to / from, progress);
+    const w0 = (2 * Math.PI * freq) / RATE;
+    const alpha = Math.sin(w0) / (2 * q);
+    const a0 = 1 + alpha;
+    const b0 = alpha / a0;
+    const b2 = -alpha / a0;
+    const a1 = (-2 * Math.cos(w0)) / a0;
+    const a2 = (1 - alpha) / a0;
+    for (let i = b; i < Math.min(b + block, n) && start + i < voice.buffer.length; i++) {
+      const x = voice.random() * 2 - 1;
+      const y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2;
+      x2 = x1;
+      x1 = x;
+      y2 = y1;
+      y1 = y;
+      voice.buffer[start + i] += y * gain * envelope(i / n);
+    }
+  }
+}
+
+/** A sine gliding from `from` to `to` Hz, under `envelope(progress)`. */
+function glide(voice, at, duration, from, to, gain, envelope) {
+  const n = Math.floor(duration * RATE);
+  const start = Math.floor(at * RATE);
+  let phase = 0;
+  for (let i = 0; i < n && start + i < voice.buffer.length; i++) {
+    const progress = i / n;
+    phase += (2 * Math.PI * from * Math.pow(to / from, progress)) / RATE;
+    voice.buffer[start + i] += Math.sin(phase) * gain * envelope(progress);
+  }
+}
+
+/** A struck metal partial: a sine at `freq` decaying over `decay` seconds. */
+function ring(voice, at, freq, gain, decay) {
+  const start = Math.floor(at * RATE);
+  const n = Math.floor(decay * 4 * RATE);
+  for (let i = 0; i < n && start + i < voice.buffer.length; i++) {
+    const t = i / RATE;
+    voice.buffer[start + i] += Math.sin(2 * Math.PI * freq * t) * gain * Math.exp(-t / decay);
+  }
+}
+
 function finished(voice) {
   const { buffer } = voice;
   // 5 ms fade at the end so a cut tail never clicks.
@@ -156,7 +209,111 @@ const SOUNDS = {
     hit(voice, 0, 4200, 2.0, 1.0, 0.006);
     return voice;
   },
+  // First open (the machine is born): the body approaches out of the dark, a long airy swell
+  // that lands in a low thump.
+  arrive() {
+    const voice = makeVoice(1.7, 5);
+    sweep(voice, 0, 1.6, 120, 1600, 1.1, 0.8, (p) => Math.pow(Math.sin((Math.PI * p) / 2), 3));
+    glide(voice, 0, 1.6, 45, 70, 0.35, (p) => p * p);
+    thump(voice, 1.56, 110, 42, 0.9, 0.14);
+    return voice;
+  },
+  // The machine charging before the Start key slams in: rising air over a rising hum, faster ticks.
+  charge() {
+    const voice = makeVoice(1.25, 6);
+    sweep(voice, 0, 1.22, 200, 3200, 1.4, 0.7, (p) => p * p);
+    glide(voice, 0, 1.22, 60, 240, 0.45, (p) => 0.15 + 0.85 * p);
+    for (let t = 0, step = 0.14; t < 1.15; t += step, step = Math.max(0.045, step * 0.86)) {
+      hit(voice, t, 2600 + t * 1400, 2.4, 0.15 + 0.35 * (t / 1.15), 0.006);
+    }
+    return voice;
+  },
+  // The Start key slams home: a heavy low thud, a sharp metal hit and a short ring.
+  bang() {
+    const voice = makeVoice(0.9, 7);
+    thump(voice, 0, 150, 38, 1.0, 0.45);
+    hit(voice, 0, 2400, 1.2, 0.8, 0.05);
+    hit(voice, 0.004, 620, 0.7, 0.9, 0.12);
+    thump(voice, 0.01, 62, 30, 0.6, 0.7);
+    ring(voice, 0.004, 1170, 0.06, 0.18);
+    ring(voice, 0.004, 1730, 0.045, 0.14);
+    ring(voice, 0.004, 2390, 0.03, 0.1);
+    return voice;
+  },
+  // The display boots: two tiny electronic blips.
+  boot() {
+    const voice = makeVoice(0.22, 8);
+    glide(voice, 0, 0.045, 1320, 1320, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
+    glide(voice, 0.09, 0.06, 1980, 1980, 0.5, (p) => (p < 0.1 ? p * 10 : 1 - p));
+    return voice;
+  },
+  // The big key pressed: a heavy mechanical clunk.
+  press() {
+    const voice = makeVoice(0.2, 20);
+    hit(voice, 0, 1400, 1.4, 0.8, 0.02);
+    thump(voice, 0, 170, 70, 0.9, 0.09);
+    hit(voice, 0.005, 520, 0.9, 0.4, 0.04);
+    return voice;
+  },
+  // The rocker tilts: a short tick with a little body.
+  rocker() {
+    const voice = makeVoice(0.08, 21);
+    hit(voice, 0, 2200, 2.0, 1.0, 0.01);
+    thump(voice, 0, 320, 180, 0.3, 0.03);
+    return voice;
+  },
+  // One wheel detent: a tiny dry click.
+  notch() {
+    const voice = makeVoice(0.035, 22);
+    hit(voice, 0, 3600, 3.0, 1.0, 0.004);
+    hit(voice, 0.002, 1500, 2.0, 0.4, 0.006);
+    return voice;
+  },
+  // A finish swatch picked: a metal tile set down.
+  swatch() {
+    const voice = makeVoice(0.22, 23);
+    hit(voice, 0, 2800, 1.8, 1.0, 0.015);
+    thump(voice, 0, 240, 120, 0.5, 0.05);
+    ring(voice, 0.002, 1900, 0.05, 0.06);
+    return voice;
+  },
+  // A tap on the display (a day row, the drum): a soft electronic blip, not a key's click.
+  blip() {
+    const voice = makeVoice(0.05, 24);
+    glide(voice, 0, 0.035, 2400, 2600, 0.5, (p) => (p < 0.15 ? p / 0.15 : 1 - p));
+    return voice;
+  },
+  // A plan loaded and the days have ticked in: the machine is ready. Three rising display tones,
+  // a mechanical latch under the last, and a short metal shimmer.
+  ready() {
+    const voice = makeVoice(0.9, 25);
+    const tone = (at, freq, length) => {
+      const env = (p) => (p < 0.08 ? p / 0.08 : Math.pow(1 - p, 1.5));
+      glide(voice, at, length, freq, freq, 0.42, env);
+      glide(voice, at, length, freq * 2, freq * 2, 0.12, env);
+    };
+    tone(0, 988, 0.07);
+    tone(0.09, 1319, 0.07);
+    tone(0.18, 1976, 0.32);
+    hit(voice, 0.18, 2600, 1.6, 0.6, 0.02);
+    thump(voice, 0.18, 180, 70, 0.6, 0.1);
+    ring(voice, 0.2, 2960, 0.04, 0.16);
+    ring(voice, 0.2, 3950, 0.025, 0.12);
+    return voice;
+  },
 };
+
+// The parts snapping on, each a whole step higher than the last (D74: the build climbs).
+for (let step = 1; step <= 7; step++) {
+  const lift = Math.pow(2, ((step - 1) * 2) / 12);
+  SOUNDS[`snap-${step}`] = () => {
+    const voice = makeVoice(0.1, 10 + step);
+    hit(voice, 0, 1800 * lift, 2.2, 1.0, 0.012);
+    thump(voice, 0, 520 * lift, 260 * lift, 0.35, 0.03);
+    hit(voice, 0.008, 700 * lift, 0.9, 0.4, 0.02);
+    return voice;
+  };
+}
 
 mkdirSync(OUT_DIR, { recursive: true });
 for (const [name, render] of Object.entries(SOUNDS)) {
