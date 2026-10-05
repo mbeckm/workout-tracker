@@ -667,7 +667,13 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         commit({ open: current.open, log });
         writeDay((day) => ({ ...day, exercises: planExercisesFrom(log.drafts) }));
       },
-      endWorkout: () => update(endWorkout),
+      endWorkout: () => {
+        const current = sessionRef.current;
+        if (current) {
+          track('workout_ended_early', { sets: loggedSetCount(current.log.drafts) });
+        }
+        update(endWorkout);
+      },
       leaveFinish: () => update(leaveFinish),
       unlockTargets: async () => {
         const unlocked = await requirePro('targets');
@@ -770,6 +776,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
             () => {
               const latest = sessionRef.current;
               if (latest) {
+                track('workout_discarded', { sets: logged });
                 storeRef.current.clearLogSession({ planId: latest.open.planId, dayId: latest.open.dayId });
               }
               void endWorkoutLiveActivity();

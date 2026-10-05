@@ -5,6 +5,7 @@ import { emptyPlanWithDays } from '@/catalog/templates';
 import type { Finish } from '@/domain/finish';
 import type { WorkoutPlan } from '@/domain/types';
 import { useInsertMoment } from '@/device/activation';
+import { isProFinish } from '@/device/finish-swatch';
 import { useDevice } from '@/device/device-context';
 import { useFinish } from '@/device/finish';
 import { openPaywall } from '@/purchases/pro-gate';
@@ -40,7 +41,7 @@ export function useFinishOnboarding() {
     (finish: Finish) => {
       setFinish(finish);
       setPreview(null);
-      track('finish_selected', { finish });
+      track('finish_selected', { finish, from: savedFinish, source: 'onboarding', pro: isProFinish(finish) });
     },
     [setFinish, setPreview],
   );

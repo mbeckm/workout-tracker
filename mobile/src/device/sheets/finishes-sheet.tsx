@@ -66,7 +66,7 @@ export function FinishesSheet() {
     setPreview(null);
     if (id !== savedFinish) {
       setFinish(id);
-      track('finish_selected', { finish: id });
+      track('finish_selected', { finish: id, from: savedFinish, source: 'sheet', pro: isProFinish(id) });
     }
   };
 
@@ -83,6 +83,7 @@ export function FinishesSheet() {
       row.current?.scrollTo({ x: 0, animated: !reduceMotion });
     }
     if (locked(id)) {
+      track('finish_previewed', { finish: id, locked: true });
       setPreview(id);
       return;
     }
