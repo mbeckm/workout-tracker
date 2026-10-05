@@ -32,7 +32,8 @@ import {
 } from '@/domain/log-session';
 import { restSecondsForExercise } from '@/domain/rest';
 import { workoutPersonalBests } from '@/domain/set-lines';
-import { loadIncrement, targetsFromHistory, type SetTarget } from '@/domain/targets';
+import { defaultLoadStep, loadStepFor, loadStepText, nextLoadStep } from '@/domain/load-step';
+import { targetsFromHistory, type SetTarget } from '@/domain/targets';
 import { newId, type ExercisePrescription, type LoggedExercise, type LoggedSet, type WorkoutDay, type WorkoutPlan } from '@/domain/types';
 import { endWorkoutLiveActivity, loadWorkoutFocus } from '@/live-activity/controller';
 import { REST_GO_MS } from '@/motion';
@@ -51,6 +52,7 @@ import {
   logFooter,
   setLabel,
   type Controls,
+  type DrumKind,
   type DrumView,
   type FinishSummary,
   type LiftLampState,
@@ -130,8 +132,10 @@ export type LogSessionValue = {
   stage: Stage | null;
   /** What the wheel and keys control for the current lift (§6.6). */
   controls: Controls | null;
-  /** The current lift's load step (`loadIncrement`). */
+  /** The wheel's load step for the current lift (`loadStepFor`: the saved one, else the default). */
   increment: number;
+  /** The drum's step tag (`±2`), lit when the lift has a chosen step; null when the drum isn't a load. */
+  loadStep: { text: string; chosen: boolean } | null;
   drum: DrumView | null;
   /** The keys' value beside the drum (`×8`, `0:45`), or null. */
   keysText: string | null;
@@ -164,6 +168,8 @@ export type LogSessionValue = {
   completeSet: () => CompleteResult;
   /** One wheel notch on the drum; false when nothing moved (at a limit). */
   stepDrum: (direction: 1 | -1) => boolean;
+  /** A tap on the drum: the current lift's next wheel step, saved with the exercise; false when there's none. */
+  cycleLoadStep: () => boolean;
   /** One press on the left keys (`+` is 1); false when nothing moved. */
   stepKeys: (direction: 1 | -1) => boolean;
   /** Typed values (the keypad sheet, D19). */
@@ -240,6 +246,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
     previousLogForExercise,
     logSession,
     saveLogSession,
+    loadSteps,
   } = store;
   const device = useDevice();
   const haptics = useHaptics();
@@ -503,7 +510,8 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setGoFor(null);
     };
-    const increment = (prescription: ExercisePrescription) => loadIncrement(prescription, storeRef.current.units);
+    const increment = (prescription: ExercisePrescription) =>
+      loadStepFor(prescription, storeRef.current.units, storeRef.current.loadSteps);
     const step = (pick: (stage: Stage) => Partial<SetValues>) => {
       const current = sessionRef.current;
       const stage = current ? stageOf(current.log) : null;
@@ -541,6 +549,22 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         step((stage) =>
           drumStep(controlsFor(stage.current.prescription).drum, stage.values, direction, increment(stage.current.prescription)),
         ),
+      cycleLoadStep: () => {
+        const current = sessionRef.current;
+        const stage = current ? stageOf(current.log) : null;
+        if (!stage || !isLoadDrum(controlsFor(stage.current.prescription).drum)) {
+          return false;
+        }
+        const { prescription } = stage.current;
+        const { units: unit, loadSteps: saved, setLoadStep } = storeRef.current;
+        const fallback = defaultLoadStep(prescription, unit);
+        const next = nextLoadStep(loadStepFor(prescription, unit, saved), fallback, unit);
+        if (next === loadStepFor(prescription, unit, saved)) {
+          return false;
+        }
+        setLoadStep(prescription.name, next, fallback);
+        return true;
+      },
       stepKeys: (direction: 1 | -1) =>
         step((stage) => keyStep(controlsFor(stage.current.prescription).keys, stage.values, direction)),
       setStageValues: (patch: Partial<SetValues>) => update((log) => patchStage(log, patch)),
@@ -728,7 +752,14 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
   const stage = log ? stageOf(log) : null;
   const current = stage?.current ?? null;
   const controls = current ? controlsFor(current.prescription) : null;
-  const increment = current ? loadIncrement(current.prescription, units) : 0;
+  const increment = current ? loadStepFor(current.prescription, units, loadSteps) : 0;
+  const loadStep = useMemo(
+    () =>
+      current && controls && isLoadDrum(controls.drum)
+        ? { text: loadStepText(increment), chosen: increment !== defaultLoadStep(current.prescription, units) }
+        : null,
+    [controls, current, increment, units],
+  );
   const previous = current ? previousLogForExercise(current.prescription.name) : null;
   const targets = useMemo(
     () => (current ? targetsFromHistory(current.prescription, workoutHistory, units, current.sets.length) : null),
@@ -756,6 +787,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       stage,
       controls,
       increment,
+      loadStep,
       drum: stage && controls ? drumView(controls.drum, stage.values, increment, units) : null,
       keysText: stage && controls ? formatKeysValue(controls.keys, stage.values) : null,
       setLabel: stage ? setLabel(stage) : null,
@@ -802,6 +834,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       current,
       found,
       increment,
+      loadStep,
       log,
       minutes,
       needsWeight,
@@ -823,6 +856,11 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
 }
 
 const EMPTY_DRAFTS: DraftExercise[] = [];
+
+/** Whether the drum is a load (weight or assistance), so it has a wheel step to change. */
+function isLoadDrum(kind: DrumKind): boolean {
+  return kind === 'weight' || kind === 'assist';
+}
 
 function sessionFromOpened(
   link: { planId: string; dayId: string },

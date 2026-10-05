@@ -55,6 +55,15 @@ import {
   type LogState,
 } from '@/device/log/log-state';
 import { buildDrafts, unloggedSetCount, type DraftExercise } from '@/domain/log-session';
+import {
+  defaultLoadStep,
+  loadStepCycle,
+  loadStepFor,
+  loadStepText,
+  nextLoadStep,
+  normalizeLoadSteps,
+  withLoadStep,
+} from '@/domain/load-step';
 import { loadIncrement } from '@/domain/targets';
 import type { ExercisePrescription, LoggedSet } from '@/domain/types';
 
@@ -519,6 +528,39 @@ check('VoiceOver: one summary line for the display', () => {
   assert.equal(text, 'Bench press, set 2 of 3, 85 kilograms, 8 reps, last time 80 by 8');
   assert.equal(spokenValue('weight', { weight: 1 }, 'lbs'), '1 pound');
   assert.equal(spokenValue('weight', { weight: null }, 'kg'), 'no weight');
+});
+
+check('Load step (80): dumbbells step 1 kg, a tap cycles finer, saved per lift and unit', () => {
+  const bench = lift('Bench press');
+  const press = lift('Dumbbell shoulder press', 3, 8, { equipments: ['dumbbell'] });
+  assert.equal(defaultLoadStep(press, 'kg'), 1);
+  assert.equal(loadIncrement(press, 'kg'), 2); // Pro targets still jump a real pair of dumbbells.
+  assert.equal(defaultLoadStep(press, 'lbs'), 5);
+  assert.equal(defaultLoadStep(bench, 'kg'), 2.5);
+  assert.deepEqual(loadStepCycle(2.5, 'kg'), [2.5, 1, 0.5]);
+  assert.deepEqual(loadStepCycle(1, 'kg'), [1, 0.5]);
+  assert.deepEqual(loadStepCycle(5, 'lbs'), [5, 2.5, 1]);
+  assert.equal(nextLoadStep(2.5, 2.5, 'kg'), 1);
+  assert.equal(nextLoadStep(1, 2.5, 'kg'), 0.5);
+  assert.equal(nextLoadStep(0.5, 2.5, 'kg'), 2.5);
+  // Odd and decimal weights on the wheel: 1 kg reaches 23, 0.5 reaches 23.5.
+  assert.equal(stepLoad(22, 1, 1), 23);
+  assert.equal(stepLoad(23, 1, 0.5), 23.5);
+  assert.equal(stepLoad(23.5, 1, 2.5), 25);
+
+  let saved = withLoadStep({}, 'Bench press', 'kg', 0.5, 2.5);
+  assert.deepEqual(saved, { 'bench press': { units: 'kg', step: 0.5 } });
+  assert.equal(loadStepFor(lift('bench press '), 'kg', saved), 0.5);
+  assert.equal(loadStepFor(bench, 'lbs', saved), 5); // Set in kg: lbs keeps its default.
+  assert.equal(loadStepFor(lift('Squat'), 'kg', saved), 2.5);
+  saved = withLoadStep(saved, 'Bench press', 'kg', 2.5, 2.5);
+  assert.deepEqual(saved, {}); // Back on the default: nothing saved.
+  assert.equal(loadStepFor(bench, 'kg', { 'bench press': { units: 'kg', step: 3 } }), 2.5);
+  assert.deepEqual(normalizeLoadSteps({ a: { units: 'kg', step: 1 }, b: { units: 'st', step: 1 }, c: { units: 'kg', step: -1 }, d: null }), {
+    a: { units: 'kg', step: 1 },
+  });
+  assert.deepEqual(normalizeLoadSteps(undefined), {});
+  assert.equal(loadStepText(0.5), '±0.5');
 });
 
 if (failures > 0) {
