@@ -40,6 +40,7 @@ export type DeviceSound =
   | 'swatch'
   | 'blip'
   | 'ready'
+  | 'alarm'
   | 'arrive'
   | 'charge'
   | 'bang'
@@ -72,7 +73,12 @@ const FALLBACK: Record<HapticPattern, () => void> = {
   bigKeyPress: () => impact(Haptics.ImpactFeedbackStyle.Medium),
   logSet: () => impact(Haptics.ImpactFeedbackStyle.Rigid),
   rockerMove: () => impact(Haptics.ImpactFeedbackStyle.Light),
-  restGo: success,
+  // Beep-beep … beep-beep, like the native alarm.
+  restGo: () => {
+    for (const at of [0, 140, 500, 640]) {
+      setTimeout(() => impact(Haptics.ImpactFeedbackStyle.Heavy), at);
+    }
+  },
   finishComplete: success,
   receiptPrint: ignore,
   stamp: () => impact(Haptics.ImpactFeedbackStyle.Heavy),

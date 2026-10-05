@@ -404,7 +404,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
 | Log set | transient 1.0 / .6, then 40 ms later .4 / .3 | `impactAsync(Rigid)` |
 | Rocker move | transient .9 / .8, with the `rocker` tick | `impactAsync(Light)` |
-| Rest reaches 0:00 | 3 transients .8 / .5, 120 ms apart | `notificationAsync(Success)` |
+| Rest reaches 0:00 | an alarm, beep-beep … beep-beep: four beeps at 0, 140, 500 and 640 ms, each a transient 1.0 / .85 over continuous .75 / .7 for 80 ms; with the `alarm` sound | four heavy impacts at the same times |
 | Hold to finish | continuous, intensity .2 → .9 over 1.1 s, sharpness .3; release cancels | `impactAsync(Soft)` at the start, a heavy impact at the end |
 | Finish complete | transient 1.0 / .3 | `notificationAsync(Success)` |
 | Receipt printing | 18 transients .25 / .9, 100 ms apart (the feed's steps) | none |
@@ -439,6 +439,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `swatch` | a metal tile set down | A finish picked |
 | `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
+| `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
 | `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
 | `snap-1` … `snap-7` | a metal latch, each a whole step higher than the last | First open: each part snaps on. The one place a sound climbs in pitch: the build gathers energy (D74) |
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
