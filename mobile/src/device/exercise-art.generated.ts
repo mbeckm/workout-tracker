@@ -3,32 +3,520 @@ import type { ImageSourcePropType } from 'react-native';
 
 /** Approved exercise art: catalog id to its dot frames (start, end; three for a few lifts). */
 export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[]>> = {
+  'bundled-flat-barbell-bench-press': [
+    require('../../assets/images/exercise-art/flat-barbell-bench-press-0.png'),
+    require('../../assets/images/exercise-art/flat-barbell-bench-press-1.png'),
+  ],
   'bundled-incline-bench-press-barbell': [
     require('../../assets/images/exercise-art/incline-bench-press-barbell-0.png'),
     require('../../assets/images/exercise-art/incline-bench-press-barbell-1.png'),
+  ],
+  'bundled-incline-dumbbell-press': [
+    require('../../assets/images/exercise-art/incline-dumbbell-press-0.png'),
+    require('../../assets/images/exercise-art/incline-dumbbell-press-1.png'),
+  ],
+  'bundled-dumbbell-bench-press': [
+    require('../../assets/images/exercise-art/dumbbell-bench-press-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-bench-press-1.png'),
+  ],
+  'bundled-decline-bench-press': [
+    require('../../assets/images/exercise-art/decline-bench-press-0.png'),
+    require('../../assets/images/exercise-art/decline-bench-press-1.png'),
+  ],
+  'bundled-smith-machine-bench-press': [
+    require('../../assets/images/exercise-art/smith-machine-bench-press-0.png'),
+    require('../../assets/images/exercise-art/smith-machine-bench-press-1.png'),
+  ],
+  'bundled-smith-machine-incline-press': [
+    require('../../assets/images/exercise-art/smith-machine-incline-press-0.png'),
+    require('../../assets/images/exercise-art/smith-machine-incline-press-1.png'),
+  ],
+  'bundled-machine-chest-press': [
+    require('../../assets/images/exercise-art/machine-chest-press-0.png'),
+    require('../../assets/images/exercise-art/machine-chest-press-1.png'),
+  ],
+  'bundled-incline-machine-press': [
+    require('../../assets/images/exercise-art/incline-machine-press-0.png'),
+    require('../../assets/images/exercise-art/incline-machine-press-1.png'),
+  ],
+  'bundled-dumbbell-floor-press': [
+    require('../../assets/images/exercise-art/dumbbell-floor-press-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-floor-press-1.png'),
+  ],
+  'bundled-cable-chest-fly': [
+    require('../../assets/images/exercise-art/cable-chest-fly-0.png'),
+    require('../../assets/images/exercise-art/cable-chest-fly-1.png'),
+  ],
+  'bundled-dumbbell-fly': [
+    require('../../assets/images/exercise-art/dumbbell-fly-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-fly-1.png'),
+  ],
+  'bundled-incline-dumbbell-fly': [
+    require('../../assets/images/exercise-art/incline-dumbbell-fly-0.png'),
+    require('../../assets/images/exercise-art/incline-dumbbell-fly-1.png'),
+  ],
+  'bundled-pec-deck': [
+    require('../../assets/images/exercise-art/pec-deck-0.png'),
+    require('../../assets/images/exercise-art/pec-deck-1.png'),
+  ],
+  'bundled-low-to-high-cable-fly': [
+    require('../../assets/images/exercise-art/low-to-high-cable-fly-0.png'),
+    require('../../assets/images/exercise-art/low-to-high-cable-fly-1.png'),
+  ],
+  'bundled-incline-cable-fly': [
+    require('../../assets/images/exercise-art/incline-cable-fly-0.png'),
+    require('../../assets/images/exercise-art/incline-cable-fly-1.png'),
+  ],
+  'bundled-push-up': [
+    require('../../assets/images/exercise-art/push-up-0.png'),
+    require('../../assets/images/exercise-art/push-up-1.png'),
+  ],
+  'bundled-incline-push-up': [
+    require('../../assets/images/exercise-art/incline-push-up-0.png'),
+    require('../../assets/images/exercise-art/incline-push-up-1.png'),
+  ],
+  'bundled-decline-push-up': [
+    require('../../assets/images/exercise-art/decline-push-up-0.png'),
+    require('../../assets/images/exercise-art/decline-push-up-1.png'),
+  ],
+  'bundled-dip': [
+    require('../../assets/images/exercise-art/dip-0.png'),
+    require('../../assets/images/exercise-art/dip-1.png'),
+  ],
+  'bundled-assisted-dip': [
+    require('../../assets/images/exercise-art/assisted-dip-0.png'),
+    require('../../assets/images/exercise-art/assisted-dip-1.png'),
+  ],
+  'bundled-incline-bench-press-dumbbells': [
+    require('../../assets/images/exercise-art/incline-bench-press-dumbbells-0.png'),
+    require('../../assets/images/exercise-art/incline-bench-press-dumbbells-1.png'),
   ],
   'bundled-pull-ups': [
     require('../../assets/images/exercise-art/pull-ups-0.png'),
     require('../../assets/images/exercise-art/pull-ups-1.png'),
   ],
+  'bundled-lat-pulldown': [
+    require('../../assets/images/exercise-art/lat-pulldown-0.png'),
+    require('../../assets/images/exercise-art/lat-pulldown-1.png'),
+  ],
   'bundled-barbell-row': [
     require('../../assets/images/exercise-art/barbell-row-0.png'),
     require('../../assets/images/exercise-art/barbell-row-1.png'),
+  ],
+  'bundled-seated-cable-row': [
+    require('../../assets/images/exercise-art/seated-cable-row-0.png'),
+    require('../../assets/images/exercise-art/seated-cable-row-1.png'),
   ],
   'bundled-deadlift': [
     require('../../assets/images/exercise-art/deadlift-0.png'),
     require('../../assets/images/exercise-art/deadlift-1.png'),
   ],
+  'bundled-sumo-deadlift': [
+    require('../../assets/images/exercise-art/sumo-deadlift-0.png'),
+    require('../../assets/images/exercise-art/sumo-deadlift-1.png'),
+  ],
+  'bundled-trap-bar-deadlift': [
+    require('../../assets/images/exercise-art/trap-bar-deadlift-0.png'),
+    require('../../assets/images/exercise-art/trap-bar-deadlift-1.png'),
+  ],
+  'bundled-rack-pull': [
+    require('../../assets/images/exercise-art/rack-pull-0.png'),
+    require('../../assets/images/exercise-art/rack-pull-1.png'),
+  ],
+  'bundled-back-extension': [
+    require('../../assets/images/exercise-art/back-extension-0.png'),
+    require('../../assets/images/exercise-art/back-extension-1.png'),
+  ],
+  'bundled-chin-up': [
+    require('../../assets/images/exercise-art/chin-up-0.png'),
+    require('../../assets/images/exercise-art/chin-up-1.png'),
+  ],
+  'bundled-assisted-pull-up': [
+    require('../../assets/images/exercise-art/assisted-pull-up-0.png'),
+    require('../../assets/images/exercise-art/assisted-pull-up-1.png'),
+  ],
+  'bundled-close-grip-lat-pulldown': [
+    require('../../assets/images/exercise-art/close-grip-lat-pulldown-0.png'),
+    require('../../assets/images/exercise-art/close-grip-lat-pulldown-1.png'),
+  ],
+  'bundled-neutral-grip-lat-pulldown': [
+    require('../../assets/images/exercise-art/neutral-grip-lat-pulldown-0.png'),
+    require('../../assets/images/exercise-art/neutral-grip-lat-pulldown-1.png'),
+  ],
+  'bundled-single-arm-lat-pulldown': [
+    require('../../assets/images/exercise-art/single-arm-lat-pulldown-0.png'),
+    require('../../assets/images/exercise-art/single-arm-lat-pulldown-1.png'),
+  ],
+  'bundled-straight-arm-pulldown': [
+    require('../../assets/images/exercise-art/straight-arm-pulldown-0.png'),
+    require('../../assets/images/exercise-art/straight-arm-pulldown-1.png'),
+  ],
+  'bundled-one-arm-dumbbell-row': [
+    require('../../assets/images/exercise-art/one-arm-dumbbell-row-0.png'),
+    require('../../assets/images/exercise-art/one-arm-dumbbell-row-1.png'),
+  ],
+  'bundled-pendlay-row': [
+    require('../../assets/images/exercise-art/pendlay-row-0.png'),
+    require('../../assets/images/exercise-art/pendlay-row-1.png'),
+  ],
+  'bundled-t-bar-row': [
+    require('../../assets/images/exercise-art/t-bar-row-0.png'),
+    require('../../assets/images/exercise-art/t-bar-row-1.png'),
+  ],
+  'bundled-chest-supported-dumbbell-row': [
+    require('../../assets/images/exercise-art/chest-supported-dumbbell-row-0.png'),
+    require('../../assets/images/exercise-art/chest-supported-dumbbell-row-1.png'),
+  ],
+  'bundled-seal-row': [
+    require('../../assets/images/exercise-art/seal-row-0.png'),
+    require('../../assets/images/exercise-art/seal-row-1.png'),
+  ],
+  'bundled-seated-machine-row': [
+    require('../../assets/images/exercise-art/seated-machine-row-0.png'),
+    require('../../assets/images/exercise-art/seated-machine-row-1.png'),
+  ],
+  'bundled-single-arm-cable-row': [
+    require('../../assets/images/exercise-art/single-arm-cable-row-0.png'),
+    require('../../assets/images/exercise-art/single-arm-cable-row-1.png'),
+  ],
+  'bundled-meadows-row': [
+    require('../../assets/images/exercise-art/meadows-row-0.png'),
+    require('../../assets/images/exercise-art/meadows-row-1.png'),
+  ],
+  'bundled-inverted-row': [
+    require('../../assets/images/exercise-art/inverted-row-0.png'),
+    require('../../assets/images/exercise-art/inverted-row-1.png'),
+  ],
+  'bundled-barbell-shrug': [
+    require('../../assets/images/exercise-art/barbell-shrug-0.png'),
+    require('../../assets/images/exercise-art/barbell-shrug-1.png'),
+  ],
+  'bundled-dumbbell-shrug': [
+    require('../../assets/images/exercise-art/dumbbell-shrug-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-shrug-1.png'),
+  ],
+  'bundled-overhead-press': [
+    require('../../assets/images/exercise-art/overhead-press-0.png'),
+    require('../../assets/images/exercise-art/overhead-press-1.png'),
+  ],
   'bundled-lateral-raises': [
     require('../../assets/images/exercise-art/lateral-raises-0.png'),
     require('../../assets/images/exercise-art/lateral-raises-1.png'),
+  ],
+  'bundled-face-pulls': [
+    require('../../assets/images/exercise-art/face-pulls-0.png'),
+    require('../../assets/images/exercise-art/face-pulls-1.png'),
+  ],
+  'bundled-seated-dumbbell-shoulder-press': [
+    require('../../assets/images/exercise-art/seated-dumbbell-shoulder-press-0.png'),
+    require('../../assets/images/exercise-art/seated-dumbbell-shoulder-press-1.png'),
+  ],
+  'bundled-standing-dumbbell-shoulder-press': [
+    require('../../assets/images/exercise-art/standing-dumbbell-shoulder-press-0.png'),
+    require('../../assets/images/exercise-art/standing-dumbbell-shoulder-press-1.png'),
+  ],
+  'bundled-arnold-press': [
+    require('../../assets/images/exercise-art/arnold-press-0.png'),
+    require('../../assets/images/exercise-art/arnold-press-1.png'),
+    require('../../assets/images/exercise-art/arnold-press-2.png'),
+  ],
+  'bundled-machine-shoulder-press': [
+    require('../../assets/images/exercise-art/machine-shoulder-press-0.png'),
+    require('../../assets/images/exercise-art/machine-shoulder-press-1.png'),
+  ],
+  'bundled-smith-machine-overhead-press': [
+    require('../../assets/images/exercise-art/smith-machine-overhead-press-0.png'),
+    require('../../assets/images/exercise-art/smith-machine-overhead-press-1.png'),
+  ],
+  'bundled-push-press': [
+    require('../../assets/images/exercise-art/push-press-0.png'),
+    require('../../assets/images/exercise-art/push-press-1.png'),
+    require('../../assets/images/exercise-art/push-press-2.png'),
+  ],
+  'bundled-landmine-press': [
+    require('../../assets/images/exercise-art/landmine-press-0.png'),
+    require('../../assets/images/exercise-art/landmine-press-1.png'),
+  ],
+  'bundled-pike-push-up': [
+    require('../../assets/images/exercise-art/pike-push-up-0.png'),
+    require('../../assets/images/exercise-art/pike-push-up-1.png'),
+  ],
+  'bundled-handstand-push-up': [
+    require('../../assets/images/exercise-art/handstand-push-up-0.png'),
+    require('../../assets/images/exercise-art/handstand-push-up-1.png'),
+  ],
+  'bundled-cable-lateral-raise': [
+    require('../../assets/images/exercise-art/cable-lateral-raise-0.png'),
+    require('../../assets/images/exercise-art/cable-lateral-raise-1.png'),
+  ],
+  'bundled-machine-lateral-raise': [
+    require('../../assets/images/exercise-art/machine-lateral-raise-0.png'),
+    require('../../assets/images/exercise-art/machine-lateral-raise-1.png'),
+  ],
+  'bundled-upright-row': [
+    require('../../assets/images/exercise-art/upright-row-0.png'),
+    require('../../assets/images/exercise-art/upright-row-1.png'),
+  ],
+  'bundled-front-raise': [
+    require('../../assets/images/exercise-art/front-raise-0.png'),
+    require('../../assets/images/exercise-art/front-raise-1.png'),
+  ],
+  'bundled-plate-front-raise': [
+    require('../../assets/images/exercise-art/plate-front-raise-0.png'),
+    require('../../assets/images/exercise-art/plate-front-raise-1.png'),
+  ],
+  'bundled-reverse-dumbbell-fly': [
+    require('../../assets/images/exercise-art/reverse-dumbbell-fly-0.png'),
+    require('../../assets/images/exercise-art/reverse-dumbbell-fly-1.png'),
+  ],
+  'bundled-reverse-pec-deck': [
+    require('../../assets/images/exercise-art/reverse-pec-deck-0.png'),
+    require('../../assets/images/exercise-art/reverse-pec-deck-1.png'),
+  ],
+  'bundled-reverse-cable-fly': [
+    require('../../assets/images/exercise-art/reverse-cable-fly-0.png'),
+    require('../../assets/images/exercise-art/reverse-cable-fly-1.png'),
+  ],
+  'bundled-band-pull-apart': [
+    require('../../assets/images/exercise-art/band-pull-apart-0.png'),
+    require('../../assets/images/exercise-art/band-pull-apart-1.png'),
+  ],
+  'bundled-barbell-curl': [
+    require('../../assets/images/exercise-art/barbell-curl-0.png'),
+    require('../../assets/images/exercise-art/barbell-curl-1.png'),
   ],
   'bundled-hammer-curl': [
     require('../../assets/images/exercise-art/hammer-curl-0.png'),
     require('../../assets/images/exercise-art/hammer-curl-1.png'),
   ],
+  'bundled-incline-bicep-curls': [
+    require('../../assets/images/exercise-art/incline-bicep-curls-0.png'),
+    require('../../assets/images/exercise-art/incline-bicep-curls-1.png'),
+  ],
+  'bundled-dumbbell-curl': [
+    require('../../assets/images/exercise-art/dumbbell-curl-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-curl-1.png'),
+  ],
+  'bundled-ez-bar-curl': [
+    require('../../assets/images/exercise-art/ez-bar-curl-0.png'),
+    require('../../assets/images/exercise-art/ez-bar-curl-1.png'),
+  ],
+  'bundled-preacher-curl': [
+    require('../../assets/images/exercise-art/preacher-curl-0.png'),
+    require('../../assets/images/exercise-art/preacher-curl-1.png'),
+  ],
+  'bundled-machine-preacher-curl': [
+    require('../../assets/images/exercise-art/machine-preacher-curl-0.png'),
+    require('../../assets/images/exercise-art/machine-preacher-curl-1.png'),
+  ],
+  'bundled-cable-curl': [
+    require('../../assets/images/exercise-art/cable-curl-0.png'),
+    require('../../assets/images/exercise-art/cable-curl-1.png'),
+  ],
+  'bundled-cable-hammer-curl': [
+    require('../../assets/images/exercise-art/cable-hammer-curl-0.png'),
+    require('../../assets/images/exercise-art/cable-hammer-curl-1.png'),
+  ],
+  'bundled-bayesian-curl': [
+    require('../../assets/images/exercise-art/bayesian-curl-0.png'),
+    require('../../assets/images/exercise-art/bayesian-curl-1.png'),
+  ],
+  'bundled-concentration-curl': [
+    require('../../assets/images/exercise-art/concentration-curl-0.png'),
+    require('../../assets/images/exercise-art/concentration-curl-1.png'),
+  ],
+  'bundled-spider-curl': [
+    require('../../assets/images/exercise-art/spider-curl-0.png'),
+    require('../../assets/images/exercise-art/spider-curl-1.png'),
+  ],
+  'bundled-zottman-curl': [
+    require('../../assets/images/exercise-art/zottman-curl-0.png'),
+    require('../../assets/images/exercise-art/zottman-curl-1.png'),
+    require('../../assets/images/exercise-art/zottman-curl-2.png'),
+  ],
+  'bundled-tricep-pushdowns': [
+    require('../../assets/images/exercise-art/tricep-pushdowns-0.png'),
+    require('../../assets/images/exercise-art/tricep-pushdowns-1.png'),
+  ],
+  'bundled-rope-tricep-pushdown': [
+    require('../../assets/images/exercise-art/rope-tricep-pushdown-0.png'),
+    require('../../assets/images/exercise-art/rope-tricep-pushdown-1.png'),
+  ],
+  'bundled-single-arm-cable-pushdown': [
+    require('../../assets/images/exercise-art/single-arm-cable-pushdown-0.png'),
+    require('../../assets/images/exercise-art/single-arm-cable-pushdown-1.png'),
+  ],
+  'bundled-overhead-cable-tricep-extension': [
+    require('../../assets/images/exercise-art/overhead-cable-tricep-extension-0.png'),
+    require('../../assets/images/exercise-art/overhead-cable-tricep-extension-1.png'),
+  ],
+  'bundled-overhead-dumbbell-tricep-extension': [
+    require('../../assets/images/exercise-art/overhead-dumbbell-tricep-extension-0.png'),
+    require('../../assets/images/exercise-art/overhead-dumbbell-tricep-extension-1.png'),
+  ],
+  'bundled-skull-crusher': [
+    require('../../assets/images/exercise-art/skull-crusher-0.png'),
+    require('../../assets/images/exercise-art/skull-crusher-1.png'),
+  ],
+  'bundled-dumbbell-tricep-kickback': [
+    require('../../assets/images/exercise-art/dumbbell-tricep-kickback-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-tricep-kickback-1.png'),
+  ],
+  'bundled-close-grip-bench-press': [
+    require('../../assets/images/exercise-art/close-grip-bench-press-0.png'),
+    require('../../assets/images/exercise-art/close-grip-bench-press-1.png'),
+  ],
+  'bundled-machine-dip': [
+    require('../../assets/images/exercise-art/machine-dip-0.png'),
+    require('../../assets/images/exercise-art/machine-dip-1.png'),
+  ],
+  'bundled-bench-dip': [
+    require('../../assets/images/exercise-art/bench-dip-0.png'),
+    require('../../assets/images/exercise-art/bench-dip-1.png'),
+  ],
+  'bundled-diamond-push-up': [
+    require('../../assets/images/exercise-art/diamond-push-up-0.png'),
+    require('../../assets/images/exercise-art/diamond-push-up-1.png'),
+  ],
+  'bundled-reverse-curl': [
+    require('../../assets/images/exercise-art/reverse-curl-0.png'),
+    require('../../assets/images/exercise-art/reverse-curl-1.png'),
+  ],
+  'bundled-wrist-curl': [
+    require('../../assets/images/exercise-art/wrist-curl-0.png'),
+    require('../../assets/images/exercise-art/wrist-curl-1.png'),
+  ],
+  'bundled-reverse-wrist-curl': [
+    require('../../assets/images/exercise-art/reverse-wrist-curl-0.png'),
+    require('../../assets/images/exercise-art/reverse-wrist-curl-1.png'),
+  ],
+  'bundled-dead-hang': [
+    require('../../assets/images/exercise-art/dead-hang-0.png'),
+    require('../../assets/images/exercise-art/dead-hang-1.png'),
+  ],
   'bundled-barbell-back-squat': [
     require('../../assets/images/exercise-art/barbell-back-squat-0.png'),
     require('../../assets/images/exercise-art/barbell-back-squat-1.png'),
+  ],
+  'bundled-leg-press': [
+    require('../../assets/images/exercise-art/leg-press-0.png'),
+    require('../../assets/images/exercise-art/leg-press-1.png'),
+  ],
+  'bundled-front-squat': [
+    require('../../assets/images/exercise-art/front-squat-0.png'),
+    require('../../assets/images/exercise-art/front-squat-1.png'),
+  ],
+  'bundled-box-squat': [
+    require('../../assets/images/exercise-art/box-squat-0.png'),
+    require('../../assets/images/exercise-art/box-squat-1.png'),
+  ],
+  'bundled-goblet-squat': [
+    require('../../assets/images/exercise-art/goblet-squat-0.png'),
+    require('../../assets/images/exercise-art/goblet-squat-1.png'),
+  ],
+  'bundled-hack-squat': [
+    require('../../assets/images/exercise-art/hack-squat-0.png'),
+    require('../../assets/images/exercise-art/hack-squat-1.png'),
+  ],
+  'bundled-pendulum-squat': [
+    require('../../assets/images/exercise-art/pendulum-squat-0.png'),
+    require('../../assets/images/exercise-art/pendulum-squat-1.png'),
+  ],
+  'bundled-belt-squat': [
+    require('../../assets/images/exercise-art/belt-squat-0.png'),
+    require('../../assets/images/exercise-art/belt-squat-1.png'),
+  ],
+  'bundled-smith-machine-squat': [
+    require('../../assets/images/exercise-art/smith-machine-squat-0.png'),
+    require('../../assets/images/exercise-art/smith-machine-squat-1.png'),
+  ],
+  'bundled-bodyweight-squat': [
+    require('../../assets/images/exercise-art/bodyweight-squat-0.png'),
+    require('../../assets/images/exercise-art/bodyweight-squat-1.png'),
+  ],
+  'bundled-sumo-squat': [
+    require('../../assets/images/exercise-art/sumo-squat-0.png'),
+    require('../../assets/images/exercise-art/sumo-squat-1.png'),
+  ],
+  'bundled-bulgarian-split-squat': [
+    require('../../assets/images/exercise-art/bulgarian-split-squat-0.png'),
+    require('../../assets/images/exercise-art/bulgarian-split-squat-1.png'),
+  ],
+  'bundled-split-squat': [
+    require('../../assets/images/exercise-art/split-squat-0.png'),
+    require('../../assets/images/exercise-art/split-squat-1.png'),
+  ],
+  'bundled-walking-lunge': [
+    require('../../assets/images/exercise-art/walking-lunge-0.png'),
+    require('../../assets/images/exercise-art/walking-lunge-1.png'),
+  ],
+  'bundled-reverse-lunge': [
+    require('../../assets/images/exercise-art/reverse-lunge-0.png'),
+    require('../../assets/images/exercise-art/reverse-lunge-1.png'),
+  ],
+  'bundled-lateral-lunge': [
+    require('../../assets/images/exercise-art/lateral-lunge-0.png'),
+    require('../../assets/images/exercise-art/lateral-lunge-1.png'),
+  ],
+  'bundled-step-up': [
+    require('../../assets/images/exercise-art/step-up-0.png'),
+    require('../../assets/images/exercise-art/step-up-1.png'),
+  ],
+  'bundled-box-jump': [
+    require('../../assets/images/exercise-art/box-jump-0.png'),
+    require('../../assets/images/exercise-art/box-jump-1.png'),
+    require('../../assets/images/exercise-art/box-jump-2.png'),
+  ],
+  'bundled-romanian-deadlift': [
+    require('../../assets/images/exercise-art/romanian-deadlift-0.png'),
+    require('../../assets/images/exercise-art/romanian-deadlift-1.png'),
+  ],
+  'bundled-dumbbell-romanian-deadlift': [
+    require('../../assets/images/exercise-art/dumbbell-romanian-deadlift-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-romanian-deadlift-1.png'),
+  ],
+  'bundled-single-leg-romanian-deadlift': [
+    require('../../assets/images/exercise-art/single-leg-romanian-deadlift-0.png'),
+    require('../../assets/images/exercise-art/single-leg-romanian-deadlift-1.png'),
+  ],
+  'bundled-stiff-leg-deadlift': [
+    require('../../assets/images/exercise-art/stiff-leg-deadlift-0.png'),
+    require('../../assets/images/exercise-art/stiff-leg-deadlift-1.png'),
+  ],
+  'bundled-good-morning': [
+    require('../../assets/images/exercise-art/good-morning-0.png'),
+    require('../../assets/images/exercise-art/good-morning-1.png'),
+  ],
+  'bundled-hip-thrust': [
+    require('../../assets/images/exercise-art/hip-thrust-0.png'),
+    require('../../assets/images/exercise-art/hip-thrust-1.png'),
+  ],
+  'bundled-machine-hip-thrust': [
+    require('../../assets/images/exercise-art/machine-hip-thrust-0.png'),
+    require('../../assets/images/exercise-art/machine-hip-thrust-1.png'),
+  ],
+  'bundled-glute-bridge': [
+    require('../../assets/images/exercise-art/glute-bridge-0.png'),
+    require('../../assets/images/exercise-art/glute-bridge-1.png'),
+  ],
+  'bundled-single-leg-glute-bridge': [
+    require('../../assets/images/exercise-art/single-leg-glute-bridge-0.png'),
+    require('../../assets/images/exercise-art/single-leg-glute-bridge-1.png'),
+  ],
+  'bundled-cable-pull-through': [
+    require('../../assets/images/exercise-art/cable-pull-through-0.png'),
+    require('../../assets/images/exercise-art/cable-pull-through-1.png'),
+  ],
+  'bundled-kettlebell-swing': [
+    require('../../assets/images/exercise-art/kettlebell-swing-0.png'),
+    require('../../assets/images/exercise-art/kettlebell-swing-1.png'),
+  ],
+  'bundled-dumbbell-side-bend': [
+    require('../../assets/images/exercise-art/dumbbell-side-bend-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-side-bend-1.png'),
+  ],
+  'bundled-wall-sit': [
+    require('../../assets/images/exercise-art/wall-sit-0.png'),
+    require('../../assets/images/exercise-art/wall-sit-1.png'),
   ],
 };
