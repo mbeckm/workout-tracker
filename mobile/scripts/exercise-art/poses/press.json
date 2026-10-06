@@ -5,5 +5,204 @@
   "start": "lying on its back on an incline bench set at about 30 degrees, feet flat on the floor, the loaded barbell lowered to the upper chest, elbows bent below the bench line.",
   "end": "same position on the same incline bench, arms locked straight, the barbell pressed up directly above the shoulders.",
   "muscles": "upper chest, front of the shoulders, triceps"
+ },
+ {
+  "id": "bundled-flat-barbell-bench-press",
+  "start": "lying on its back on a flat horizontal bench, feet flat on the floor, hands in an overhand grip slightly wider than the shoulders, the loaded barbell lowered to touch the middle of the chest, elbows bent.",
+  "end": "same flat bench, arms locked straight, the barbell pressed up directly above the shoulders.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "Simple flat bench with two uprights; the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+ },
+ {
+  "id": "bundled-incline-dumbbell-press",
+  "start": "lying back on an incline bench set at about 30 degrees, feet flat on the floor, one dumbbell in each hand (overhand, palms forward) held at the sides of the upper chest, elbows bent below the bench line.",
+  "end": "same incline bench, arms locked straight, the two dumbbells pressed up directly above the shoulders.",
+  "muscles": "upper chest, front of the shoulders, triceps",
+  "notes": "Both dumbbells drawn as simple solid dark grey shapes."
+ },
+ {
+  "id": "bundled-dumbbell-bench-press",
+  "start": "lying on its back on a flat horizontal bench, feet flat on the floor, a dumbbell in each hand held at the sides of the chest, elbows bent below the bench line.",
+  "end": "same flat bench, arms locked straight, the two dumbbells pressed up directly above the shoulders.",
+  "muscles": "chest, front of the shoulders, triceps"
+ },
+ {
+  "id": "bundled-decline-bench-press",
+  "start": "lying on its back on a decline bench sloping head-down at about 20 degrees, feet hooked under the leg pads at the high end, overhand grip, the loaded barbell lowered to the lower chest, elbows bent.",
+  "end": "same decline bench, arms locked straight, the barbell pressed up directly above the chest.",
+  "muscles": "chest, triceps",
+  "notes": "The head end of the bench is lower than the feet. the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+ },
+ {
+  "id": "bundled-smith-machine-bench-press",
+  "start": "lying on its back on a flat bench inside a smith machine (two vertical guide posts with a barbell fixed to them), feet flat on the floor, overhand grip, the bar lowered to the middle of the chest, elbows bent.",
+  "end": "same flat bench, arms locked straight, the smith bar pressed straight up above the chest.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "Smith machine: two thin vertical posts, one on each side of the bench, seen in three-quarter view; the bar sits on the posts."
+ },
+ {
+  "id": "bundled-smith-machine-incline-press",
+  "start": "lying back on an incline bench set at about 30 degrees inside a smith machine (two vertical guide posts with a barbell fixed to them), feet flat on the floor, overhand grip, the bar lowered to the upper chest, elbows bent.",
+  "end": "same incline bench, arms locked straight, the smith bar pressed straight up above the shoulders.",
+  "muscles": "upper chest, front of the shoulders, triceps",
+  "notes": "Two thin vertical posts, one each side of the bench; the bar rides on them."
+ },
+ {
+  "id": "bundled-machine-chest-press",
+  "start": "seated upright in a chest press machine with the back against the pad, feet flat on the floor, both hands gripping the horizontal handles at chest height, elbows bent back beside the torso.",
+  "end": "same seat, arms pressed forward and straight, handles extended in front of the chest.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "Machine kept very simple: one seat with a back pad, and two horizontal lever arms with handles at chest height, plus a small base."
+ },
+ {
+  "id": "bundled-incline-machine-press",
+  "start": "seated in an incline chest press machine with the back against a pad tilted back about 40 degrees, feet flat on the floor, hands on the angled handles at upper chest height, elbows bent.",
+  "end": "same seat, arms pressed up and forward and straight, handles extended diagonally above the chest.",
+  "muscles": "upper chest, front of the shoulders, triceps",
+  "notes": "Machine kept very simple: reclined seat with back pad and two angled lever arms with handles, small base."
+ },
+ {
+  "id": "bundled-dumbbell-floor-press",
+  "start": "lying on its back on the floor (no bench), knees bent with feet flat on the floor, a dumbbell in each hand held at chest height with the upper arms resting on the floor, elbows bent.",
+  "end": "same position on the floor, arms locked straight, the two dumbbells pressed up directly above the shoulders.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "No bench: the body lies flat on the ground."
+ },
+ {
+  "id": "bundled-push-up",
+  "start": "in a high plank, hands flat on the floor under the shoulders, body a straight line from head to heels, arms locked straight, toes on the floor.",
+  "end": "same body in a straight line, chest lowered to just above the floor, elbows bent back at about 45 degrees.",
+  "muscles": "chest, front of the shoulders, triceps"
+ },
+ {
+  "id": "bundled-incline-push-up",
+  "start": "in a straight plank with the hands on a sturdy elevated bench edge and the feet on the floor, arms locked straight, body a straight diagonal line from head to heels.",
+  "end": "same position, chest lowered to the bench edge, elbows bent back.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "Simple solid dark grey bench or box under the hands; the body slopes down to the feet."
+ },
+ {
+  "id": "bundled-decline-push-up",
+  "start": "in a plank with the feet on an elevated bench and the hands flat on the floor under the shoulders, arms locked straight, body a straight line sloping down from the feet to the head.",
+  "end": "same position, chest lowered close to the floor, elbows bent back.",
+  "muscles": "chest, front of the shoulders, triceps",
+  "notes": "Simple solid dark grey bench under the feet; the feet are higher than the hands."
+ },
+ {
+  "id": "bundled-dip",
+  "start": "supported on two parallel dip bars with locked straight arms, body upright and slightly leaning forward, legs bent behind with the ankles crossed.",
+  "end": "same bars, body lowered until the elbows are bent to 90 degrees, torso leaning forward, legs still bent behind.",
+  "muscles": "chest, triceps, front of the shoulders",
+  "notes": "Two parallel dip bars shown as one thick horizontal bar at hand height on a simple frame, side view."
+ },
+ {
+  "id": "bundled-assisted-dip",
+  "start": "supported on the handles of an assisted dip machine with locked straight arms, body upright, knees bent and resting on the padded knee platform below.",
+  "end": "same machine, body lowered until the elbows are bent to 90 degrees, torso leaning forward, knees still on the platform.",
+  "muscles": "chest, triceps",
+  "notes": "Machine kept simple: two handles at the top of a vertical post and a small padded knee platform below."
+ },
+ {
+  "id": "bundled-incline-bench-press-dumbbells",
+  "start": "lying back on an incline bench set at about 30 degrees, feet flat on the floor, one dumbbell in each hand held at the sides of the upper chest, elbows bent.",
+  "end": "same incline bench, arms locked straight, the two dumbbells pressed up directly above the shoulders.",
+  "muscles": "upper chest, front of the shoulders, triceps"
+ },
+ {
+  "id": "bundled-overhead-press",
+  "start": "standing upright with feet shoulder width apart, the loaded barbell resting on the front of the shoulders and collarbone, overhand grip just outside the shoulders, elbows bent in front of the bar.",
+  "end": "same standing posture, arms locked straight overhead, the barbell directly above the head and over the mid-foot.",
+  "muscles": "front of the shoulders, triceps, upper chest",
+  "notes": "the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+ },
+ {
+  "id": "bundled-seated-dumbbell-shoulder-press",
+  "view": "side view",
+  "start": "sitting upright on a bench with a vertical back pad, feet flat on the floor, a dumbbell in each hand held at shoulder height, elbows bent at the sides, palms forward.",
+  "end": "same seated posture, arms locked straight overhead, the two dumbbells pressed up above the head.",
+  "muscles": "front and side of the shoulders, triceps"
+ },
+ {
+  "id": "bundled-standing-dumbbell-shoulder-press",
+  "start": "standing upright with feet shoulder width apart, a dumbbell in each hand held at shoulder height, elbows bent at the sides, palms forward.",
+  "end": "same standing posture, arms locked straight overhead, the two dumbbells pressed up above the head.",
+  "muscles": "shoulders, triceps"
+ },
+ {
+  "id": "bundled-arnold-press",
+  "start": "standing upright, a dumbbell in each hand held in front of the chest at shoulder height, palms facing the face, elbows bent and pointing forward.",
+  "middle": "same standing posture, dumbbells at head height, forearms rotating so the palms face halfway to the front, elbows out to the sides at about 45 degrees.",
+  "end": "same standing posture, arms locked straight overhead, palms facing forward, the two dumbbells above the head.",
+  "muscles": "shoulders, triceps",
+  "notes": "Show the dumbbells as simple solid shapes."
+ },
+ {
+  "id": "bundled-machine-shoulder-press",
+  "start": "seated upright in a shoulder press machine with the back against the pad, feet flat on the floor, hands on the handles at shoulder height, elbows bent at the sides.",
+  "end": "same seat, arms pressed straight up overhead, handles at the top.",
+  "muscles": "shoulders, triceps",
+  "notes": "Machine kept very simple: one seat with a back pad, and two lever arms with handles near the shoulders, small base."
+ },
+ {
+  "id": "bundled-smith-machine-overhead-press",
+  "start": "standing upright inside a smith machine (two vertical guide posts with a barbell fixed to them), overhand grip just outside the shoulders, the bar resting at the front of the shoulders, elbows bent.",
+  "end": "same standing posture, arms locked straight overhead, the smith bar pressed straight up above the head.",
+  "muscles": "shoulders, triceps",
+  "notes": "Two thin vertical posts, one on each side of the figure, seen in three-quarter view; the bar rides on them."
+ },
+ {
+  "id": "bundled-push-press",
+  "start": "standing upright with feet shoulder width apart, the barbell resting on the front of the shoulders, overhand grip, knees bent into a shallow dip with the torso upright.",
+  "middle": "same figure driving up, legs mostly straight, rising onto the toes, the barbell just leaving the shoulders at chin height, elbows still bent.",
+  "end": "same figure, legs and body fully extended standing tall, arms locked straight overhead, the barbell directly above the head.",
+  "muscles": "shoulders, triceps, thighs",
+  "notes": "the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+ },
+ {
+  "id": "bundled-landmine-press",
+  "start": "standing in a split stance (one foot forward) leaning slightly forward, holding the end of an angled barbell with one hand at the shoulder, elbow bent; the far end of the bar sits in a small floor anchor behind.",
+  "end": "same stance, the arm pressed forward and up and straight, the end of the angled bar raised in front of the head.",
+  "muscles": "front of the shoulders, triceps, upper chest",
+  "notes": "The barbell is a single angled line rising from a small floor anchor at the back up to the hand; a small weight plate at the hand end, seen in three-quarter view."
+ },
+ {
+  "id": "bundled-pike-push-up",
+  "start": "in a pike position with the hips raised high, body an inverted V, hands flat on the floor, legs straight, head between the arms, arms locked straight.",
+  "end": "same inverted V, elbows bent and the top of the head lowered toward the floor between the hands.",
+  "muscles": "shoulders, triceps"
+ },
+ {
+  "id": "bundled-handstand-push-up",
+  "start": "in a handstand against a wall, body upside down and straight, hands flat on the floor, arms locked straight, feet resting on the wall.",
+  "end": "same handstand against the wall, elbows bent and the head lowered close to the floor between the hands.",
+  "muscles": "shoulders, triceps",
+  "notes": "A simple vertical wall as a thin dark grey slab behind the feet; the hands are on the floor line."
+ },
+ {
+  "id": "bundled-close-grip-bench-press",
+  "start": "lying on its back on a flat horizontal bench, feet flat on the floor, overhand grip with the hands close together about shoulder width, the barbell lowered to the lower chest, elbows tucked close to the sides.",
+  "end": "same bench, arms locked straight, the barbell pressed up directly above the chest.",
+  "muscles": "triceps",
+  "notes": "the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+ },
+ {
+  "id": "bundled-machine-dip",
+  "start": "seated upright in a seated dip machine with the back against the pad, feet flat on the floor, hands on the low handles beside the hips, elbows bent behind the torso.",
+  "end": "same seat, arms pressed down and straight, handles pushed down beside the hips.",
+  "muscles": "triceps",
+  "notes": "Machine kept very simple: seat with a back pad and two lever arms with handles beside the hips, small base."
+ },
+ {
+  "id": "bundled-bench-dip",
+  "start": "seated at the edge of a flat bench with hands gripping the bench edge beside the hips, arms locked straight, hips lifted off the bench in front of it, legs extended forward with heels on the floor.",
+  "end": "same position, hips lowered toward the floor, elbows bent back to 90 degrees, legs still extended.",
+  "muscles": "triceps",
+  "notes": "Simple flat bench behind the figure."
+ },
+ {
+  "id": "bundled-diamond-push-up",
+  "start": "in a high plank, hands flat on the floor close together under the chest, arms locked straight, body a straight line from head to heels.",
+  "end": "same body in a straight line, chest lowered to just above the floor, elbows bent tight against the body.",
+  "muscles": "triceps, chest"
  }
 ]

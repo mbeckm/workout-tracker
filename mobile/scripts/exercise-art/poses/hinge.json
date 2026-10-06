@@ -5,5 +5,123 @@
   "start": "at the bottom: hips hinged back, back flat, shins close to the bar, arms straight, both hands gripping the loaded barbell whose plates rest on the floor.",
   "end": "standing fully upright, hips and knees locked, arms straight down, the barbell held against the top of the thighs.",
   "muscles": "glutes, hamstrings, lower back"
+ },
+ {
+  "id": "bundled-sumo-deadlift",
+  "view": "side view",
+  "start": "at the bottom: very wide stance with toes turned out, knees pushed out, hips low, chest up, arms straight down between the knees with a narrow overhand grip on the loaded barbell resting on the floor.",
+  "end": "standing fully upright in the same wide stance, hips and knees locked, arms straight, the barbell held against the top of the thighs.",
+  "muscles": "glutes, inner thighs, hamstrings, lower back",
+  "notes": "barbell seen three-quarter view, plates on the floor in the first pose; wide stance clearly visible"
+ },
+ {
+  "id": "bundled-trap-bar-deadlift",
+  "view": "side view",
+  "start": "at the bottom: hips hinged back and bent knees, chest up, back flat, standing inside a hexagonal trap bar (a simple hexagon frame on the floor with two side handles and plates on short sleeves), hands holding the neutral side handles at the sides.",
+  "end": "standing fully upright inside the trap bar, hips and knees locked, arms straight at the sides holding the side handles, the hexagon frame hanging at thigh level.",
+  "muscles": "glutes, quads, hamstrings, lower back",
+  "notes": "trap bar is a simple hexagon frame with side handles, seen three-quarter view; no barbell in front of the body"
+ },
+ {
+  "id": "bundled-rack-pull",
+  "view": "side view",
+  "start": "at the start: hips hinged back, back flat, knees slightly bent, arms straight down, overhand grip on the loaded barbell resting on two simple low safety bars (pins) of a power rack at knee height.",
+  "end": "standing fully upright, hips and knees locked, shoulders pulled back, arms straight, the barbell held against the top of the thighs.",
+  "muscles": "lower back, upper back, glutes, hamstrings",
+  "notes": "barbell seen three-quarter view; rack shown only as two simple low dark grey pins/uprights at knee height, kept minimal"
+ },
+ {
+  "id": "bundled-back-extension",
+  "view": "side view",
+  "start": "lying face down over an angled 45-degree back-extension bench with the hips on the pad and ankles locked under the roller pads, upper body hanging down and folded forward at the hips, hands crossed over the chest, no weight.",
+  "end": "body in one straight line from head to heels, torso raised until level with the legs, hands crossed over the chest, hips still on the pad.",
+  "muscles": "lower back, glutes, hamstrings",
+  "notes": "simple angled bench with a hip pad and ankle roller pads, kept very simple"
+ },
+ {
+  "id": "bundled-romanian-deadlift",
+  "view": "side view",
+  "start": "at the bottom: standing with knees slightly bent, hips pushed far back, torso tilted forward nearly parallel to the floor with back flat, arms straight down holding the barbell with an overhand grip just below the knees, close to the legs.",
+  "end": "standing fully upright, hips locked, arms straight down, the barbell held against the top of the thighs.",
+  "muscles": "hamstrings, glutes, lower back",
+  "notes": "barbell in three-quarter view; feet flat on the floor, barbell does not touch the floor"
+ },
+ {
+  "id": "bundled-dumbbell-romanian-deadlift",
+  "view": "side view",
+  "start": "at the bottom: standing with knees slightly bent, hips pushed far back, torso tilted forward with back flat, arms hanging straight down holding one dumbbell in each hand (neutral grip) in front of the shins.",
+  "end": "standing fully upright, hips locked, arms straight down at the sides of the thighs, one dumbbell in each hand.",
+  "muscles": "hamstrings, glutes, lower back",
+  "notes": "two simple hex dumbbells, one in each hand"
+ },
+ {
+  "id": "bundled-single-leg-romanian-deadlift",
+  "view": "side view",
+  "start": "at the start: standing tall on one leg, the other leg lifted slightly behind, one dumbbell held in the hand opposite the standing leg, arm hanging straight down.",
+  "end": "at the bottom: hinged forward on the standing leg with a soft knee, torso tilted forward nearly parallel to the floor, the other leg extended straight back in line with the torso, dumbbell hanging straight down toward the floor.",
+  "muscles": "hamstrings, glutes, lower back",
+  "notes": "one dumbbell only; same standing foot position in both poses"
+ },
+ {
+  "id": "bundled-stiff-leg-deadlift",
+  "view": "side view",
+  "start": "at the bottom: standing with legs almost straight (knees only barely bent), hips back, torso bent forward deeply with a flat back, arms straight down holding the barbell with an overhand grip near the shins or just above the floor.",
+  "end": "standing fully upright with straight legs, hips locked, arms straight down, the barbell held against the top of the thighs.",
+  "muscles": "hamstrings, glutes, lower back",
+  "notes": "barbell in three-quarter view; legs nearly straight in the bottom pose"
+ },
+ {
+  "id": "bundled-good-morning",
+  "view": "side view",
+  "start": "standing fully upright with a loaded barbell resting on the upper back across the shoulders, hands gripping the bar wide, knees slightly bent.",
+  "end": "bowing forward at the hips with a flat back until the torso is nearly parallel to the floor, hips pushed far back, knees slightly bent, barbell still on the upper back.",
+  "muscles": "hamstrings, glutes, lower back",
+  "notes": "barbell on the back in three-quarter view, plates not covering the head; same feet position in both poses"
+ },
+ {
+  "id": "bundled-hip-thrust",
+  "view": "side view",
+  "start": "at the bottom: seated on the floor with the upper back resting against the side of a flat bench, knees bent, feet flat on the floor, hips low near the floor, a loaded barbell across the hip crease held with both hands.",
+  "end": "at the top: upper back on the bench, hips lifted high so that the torso and thighs form a straight line, shins vertical, feet flat, the barbell across the hips, chin tucked.",
+  "muscles": "glutes, hamstrings",
+  "notes": "simple flat bench seen from the side; barbell in three-quarter view over the hips"
+ },
+ {
+  "id": "bundled-machine-hip-thrust",
+  "view": "side view",
+  "start": "at the bottom: seated on the floor with the upper back against a simple padded bench, knees bent, feet flat on the floor, hips low, a simple padded lever belt resting across the hips.",
+  "end": "at the top: upper back on the bench, hips pushed up so the torso and thighs form a straight line, shins vertical, feet flat, the padded lever pressing across the hips.",
+  "muscles": "glutes",
+  "notes": "machine kept simple: one padded back bench plus a single padded lever arm over the hips; no cables"
+ },
+ {
+  "id": "bundled-glute-bridge",
+  "view": "side view",
+  "start": "lying on the back on the floor, knees bent, feet flat on the floor close to the hips, arms flat on the floor at the sides, hips on the floor, no weight.",
+  "end": "hips lifted high off the floor so that shoulders, hips and knees form a straight line, feet flat, arms flat on the floor, shoulders staying on the floor.",
+  "muscles": "glutes, hamstrings"
+ },
+ {
+  "id": "bundled-single-leg-glute-bridge",
+  "view": "side view",
+  "start": "lying on the back on the floor, one foot flat on the floor with that knee bent, the other leg lifted straight up in the air, arms flat at the sides, hips on the floor, no weight.",
+  "end": "hips lifted high off the floor on one foot so that the shoulders, hips and the bent supporting knee form a straight line, the other leg still extended straight and raised in line with the thigh, arms flat on the floor.",
+  "muscles": "glutes, hamstrings"
+ },
+ {
+  "id": "bundled-cable-pull-through",
+  "view": "side view",
+  "start": "at the start: standing facing away from a low cable pulley, feet wide, hips hinged far back, torso tilted forward with a flat back, arms straight reaching back between the legs holding a rope handle; a thin cable runs from a small pulley on the floor behind the legs to the rope.",
+  "end": "standing fully upright, hips pushed forward and locked, arms straight down holding the rope handle in front of the hips; the cable still runs thin and straight back to the small floor pulley behind.",
+  "muscles": "glutes, hamstrings",
+  "notes": "cable is one thin line from a small pulley at floor level behind the person to the rope handle; no weight stack shown"
+ },
+ {
+  "id": "bundled-kettlebell-swing",
+  "view": "side view",
+  "start": "at the bottom: hips hinged far back, knees slightly bent, torso tilted forward with a flat back, both arms straight holding one kettlebell with both hands, the kettlebell swung back between the legs.",
+  "end": "at the top: standing fully upright with hips fully extended, arms straight out in front, the kettlebell floating at chest and shoulder height with both hands on its handle.",
+  "muscles": "glutes, hamstrings, lower back",
+  "notes": "single kettlebell (round ball with a handle), both hands on the handle"
  }
 ]

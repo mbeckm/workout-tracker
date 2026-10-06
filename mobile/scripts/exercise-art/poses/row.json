@@ -5,5 +5,82 @@
   "start": "bent over with the torso about 45 degrees from the floor, knees slightly bent, back flat, arms hanging straight holding a loaded barbell below the knees.",
   "end": "same bent-over torso angle, elbows pulled back past the torso, the barbell pulled up to the lower ribs.",
   "muscles": "upper back, lats, biceps"
+ },
+ {
+  "id": "bundled-seated-cable-row",
+  "start": "sitting upright on the floor-level seat with legs extended and knees slightly bent, feet on a foot plate, torso leaning slightly forward, arms reaching straight forward holding a small V-handle at the end of a thin cable that runs in a straight line to a small pulley at the far left, close to the floor.",
+  "end": "same seated position with the torso upright and chest tall, elbows pulled back past the torso, the V-handle drawn to the lower belly, shoulder blades squeezed.",
+  "muscles": "upper back, lats, biceps",
+  "notes": "The cable is a single thin dark line from a small pulley at floor height to the handle. Seat and foot plate kept simple."
+ },
+ {
+  "id": "bundled-one-arm-dumbbell-row",
+  "start": "one knee and the same-side hand resting on a flat bench, other foot on the floor, back flat and roughly parallel to the floor, the free arm hanging straight down holding a dumbbell under the shoulder.",
+  "end": "same bench-supported position, the free arm's elbow pulled up and back past the torso, the dumbbell raised to the side of the lower ribs, palm facing the body.",
+  "muscles": "lats, upper back, biceps",
+  "notes": "Simple flat bench shown in dark grey, only one dumbbell."
+ },
+ {
+  "id": "bundled-pendlay-row",
+  "start": "bent over with the torso parallel to the floor, knees slightly bent, back flat, arms hanging straight down with an overhand grip on a loaded barbell resting on the floor, the bar on the floor in front of the shins.",
+  "end": "same flat parallel-to-floor torso, the barbell pulled explosively up to touch the lower chest, elbows pointing back and up.",
+  "muscles": "upper back, lats",
+  "notes": "Barbell drawn in three-quarter view, plates not covering the head."
+ },
+ {
+  "id": "bundled-t-bar-row",
+  "start": "straddling a landmine barbell, torso bent over about 45 degrees, knees slightly bent, back flat, arms hanging straight down holding a V-handle attached below the bar, the free end of the bar angled up from a small base on the floor behind the feet.",
+  "end": "same bent-over torso, elbows pulled back past the torso, the V-handle and bar end pulled up to the lower chest.",
+  "muscles": "upper back, lats",
+  "notes": "One angled barbell with plates on its end, pivoting from a small floor base. Plates must not cover the head."
+ },
+ {
+  "id": "bundled-chest-supported-dumbbell-row",
+  "start": "lying face down with the chest on an incline bench set at about 30 degrees, feet on the floor, arms hanging straight down holding a dumbbell in each hand with neutral grip.",
+  "end": "same face-down position on the incline bench, both elbows pulled up and back past the torso, both dumbbells raised to the sides of the ribs.",
+  "muscles": "upper back, rear shoulders",
+  "notes": "Simple incline bench in dark grey; the chest is pressed against the pad and the body does not move."
+ },
+ {
+  "id": "bundled-seal-row",
+  "start": "lying face down on a high flat bench with the chest on the pad and feet off the ground, arms hanging straight down with an overhand grip on a loaded barbell hanging below the bench.",
+  "end": "same face-down position on the high bench, the barbell pulled up to touch the underside of the bench below the chest, elbows pulled back.",
+  "muscles": "upper back, lats",
+  "notes": "Bench is raised on tall legs so the bar hangs without touching the floor. Barbell in three-quarter view, plates not covering the head."
+ },
+ {
+  "id": "bundled-seated-machine-row",
+  "start": "sitting upright on a simple seat with the chest against a vertical pad, arms reaching straight forward holding the handles of a simple lever arm that extends in front of the torso.",
+  "end": "same seated position with the chest on the pad, elbows pulled back past the torso, the handles pulled in to the sides of the lower ribs.",
+  "muscles": "upper back, lats, biceps",
+  "notes": "Machine kept simple: a seat, a chest pad and one lever arm with handles."
+ },
+ {
+  "id": "bundled-single-arm-cable-row",
+  "start": "sitting upright on a seat with legs extended and feet on a foot plate, one arm reaching straight forward holding a single D-handle at the end of a thin cable that runs in a straight line to a small pulley at the far left at chest height, other hand resting on the thigh.",
+  "end": "same seated position, the working elbow pulled back past the torso, the D-handle drawn to the side of the ribs.",
+  "muscles": "lats, upper back, biceps",
+  "notes": "The cable is a single thin dark line from a small pulley to the handle."
+ },
+ {
+  "id": "bundled-meadows-row",
+  "start": "standing in a staggered stance side-on to a landmine barbell, hips hinged with the torso bent forward about 45 degrees, one hand braced on the thigh, the other arm hanging straight down holding the thick end of the barbell with an overhand grip.",
+  "end": "same staggered bent-over stance, the working elbow pulled high and back, the end of the barbell pulled up to the lower ribs.",
+  "muscles": "upper back, lats, rear shoulders",
+  "notes": "One angled barbell pivoting from a small floor base behind; plates on the end near the hand, not covering the head."
+ },
+ {
+  "id": "bundled-inverted-row",
+  "start": "lying face up underneath a barbell fixed in a rack at waist height, body straight as a plank with heels on the floor, arms fully extended straight up holding the bar with an overhand grip.",
+  "end": "same straight plank body with heels on the floor, elbows bent and pulled back, the chest pulled up to touch the bar.",
+  "muscles": "upper back, lats, biceps",
+  "notes": "The bar sits in a simple rack with two upright posts. Feet stay on the floor line."
+ },
+ {
+  "id": "bundled-face-pulls",
+  "start": "standing tall with feet shoulder width, both arms extended straight forward at head height holding a rope attachment at the end of a thin cable that runs in a straight line to a small pulley at the far left at head height.",
+  "end": "same standing position, the rope pulled towards the face, elbows high and flared out wide, hands beside the ears, shoulder blades squeezed.",
+  "muscles": "rear shoulders, upper back",
+  "notes": "Cable is a single thin dark line from a small pulley at head height to the rope."
  }
 ]
