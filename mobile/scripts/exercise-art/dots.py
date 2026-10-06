@@ -1,7 +1,7 @@
 """Turn a two-up (or three-up) flat source (figures left to right, white ground) into transparent
 dot-matrix PNG frames: 120x80 dots, 9 px pitch, 1080x720.
 
-Usage: dots.py <source.png> <out-0.png> <out-1.png> [<out-2.png>] [--anchor floor|top]
+Usage: dots.py <source.png> <out-0.png> <out-1.png> [<out-2.png>] [--anchor floor|top] [--long 1.3]
 
 One shared scale for every frame. `floor` (default) puts the lowest body pixels (the feet) on one
 baseline and lines them up horizontally; `top` lines up the highest equipment pixels instead (the
@@ -11,9 +11,13 @@ becomes the lit muscle; mid-grey the body; dark grey the equipment.
 import sys
 from PIL import Image, ImageDraw, ImageFilter
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-anchor = "top" if "--anchor" in sys.argv and sys.argv[sys.argv.index("--anchor") + 1] == "top" else "floor"
-args = [a for a in args if a not in ("floor", "top")]
+def option(name, default):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+anchor = option("--anchor", "floor")
+long_cap = float(option("--long", "0"))   # 0: off; else the widest frame is at most this x the figure height
+flags = {i for i, a in enumerate(sys.argv) if a.startswith("--")}
+args = [a for i, a in enumerate(sys.argv[1:], 1) if i not in flags and i - 1 not in flags]
 src, outs = args[0], args[1:]
 N = len(outs)
 GW, GH, P = 120, 80, 9
@@ -68,6 +72,8 @@ def anchor_at(img, m, band):
 
 tallest = max(c.size[1] for c, _ in crops)
 k = (FIG_H * CH) / tallest
+if long_cap:  # lying and horizontal lifts: keep the body the size it has standing up
+    k = min(k, long_cap * FIG_H * CH / max(c.size[0] for c, _ in crops))
 while True:
     scaled = [(c.resize((max(1, int(c.size[0] * k)), max(1, int(c.size[1] * k))), Image.LANCZOS),
                m.resize((max(1, int(m.size[0] * k)), max(1, int(m.size[1] * k))), Image.NEAREST))
