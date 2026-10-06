@@ -93,10 +93,10 @@
  {
   "id": "bundled-flutter-kicks",
   "view": "side view",
-  "start": "lying flat on the back on the floor, hands under the hips, head slightly lifted, both legs straight and raised a few inches off the floor, one leg a little higher than the other.",
-  "end": "same position on the back, hands under the hips, head slightly lifted, legs straight and a few inches off the floor but the legs swapped: the other leg now higher, the first lower.",
+  "start": "lying flat on the back, hands under the hips, head slightly lifted, legs straight and together-ish in a narrow scissor: the NEAR leg (closest to the viewer) raised high at about 45 degrees, the FAR leg low, hovering just above the floor.",
+  "end": "same lying position, hands under the hips, head slightly lifted, scissor swapped: the NEAR leg now low, hovering just above the floor, the FAR leg raised high at about 45 degrees. The two legs must be at clearly different heights, both straight.",
   "muscles": "lower abs, hip flexors",
-  "notes": "Floor not drawn, no floor line. The two legs are clearly at different heights, a small scissor, both straight."
+  "notes": "Nothing under the body: no mat, no floor, no line. The legs are drawn clearly separate, one high and one low, not overlapping."
  },
  {
   "id": "bundled-bicycle-crunch",

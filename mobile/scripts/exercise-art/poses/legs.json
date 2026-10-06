@@ -74,10 +74,10 @@
  {
   "id": "bundled-standing-calf-raise",
   "view": "side view",
-  "start": "standing tall on the edge of a small step with only the balls of the feet on it, heels hanging down below the step, legs straight, arms by the sides.",
-  "end": "same standing posture, legs straight, heels lifted high so the body is up on the toes, the heels clearly far above the step.",
+  "start": "standing tall with the whole body low: the balls of the feet on the edge of a small step, both heels dropped far BELOW the step edge so the ankles are deeply stretched and the body is at its lowest, legs straight, arms by the sides.",
+  "end": "same body, legs straight, rising high onto the tips of the toes: both heels lifted FAR up, the feet almost vertical, the whole body about 10 cm higher than in the first pose, calves clearly bulging.",
   "muscles": "calves (back of the lower legs)",
-  "notes": "The step is a small dark grey block. Same body, legs straight, in both poses; the heel rise must be large and clear."
+  "notes": "The step is a small dark grey block. Draw the feet large and clear so the heel position is obvious. Same body and same step in both poses; the heel difference must be dramatic."
  },
  {
   "id": "bundled-seated-calf-raise",
@@ -85,22 +85,22 @@
   "start": "seated on a seated calf raise machine, thighs under a padded bar resting just above the knees, balls of the feet on a small platform, heels lowered below the platform.",
   "end": "same seated position, heels lifted high up onto the toes, the knee pad lifted with the thighs.",
   "muscles": "calves (back of the lower legs)",
-  "notes": "Machine is a simple seat, a small foot platform and one knee pad in dark grey. The heel rise must be large and clear."
+  "notes": "Machine is a simple seat, a small foot platform and one knee pad over the thighs in dark grey. Draw the lower legs and feet large and clear. Heels hang far below the platform in the first pose and are lifted far above it in the second; the knees and knee pad rise noticeably. Same body and machine in both poses."
  },
  {
   "id": "bundled-leg-press-calf-raise",
   "view": "side view",
-  "start": "seated reclined in a leg press machine, back against the sloped pad, legs straight and extended up, only the balls of the feet on the bottom of the footplate, the toes pulled back with heels hanging low.",
-  "end": "same reclined position, legs still straight, the ankles pointed so the feet are pushed up onto the toes, the footplate pushed slightly farther.",
+  "start": "seated reclined in a leg press machine, back against the sloped pad, legs straight and extended, only the balls of the feet on the footplate, the toes pulled back toward the shins (ankles flexed), the heels hanging off the bottom of the footplate.",
+  "end": "same reclined position, legs still locked straight, the ankles pointed hard so the feet are pushed onto the toes, the foot arch extended in a straight line with the shin, toes at the highest point.",
   "muscles": "calves (back of the lower legs)",
-  "notes": "Machine is a simple sloped seat pad and one flat footplate in dark grey. Same legs and body in both poses."
+  "notes": "Machine is a simple sloped seat pad and one flat footplate in dark grey. Draw the feet large so the ankle flex versus point is obvious. Same legs, body and machine in both poses."
  },
  {
   "id": "bundled-tibialis-raises",
   "view": "side view",
-  "start": "standing with the back and buttocks against a wall, feet about a foot in front of the wall, legs straight, the feet flat on the floor.",
-  "end": "same position against the wall, legs straight, the toes lifted high off the floor with only the heels on the ground, the ankles flexed so the feet point up.",
+  "start": "standing leaning back against a wall, feet about a foot in front of the wall, legs straight, the feet flat on the floor.",
+  "end": "same leaning position, legs straight, the toes lifted far off the floor so both feet are tilted up about 45 degrees with only the heels touching the floor, the ankles flexed hard.",
   "muscles": "tibialis (front of the lower legs)",
-  "notes": "The wall is a plain vertical dark grey slab behind the back. The toe lift must be large and clear."
+  "notes": "The wall is a thin plain vertical dark grey slab behind the back. Draw the feet large and clear so the tilted toes are obvious. Same body in both poses."
  }
 ]
