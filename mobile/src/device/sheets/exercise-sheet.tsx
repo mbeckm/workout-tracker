@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Image, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import {
 } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { isSheetKind, type SheetParams } from '@/device/device-state';
+import { exerciseArt } from '@/device/exercise-art';
 import { ExerciseFigure } from '@/device/figures';
 import { useLogSession } from '@/device/log';
 import { estimatedOneRM, formatLoadWithUnit, formatLoggedSetLine } from '@/domain/helpers';
@@ -82,6 +83,7 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
     [customExercises, exerciseId, row],
   );
   const facts = useMemo(() => exerciseFacts(row, custom, params.name), [custom, params.name, row]);
+  const art = exerciseArt(facts?.name);
 
   const stats = useMemo(() => {
     if (!facts) return [];
@@ -146,9 +148,13 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
             styles.content,
             { paddingBottom: Math.max(insets.bottom, sheetGeometry.bottomPad) },
           ]}>
-          {facts?.figure ? (
+          {art || facts?.figure ? (
             <View style={styles.figure}>
-              <ExerciseFigure figure={facts.figure} />
+              {art ? (
+                <Image source={art} resizeMode="cover" style={styles.art} accessibilityLabel={facts?.name} />
+              ) : facts?.figure ? (
+                <ExerciseFigure figure={facts.figure} />
+              ) : null}
             </View>
           ) : (
             <View style={styles.noFigure} />
@@ -434,6 +440,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     experimental_backgroundImage: `radial-gradient(ellipse at 50% 60%, ${figureColors.groundHi}, ${figureColors.groundLo})`,
   },
+  art: { width: '100%', height: '100%' },
   // Without a figure the name starts under the floating control, like under a header.
   noFigure: { height: sheetGeometry.headerHeight },
   titleBlock: { paddingTop: exerciseSheet.nameTop, paddingHorizontal: exerciseSheet.namePadX },
