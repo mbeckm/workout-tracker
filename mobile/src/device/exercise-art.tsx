@@ -3,7 +3,7 @@ import { AccessibilityInfo, Image, StyleSheet, View, type ImageSourcePropType } 
 
 import { bundledExerciseId } from '@/catalog/bundled';
 
-import { EXERCISE_ART } from './exercise-art.generated';
+import { EXERCISE_ART, EXERCISE_THUMB_EMPTY, EXERCISE_THUMBS } from './exercise-art.generated';
 
 /**
  * Exercise art for the exercise sheet's panel: dot-matrix frames in the display's own dots, made
@@ -20,6 +20,15 @@ export function exerciseArt(
 ): readonly ImageSourcePropType[] | undefined {
   const byId = id ? EXERCISE_ART[id] : undefined;
   return byId ?? (name ? EXERCISE_ART[bundledExerciseId(name)] : undefined);
+}
+
+/**
+ * A picker row's art tile (decision 83): a bundled lift's working frame cropped to the figure,
+ * else the bare dot grid, so rows without art (stretches, cardio, custom exercises) still line up.
+ */
+export function exerciseThumb(id: string | undefined, name: string, custom: boolean): ImageSourcePropType {
+  if (custom) return EXERCISE_THUMB_EMPTY;
+  return (id ? EXERCISE_THUMBS[id] : undefined) ?? EXERCISE_THUMBS[bundledExerciseId(name)] ?? EXERCISE_THUMB_EMPTY;
 }
 
 /** Loops the frames; with Reduce Motion on it holds the last (working) frame. */

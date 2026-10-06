@@ -29,6 +29,9 @@ repo; only approved frames come in.
 3. `install.py <work-dir> <id>=c<n> ...` copies the approved candidates to
    `mobile/assets/images/exercise-art/<slug>-<i>.png`, records them in `approved.json` and
    regenerates `src/device/exercise-art.generated.ts`, which `src/device/exercise-art.tsx` plays.
+   It also rebuilds the picker thumbnails (`thumbs/<slug>.png`, the last frame cropped square
+   around the figure, 156 px, 32 colours; `thumbs/_empty.png`, the bare dot grid). `install.py
+   --manifest` redoes the thumbnails and the manifest without installing anything.
 
 `dots.py` splits the source at the emptiest columns, scales every frame with one shared scale,
 lines up the anchor (feet on one baseline, or the bar), and renders transparent 120x80 dot

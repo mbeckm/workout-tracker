@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ImageSourcePropType } from 'react-native';
 
 import {
   CATALOG,
@@ -19,6 +19,7 @@ import {
   PRESSED_OPACITY,
   fontScaleCap,
   gadgetRadius,
+  lcd,
   plansGeometry as geo,
   plansType,
   progressColors,
@@ -26,6 +27,7 @@ import {
   sheetGeometry,
   signal,
 } from '@/constants/theme';
+import { exerciseThumb } from '@/device/exercise-art';
 import { newId } from '@/domain/id';
 import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/types';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -235,6 +237,7 @@ export function ExercisePicker(props: ExercisePickerProps) {
                 key={`${shown?.title ?? ''}:${key}`}
                 name={exercise.name}
                 sub={taken ? 'In this day' : exercisePickerMeta(exercise)}
+                art={exerciseThumb(exercise.id, exercise.name, Boolean(exercise.customExerciseID))}
                 first={index === 0}
                 taken={taken}
                 tick={props.mode === 'multi' ? (picked ? 'on' : 'off') : 'none'}
@@ -275,10 +278,14 @@ export function ExercisePicker(props: ExercisePickerProps) {
   );
 }
 
-/** A picker row (`.pickrow`): the name over `kit, muscle`, and a round tick (orange when picked). */
+/**
+ * A picker row (`.pickrow`): the lift's art tile when it lists a lift (decision 83), the name over
+ * `kit, muscle`, and a round tick (orange when picked).
+ */
 function PickRow({
   name,
   sub,
+  art,
   first = false,
   taken = false,
   tick,
@@ -289,6 +296,7 @@ function PickRow({
 }: {
   name: string;
   sub: string;
+  art?: ImageSourcePropType;
   first?: boolean;
   taken?: boolean;
   tick: 'on' | 'off' | 'plus' | 'none';
@@ -309,7 +317,18 @@ function PickRow({
         disabled: taken,
       }}
       testID={testID}
-      style={({ pressed }) => [styles.row, !first && styles.rule, pressed && styles.pressed]}>
+      style={({ pressed }) => [
+        styles.row,
+        art != null && styles.artRow,
+        !first && styles.rule,
+        pressed && styles.pressed,
+      ]}>
+      {art != null ? (
+        <View style={[styles.artTile, taken && styles.artTaken]}>
+          <Image source={art} fadeDuration={0} style={styles.artImage} accessible={false} />
+          <View style={styles.artRing} pointerEvents="none" />
+        </View>
+      ) : null}
       <View style={styles.rowText}>
         <Text
           numberOfLines={2}
@@ -387,7 +406,30 @@ const styles = StyleSheet.create({
     paddingVertical: geo.pickPadY,
     paddingHorizontal: geo.pickPadX,
   },
+  artRow: { paddingVertical: geo.pickArtPadY },
   rule: { borderTopWidth: 1, borderTopColor: sheetColors.rule },
+  artTile: {
+    width: geo.artTile,
+    height: geo.artTile,
+    borderRadius: geo.artTileRadius,
+    borderCurve: 'continuous',
+    backgroundColor: lcd.lcd,
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  artImage: { width: '100%', height: '100%' },
+  // The ring sits over the art, so the dots never touch the tile's edge.
+  artRing: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: geo.artTileRadius,
+    borderCurve: 'continuous',
+    boxShadow: `inset 0 0 0 ${geo.artTileRing}px ${sheetColors.rule}`,
+  },
+  artTaken: { opacity: geo.artTileTaken },
   rowText: { flex: 1, minWidth: 0 },
   sub: { marginTop: geo.subTop },
   takenName: { color: sheetColors.muted },
