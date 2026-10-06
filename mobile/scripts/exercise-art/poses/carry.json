@@ -1,0 +1,24 @@
+[
+ {
+  "id": "bundled-barbell-shrug",
+  "view": "front view",
+  "start": "standing tall facing the viewer, neck long, shoulders pulled DOWN and low with a visible gap between the shoulders and the ears, arms straight, hands gripping a barbell overhand at hip width, the barbell resting against the upper thighs.",
+  "end": "standing tall facing the viewer, shoulders shrugged HIGH so the tops of the shoulders almost touch the ears and the neck looks very short, arms still straight, hands gripping the barbell overhand, the barbell clearly higher, at hip-crease height.",
+  "muscles": "upper traps (the slope between neck and shoulders)",
+  "notes": "Barbell drawn in a slight three-quarter view, never end-on, with small plates kept low and outside the hands so they never cover the head. Same body, same feet position in both poses."
+ },
+ {
+  "id": "bundled-dumbbell-shrug",
+  "view": "front view",
+  "start": "standing tall facing the viewer, neck long, shoulders pulled DOWN and low with a visible gap between the shoulders and the ears, arms straight down by the sides, a dumbbell in each hand at mid-thigh height.",
+  "end": "standing tall facing the viewer, shoulders shrugged HIGH so the tops of the shoulders almost touch the ears and the neck looks very short, arms straight by the sides, a dumbbell in each hand clearly higher, at hip height.",
+  "muscles": "upper traps (the slope between neck and shoulders)"
+ },
+ {
+  "id": "bundled-dumbbell-side-bend",
+  "view": "front view",
+  "start": "standing tall facing the viewer, feet shoulder width apart, torso upright, one dumbbell held in the right hand hanging straight down at the side, left hand resting on the left hip.",
+  "end": "standing facing the viewer, feet unchanged, torso bent sideways at the waist toward the dumbbell side (the viewer's left), dumbbell hand sliding down the outer thigh toward the knee, left hand still on the left hip, hips staying level, no forward lean.",
+  "muscles": "side of the waist (obliques) on the left of the picture"
+ }
+]

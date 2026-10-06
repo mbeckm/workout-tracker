@@ -5,5 +5,43 @@
   "start": "standing tall facing the viewer, arms straight down by the sides, a dumbbell in each hand.",
   "end": "standing tall facing the viewer, both arms raised straight out to the sides to shoulder height, forming a T, a dumbbell in each hand.",
   "muscles": "side of the shoulders (side delts), upper traps"
+ },
+ {
+  "id": "bundled-cable-lateral-raise",
+  "view": "front view",
+  "start": "standing tall facing the viewer, left arm straight down across the front of the body, the right hand holding a small single handle at hip level, a thin cable running from the handle down to a small pulley at the floor on the left side of the frame; the other arm hangs relaxed at the side.",
+  "end": "standing tall facing the viewer, the working arm raised straight out to the side to shoulder height, hand holding the small handle, the thin cable running from the handle diagonally down to the same small floor pulley; the other arm hangs relaxed at the side.",
+  "muscles": "side of the shoulder (side delt) of the working arm",
+  "notes": "The cable is one thin dark line from a small pulley at floor level to the handle; no tower or stack drawn. Same arm works in both poses."
+ },
+ {
+  "id": "bundled-machine-lateral-raise",
+  "view": "front view",
+  "start": "seated upright facing the viewer on a simple seat with a backrest, both upper arms resting against two simple padded lever arms at the sides, forearms bent, elbows at hip height, arms down.",
+  "end": "seated upright facing the viewer on the same simple seat, both arms lifted out to the sides to shoulder height pushing the two padded lever arms up, elbows at shoulder height.",
+  "muscles": "side of the shoulders (side delts)",
+  "notes": "Machine is only a simple seat, backrest, and two padded lever arms pivoting at the sides; keep geometry minimal."
+ },
+ {
+  "id": "bundled-upright-row",
+  "view": "front view",
+  "start": "standing tall facing the viewer, arms straight down holding a barbell with an overhand grip at thigh height, hands about shoulder width apart, the barbell shown in three-quarter view.",
+  "end": "standing tall facing the viewer, the barbell pulled up close to the chest at collarbone height with an overhand narrow grip, elbows flared out high to the sides above the hands, the barbell in three-quarter view and plates not covering the head.",
+  "muscles": "side of the shoulders (side delts), upper traps"
+ },
+ {
+  "id": "bundled-front-raise",
+  "view": "side view",
+  "start": "standing tall in side view, both arms straight down in front of the thighs, a dumbbell in each hand with an overhand grip.",
+  "end": "standing tall in side view, both arms straight and raised forward to shoulder height, parallel to the floor, a dumbbell in each hand, torso upright.",
+  "muscles": "front of the shoulders (front delts)"
+ },
+ {
+  "id": "bundled-plate-front-raise",
+  "view": "side view",
+  "start": "standing tall in side view, both arms straight down in front of the thighs, gripping one round weight plate at its sides with both hands.",
+  "end": "standing tall in side view, both arms straight and raised forward to shoulder height, holding the round weight plate in front of the face at chest-to-eye level, torso upright, plate not hiding the head.",
+  "muscles": "front of the shoulders (front delts)",
+  "notes": "The plate is a simple flat dark grey disc, gripped at 3 and 9 o'clock."
  }
 ]

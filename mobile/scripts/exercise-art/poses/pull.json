@@ -7,5 +7,71 @@
   "end": "pulled up to the same fixed bar at the same height, chin above the bar, elbows bent and down by the sides, legs straight down.",
   "notes": "The pull-up bar is a short horizontal bar at the same height in both figures, shown end-on or short, with no frame or uprights.",
   "muscles": "lats, upper back, biceps"
+ },
+ {
+  "id": "bundled-lat-pulldown",
+  "view": "side view",
+  "start": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, arms straight up overhead gripping a long wide bar with a wide overhand grip, torso upright, leaning very slightly back.",
+  "end": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, wide bar pulled down to the upper chest, elbows bent and pointing down and out, chest lifted, torso leaning slightly back.",
+  "muscles": "lats, upper back, biceps",
+  "notes": "A single thin cable runs from a small pulley high above the figure down to the handle. Machine kept very simple: a seat, a thigh pad, a thin upright post, the small pulley. The bar is a straight long bar seen three-quarter, not end-on."
+ },
+ {
+  "id": "bundled-chin-up",
+  "view": "side view",
+  "anchor": "top",
+  "start": "hanging from a fixed horizontal bar with arms fully straight overhead, underhand (palms facing the face) shoulder-width grip, legs straight down, feet off the ground.",
+  "end": "pulled up to the same fixed bar at the same height, chin above the bar, elbows bent and down in front of the ribs, underhand grip, legs straight down.",
+  "muscles": "lats, biceps, upper back",
+  "notes": "The bar is a short horizontal bar at the same height in both figures, no frame or uprights."
+ },
+ {
+  "id": "bundled-assisted-pull-up",
+  "view": "side view",
+  "start": "kneeling on a small padded knee platform of an assisted pull-up machine, arms straight overhead gripping two fixed handles on a vertical post, overhand grip, torso upright.",
+  "end": "kneeling on the same small knee platform, platform now lower-forward, pulled up so the chin is above the handles, elbows bent and down by the sides.",
+  "muscles": "lats",
+  "notes": "Machine very simple: a vertical post with two short handles at the top and a small flat knee pad. No weight stack drawn. Handles at the same height in both figures."
+ },
+ {
+  "id": "bundled-close-grip-lat-pulldown",
+  "view": "side view",
+  "start": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, arms straight up overhead holding a V-shaped close-grip handle (narrow triangle handle) with palms facing each other, torso upright.",
+  "end": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, the close-grip V handle pulled down to the upper chest, elbows bent tight and down by the ribs, chest lifted, torso leaning slightly back.",
+  "muscles": "lats",
+  "notes": "A single thin cable runs from a small pulley high above the figure down to the handle. Machine kept very simple: a seat, a thigh pad, a thin upright post, the small pulley. The handle is a small narrow triangle."
+ },
+ {
+  "id": "bundled-neutral-grip-lat-pulldown",
+  "view": "side view",
+  "start": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, arms straight up overhead holding two parallel neutral-grip handles with palms facing each other, shoulder width apart, torso upright.",
+  "end": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, neutral-grip handles pulled down to the upper chest, elbows bent and down by the sides, palms facing each other, chest lifted, torso leaning slightly back.",
+  "muscles": "lats",
+  "notes": "A single thin cable runs from a small pulley high above the figure down to the handle. Machine kept very simple: a seat, a thigh pad, a thin upright post, the small pulley. Two short parallel handles on a short bar."
+ },
+ {
+  "id": "bundled-single-arm-lat-pulldown",
+  "view": "side view",
+  "start": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, one arm (the near arm) straight up overhead holding a single small handle, the other hand resting on the thigh, torso upright.",
+  "end": "seated on a simple padded seat facing a tall cable machine, thighs held down under a thigh pad, feet flat on the floor, the single handle pulled down to the shoulder, near elbow bent and down by the side, other hand resting on the thigh, torso upright.",
+  "muscles": "lats",
+  "notes": "A single thin cable runs from a small pulley high above the figure down to the handle. Machine kept very simple: a seat, a thigh pad, a thin upright post, the small pulley. One single small D-handle."
+ },
+ {
+  "id": "bundled-straight-arm-pulldown",
+  "view": "side view",
+  "start": "standing facing a tall cable tower on the left, torso leaning forward about 30 degrees, arms held STRAIGHT and raised up in front at about head height, both hands on a straight bar attached to a THICK cable running up to a high pulley at the top of the tower.",
+  "end": "same stance and torso lean, arms still STRAIGHT but swept down so the bar is pressed against the front of the thighs, the THICK cable now running diagonally from the high pulley down to the bar.",
+  "muscles": "lats",
+  "notes": "Arms stay straight in both figures and are clearly separated from the torso in the start figure. Draw the cable as a thick solid dark grey line, clearly visible. The tower is a simple upright post with a pulley at the top."
+ },
+ {
+  "id": "bundled-dead-hang",
+  "view": "side view",
+  "anchor": "top",
+  "start": "standing on the floor reaching up with both arms to a fixed horizontal bar above, overhand grip, hands on the bar, about to hang.",
+  "end": "hanging from the fixed horizontal bar with arms fully straight overhead, overhand grip, shoulders long, legs straight down, feet off the ground, body still.",
+  "muscles": "forearms",
+  "notes": "The bar is a short horizontal bar at the same height in both figures, no frame or uprights. Forearms and grip lit orange."
  }
 ]

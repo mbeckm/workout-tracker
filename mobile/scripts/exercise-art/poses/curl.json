@@ -5,5 +5,110 @@
   "start": "standing tall, arms straight down by the sides, a dumbbell in each hand held vertically with palms facing the body (neutral grip).",
   "end": "standing tall, upper arms still at the sides, elbows bent fully, the vertical dumbbells curled up to the shoulders, palms still facing each other.",
   "muscles": "biceps, forearms"
+ },
+ {
+  "id": "bundled-barbell-curl",
+  "start": "standing tall, arms straight down in front of the thighs, holding a straight barbell with an underhand (palms forward) shoulder-width grip, the bar resting against the thighs.",
+  "end": "standing tall, upper arms still at the sides, elbows fully bent, the barbell curled up to chest height in front of the shoulders, underhand grip.",
+  "muscles": "biceps, forearms",
+  "notes": "Barbell in three-quarter view (never end-on), plates small and kept clear of the head; the bar is in front of the body."
+ },
+ {
+  "id": "bundled-incline-bicep-curls",
+  "start": "seated leaning back against an incline bench set at 45 degrees, feet flat on the floor, arms hanging straight down behind the torso line, a dumbbell in each hand, palms facing forward.",
+  "end": "same seated position leaning back on the 45 degree incline bench, upper arms staying back and hanging vertical, elbows fully bent, both dumbbells curled up toward the shoulders.",
+  "muscles": "biceps",
+  "notes": "The bench is a simple tilted pad with a small support, dark grey. The back stays on the pad."
+ },
+ {
+  "id": "bundled-dumbbell-curl",
+  "start": "standing tall, arms straight down by the sides, a dumbbell in each hand with palms facing forward (underhand grip).",
+  "end": "standing tall, upper arms still at the sides, elbows bent fully, both dumbbells curled up to the shoulders, palms facing the shoulders.",
+  "muscles": "biceps, forearms"
+ },
+ {
+  "id": "bundled-ez-bar-curl",
+  "start": "standing tall, arms straight down in front of the thighs, holding a zig-zag EZ curl bar with an underhand grip on the angled inner grips.",
+  "end": "standing tall, upper arms still at the sides, elbows fully bent, the EZ curl bar curled up in front of the shoulders, underhand grip.",
+  "muscles": "biceps",
+  "notes": "The EZ bar is a short bar with a visible zig-zag bend in the middle, three-quarter view (never end-on), small plates kept clear of the head."
+ },
+ {
+  "id": "bundled-preacher-curl",
+  "start": "seated at a preacher bench, chest against the sloped pad, upper arms resting flat along the pad, arms almost fully straight down the pad, holding an EZ curl bar with an underhand grip.",
+  "end": "seated at the preacher bench, upper arms still flat on the sloped pad, elbows fully bent, the EZ curl bar curled up close to the chin, underhand grip.",
+  "muscles": "biceps",
+  "notes": "The preacher bench is a simple seat plus a sloped pad on a post, dark grey. EZ bar three-quarter view with small plates, clear of the head."
+ },
+ {
+  "id": "bundled-machine-preacher-curl",
+  "start": "seated at a preacher curl machine, chest against the sloped pad, upper arms resting on the pad, arms nearly straight, hands holding the two handles of a lever arm at the bottom of the arc.",
+  "end": "seated at the preacher curl machine, upper arms still on the pad, elbows fully bent, the lever arm swung up so the handles are in front of the shoulders.",
+  "muscles": "biceps",
+  "notes": "Machine kept very simple: a seat, a sloped arm pad, and one curved lever arm with handles, all dark grey. No weight stack."
+ },
+ {
+  "id": "bundled-cable-curl",
+  "start": "standing facing a low cable pulley, arms straight down in front of the thighs, holding a short straight bar handle with an underhand grip, a thin cable line running from the handle down to a small pulley on the floor in front of the feet.",
+  "end": "standing tall, upper arms still at the sides, elbows fully bent, the bar handle curled up to the chest, the thin cable still running taut down to the small floor pulley.",
+  "muscles": "biceps",
+  "notes": "The cable is just a thin dark line from a small pulley at floor level to the handle. No weight stack."
+ },
+ {
+  "id": "bundled-cable-hammer-curl",
+  "start": "standing facing a low cable pulley, arms straight down in front of the thighs, both hands gripping a thin rope attachment with palms facing each other (neutral grip), a thin cable line running from the rope down to a small pulley on the floor in front of the feet.",
+  "end": "standing tall, upper arms still at the sides, elbows fully bent, the rope curled up to the chest with palms facing each other, the thin cable still running taut down to the small floor pulley.",
+  "muscles": "biceps, forearms",
+  "notes": "The cable is just a thin dark line from a small pulley at floor level to the rope. No weight stack."
+ },
+ {
+  "id": "bundled-bayesian-curl",
+  "start": "standing sideways to a low cable pulley with the pulley BEHIND the body, leaning slightly forward, one arm hanging straight down and back behind the torso, the hand gripping a single handle with a thin cable line running backward to a small floor pulley, other hand on the hip.",
+  "end": "same stance, upper arm kept back behind the torso, elbow fully bent, the handle curled up in front of the shoulder, cable still taut backward to the small floor pulley.",
+  "muscles": "biceps",
+  "notes": "Only one arm works. The cable is a thin dark line from a small floor pulley behind the figure to the handle."
+ },
+ {
+  "id": "bundled-concentration-curl",
+  "start": "seated on the edge of a flat bench with legs wide apart, leaning forward, one elbow braced against the inner thigh, that arm hanging straight down holding a dumbbell, the other hand resting on the other knee.",
+  "end": "same seated position, elbow still braced against the inner thigh, the elbow fully bent and the dumbbell curled up to the shoulder.",
+  "muscles": "biceps",
+  "notes": "Only one arm works. The bench is a simple flat dark grey pad."
+ },
+ {
+  "id": "bundled-spider-curl",
+  "start": "lying chest down on an incline bench set at 45 degrees, chest against the pad, both arms hanging straight down vertically in front of the bench, a dumbbell in each hand with palms facing forward, feet on the floor behind.",
+  "end": "same position chest down on the incline bench, upper arms still hanging vertical, elbows fully bent, both dumbbells curled up toward the shoulders.",
+  "muscles": "biceps",
+  "notes": "The bench is a simple tilted pad with a small support, dark grey."
+ },
+ {
+  "id": "bundled-zottman-curl",
+  "start": "standing tall, arms straight down by the sides, a dumbbell in each hand, palms facing forward (underhand grip).",
+  "middle": "standing tall, upper arms at the sides, elbows fully bent, dumbbells curled up to the shoulders, palms facing up and back.",
+  "end": "standing tall, upper arms at the sides, elbows bent at 90 degrees so the forearms point straight forward and level, palms turned DOWN (overhand grip), lowering the dumbbells slowly.",
+  "muscles": "biceps, forearms",
+  "notes": "The three arm positions must be clearly different: arm straight down, forearm vertical at the shoulder, forearm horizontal pointing forward."
+ },
+ {
+  "id": "bundled-reverse-curl",
+  "start": "standing tall, arms straight down in front of the thighs, holding an EZ curl bar with an overhand grip (palms facing down).",
+  "end": "standing tall, upper arms still at the sides, elbows fully bent, the EZ curl bar curled up in front of the shoulders, overhand grip, knuckles facing forward.",
+  "muscles": "forearms, biceps",
+  "notes": "EZ bar with a visible zig-zag bend, three-quarter view (never end-on), small plates clear of the head."
+ },
+ {
+  "id": "bundled-wrist-curl",
+  "start": "seated on the end of a flat bench, forearm resting along the thigh with the wrist hanging over the knee, hand open palm up with a dumbbell, the wrist bent down so the dumbbell sits low.",
+  "end": "same seated position, forearm still resting on the thigh, the wrist curled up so the palm tilts toward the body and the dumbbell is raised.",
+  "muscles": "forearms",
+  "notes": "Only one arm shown working, the forearm stays flat on the thigh; only the hand moves."
+ },
+ {
+  "id": "bundled-reverse-wrist-curl",
+  "start": "seated on the end of a flat bench, forearm resting along the thigh with the wrist hanging over the knee, hand palm down holding a dumbbell, the wrist bent down so the dumbbell sits low.",
+  "end": "same seated position, forearm still resting on the thigh, palm down, the wrist extended up so the back of the hand rises and the dumbbell is raised.",
+  "muscles": "forearms",
+  "notes": "Only one arm shown working, the forearm stays flat on the thigh; only the hand moves."
  }
 ]

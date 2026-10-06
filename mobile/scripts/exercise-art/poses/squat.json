@@ -1,0 +1,147 @@
+[
+ {
+  "id": "bundled-leg-press",
+  "view": "side view",
+  "start": "seated reclined in a leg press machine, back flat against an angled backrest, knees bent deeply close to the chest, both feet flat on a large angled footplate.",
+  "end": "same seated position, legs pressed out almost straight (knees not locked), feet flat on the footplate pushed far away from the hips.",
+  "muscles": "front of the thighs, glutes",
+  "notes": "Machine kept very simple: one angled backrest with seat, one angled footplate on a sloped rail, both dark grey. The seat is low and the sled slopes up away from the seat. Hands rest on small side handles."
+ },
+ {
+  "id": "bundled-front-squat",
+  "view": "side view",
+  "start": "standing upright facing right, a barbell resting on the front of the shoulders across the collarbones IN FRONT of the neck (not behind), both elbows raised high pointing straight forward, fingertips under the bar, torso upright.",
+  "end": "deep squat facing right, thighs below parallel, torso very upright, both elbows still raised high pointing forward, barbell still on the front of the shoulders in front of the neck.",
+  "muscles": "front of the thighs, glutes, and the upper back and trapezius between the shoulder blades",
+  "notes": "Barbell in a three-quarter view with the plates small and kept away from the head. The elbows pointing forward is the key difference from a back squat."
+ },
+ {
+  "id": "bundled-box-squat",
+  "view": "side view",
+  "start": "standing upright in front of a low box behind him, barbell resting on the upper back behind the neck, hands gripping the bar wide.",
+  "end": "sitting back on the box, hips back onto the box, shins vertical, torso leaning forward, barbell still on the upper back.",
+  "muscles": "front of the thighs",
+  "notes": "A plain dark grey rectangular box behind the figure at knee height in both poses. Barbell in a three-quarter view, plates not covering the head."
+ },
+ {
+  "id": "bundled-goblet-squat",
+  "view": "side view",
+  "start": "standing upright, holding one dumbbell vertically with both hands cupped under its top end against the chest, elbows pointing down.",
+  "end": "at the bottom of a deep squat, torso upright, elbows inside the knees, the dumbbell held at the chest.",
+  "muscles": "front of the thighs, glutes",
+  "notes": "One single dumbbell held vertically at the chest in both poses."
+ },
+ {
+  "id": "bundled-hack-squat",
+  "view": "side view",
+  "start": "standing on a footplate leaning back against an angled backrest with padded shoulder pads over the shoulders, legs nearly straight, feet low and forward on the plate.",
+  "end": "deep squat on the machine, knees bent deeply, back sliding down the angled backrest, shoulder pads still on the shoulders.",
+  "muscles": "front of the thighs, glutes",
+  "notes": "Machine kept very simple: one backrest tilted about 45 degrees on a sloped rail, a footplate at the bottom, two shoulder pads. Dark grey."
+ },
+ {
+  "id": "bundled-pendulum-squat",
+  "view": "side view",
+  "start": "standing facing right on a flat footplate, leaning slightly back with the shoulders under a padded bar, legs nearly straight.",
+  "end": "deep squat facing right, knees bent deeply and travelling forward, the shoulder pads still on the shoulders, torso leaning back slightly.",
+  "muscles": "front of the thighs",
+  "notes": "Machine drawn as simply as a hack squat: a footplate on the ground, and one straight padded lever arm from a pivot high behind the figure sloping down to the shoulder pads. No curved arms, no extra loops."
+ },
+ {
+  "id": "bundled-belt-squat",
+  "view": "side view",
+  "start": "standing upright with feet on two small platforms, a belt around the hips with a short chain hanging straight down to a weight hanging between the platforms, torso upright, hands resting on the front of the thighs.",
+  "end": "in a deep squat, torso upright, the chain from the hip belt hanging straight down to the weight below between the platforms.",
+  "muscles": "front of the thighs",
+  "notes": "No barbell. A thin chain from the hips hangs down to a single plate. Two simple raised platforms under the feet."
+ },
+ {
+  "id": "bundled-smith-machine-squat",
+  "view": "side view",
+  "start": "standing upright, barbell on the upper back, the bar attached to a Smith machine with two thin vertical rails at the sides, feet slightly forward of the bar line.",
+  "end": "deep squat with thighs parallel to the floor, the bar still on the upper back and sliding down along the vertical rails.",
+  "muscles": "front of the thighs",
+  "notes": "Two thin dark grey vertical rails behind or beside the figure with the bar fixed between them. Barbell in a three-quarter view, plates small and not covering the head."
+ },
+ {
+  "id": "bundled-bodyweight-squat",
+  "view": "side view",
+  "start": "standing upright, feet shoulder width, arms hanging relaxed at the sides.",
+  "end": "in a deep squat, thighs below parallel, arms stretched straight forward for balance, torso leaning slightly forward.",
+  "muscles": "front of the thighs",
+  "notes": "No equipment at all."
+ },
+ {
+  "id": "bundled-sumo-squat",
+  "view": "front view",
+  "start": "standing upright with a very wide stance and toes pointing outward, one dumbbell held vertically in both hands hanging between the legs at hip height.",
+  "end": "deep squat with a very wide stance, knees pushed outward over the toes, thighs near parallel, the dumbbell hanging down between the knees, torso upright.",
+  "muscles": "inner thighs",
+  "notes": "Front view so the wide stance reads. Orange only on the inner thigh. One single dumbbell."
+ },
+ {
+  "id": "bundled-bulgarian-split-squat",
+  "view": "side view",
+  "start": "standing on one leg with the other foot resting behind on a low bench, a dumbbell in each hand hanging at the sides, front leg nearly straight, torso upright.",
+  "end": "lowered into a lunge on the front leg, front knee bent to about 90 degrees, back foot still on the bench behind, a dumbbell in each hand hanging at the sides.",
+  "muscles": "front of the thighs, glutes",
+  "notes": "A plain dark grey bench behind the figure at knee height in both poses, with the back foot resting on top of it."
+ },
+ {
+  "id": "bundled-split-squat",
+  "view": "side view",
+  "start": "standing tall in a staggered stance, one foot far forward and one foot far back with the heel raised, both legs nearly straight, a dumbbell in each hand at the sides.",
+  "end": "lowered straight down, front knee bent about 90 degrees and back knee bent just above the floor, torso upright, a dumbbell in each hand at the sides.",
+  "muscles": "front of the thighs",
+  "notes": "Feet stay in the same place in both poses. No bench."
+ },
+ {
+  "id": "bundled-walking-lunge",
+  "view": "side view",
+  "start": "standing upright with feet together, a dumbbell in each hand hanging at the sides.",
+  "end": "mid lunge step: one leg stepped far forward with the knee bent about 90 degrees, back knee bent just above the floor with the heel raised, torso upright, a dumbbell in each hand at the sides.",
+  "muscles": "front of the thighs, glutes",
+  "notes": "Both feet on the same ground line."
+ },
+ {
+  "id": "bundled-reverse-lunge",
+  "view": "side view",
+  "start": "standing upright with feet together, a dumbbell in each hand hanging at the sides.",
+  "end": "one leg stepped far backward, back knee bent just above the floor with the heel raised, front knee bent about 90 degrees directly above the front ankle, torso upright, a dumbbell in each hand at the sides.",
+  "muscles": "front of the thighs",
+  "notes": "Front foot stays planted in the same place in both poses."
+ },
+ {
+  "id": "bundled-lateral-lunge",
+  "view": "front view",
+  "start": "standing upright with feet together, holding one dumbbell with both hands at the chest.",
+  "end": "one leg stepped far out to the side and bent deeply into a side lunge, the other leg straight, hips pushed back, both feet flat and pointing forward, the dumbbell held at the chest.",
+  "muscles": "inner thighs",
+  "notes": "Front view so the side step reads. Orange on the inner thigh of the straight leg. One single dumbbell."
+ },
+ {
+  "id": "bundled-step-up",
+  "view": "side view",
+  "start": "standing facing right right next to a box, the near foot placed flat on top of the box and the other foot flat on the floor behind it, a dumbbell in each hand at the sides, torso upright.",
+  "end": "standing fully upright ON TOP of the box, both feet flat on the box surface, legs straight, a dumbbell in each hand at the sides, the figure clearly higher than in the first pose.",
+  "muscles": "front of the thighs",
+  "notes": "A plain dark grey rectangular box at knee height. The box is drawn in exactly the same place and size in both poses, directly under the figure's feet in the end pose. Both figures the same size."
+ },
+ {
+  "id": "bundled-box-jump",
+  "view": "side view",
+  "start": "standing in front of a box in a quarter squat, hips back, arms swung back behind the body, about to jump.",
+  "middle": "in mid air above the floor, knees tucked up, arms swinging forward, in front of the box.",
+  "end": "landed on top of the box in a quarter squat, both feet flat on the box, arms forward.",
+  "muscles": "front of the thighs",
+  "notes": "A plain dark grey rectangular box at knee height on the right in all three poses. The figure's feet stand on the floor in the first, in the air in the middle, on top of the box in the last."
+ },
+ {
+  "id": "bundled-wall-sit",
+  "view": "side view",
+  "start": "standing upright with the back against a plain wall, feet shoulder width, arms at the sides, about to slide down.",
+  "end": "holding the wall sit: back flat against the wall, thighs horizontal, knees bent 90 degrees directly over the ankles, shins vertical, hands on the thighs.",
+  "muscles": "front of the thighs",
+  "notes": "A simple tall dark grey vertical wall slab behind the back in both poses."
+ }
+]
