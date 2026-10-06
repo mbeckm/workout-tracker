@@ -183,14 +183,14 @@
   "start": "lying on its back on a flat horizontal bench, feet flat on the floor, overhand grip with the hands close together about shoulder width, the barbell lowered to the lower chest, elbows tucked close to the sides.",
   "end": "same bench, arms locked straight, the barbell pressed up directly above the chest.",
   "muscles": "triceps",
-  "notes": "the loaded barbell seen in three-quarter view (not end-on), plates kept clear of the head."
+  "notes": "Seen from the side and slightly above, the barbell in a three-quarter view in BOTH figures, plates small and to the side of the body so the head is always visible. Hands about shoulder width apart, elbows tucked close to the body."
  },
  {
   "id": "bundled-machine-dip",
-  "start": "seated upright in a seated dip machine with the back against the pad, feet flat on the floor, hands on the low handles beside the hips, elbows bent behind the torso.",
-  "end": "same seat, arms pressed down and straight, handles pushed down beside the hips.",
+  "start": "seated upright on a dip machine seat, elbows bent sharply and pointing back, hands gripping two handles raised up beside the chest at armpit height.",
+  "end": "seated upright on the same seat, arms pressed fully straight down, hands and handles pushed down beside the hips.",
   "muscles": "triceps",
-  "notes": "Machine kept very simple: seat with a back pad and two lever arms with handles beside the hips, small base."
+  "notes": "The machine is a simple seat with a backrest and two handles on short levers at the sides. The handles move from chest height to hip height, clearly different."
  },
  {
   "id": "bundled-bench-dip",
