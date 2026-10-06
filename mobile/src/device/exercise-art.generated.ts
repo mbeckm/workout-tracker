@@ -3,6 +3,30 @@ import type { ImageSourcePropType } from 'react-native';
 
 /** Approved exercise art: catalog id to its dot frames (start, end; three for a few lifts). */
 export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[]>> = {
+  'bundled-incline-bench-press-barbell': [
+    require('../../assets/images/exercise-art/incline-bench-press-barbell-0.png'),
+    require('../../assets/images/exercise-art/incline-bench-press-barbell-1.png'),
+  ],
+  'bundled-pull-ups': [
+    require('../../assets/images/exercise-art/pull-ups-0.png'),
+    require('../../assets/images/exercise-art/pull-ups-1.png'),
+  ],
+  'bundled-barbell-row': [
+    require('../../assets/images/exercise-art/barbell-row-0.png'),
+    require('../../assets/images/exercise-art/barbell-row-1.png'),
+  ],
+  'bundled-deadlift': [
+    require('../../assets/images/exercise-art/deadlift-0.png'),
+    require('../../assets/images/exercise-art/deadlift-1.png'),
+  ],
+  'bundled-lateral-raises': [
+    require('../../assets/images/exercise-art/lateral-raises-0.png'),
+    require('../../assets/images/exercise-art/lateral-raises-1.png'),
+  ],
+  'bundled-hammer-curl': [
+    require('../../assets/images/exercise-art/hammer-curl-0.png'),
+    require('../../assets/images/exercise-art/hammer-curl-1.png'),
+  ],
   'bundled-barbell-back-squat': [
     require('../../assets/images/exercise-art/barbell-back-squat-0.png'),
     require('../../assets/images/exercise-art/barbell-back-squat-1.png'),

@@ -1,1 +1,9 @@
-{"bundled-barbell-back-squat": 2}
+{
+ "bundled-barbell-back-squat": 2,
+ "bundled-barbell-row": 2,
+ "bundled-deadlift": 2,
+ "bundled-hammer-curl": 2,
+ "bundled-incline-bench-press-barbell": 2,
+ "bundled-lateral-raises": 2,
+ "bundled-pull-ups": 2
+}
