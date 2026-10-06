@@ -22,8 +22,13 @@ export type AnalyticsEvent =
       name: 'workout_completed';
       props: { exercises: number; sets: number; duration_minutes: number; prs: number };
     }
+  /** Discard on the menu: the workout was thrown away unsaved. */
+  | { name: 'workout_discarded'; props: { sets: number } }
+  /** End workout on the menu, before the finish key is held. */
+  | { name: 'workout_ended_early'; props: { sets: number } }
   | { name: 'check_in_saved'; props: { fields: number } }
   | { name: 'paywall_viewed'; props: { reason: string } }
+  | { name: 'paywall_closed'; props: { reason: string; outcome: 'purchased' | 'restored' | 'dismissed' | 'unavailable' } }
   | { name: 'purchase_started'; props: { reason: string; package: string } }
   | {
       name: 'purchase_finished';
@@ -36,7 +41,17 @@ export type AnalyticsEvent =
   | { name: 'restore_finished'; props: { outcome: 'restored' | 'none' | 'error' } }
   /** Gadget navigation (PLAN §9): which sheet opened, never what's in it. */
   | { name: 'sheet_opened'; props: { sheet: string } }
-  | { name: 'finish_selected'; props: { finish: string } }
+  /** The skin changed and was kept (sheet) or chosen in onboarding. `from` is the one it replaced. */
+  | { name: 'finish_selected'; props: { finish: string; from: string; source: 'sheet' | 'onboarding'; pro: boolean } }
+  /** A swatch was tried on the device without being kept; `locked` = a Pro finish for a free user. */
+  | { name: 'finish_previewed'; props: { finish: string; locked: boolean } }
+  /** A blank plan was created from the rack's +. */
+  | { name: 'plan_created'; props: { plan_count: number } }
+  /** The editor closed with the plan kept (`saved`) or an empty new one dropped (`discarded`). */
+  | {
+      name: 'plan_editor_closed';
+      props: { outcome: 'saved' | 'discarded'; is_new: boolean; days: number; exercises: number; active: boolean };
+    }
   /** A plan went into the slot (PLAN §9): from the rack's editor, or onboarding. */
   | { name: 'plan_activated'; props: { source: 'rack' | 'onboarding' } }
   /** The week report played (D15). No contents. */
