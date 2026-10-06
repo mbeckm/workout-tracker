@@ -191,6 +191,8 @@ export function SheetHost() {
     const hidden = reduceMotion ? 0 : (1 - progress.get()) * size * HIDDEN_SHARE;
     return {
       top: topY.get(),
+      // Runs past the screen's bottom edge, so a pull up stretches the sheet instead of lifting it off.
+      bottom: -size,
       opacity: reduceMotion ? progress.get() : 1,
       transform: [{ translateY: hidden + drag.get() }],
     };
@@ -204,7 +206,7 @@ export function SheetHost() {
 
   // The content ends above the keyboard while one is up (keyboard-aware sheets only).
   const bodyStyle = useAnimatedStyle(() => ({
-    bottom: usesKeyboard ? -keyboard.height.get() : 0,
+    bottom: height.get() + (usesKeyboard ? -keyboard.height.get() : 0),
   }));
 
   const chrome = useMemo<SheetChrome>(
@@ -254,7 +256,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
     borderTopLeftRadius: gadgetRadius.sheet,
     borderTopRightRadius: gadgetRadius.sheet,
     borderCurve: 'continuous',

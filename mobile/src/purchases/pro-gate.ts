@@ -1,5 +1,7 @@
 import { router } from 'expo-router';
 
+import { track } from '@/analytics/analytics';
+
 /**
  * Why the paywall opened. Each reason is also the RevenueCat placement identifier.
  * To gate something new: add a reason here, call `requirePro(reason)` at the call site,
@@ -34,7 +36,7 @@ export type ProGateDeps = {
 
 /** Exported for tests; the app uses the singleton below. */
 export function createProGate(deps: ProGateDeps) {
-  let open: { session: string; promise: Promise<PaywallOutcome>; resolve: (o: PaywallOutcome) => void } | null =
+  let open: { session: string; reason: ProReason; promise: Promise<PaywallOutcome>; resolve: (o: PaywallOutcome) => void } | null =
     null;
   let sessions = 0;
 
@@ -46,8 +48,9 @@ export function createProGate(deps: ProGateDeps) {
     if (!open || session == null || open.session !== session) {
       return;
     }
-    const { resolve } = open;
+    const { resolve, reason } = open;
     open = null;
+    track('paywall_closed', { reason, outcome });
     resolve(outcome);
   }
 
@@ -62,7 +65,7 @@ export function createProGate(deps: ProGateDeps) {
     const promise = new Promise<PaywallOutcome>((done) => {
       resolve = done;
     });
-    open = { session, promise, resolve };
+    open = { session, reason, promise, resolve };
     try {
       deps.present(reason, session);
     } catch {

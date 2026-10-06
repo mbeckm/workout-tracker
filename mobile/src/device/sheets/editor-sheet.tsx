@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import type Animated from 'react-native-reanimated';
 
+import { track } from '@/analytics/analytics';
 import { showToast } from '@/components/toast';
 import {
   PRESSED_OPACITY,
@@ -144,6 +145,13 @@ export function EditorSheet({ params }: { params: SheetParams }) {
       openedUnnamed,
       isNew,
       changed: params.dirty === '1' || current !== initialPlan,
+    });
+    track('plan_editor_closed', {
+      outcome: decision.discard ? 'discarded' : 'saved',
+      is_new: isNew,
+      days: current.days.length,
+      exercises: current.days.reduce((sum, day) => sum + day.exercises.length, 0),
+      active: current.id === activePlanId,
     });
     if (decision.discard) {
       deletePlan(current, { archive: false });

@@ -21,6 +21,7 @@ import {
   plansType,
   signal,
 } from '@/constants/theme';
+import { track } from '@/analytics/analytics';
 import { emptyPlan } from '@/domain/helpers';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
@@ -72,6 +73,7 @@ export function PlansSheet({ params }: { params: SheetParams }) {
       }
     }
     const plan = emptyPlan();
+    track('plan_created', { plan_count: plans.length });
     savePlan(plan, { activate: plans.length === 0 });
     swapSheet('editor', { planId: plan.id, new: '1', ...via });
   };
