@@ -1,0 +1,80 @@
+[
+ {
+  "id": "bundled-dumbbell-fly",
+  "view": "three-quarter view from the side and slightly above",
+  "start": "lying flat on his back along a flat bench (body horizontal, head at one end, feet flat on the floor at the other end), both arms straight up toward the ceiling with a slight elbow bend, a dumbbell in each hand, dumbbells touching above the chest.",
+  "end": "lying flat on his back on the same horizontal bench, both arms opened wide out to the sides and lowered to chest level in a wide arc with a slight elbow bend, a dumbbell in each hand, palms up.",
+  "muscles": "chest (pecs), front of the shoulders",
+  "notes": "The body must be horizontal on the bench, NOT sitting upright. Simple flat bench slab with two short legs."
+ },
+ {
+  "id": "bundled-incline-dumbbell-fly",
+  "view": "front view",
+  "start": "lying back on a bench inclined about 30 degrees, seen from the foot end, feet flat on the floor, both arms straight up over the upper chest with a slight elbow bend, a dumbbell in each hand, palms facing each other, dumbbells touching.",
+  "end": "lying back on the same inclined bench, both arms opened wide out to the sides in a wide arc with a slight elbow bend, lowered to chest level, a dumbbell in each hand, palms facing up and in.",
+  "muscles": "upper chest (pecs)",
+  "notes": "Simple inclined bench as a dark grey slab at 30 degrees. Same bench and body in both poses."
+ },
+ {
+  "id": "bundled-reverse-dumbbell-fly",
+  "view": "front view",
+  "start": "standing and hinged forward at the hips with a flat back, torso nearly parallel to the floor, seen from the front, arms hanging straight down toward the floor with a slight elbow bend, a dumbbell in each hand with neutral grip, dumbbells touching below the chest.",
+  "end": "same bent-over position, both arms raised straight out to the sides to shoulder height forming a T, slight elbow bend, a dumbbell in each hand with neutral grip.",
+  "muscles": "rear of the shoulders (rear delts), upper back"
+ },
+ {
+  "id": "bundled-cable-chest-fly",
+  "view": "front view",
+  "start": "standing facing the viewer in a split stance, slight forward lean, both arms opened wide out to the sides at chest height with a slight elbow bend, a handle in each hand, each handle connected by a thin straight cable line going outward and slightly up to a small pulley on a thin dark grey tower on each side of the figure.",
+  "end": "same stance and body, both arms swept forward and together in front of the chest, hands touching, slight elbow bend, a handle in each hand, the thin cable lines still running out to the two side pulleys.",
+  "muscles": "chest (pecs), front of the shoulders",
+  "notes": "Cables are thin lines from a small pulley (at shoulder height on a simple tower) to each handle. Keep the towers simple and at the panel edges."
+ },
+ {
+  "id": "bundled-incline-cable-fly",
+  "view": "side view",
+  "start": "lying back on an incline bench set at 30 degrees placed between two low cable pulleys, feet flat on the floor, arms spread wide and low out to the sides with elbows slightly bent, a cable handle in each hand, cables running down to the floor pulleys.",
+  "end": "same position on the same incline bench, arms swept up and together so both hands meet directly above the upper chest, arms nearly straight and pointing up at the ceiling, NOT over the head, cables running down from the hands to the floor pulleys.",
+  "muscles": "upper chest (pecs)",
+  "notes": "The hands end above the chest, never behind or over the head. Draw it like an incline dumbbell fly with cables instead of dumbbells. Thick, clearly visible cable lines."
+ },
+ {
+  "id": "bundled-low-to-high-cable-fly",
+  "view": "front view",
+  "start": "standing facing the viewer in a split stance, torso slightly leaning forward, arms extended down and out to the sides below the hips with a slight elbow bend, a handle in each hand, a thin straight cable line from each handle down to a small pulley at floor level on each side.",
+  "end": "same stance and body, both arms swept up and together in front of the upper chest at chin height, hands close together, slight elbow bend, a handle in each hand, the thin cable lines still running down to the two floor pulleys.",
+  "muscles": "upper chest (pecs), front of the shoulders",
+  "notes": "Cables are thin lines from small floor-level pulleys on simple low posts at the panel edges to each handle."
+ },
+ {
+  "id": "bundled-pec-deck",
+  "view": "front view",
+  "start": "sitting upright on a simple padded seat with back against a back pad, facing the viewer, feet flat on the floor, upper arms and forearms resting against two vertical lever pads, arms opened wide out to the sides with elbows bent at 90 degrees, hands gripping the lever handles.",
+  "end": "same seat and body, arms swept together in front of the chest, forearms pressed against the two vertical lever pads which meet in front of the chest, elbows bent at 90 degrees.",
+  "muscles": "chest (pecs), front of the shoulders",
+  "notes": "Machine is a simple seat, back pad, and two vertical lever arms with pads that swing from side pivots. Keep it simple and dark grey."
+ },
+ {
+  "id": "bundled-reverse-pec-deck",
+  "view": "front view",
+  "start": "sitting on a seat facing the viewer, the upper body seen straight from the front (facing the viewer, same orientation as the end pose), arms stretched forward and together in front of the chest at shoulder height, hands on two lever handles close together, slight elbow bend.",
+  "end": "same seat, same body facing the viewer, arms swept wide out to the sides at shoulder height forming a T, hands on lever handles swung wide, slight elbow bend.",
+  "muscles": "rear of the shoulders (rear delts), upper back",
+  "notes": "Body faces the viewer in BOTH poses. Simple seat and a center post with two horizontal lever arms."
+ },
+ {
+  "id": "bundled-reverse-cable-fly",
+  "view": "front view",
+  "start": "standing facing the viewer, arms crossed in front of the chest at shoulder height with slight elbow bends, a handle in each hand, a thin straight cable line from each handle to a small pulley at shoulder height on a thin tower on the opposite side of the figure (the cables cross).",
+  "end": "same stance and body, both arms pulled wide out to the sides at shoulder height forming a T, slight elbow bend, a handle in each hand, the thin cable lines running to the two side towers.",
+  "muscles": "rear of the shoulders (rear delts), upper back",
+  "notes": "Cables are thin lines from small pulleys on simple towers at the panel edges."
+ },
+ {
+  "id": "bundled-band-pull-apart",
+  "view": "front view",
+  "start": "standing tall facing the viewer, both arms straight out in front at shoulder height, hands shoulder width apart gripping a thin resistance band stretched between the hands, slightly slack.",
+  "end": "same standing body, both arms pulled wide out to the sides at shoulder height forming a T, the thin resistance band stretched taut between the two hands across the chest.",
+  "muscles": "rear of the shoulders (rear delts), upper back"
+ }
+]

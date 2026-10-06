@@ -1,0 +1,106 @@
+[
+ {
+  "id": "bundled-dumbbell-pullover",
+  "view": "side view",
+  "start": "lying on her back across a flat bench with only the upper back on the bench, hips low, feet flat on the floor, both hands gripping one dumbbell held vertically, arms straight and stretched back behind the head, the dumbbell low behind the head.",
+  "end": "same lying position on the flat bench, arms still nearly straight, the dumbbell lifted in an arc to directly above the chest.",
+  "muscles": "lats, chest",
+  "notes": "Simple flat bench in dark grey. One dumbbell only, held in both hands. Same body, same feet position in both poses."
+ },
+ {
+  "id": "bundled-leg-extension",
+  "view": "side view",
+  "start": "seated upright on a leg extension machine with back against the pad, knees bent about 90 degrees, shins hanging down, ankles behind the padded roller lever.",
+  "end": "same seated position, knees fully straightened, legs extended straight out in front, the padded roller lever raised to the ankles.",
+  "muscles": "quads (front of the thighs)",
+  "notes": "Machine is a simple seat/bench and a single padded lever in dark grey; the roller pad sits at the front of the ankles. Same seat and body in both poses."
+ },
+ {
+  "id": "bundled-leg-curl",
+  "view": "side view",
+  "start": "seated upright on a leg curl machine, back against the pad, legs extended straight forward, ankles resting on top of a padded roller lever, a thigh pad held over the thighs.",
+  "end": "same seated position, knees bent about 100 degrees, the lower legs pulled down and back under the seat, the padded roller pressed down by the heels.",
+  "muscles": "hamstrings (back of the thighs)",
+  "notes": "Machine is a simple seat/bench and a single padded lever in dark grey. Same seat and body in both poses."
+ },
+ {
+  "id": "bundled-seated-leg-curl",
+  "view": "side view",
+  "start": "seated upright on a seated leg curl machine, back against the pad, legs extended straight forward, ankles resting on top of a padded roller lever, a thigh pad held over the thighs.",
+  "end": "same seated position, knees bent about 100 degrees, the lower legs pulled down and back under the seat, the padded roller pressed down by the heels.",
+  "muscles": "hamstrings (back of the thighs)",
+  "notes": "Machine is a simple seat/bench and a single padded lever in dark grey. Same seat and body in both poses."
+ },
+ {
+  "id": "bundled-lying-leg-curl",
+  "view": "side view",
+  "start": "lying face down on a flat padded bench, hips on the bench, legs straight, the ankles tucked under a padded roller lever, hands gripping the front handles.",
+  "end": "same face-down position, knees bent about 100 degrees, heels curled up toward the buttocks, the padded roller lever lifted with the heels.",
+  "muscles": "hamstrings (back of the thighs)",
+  "notes": "Machine is a simple flat bench plus one padded roller lever in dark grey. Same body in both poses."
+ },
+ {
+  "id": "bundled-nordic-hamstring-curl",
+  "view": "side view",
+  "start": "kneeling upright on a soft pad, torso and thighs in one straight vertical line from knees to head, arms bent in front of the chest, the ankles anchored under a fixed padded bar behind the feet.",
+  "end": "same kneeling body kept as one straight line from knees to head, tilted far forward almost to the floor, arms reaching forward with hands about to catch the floor, ankles still under the padded bar.",
+  "muscles": "hamstrings (back of the thighs)",
+  "notes": "Anchor is a simple low dark grey padded bar over the ankles. The body stays straight, no bend at the hips. Same pad and anchor in both poses."
+ },
+ {
+  "id": "bundled-cable-glute-kickback",
+  "view": "side view",
+  "start": "standing facing a low cable pulley, hands holding the machine upright for support, torso leaning slightly forward, one ankle strapped to the low cable with a cuff, the working leg under the hip with the knee slightly bent.",
+  "end": "same stance, the cabled leg kicked straight back and up behind the body, knee straight, torso still, standing leg unchanged.",
+  "muscles": "glutes (buttock of the working leg)",
+  "notes": "Cable is a single thin line from a small low pulley to the ankle cuff. No stack. Same standing leg and torso in both poses."
+ },
+ {
+  "id": "bundled-hip-abduction",
+  "view": "front view",
+  "start": "seated upright on a hip abduction machine, back against the pad, knees together, outer sides of the knees pressed against two padded levers, thighs close.",
+  "end": "same seated position, the thighs pushed wide apart, knees far apart, the two padded levers swung outward.",
+  "muscles": "outer hips and outer glutes (outside of the thighs)",
+  "notes": "Machine is a simple seat with two padded levers in dark grey. Same body in both poses."
+ },
+ {
+  "id": "bundled-hip-adduction",
+  "view": "front view",
+  "start": "seated upright on a hip adduction machine, back against the pad, thighs spread wide apart, inner sides of the knees resting on two padded levers swung outward.",
+  "end": "same seated position, the thighs squeezed together, knees touching, the two padded levers swung inward.",
+  "muscles": "inner thighs",
+  "notes": "Machine is a simple seat with two padded levers in dark grey. Same body in both poses."
+ },
+ {
+  "id": "bundled-standing-calf-raise",
+  "view": "side view",
+  "start": "standing tall with legs straight on the edge of a tall block step, only the balls of the feet on the step, heels dropped as LOW as possible below the step edge, ankles deeply stretched.",
+  "end": "same position on the same step, legs straight, risen as HIGH as possible onto the tips of the toes, heels far above the step, the whole body visibly higher.",
+  "muscles": "calves (back of the lower legs)",
+  "notes": "The step is a solid dark grey block about knee-shin height under the front of the feet. The vertical difference between the two figures must be large and obvious."
+ },
+ {
+  "id": "bundled-seated-calf-raise",
+  "view": "side view",
+  "start": "seated on a seated calf raise machine, thighs under a padded bar resting just above the knees, balls of the feet on a small platform, heels lowered below the platform.",
+  "end": "same seated position, heels lifted high up onto the toes, the knee pad lifted with the thighs.",
+  "muscles": "calves (back of the lower legs)",
+  "notes": "Machine is a simple seat, a small foot platform and one knee pad over the thighs in dark grey. Draw the lower legs and feet large and clear. Heels hang far below the platform in the first pose and are lifted far above it in the second; the knees and knee pad rise noticeably. Same body and machine in both poses."
+ },
+ {
+  "id": "bundled-leg-press-calf-raise",
+  "view": "side view",
+  "start": "seated reclined in a leg press machine, back against the sloped pad, legs straight and extended, only the balls of the feet on the footplate, the toes pulled back toward the shins (ankles flexed), the heels hanging off the bottom of the footplate.",
+  "end": "same reclined position, legs still locked straight, the ankles pointed hard so the feet are pushed onto the toes, the foot arch extended in a straight line with the shin, toes at the highest point.",
+  "muscles": "calves (back of the lower legs)",
+  "notes": "Machine is a simple sloped seat pad and one flat footplate in dark grey. Draw the feet large so the ankle flex versus point is obvious. Same legs, body and machine in both poses."
+ },
+ {
+  "id": "bundled-tibialis-raises",
+  "view": "side view",
+  "start": "standing leaning back against a wall, feet about a foot in front of the wall, legs straight, the feet flat on the floor.",
+  "end": "same leaning position, legs straight, the toes lifted far off the floor so both feet are tilted up about 45 degrees with only the heels touching the floor, the ankles flexed hard.",
+  "muscles": "tibialis (front of the lower legs)",
+  "notes": "The wall is a thin plain vertical dark grey slab behind the back. Draw the feet large and clear so the tilted toes are obvious. Same body in both poses."
+ }
+]

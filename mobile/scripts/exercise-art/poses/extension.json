@@ -1,0 +1,57 @@
+[
+ {
+  "id": "bundled-tricep-pushdowns",
+  "view": "side view",
+  "start": "standing tall facing a high cable pulley, upper arms pinned at the sides, elbows bent about 90 degrees, forearms pointing forward, both hands gripping a short straight bar at chest height.",
+  "end": "same standing posture, upper arms still pinned at the sides, elbows fully straightened, the bar pushed down to the front of the thighs.",
+  "notes": "The cable is a single thin line from a small pulley high above the figure down to the bar. No machine frame or stack.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-rope-tricep-pushdown",
+  "view": "side view",
+  "start": "standing tall facing a high cable pulley, upper arms pinned at the sides, elbows bent about 90 degrees, hands together gripping a thick rope attachment at chest height.",
+  "end": "same standing posture, upper arms pinned at the sides, elbows fully straight, the rope pulled down to the front of the thighs with the two rope ends splayed apart.",
+  "notes": "The cable is a single thin line from a small pulley high above the figure to the rope. No machine frame or stack.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-single-arm-cable-pushdown",
+  "view": "side view",
+  "start": "standing tall facing a high cable pulley, one arm only working: upper arm pinned at the side, elbow bent about 90 degrees, hand gripping a small single handle at chest height. The other arm hangs relaxed at the side.",
+  "end": "same standing posture, the working arm's elbow fully straight, the handle pushed down to the front of the thigh, upper arm still pinned at the side.",
+  "notes": "The cable is a single thin line from a small pulley high above the figure to the handle. No machine frame or stack.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-overhead-cable-tricep-extension",
+  "view": "side view",
+  "start": "standing in a split stance, torso leaning slightly forward, back to a low cable pulley, both hands gripping a rope behind the head, upper arms pointing up beside the ears, elbows fully bent so the hands are behind the head.",
+  "end": "same split stance and lean, upper arms still up beside the ears, elbows fully straightened, arms extended overhead and forward with the rope held above the head.",
+  "notes": "The cable is a single thin line from a small low pulley behind the figure up to the rope. No machine frame or stack.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-overhead-dumbbell-tricep-extension",
+  "view": "side view",
+  "start": "standing tall, both hands holding one dumbbell vertically behind the head, upper arms pointing straight up beside the ears, elbows fully bent so the dumbbell hangs down behind the head.",
+  "end": "standing tall, arms fully straightened overhead, the single dumbbell held directly above the head, upper arms by the ears.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-skull-crusher",
+  "view": "side view",
+  "start": "lying on its back on a flat bench, feet flat on the floor, upper arms vertical, elbows bent so the EZ-bar is lowered just above the forehead, hands gripping the bar's angled inner grips.",
+  "end": "same position on the same flat bench, arms fully straightened, the EZ-bar held directly above the chest/shoulders, upper arms vertical.",
+  "notes": "Show the EZ-bar in a three-quarter view as a short zigzag bar with small plates at the ends, never end-on. Plates must not cover the head.",
+  "muscles": "triceps"
+ },
+ {
+  "id": "bundled-dumbbell-tricep-kickback",
+  "view": "side view",
+  "start": "standing in a staggered stance, torso bent forward nearly parallel to the floor, back flat, the free hand resting on a bench. The working upper arm is held tight against the side of the torso, raised so it is PARALLEL to the floor pointing back toward the hips, with the elbow bent 90 degrees so the forearm and the dumbbell point straight DOWN toward the floor. The upper arm must not hang down.",
+  "end": "same bent-over posture, same upper arm position parallel to the floor, now the elbow fully straightened so the whole arm is a straight horizontal line extending back behind the hips, a dumbbell held at the hand.",
+  "muscles": "triceps",
+  "notes": "Only the triceps of the working arm are orange. The bench is a simple flat bench; the dumbbell is only in the working hand, not on the bench."
+ }
+]

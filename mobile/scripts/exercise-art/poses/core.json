@@ -1,0 +1,125 @@
+[
+ {
+  "id": "bundled-hanging-leg-raise",
+  "view": "side view",
+  "anchor": "top",
+  "start": "hanging from a fixed horizontal bar with arms fully straight overhead, overhand grip, body straight and long, legs straight down together, feet off the ground.",
+  "end": "hanging from the same bar at the same height, arms still straight, both legs kept STRAIGHT and raised together forward until they are horizontal, parallel to the floor, at hip height, torso hanging vertical.",
+  "muscles": "abs, hip flexors (front of the hips)",
+  "notes": "The bar is a bare short horizontal bar at the same height in both figures, no frame or uprights."
+ },
+ {
+  "id": "bundled-hanging-knee-raise",
+  "view": "side view",
+  "anchor": "top",
+  "start": "hanging from a fixed horizontal bar with arms fully straight overhead, overhand grip, body straight, legs straight down together, feet off the ground.",
+  "end": "hanging from the same bar at the same height, arms still straight, knees bent and pulled up toward the chest so the thighs are above horizontal, lower legs hanging down, torso hanging vertical.",
+  "muscles": "abs, hip flexors (front of the hips)",
+  "notes": "The bar is a bare short horizontal bar at the same height in both figures, no frame or uprights."
+ },
+ {
+  "id": "bundled-toes-to-bar",
+  "view": "side view",
+  "anchor": "top",
+  "start": "hanging from a fixed horizontal bar with arms fully straight overhead, overhand grip, body straight, legs straight down together, feet off the ground.",
+  "end": "hanging from the same bar at the same height, both legs kept straight and raised high so the toes touch the bar, the body folded in a tight pike, hips bent far past 90 degrees, arms straight.",
+  "muscles": "abs, hip flexors (front of the hips)",
+  "notes": "The bar is a bare short horizontal bar at the same height in both figures, no frame or uprights."
+ },
+ {
+  "id": "bundled-cable-crunch",
+  "view": "side view",
+  "start": "kneeling upright on the floor facing a high cable pulley, torso upright, hands holding a rope beside the head at forehead height, the cable a thin straight line going up to a small pulley high above.",
+  "end": "same kneeling position and knees, torso curled forward and down in a crunch, spine rounded, head down near the knees, elbows pulled toward the thighs, hands still holding the rope at the head.",
+  "muscles": "abs (rectus abdominis, the front of the stomach)",
+  "notes": "The cable is a single thin line from a small high pulley down to the rope. No machine frame or stack. Hips stay in the same place in both poses."
+ },
+ {
+  "id": "bundled-ab-wheel-rollout",
+  "view": "side view",
+  "start": "kneeling on the floor with knees under the hips, torso upright and slightly leaning forward, both hands gripping the handle of a small ab wheel on the floor directly under the shoulders, arms straight down.",
+  "end": "kneeling with the same knee position, the ab wheel rolled far forward on the floor, body stretched out long and nearly straight from knees to head, arms extended straight overhead past the head, hips in line with the torso, almost parallel to the floor.",
+  "muscles": "abs (the front of the stomach)",
+  "notes": "The ab wheel is a small dark grey wheel with a short axle handle, seen from the side as a simple circle. Knees stay in the same place."
+ },
+ {
+  "id": "bundled-crunch",
+  "view": "side view",
+  "start": "lying flat on the back on the floor, knees bent, feet flat on the floor, hands behind the head with the elbows out, head and shoulders resting on the floor.",
+  "end": "lying on the back with knees bent and feet flat on the floor, only the head and shoulder blades curled up off the floor in a short crunch, hands behind the head, lower back still on the floor.",
+  "muscles": "abs (the front of the stomach)",
+  "notes": "Floor not drawn, no floor line. Same body and same hip and feet position in both poses."
+ },
+ {
+  "id": "bundled-reverse-crunch",
+  "view": "side view",
+  "start": "lying flat on the back on the floor, arms flat along the sides, hips and knees bent to 90 degrees so the thighs point straight up and the shins are parallel to the floor, head down.",
+  "end": "lying on the back, arms flat along the sides, knees pulled in toward the chest and the hips curled up off the floor so the knees come over the chest, the lower back lifted, shoulders and head on the floor.",
+  "muscles": "lower abs (the front of the stomach below the navel)",
+  "notes": "Floor not drawn, no floor line."
+ },
+ {
+  "id": "bundled-decline-sit-up",
+  "view": "side view",
+  "start": "lying back on a decline bench that slopes down toward the head, feet hooked under the foot pads at the high end, knees bent, hands crossed on the chest, back lying flat on the bench.",
+  "end": "same decline bench and feet, torso sat all the way up, the chest brought up to the knees, back rounded, hands still crossed on the chest.",
+  "muscles": "abs (the front of the stomach), hip flexors",
+  "notes": "The bench is a simple dark grey slab tilted about 30 degrees, high end at the feet, with two small foot roller pads and a short support. Same bench in both poses."
+ },
+ {
+  "id": "bundled-machine-crunch",
+  "view": "side view",
+  "start": "seated upright on a machine seat facing forward, back against the backrest, hands holding the two handles at chest height, a padded lever resting against the upper chest, torso tall.",
+  "end": "same seat, torso curled forward in a crunch, spine rounded, the padded lever pushed forward and down with the chest, elbows toward the knees, hips staying on the seat.",
+  "muscles": "abs (the front of the stomach)",
+  "notes": "Keep the machine simple: a seat, a backrest and one padded lever arm, dark grey. No weight stack or frame. Same machine in both poses."
+ },
+ {
+  "id": "bundled-lying-leg-raise",
+  "view": "side view",
+  "start": "lying flat on the back on the floor, arms flat along the sides, both legs straight and together on the floor, head down.",
+  "end": "lying flat on the back, arms along the sides, both legs kept straight and raised together until they point straight up at 90 degrees to the torso, toes toward the ceiling.",
+  "muscles": "lower abs, hip flexors",
+  "notes": "Floor not drawn, no floor line. Torso stays flat on the floor."
+ },
+ {
+  "id": "bundled-v-up",
+  "view": "side view",
+  "start": "lying flat on the back on the floor, arms straight overhead on the floor, legs straight and together on the floor, body in one long line.",
+  "end": "folded into a V shape balancing on the tailbone, torso lifted and legs lifted, both legs kept straight and arms straight reaching forward to touch the toes, body a tight V.",
+  "muscles": "abs (the front of the stomach)",
+  "notes": "Floor not drawn, no floor line."
+ },
+ {
+  "id": "bundled-flutter-kicks",
+  "view": "side view",
+  "start": "lying flat on the back, hands under the hips, head slightly lifted, legs straight and together-ish in a narrow scissor: the NEAR leg (closest to the viewer) raised high at about 45 degrees, the FAR leg low, hovering just above the floor.",
+  "end": "same lying position, hands under the hips, head slightly lifted, scissor swapped: the NEAR leg now low, hovering just above the floor, the FAR leg raised high at about 45 degrees. The two legs must be at clearly different heights, both straight.",
+  "muscles": "lower abs, hip flexors",
+  "notes": "Nothing under the body: no mat, no floor, no line. The legs are drawn clearly separate, one high and one low, not overlapping."
+ },
+ {
+  "id": "bundled-bicycle-crunch",
+  "view": "front view",
+  "start": "lying on the back, hands behind the head with elbows wide, shoulders lifted off the floor, the right knee pulled in toward the chest, the left leg straight and held just above the floor, the torso twisted so the left elbow moves toward the right knee.",
+  "end": "lying on the back, hands behind the head, shoulders lifted, now the left knee pulled in toward the chest and the right leg extended straight just above the floor, the torso twisted the other way so the right elbow moves toward the left knee.",
+  "muscles": "obliques (the sides of the waist), abs",
+  "notes": "Seen from the foot end, slightly above. Floor not drawn, no floor line."
+ },
+ {
+  "id": "bundled-russian-twist",
+  "view": "front view",
+  "start": "seated on the floor leaning back about 45 degrees with the torso straight, knees bent and feet lifted slightly off the floor, both hands holding a round weight plate against the stomach, the plate turned to the viewer's left side beside the hip.",
+  "end": "same seated V position, knees and feet unchanged, torso rotated to the viewer's right, both hands holding the weight plate beside the right hip.",
+  "muscles": "obliques (the sides of the waist), abs",
+  "notes": "The plate is a simple dark grey disc held flat against the body in both hands. Floor not drawn, no floor line. Hips stay in the same place."
+ },
+ {
+  "id": "bundled-cable-woodchop",
+  "view": "front view",
+  "start": "standing in a wide stance facing the viewer, sideways to a high cable pulley on the viewer's left above head height, both hands holding a single handle high above the left shoulder, arms nearly straight, a thin straight cable going up to a small pulley.",
+  "end": "same stance, torso rotated and bent diagonally down to the right, arms straight, the handle chopped down across the body to outside the right knee, hips square, feet unchanged.",
+  "muscles": "obliques (the sides of the waist), abs",
+  "notes": "The cable is a single thin line from a small high pulley to the handle. No machine frame or stack."
+ }
+]
