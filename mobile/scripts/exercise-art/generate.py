@@ -4,7 +4,7 @@ Usage: generate.py <out.png> <aspect> <prompt> [ref.png ...]
 
 Auth: in the cloud environment the proxy credential adds the x-goog-api-key header, so nothing
 is needed. On a Mac, export GEMINI_API_KEY (it lives in mobile/.env, never commit it). Retries
-429 and 5xx with backoff. Model: gemini-3.1-flash-image.
+429, 5xx and dropped connections with backoff. Model: gemini-3.1-flash-image.
 """
 import base64, json, subprocess, sys, tempfile, os, time
 
@@ -24,7 +24,10 @@ for attempt in range(5):
     res = subprocess.run(["curl", "-sS", "--max-time", "240", *headers,
                           "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent",
                           "-d", "@" + f.name], capture_output=True, text=True)
-    d = json.loads(res.stdout)
+    try:
+        d = json.loads(res.stdout)
+    except ValueError:  # dropped connection or timeout: retry like a 5xx
+        d = {"error": {"code": 503, "message": (res.stderr or res.stdout)[:200]}}
     code = d.get("error", {}).get("code")
     if code in (429, 500, 502, 503, 504):
         time.sleep(2 ** (attempt + 1) * 5); continue

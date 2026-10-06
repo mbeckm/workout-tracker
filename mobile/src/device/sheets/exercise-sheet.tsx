@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+} from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedScrollHandler } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +50,8 @@ import { useSheetChrome } from './sheet-context';
 /** What the sheet shows about the lift, from the catalog side map (D5) or the row itself. */
 type ExerciseFacts = {
   name: string;
+  /** Dot-matrix frames for a bundled lift that has approved art (D5). */
+  art?: readonly ImageSourcePropType[];
   figure?: FigureKind;
   howTo?: readonly string[];
   kitLine: string;
@@ -85,7 +95,7 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
     [customExercises, exerciseId, row],
   );
   const facts = useMemo(() => exerciseFacts(row, custom, params.name), [custom, params.name, row]);
-  const art = exerciseArt(facts?.name);
+  const art = facts?.art;
 
   const stats = useMemo(() => {
     if (!facts) return [];
@@ -336,8 +346,8 @@ function kitLine(kit: string, muscles: readonly string[]): string {
 }
 
 /**
- * The catalog's side map for bundled lifts (figure, how-to, muscles); a custom exercise gets
- * its own kit and muscle and never a figure (D5).
+ * The catalog's side map for bundled lifts (art or figure, how-to, muscles); a custom exercise
+ * gets its own kit and muscle and never art or a figure (D5).
  */
 function exerciseFacts(
   row: ExercisePrescription | undefined,
@@ -353,8 +363,10 @@ function exerciseFacts(
   if (!name) return null;
   const info = row?.customExerciseID ? null : bundledExerciseInfo(name);
   if (info) {
+    const art = exerciseArt(row?.id, name);
     return {
       name,
+      ...(art ? { art } : null),
       figure: info.figure,
       howTo: info.howTo,
       kitLine: kitLine(info.kit, info.muscles),
