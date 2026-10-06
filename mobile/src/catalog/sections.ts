@@ -139,9 +139,12 @@ function uniqueByCatalogKey(exercises: ExercisePrescription[]): ExercisePrescrip
   return unique;
 }
 
+const byName = (a: ExercisePrescription, b: ExercisePrescription) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
+
 /**
- * Groups the offline catalog into body-part sections.
- * Empty sections are omitted. `recent` becomes the first section when non-empty.
+ * Groups the offline catalog into body-part sections, each A to Z by name.
+ * Empty sections are omitted. `recent` becomes the first section when non-empty, newest first.
  */
 export function groupExercisesForBrowse(input: {
   exercises: ExercisePrescription[];
@@ -174,7 +177,7 @@ export function groupExercisesForBrowse(input: {
     if (data.length === 0) {
       continue;
     }
-    sections.push({ title, data });
+    sections.push({ title, data: [...data].sort(byName) });
   }
 
   return sections;
