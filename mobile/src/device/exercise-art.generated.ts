@@ -87,6 +87,10 @@ export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[
     require('../../assets/images/exercise-art/assisted-dip-0.png'),
     require('../../assets/images/exercise-art/assisted-dip-1.png'),
   ],
+  'bundled-dumbbell-pullover': [
+    require('../../assets/images/exercise-art/dumbbell-pullover-0.png'),
+    require('../../assets/images/exercise-art/dumbbell-pullover-1.png'),
+  ],
   'bundled-incline-bench-press-dumbbells': [
     require('../../assets/images/exercise-art/incline-bench-press-dumbbells-0.png'),
     require('../../assets/images/exercise-art/incline-bench-press-dumbbells-1.png'),
@@ -438,6 +442,10 @@ export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[
     require('../../assets/images/exercise-art/sumo-squat-0.png'),
     require('../../assets/images/exercise-art/sumo-squat-1.png'),
   ],
+  'bundled-leg-extension': [
+    require('../../assets/images/exercise-art/leg-extension-0.png'),
+    require('../../assets/images/exercise-art/leg-extension-1.png'),
+  ],
   'bundled-bulgarian-split-squat': [
     require('../../assets/images/exercise-art/bulgarian-split-squat-0.png'),
     require('../../assets/images/exercise-art/bulgarian-split-squat-1.png'),
@@ -487,6 +495,22 @@ export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[
     require('../../assets/images/exercise-art/good-morning-0.png'),
     require('../../assets/images/exercise-art/good-morning-1.png'),
   ],
+  'bundled-leg-curl': [
+    require('../../assets/images/exercise-art/leg-curl-0.png'),
+    require('../../assets/images/exercise-art/leg-curl-1.png'),
+  ],
+  'bundled-seated-leg-curl': [
+    require('../../assets/images/exercise-art/seated-leg-curl-0.png'),
+    require('../../assets/images/exercise-art/seated-leg-curl-1.png'),
+  ],
+  'bundled-lying-leg-curl': [
+    require('../../assets/images/exercise-art/lying-leg-curl-0.png'),
+    require('../../assets/images/exercise-art/lying-leg-curl-1.png'),
+  ],
+  'bundled-nordic-hamstring-curl': [
+    require('../../assets/images/exercise-art/nordic-hamstring-curl-0.png'),
+    require('../../assets/images/exercise-art/nordic-hamstring-curl-1.png'),
+  ],
   'bundled-hip-thrust': [
     require('../../assets/images/exercise-art/hip-thrust-0.png'),
     require('../../assets/images/exercise-art/hip-thrust-1.png'),
@@ -511,9 +535,109 @@ export const EXERCISE_ART: Readonly<Record<string, readonly ImageSourcePropType[
     require('../../assets/images/exercise-art/kettlebell-swing-0.png'),
     require('../../assets/images/exercise-art/kettlebell-swing-1.png'),
   ],
+  'bundled-cable-glute-kickback': [
+    require('../../assets/images/exercise-art/cable-glute-kickback-0.png'),
+    require('../../assets/images/exercise-art/cable-glute-kickback-1.png'),
+  ],
+  'bundled-hip-abduction': [
+    require('../../assets/images/exercise-art/hip-abduction-0.png'),
+    require('../../assets/images/exercise-art/hip-abduction-1.png'),
+  ],
+  'bundled-hip-adduction': [
+    require('../../assets/images/exercise-art/hip-adduction-0.png'),
+    require('../../assets/images/exercise-art/hip-adduction-1.png'),
+  ],
+  'bundled-hanging-leg-raise': [
+    require('../../assets/images/exercise-art/hanging-leg-raise-0.png'),
+    require('../../assets/images/exercise-art/hanging-leg-raise-1.png'),
+  ],
+  'bundled-cable-crunch': [
+    require('../../assets/images/exercise-art/cable-crunch-0.png'),
+    require('../../assets/images/exercise-art/cable-crunch-1.png'),
+  ],
+  'bundled-ab-wheel-rollout': [
+    require('../../assets/images/exercise-art/ab-wheel-rollout-0.png'),
+    require('../../assets/images/exercise-art/ab-wheel-rollout-1.png'),
+  ],
+  'bundled-plank': [
+    require('../../assets/images/exercise-art/plank-0.png'),
+    require('../../assets/images/exercise-art/plank-1.png'),
+  ],
+  'bundled-crunch': [
+    require('../../assets/images/exercise-art/crunch-0.png'),
+    require('../../assets/images/exercise-art/crunch-1.png'),
+  ],
+  'bundled-reverse-crunch': [
+    require('../../assets/images/exercise-art/reverse-crunch-0.png'),
+    require('../../assets/images/exercise-art/reverse-crunch-1.png'),
+  ],
+  'bundled-decline-sit-up': [
+    require('../../assets/images/exercise-art/decline-sit-up-0.png'),
+    require('../../assets/images/exercise-art/decline-sit-up-1.png'),
+  ],
+  'bundled-machine-crunch': [
+    require('../../assets/images/exercise-art/machine-crunch-0.png'),
+    require('../../assets/images/exercise-art/machine-crunch-1.png'),
+  ],
+  'bundled-hanging-knee-raise': [
+    require('../../assets/images/exercise-art/hanging-knee-raise-0.png'),
+    require('../../assets/images/exercise-art/hanging-knee-raise-1.png'),
+  ],
+  'bundled-lying-leg-raise': [
+    require('../../assets/images/exercise-art/lying-leg-raise-0.png'),
+    require('../../assets/images/exercise-art/lying-leg-raise-1.png'),
+  ],
+  'bundled-toes-to-bar': [
+    require('../../assets/images/exercise-art/toes-to-bar-0.png'),
+    require('../../assets/images/exercise-art/toes-to-bar-1.png'),
+  ],
+  'bundled-v-up': [
+    require('../../assets/images/exercise-art/v-up-0.png'),
+    require('../../assets/images/exercise-art/v-up-1.png'),
+  ],
+  'bundled-flutter-kicks': [
+    require('../../assets/images/exercise-art/flutter-kicks-0.png'),
+    require('../../assets/images/exercise-art/flutter-kicks-1.png'),
+  ],
+  'bundled-bicycle-crunch': [
+    require('../../assets/images/exercise-art/bicycle-crunch-0.png'),
+    require('../../assets/images/exercise-art/bicycle-crunch-1.png'),
+  ],
+  'bundled-russian-twist': [
+    require('../../assets/images/exercise-art/russian-twist-0.png'),
+    require('../../assets/images/exercise-art/russian-twist-1.png'),
+  ],
   'bundled-dumbbell-side-bend': [
     require('../../assets/images/exercise-art/dumbbell-side-bend-0.png'),
     require('../../assets/images/exercise-art/dumbbell-side-bend-1.png'),
+  ],
+  'bundled-cable-woodchop': [
+    require('../../assets/images/exercise-art/cable-woodchop-0.png'),
+    require('../../assets/images/exercise-art/cable-woodchop-1.png'),
+  ],
+  'bundled-pallof-press': [
+    require('../../assets/images/exercise-art/pallof-press-0.png'),
+    require('../../assets/images/exercise-art/pallof-press-1.png'),
+  ],
+  'bundled-side-plank': [
+    require('../../assets/images/exercise-art/side-plank-0.png'),
+    require('../../assets/images/exercise-art/side-plank-1.png'),
+  ],
+  'bundled-hollow-hold': [
+    require('../../assets/images/exercise-art/hollow-hold-0.png'),
+    require('../../assets/images/exercise-art/hollow-hold-1.png'),
+  ],
+  'bundled-dead-bug': [
+    require('../../assets/images/exercise-art/dead-bug-0.png'),
+    require('../../assets/images/exercise-art/dead-bug-1.png'),
+  ],
+  'bundled-bird-dog': [
+    require('../../assets/images/exercise-art/bird-dog-0.png'),
+    require('../../assets/images/exercise-art/bird-dog-1.png'),
+  ],
+  'bundled-copenhagen-plank': [
+    require('../../assets/images/exercise-art/copenhagen-plank-0.png'),
+    require('../../assets/images/exercise-art/copenhagen-plank-1.png'),
   ],
   'bundled-wall-sit': [
     require('../../assets/images/exercise-art/wall-sit-0.png'),

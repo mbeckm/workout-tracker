@@ -9,7 +9,8 @@ repo; only approved frames come in.
 - `lifts.json`: every bundled row (`id`, `name`, `equipment`, `muscles`, `figure` kind, `frames`:
   2, or 3 for the few complex lifts). Built from `src/catalog/bundled.ts`.
 - `poses/<group>.json`: the recipe per lift, one file per movement group (press, squat, hinge,
-  pull, row, fly, curl, extension, raise, carry): `id`, `start`, `end`, `middle` (three-frame
+  pull, row, fly, curl, extension, raise, carry, plus legs, core and holds for rows with no SVG
+  figure): `id`, `start`, `end`, `middle` (three-frame
   lifts only), `muscles` to light, optional `view` (default `side view`), `anchor` (`floor`, or
   `top` when the bar stays and the body moves, e.g. pull-ups) and `notes`.
 - `approved.json`: the lifts Marvin approved (catalog id to frame count). The manifest is
@@ -32,7 +33,8 @@ repo; only approved frames come in.
 `dots.py` splits the source at the emptiest columns, scales every frame with one shared scale,
 lines up the anchor (feet on one baseline, or the bar), and renders transparent 120x80 dot
 frames at 9 px pitch (1080x720), the figure about 64% of the panel height, centred, clear of
-the top-left (the close button). About 10 KB a frame.
+the top-left (the close button). `--long 1.3` (the default) caps the widest frame at 1.3x the
+standing figure height, so lying lifts come out at the same body size as standing ones. About 10 KB a frame.
 
 ## Rubric
 
@@ -50,4 +52,5 @@ and dropped connections.
 
 The model returns a white ground even when asked for black (handled in `dots.py`); separate
 generations per pose give different bodies; a bar seen end-on reads as a blob, so ask for a
-three-quarter view of the barbell; plates in front of the head hide it.
+three-quarter view of the barbell; plates in front of the head hide it; thin cables break into
+stray dots, so ask for thick ones; calf and tibialis raises move a few dots of foot and don't read.

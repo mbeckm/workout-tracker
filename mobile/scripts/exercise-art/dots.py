@@ -15,7 +15,7 @@ def option(name, default):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
 
 anchor = option("--anchor", "floor")
-long_cap = float(option("--long", "0"))   # 0: off; else the widest frame is at most this x the figure height
+long_cap = float(option("--long", "1.3"))  # the widest frame is at most this x the figure height (0: off)
 flags = {i for i, a in enumerate(sys.argv) if a.startswith("--")}
 args = [a for i, a in enumerate(sys.argv[1:], 1) if i not in flags and i - 1 not in flags]
 src, outs = args[0], args[1:]
