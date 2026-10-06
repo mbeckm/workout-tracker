@@ -18,9 +18,11 @@ import {
   fontScaleCap,
   gadgetRadius,
   gadgetType,
+  lcd,
   sheetColors,
   sheetGeometry,
   signal,
+  spacing,
 } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { isSheetKind, type SheetParams } from '@/device/device-state';
@@ -149,9 +151,11 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
             { paddingBottom: Math.max(insets.bottom, sheetGeometry.bottomPad) },
           ]}>
           {art || facts?.figure ? (
-            <View style={styles.figure}>
+            <View style={art ? styles.artFrame : styles.figure}>
               {art ? (
-                <ExerciseArt frames={art} label={facts?.name} />
+                <View style={styles.artScreen}>
+                  <ExerciseArt frames={art} label={facts?.name} />
+                </View>
               ) : facts?.figure ? (
                 <ExerciseFigure figure={facts.figure} />
               ) : null}
@@ -439,6 +443,25 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     overflow: 'hidden',
     experimental_backgroundImage: `radial-gradient(ellipse at 50% 60%, ${figureColors.groundHi}, ${figureColors.groundLo})`,
+  },
+  // Dot-matrix art sits in a small screen: a card-coloured bezel round an lcd glass (r28 − 8 = r20).
+  artFrame: {
+    height: exerciseSheet.figureHeight,
+    marginTop: exerciseSheet.figureTop,
+    padding: spacing.sm,
+    borderRadius: gadgetRadius.figure,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: sheetColors.card,
+  },
+  artScreen: {
+    flex: 1,
+    borderRadius: gadgetRadius.lcdFrame,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: lcd.lcd,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: lcd.lcdShade,
   },
   // Without a figure the name starts under the floating control, like under a header.
   noFigure: { height: sheetGeometry.headerHeight },
