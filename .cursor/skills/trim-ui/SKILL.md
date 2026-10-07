@@ -22,7 +22,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 1. **One surface, one job, one primary action.** Each device mode has one job and one big key. Each sheet answers one question. Anything else moves a layer down (§2) or goes away.
 2. **Fast is the feature.** Launch to the first logged set is two presses (Start, Log). A prefilled set is one. Nothing we add may cost the loop a press or make it wait (`PRODUCT.md` → Principles).
 3. **The interface explains itself.** No helper text, gesture hints or summaries, on the display or in sheets. If something needs a sentence, the layout is wrong.
-4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the wheel's KG label, the rest ring), and the wheel stows when it has no job.
+4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest ring, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
 5. **Layout carries hierarchy.** Size, brightness (amber, dim, off) and position say what matters. Labels that only restate hierarchy are banned.
 6. **Three layers, never mixed.** Device: physical metal, raised keys, a recessed display. Sheets: flat and dark. Moments: physical 3D objects on a dark grid. A sheet never gets a bevel, and the device never gets a flat list.
 7. **Color is a signal.** Orange marks action, current and selected. Green means done, yellow means record, and ordinary change is ink with ↑ or ↓ (§5). Each signal has exactly one meaning.
@@ -54,7 +54,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 
 | Layer | What | Style |
 | --- | --- | --- |
-| **Device** | The persistent home of the app: body, keys, display, rocker, wheel, big key. It runs Home, logging, rest, finish, plan-number editing and the loading state. | Brushed metal in the user's finish, raised keys, a recessed display with orange dot-matrix text (Doto). The only body text is the small engraved labels (`WEEK 12`, `KG`, `REPS`, `TIME`, `SETS`). |
+| **Device** | The persistent home of the app: body, keys, display, rocker, wheel, big key. It runs Home, logging, rest, finish, plan-number editing and the loading state. | Brushed metal in the user's finish, raised keys, a recessed display with orange dot-matrix text (Doto). The only body text is the small engraved labels (`WEEK 12`, `SETS`). |
 | **Sheets** | Everything list- or number-heavy: menu, Today, exercise, plans rack, editor, add lifts, progress, lift detail, body, history, receipt, finishes, settings, keypad. | Flat and dark, SF Rounded, rounded cards, orange for action and selection. One sheet at a time slides up over the device; the device stays visible above it except under the tall sheets. |
 | **Moments** | Cartridge insert, receipt printing, cartridge filing, stamps, the finished-week spike, onboarding, the paywall knob, the finish picker in onboarding. | Physical 3D objects on a dark grid ground. Rare, earned, under 4 s, skippable, replaced by fades under Reduce Motion. |
 
@@ -140,8 +140,8 @@ Use a role from `theme.ts` as-is. Override only `color`, and only with another t
 | `lcdHero` | Doto Black | 104 / 104 | The weight on the drum; sets and reps in edit; bodyweight reps |
 | `lcdBig` | Doto Black | 54–64 / same | Rest time (56) |
 | `lcdTitle` | Doto Black | 40–46 | `ALL DONE`, `END EARLY?` (44), the plan name while loading (40) |
-| `lcdReps` | Doto Black | 56 | `×8` |
-| `lcdRow` | Doto Black | 18–20 | Rows and lists on the display |
+| `lcdReps` | Doto Black | 56 | The reps in the log footer (`6`, with `REPS` in `lcdSmall`); `×8` elsewhere |
+| `lcdRow` | Doto Black | 18–20 | Rows and lists on the display; the lift name in the log header |
 | `lcdSmall` | Doto Black | 13–15 | Display headers (`hd`), meta |
 | `sectionLabel` | Doto Black | 13, letter spacing 1 | Sheet section labels |
 | `keyLabel` | SF Rounded 800 | 22–26 glyphs, 17–22 words | Key glyphs and words; the big key's word is 22–24 (SPEC §4) |
@@ -181,16 +181,15 @@ Use a role from `theme.ts` as-is. Override only `color`, and only with another t
 | Big key | x122 y600, 146 × 146, round | |
 | Hold ring | stroke 6 around the well (r80) | amber, soft glow |
 | Wheel | right 22, y588, 64 × 180, r24 | ridges 5 light + 2 dark; inner shadows 16 top and bottom |
-| Wheel label | under the wheel, y774 | `KG`, `LB`, `REPS`, `TIME` |
 
 These live in the `device` geometry block in `theme.ts` (`displayPad: 22`, `edge: 20`, `lampGap: 7`, key sizes, radii), never as raw numbers in a part.
 
-**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and `×8`, the rest ring and its clock scale down together to fit between header and footer, Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
+**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and the reps, the rest ring and its clock scale down together to fit between header and footer, Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
 
 ### Display layout
 
-- Content insets 22 from the display's edges. The header (`hd`, `lcdSmall`) sits 20 from the top: left the subject, right the position (`SET 1/3`, `NEXT 85×8`, `2 OF 4`).
-- The footer sits 22 from the bottom: the value you adjust with the keys on the left, the reference fact (`LAST 80×8`) dim on the right.
+- Content insets 22 from the display's edges. The header (`hd`, `lcdSmall`) sits 20 from the top: left the subject, right the position (`NEXT 85×8`, `2 OF 4`). Log is the exception: the subject is the lift name in `lcdRow` and the position is a row under it (Log below).
+- The footer sits 22 from the bottom: the value you adjust with the keys on the left, the reference fact on the right (`LAST 80×8`, amber in log). Everything in the footer shares one bottom line: small text beside a 56 number sits on the number's bottom edge (`lcdSmallBesideReps`).
 - Home's rows inset 14 from the display's sides, stacked from the top 8 apart.
 
 ### Sheet layout
@@ -223,7 +222,7 @@ Color is by layer. Tokens only: no hex literals outside `theme.ts`.
 | labelShadow | rgba(255,255,255,.7) | rgba(0,0,0,.6) | rgba(255,226,207,.5) | rgba(255,255,255,.7) |
 | keyEdge | #A9A69E | #A9A69E | #9E3A0A | #A9A69E |
 
-**Engraved labels must read on every finish** (PLAN §11): at least 3:1 against the body right behind them, measured with the sheen and brushing (the top of the body is lighter than `body1`). SPEC's 101 `#8C8A84` (1.8:1 under `WEEK n`) and 305 `#FFE2CF` (1.9:1) failed, so they were raised (PRODUCT-DECISIONS 73). The rule for picking one: a light label with a dark shadow under it on a dark body (101), a dark label with a light highlight under it on a light or bright body (212, 408, 305). No light colour reaches 3:1 on the Signal sheen, which is why 305's engraving is a dark burnt brown. Check both the top (`WEEK n`) and the bottom (`KG`) of the body, which differ by up to 2× in luminance.
+**Engraved labels must read on every finish** (PLAN §11): at least 3:1 against the body right behind them, measured with the sheen and brushing (the top of the body is lighter than `body1`). SPEC's 101 `#8C8A84` (1.8:1 under `WEEK n`) and 305 `#FFE2CF` (1.9:1) failed, so they were raised (PRODUCT-DECISIONS 73). The rule for picking one: a light label with a dark shadow under it on a dark body (101), a dark label with a light highlight under it on a light or bright body (212, 408, 305). No light colour reaches 3:1 on the Signal sheen, which is why 305's engraving is a dark burnt brown. Check both the top (`WEEK n`) and the bottom of the body, which differ by up to 2× in luminance.
 
 **Shared by every finish:** key1 #F4F3EF, key2 #DEDBD4, keyInk #2A2925; wheel ridges #F2F1ED / #C4C1B9; well rgba(0,0,0,.14); plate (the rocker's recessed strip) #C9C6BE.
 
@@ -460,7 +459,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Numbers carry real units: `85.0`, `KG`, `×8`, `1:24`, `~45 MIN`, `0:45`, `20 MIN`.
 - On the display, `×` joins without spaces (`LAST 80×8`, `NEXT 85×8`, `BENCH PRESS 3×8`). On cartridge chips, the edit display and receipts it takes spaces (`3 × 8`, `SETS 4 × REPS 15`, `90 × 9`).
 - No helper text, gesture hints, middle dots or emoji. There's no `HOLD TO FINISH`: the big key's VoiceOver label says it.
-- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `LAST 80×8`, `TARGET 87.5×8`, `TARGET ›`, `REST`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
+- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
 
 ### In sheets
 
@@ -709,12 +708,12 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Log (V2) [04, 05, 09]
 
-- **Header:** the exercise name ▾ (tap opens the exercise sheet) left; `SET n/m` or `EXTRA SET` right.
-- **Drum:** the weight (§10 `Drum`); `--.-` with no history, the first notch going to the first load step.
-- **Footer:** `×8` (56) left; `LAST 80×8` dim right, or `TARGET 87.5×8` for Pro with a target; free users with targets locked see a dim `TARGET ›` that opens the paywall.
-- **Keys:** `+` / `−` reps (1–50, long press repeats); top right Undo last set (immediate, toast with Undo, disabled when there's nothing to undo); the rocker moves between lifts, its middle opens Today; wheel label `KG` or `LB`.
+- **Header (decision 84):** the exercise name ▾ in `lcdRow` amber, one line, truncating with … (tap opens the exercise sheet). 6 under it, the set row: one lamp per prescribed set (22 × 10 pills 8 apart; 12 wide 5 apart from 7 to 12 sets; none past 12), done lit amber with a glow, the set on the display outlined 2 px, the rest `amberOff`; then, 12 on, `SET n/m`, `EXTRA SET` or `EDIT SET n` in amber (it must be readable mid-set, so never dim). The header is too tall for the drum's step above, so the step above drops and the frame sits 32 under the header (`drumHeaderClear`).
+- **Drum:** the weight (§10 `Drum`); `--.-` with no history, the first notch going to the first load step. With targets shown (Pro) it opens on the target, so the target is never repeated in the footer.
+- **Footer:** the reps (56, `6`) with `REPS` (`lcdSmall`) beside it, left; `LAST 80×6` amber right, always, when this set has a last time. Without one, free users with targets locked see a dim `TARGET ›` that opens the paywall. No delta to last time. All of it on one bottom line.
+- **Keys:** `+` / `−` reps (1–50, long press repeats); top right Undo last set (immediate, toast with Undo, disabled when there's nothing to undo); the rocker moves between lifts, its middle opens Today; the wheel has no label.
 - **Log:** logs the set with the log-set haptic, starts rest, and moves to the next incomplete lift when this one is done (the obvious next step only). The first weighted set with no weight flashes the drum's frame instead of logging.
-- **Tracking modes** (PLAN §6.6): bodyweight puts reps on the drum (`×12` at 104, wheel label `REPS`, no `KG`); assisted shows `−20.0` under an `ASSIST` header; holds put seconds on the drum (5 s per notch, `0:45`); minute-based cardio 1 min per notch (`20 MIN`); reps and duration put the duration on the wheel and reps on the keys.
+- **Tracking modes** (PLAN §6.6): bodyweight puts reps on the drum (`×12` at 104, no keys value); assisted shows `−20.0` under an `ASSIST` header; holds put seconds on the drum (5 s per notch, `0:45`); minute-based cardio 1 min per notch (`20 MIN`); reps and duration put the duration on the wheel and reps on the keys.
 - **VoiceOver:** one summary ("Bench press, set 2 of 3, 85 kilograms, 8 reps, last time 80 by 8"); the wheel is adjustable ("85 kilograms"); rocker ends are "Previous lift" and "Next lift", the middle "Today's lifts".
 
 ### Rest [08]
