@@ -46,17 +46,20 @@ import {
   drumStep,
   drumView,
   finishSummary,
-  formatKeysValue,
+  keysFace,
   keyStep,
   liftLamps,
   logFooter,
   setLabel,
+  setLamps,
   type Controls,
   type DrumKind,
   type DrumView,
   type FinishSummary,
+  type KeysFace,
   type LiftLampState,
   type LogFooter,
+  type SetLampState,
 } from './log-model';
 import {
   addDraft,
@@ -142,10 +145,12 @@ export type LogSessionValue = {
   /** The drum's step tag (`±2`), lit when the lift has a chosen step; null when the drum isn't a load. */
   loadStep: { text: string; chosen: boolean } | null;
   drum: DrumView | null;
-  /** The keys' value beside the drum (`×8`, `0:45`), or null. */
-  keysText: string | null;
+  /** The keys' value in the footer (`6` + `REPS`, `0:45`), or null. */
+  keys: KeysFace | null;
   /** `SET 2/3`, `EXTRA SET`, `EDIT SET 2`. */
   setLabel: string | null;
+  /** One per prescribed set of the current lift, beside the set label (`setLampLayout`). */
+  setLamps: SetLampState[];
   footer: LogFooter | null;
   /** One per lift for the rocker strip (`lampLayout`/`lampText` for many lifts). */
   lamps: LiftLampState[];
@@ -832,8 +837,9 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       increment,
       loadStep,
       drum: stage && controls ? drumView(controls.drum, stage.values, increment, units) : null,
-      keysText: stage && controls ? formatKeysValue(controls.keys, stage.values) : null,
+      keys: stage && controls ? keysFace(controls.keys, stage.values) : null,
       setLabel: stage ? setLabel(stage) : null,
+      setLamps: stage ? setLamps(stage) : [],
       footer: stage
         ? logFooter({
             previousSets: previous?.sets,

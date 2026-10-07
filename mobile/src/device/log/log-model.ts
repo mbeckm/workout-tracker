@@ -24,6 +24,8 @@ export const MINUTES_STEP_SECONDS = 60;
 /** Rocker lamps compress past this many lifts, and give way to `n/m` text past `LAMP_TEXT_OVER` (PLAN §7). */
 export const LAMP_COMPACT_OVER = 12;
 export const LAMP_TEXT_OVER = 16;
+export const SET_LAMP_REGULAR_UP_TO = 6;
+export const SET_LAMP_COMPACT_UP_TO = 12;
 
 /** What the wheel turns (the drum, big). */
 export type DrumKind = 'weight' | 'assist' | 'reps' | 'seconds' | 'minutes';
@@ -185,6 +187,19 @@ export function formatKeysValue(kind: KeysKind, values: Values): string | null {
   return kind == null ? null : formatDrumValue(kind, values);
 }
 
+/** The log footer's keys value: `6` with the unit `REPS`, or a time (`0:45`, `20 MIN`) on its own. */
+export type KeysFace = { value: string; unit: 'REPS' | null };
+
+export function keysFace(kind: KeysKind, values: Values): KeysFace | null {
+  if (kind == null) {
+    return null;
+  }
+  if (kind === 'reps') {
+    return { value: values.reps == null ? '--' : String(values.reps), unit: 'REPS' };
+  }
+  return { value: formatDrumValue(kind, values), unit: null };
+}
+
 export type DrumView = {
   kind: DrumKind;
   /** The big value (104). */
@@ -268,7 +283,7 @@ export type LogFooter = {
   target: string | null;
   /** Free with a target here: the dim `TARGET ›` that opens the paywall (`targets`). */
   targetLocked: boolean;
-  /** The one footer line: target, else the locked offer, else last time. */
+  /** The one footer line: last time, else the locked offer. The target is already on the drum. */
   text: string | null;
 };
 
@@ -287,7 +302,7 @@ export function logFooter(input: {
   const last = lastText ? `LAST ${lastText}` : null;
   const target = targetText ? `TARGET ${targetText}` : null;
   const targetLocked = !input.showTargets && input.offerTargets && input.target != null;
-  return { last, target, targetLocked, text: target ?? (targetLocked ? 'TARGET ›' : last) };
+  return { last, target, targetLocked: last == null && targetLocked, text: last ?? (targetLocked ? 'TARGET ›' : null) };
 }
 
 /** Rest header: `NEXT 85×8` for the set that's up next. */
@@ -298,6 +313,33 @@ export function restNextText(values: Values, minutes = false): string | null {
 
 // ---------------------------------------------------------------------------
 // Lamps
+
+export type SetLampState = 'off' | 'on' | 'done';
+
+/**
+ * One lamp per prescribed set of the lift on the display: done (logged), on (the set Log or Save
+ * acts on), off. Extra sets add no lamp; while one is up every lamp reads done.
+ */
+export function setLamps(stage: Pick<Stage, 'kind' | 'setIndex' | 'current'>): SetLampState[] {
+  return stage.current.sets
+    .filter((set) => !set.extra)
+    .map((set, index) => {
+      if (index === stage.setIndex && stage.kind !== 'extra') {
+        return 'on';
+      }
+      return set.done ? 'done' : 'off';
+    });
+}
+
+export type SetLampLayout = 'regular' | 'compact' | 'none';
+
+/** Up to 6 sets the lamps are 22 wide; up to 12 they compress to 12; past that only `SET n/m` shows. */
+export function setLampLayout(count: number): SetLampLayout {
+  if (count > SET_LAMP_COMPACT_UP_TO) {
+    return 'none';
+  }
+  return count > SET_LAMP_REGULAR_UP_TO ? 'compact' : 'regular';
+}
 
 export type LiftLampState = 'off' | 'on' | 'done' | 'part';
 

@@ -18,7 +18,7 @@ import { durationIsMinutes } from '@/domain/helpers';
 import { sessionDurationMinutes } from '@/domain/log-session';
 import { DEVICE } from '@/motion';
 
-import { restNextText } from './log-model';
+import { restNextText, setLampLayout, type SetLampState } from './log-model';
 import { useLogSession } from './log-session-context';
 import { useRest } from './use-rest';
 
@@ -31,10 +31,13 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 function LiftName({
   name,
   dim = false,
+  large = false,
   onPress,
 }: {
   name: string;
   dim?: boolean;
+  /** The log header's name (`lcdRow`); rest keeps it small and dim. */
+  large?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -43,7 +46,10 @@ function LiftName({
       accessible={false}
       hitSlop={{ top: device.displayHeaderY, bottom: logGeometry.namePadX, left: device.displayPad }}
       style={({ pressed }) => [styles.name, pressed && styles.namePressed]}>
-      <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, dim && styles.dim]}>
+      <Text
+        maxFontSizeMultiplier={1}
+        numberOfLines={1}
+        style={[large ? gadgetType.lcdRow : gadgetType.lcdSmall, dim && styles.dim]}>
         {`${name.toUpperCase()} ▾`}
       </Text>
     </Pressable>
@@ -52,11 +58,35 @@ function LiftName({
 
 const HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
 
-/** `ASSIST` rides the step above; without it (short displays) it sits midway to the frame. */
+/** The log header: the lift name (`lcdRow`), then the set lamps and `SET 2/4`. */
+const LOG_HEADER_BOTTOM =
+  device.displayHeaderY + gadgetType.lcdRow.lineHeight + logGeometry.nameSetGap + gadgetType.lcdSmall.lineHeight;
+
+/** `ASSIST` rides the step above; without it it sits midway between the header and the frame. */
 function assistY(layout: DrumLayout): number {
   return layout.above
     ? device.drumAboveY + layout.offset
-    : Math.round((HEADER_BOTTOM + layout.frameY - gadgetType.lcdSmall.lineHeight) / 2);
+    : Math.round((LOG_HEADER_BOTTOM + layout.frameY - gadgetType.lcdSmall.lineHeight) / 2);
+}
+
+/** The set lamps (`setLamps`): done lit, the set on the display outlined, the rest off. */
+function SetLamps({ lamps }: { lamps: readonly SetLampState[] }) {
+  const layout = setLampLayout(lamps.length);
+  if (layout === 'none' || lamps.length === 0) {
+    return null;
+  }
+  const compact = layout === 'compact';
+  const size = { width: compact ? logGeometry.setLampWidthCompact : logGeometry.setLampWidth };
+  return (
+    <View style={[styles.setLamps, { gap: compact ? logGeometry.setLampGapCompact : logGeometry.setLampGap }]}>
+      {lamps.map((lamp, index) => (
+        <View
+          key={index}
+          style={[styles.setLamp, size, lamp === 'done' ? styles.gridOn : lamp === 'on' ? styles.setLampOn : styles.gridOff]}
+        />
+      ))}
+    </View>
+  );
 }
 
 /**
@@ -71,8 +101,9 @@ function stepTagY(layout: DrumLayout, height: number): number | null {
 }
 
 /**
- * Log (V2, screens 04, 05, 09): the lift name ▾ and the set label, the drum (the wheel's value),
- * the keys' value (`×8`) and the reference fact (`LAST 80×8`, `TARGET 87.5×8`, `TARGET ›`).
+ * Log (screens 04, 05, 09; decision 84): the lift name ▾ (`lcdRow`), the set lamps and the set
+ * label, the drum (the wheel's value, already the target when targets show), the keys' value
+ * (`6 REPS`) and last time (`LAST 80×8`, else the locked `TARGET ›`), on one bottom line.
  * Tapping the drum cycles the lift's wheel step, shown as `±2` under the frame (80);
  * long-pressing it opens the keypad (D19).
  */
@@ -89,15 +120,15 @@ export function LogDisplay({
   onKeypad: () => void;
   onStep: () => void;
 }) {
-  const { current, drum, keysText, setLabel, footer, controls, loadStep, unlockTargets } = useLogSession();
+  const { current, drum, keys, setLabel, setLamps, footer, controls, loadStep, unlockTargets } = useLogSession();
   const height = useDisplayHeight();
-  const layout = drumLayout(height);
+  const layout = drumLayout(height, LOG_HEADER_BOTTOM);
   const tagY = loadStep ? stepTagY(layout, height) : null;
   if (!current || !drum || !controls) {
     return null;
   }
   // Bodyweight puts reps on the drum; the keys step the same value, so it shows once.
-  const keysValue = controls.keys && controls.keys !== controls.drum ? keysText : null;
+  const keysValue = controls.keys && controls.keys !== controls.drum ? keys : null;
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -123,11 +154,16 @@ export function LogDisplay({
           {loadStep.text}
         </Text>
       ) : null}
-      <View style={styles.header} pointerEvents="box-none">
-        <LiftName name={current.prescription.name} onPress={onName} />
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
-          {setLabel}
-        </Text>
+      <View style={[styles.header, styles.logHeader]} pointerEvents="box-none">
+        <View style={styles.nameRow} pointerEvents="box-none">
+          <LiftName name={current.prescription.name} large onPress={onName} />
+        </View>
+        <View style={styles.setRow}>
+          <SetLamps lamps={setLamps} />
+          <Text maxFontSizeMultiplier={1} numberOfLines={1} style={gadgetType.lcdSmall}>
+            {setLabel}
+          </Text>
+        </View>
       </View>
       {drum.header ? (
         <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim, styles.assist, { top: assistY(layout) }]}>
@@ -135,9 +171,16 @@ export function LogDisplay({
         </Text>
       ) : null}
       <View style={styles.footer} pointerEvents="box-none">
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={gadgetType.lcdReps}>
-          {keysValue ?? ''}
-        </Text>
+        <View style={styles.keysValue}>
+          <Text maxFontSizeMultiplier={1} numberOfLines={1} style={gadgetType.lcdReps}>
+            {keysValue?.value ?? ''}
+          </Text>
+          {keysValue?.unit ? (
+            <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.besideReps]}>
+              {keysValue.unit}
+            </Text>
+          ) : null}
+        </View>
         {footer?.text ? (
           footer.targetLocked ? (
             <Pressable
@@ -150,7 +193,7 @@ export function LogDisplay({
               </Text>
             </Pressable>
           ) : (
-            <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.footerFact]}>
+            <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.footerFact]}>
               {footer.text}
             </Text>
           )
@@ -427,6 +470,14 @@ const styles = StyleSheet.create({
     gap: device.rowGap,
   },
   footerFact: { marginBottom: device.lcdSmallBesideReps, flexShrink: 1 },
+  besideReps: { marginBottom: device.lcdSmallBesideReps },
+  keysValue: { flexDirection: 'row', alignItems: 'flex-end', gap: logGeometry.repsUnitGap, flexShrink: 0 },
+  logHeader: { flexDirection: 'column', justifyContent: 'flex-start', gap: logGeometry.nameSetGap },
+  nameRow: { flexDirection: 'row' },
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: logGeometry.setLampLabelGap },
+  setLamps: { flexDirection: 'row', alignItems: 'center' },
+  setLamp: { height: logGeometry.setLampHeight, borderRadius: logGeometry.setLampHeight / 2 },
+  setLampOn: { borderWidth: device.drumFrameStroke, borderColor: lcd.amber },
   restFooter: { bottom: logGeometry.restFooterY, alignItems: 'baseline' },
   ring: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   centered: { alignItems: 'center', justifyContent: 'center' },

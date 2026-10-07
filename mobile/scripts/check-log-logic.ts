@@ -20,11 +20,14 @@ import {
   formatDrumLoad,
   formatDrumValue,
   keyStep,
+  keysFace,
   lampLayout,
   lampText,
   liftLamps,
   logFooter,
   setLabel,
+  setLampLayout,
+  setLamps,
   spokenValue,
   stepLoad,
   stepMinutes,
@@ -522,15 +525,19 @@ check('reps clamp 1–50 everywhere', () => {
 // ---------------------------------------------------------------------------------------------
 // Footer, lamps, finish, VoiceOver
 
-check('footer: LAST, Pro TARGET, free TARGET ›', () => {
+check('footer: LAST always wins; free TARGET › only without history', () => {
   const previousSets: LoggedSet[] = [{ id: 'a', index: 1, weight: 80, reps: 8 }];
   const target = { weight: 87.5, reps: 8, counterweight: null, durationSeconds: null };
   const base = { previousSets, setIndex: 0, target, offerTargets: true };
   assert.equal(logFooter({ ...base, target: null, showTargets: false }).text, 'LAST 80×8');
-  assert.equal(logFooter({ ...base, showTargets: true }).text, 'TARGET 87.5×8');
-  const locked = logFooter({ ...base, showTargets: false });
-  assert.deepEqual([locked.targetLocked, locked.text, locked.last], [true, 'TARGET ›', 'LAST 80×8']);
-  assert.equal(logFooter({ ...base, showTargets: false, offerTargets: false }).text, 'LAST 80×8');
+  // The target is on the drum already; the footer keeps last time.
+  const pro = logFooter({ ...base, showTargets: true });
+  assert.deepEqual([pro.text, pro.target], ['LAST 80×8', 'TARGET 87.5×8']);
+  const withHistory = logFooter({ ...base, showTargets: false });
+  assert.deepEqual([withHistory.targetLocked, withHistory.text], [false, 'LAST 80×8']);
+  const firstTime = logFooter({ ...base, previousSets: [], showTargets: false });
+  assert.deepEqual([firstTime.targetLocked, firstTime.text], [true, 'TARGET ›']);
+  assert.equal(logFooter({ ...base, previousSets: [], showTargets: false, offerTargets: false }).text, null);
   assert.equal(compactSet({ durationSeconds: 40 }), '0:40');
   assert.equal(compactSet({ durationSeconds: 1200 }, true), '20 MIN');
   assert.equal(compactSet({ reps: 12 }), '12');
@@ -548,6 +555,26 @@ check('lamps: done / on / part / off, compression past 12 and text past 16', () 
   assert.equal(lampLayout(17), 'text');
   assert.equal(lampText(['done', 'done', 'on', 'off']), '3/4');
   assert.equal(lampText(['done', 'done', 'off']), '2/3');
+});
+
+check('set lamps: done / on / off, extra sets add none, compression past 6', () => {
+  const state = stateFor([lift('Bench press', 4)]);
+  assert.deepEqual(setLamps(stageOf(state)!), ['on', 'off', 'off', 'off']);
+  assert.deepEqual(setLamps(stageOf(log(state))!), ['done', 'on', 'off', 'off']);
+  const extra = logTimes(state, 4);
+  assert.equal(stageOf(extra)?.kind, 'extra');
+  assert.deepEqual(setLamps(stageOf(extra)!), ['done', 'done', 'done', 'done']);
+  assert.equal(setLampLayout(6), 'regular');
+  assert.equal(setLampLayout(7), 'compact');
+  assert.equal(setLampLayout(12), 'compact');
+  assert.equal(setLampLayout(13), 'none');
+});
+
+check('keys face: reps as a number with REPS, times on their own', () => {
+  assert.deepEqual(keysFace('reps', { reps: 6 }), { value: '6', unit: 'REPS' });
+  assert.deepEqual(keysFace('reps', {}), { value: '--', unit: 'REPS' });
+  assert.deepEqual(keysFace('seconds', { durationSeconds: 45 }), { value: '0:45', unit: null });
+  assert.equal(keysFace(null, { reps: 6 }), null);
 });
 
 check('finish summary: n OF m SETS, volume, NOTHING LOGGED', () => {

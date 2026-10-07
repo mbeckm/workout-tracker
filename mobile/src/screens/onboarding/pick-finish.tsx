@@ -52,7 +52,7 @@ function PickFinish({
   onLoad: (() => ReturnType<typeof planFromStarterTemplate>) | null;
 }) {
   const { finish, preview, setPreview } = useFinish();
-  const { setFinish, isPro, units } = useWorkoutStore();
+  const { setFinish, isPro } = useWorkoutStore();
   const haptics = useHaptics();
   const { width } = useWindowDimensions();
   const { finishWithPlan, finishBuildingOwn } = useFinishOnboarding();
@@ -113,7 +113,6 @@ function PickFinish({
             displayKey="empty"
             display={<EmptySlot />}
             lamps={offLamps(days)}
-            wheelLabel={units === 'lbs' ? 'LB' : 'KG'}
             accessibilityLabel={`Trim in finish ${finish}, ${finishColors[finish].name}`}
           />
         ) : null}

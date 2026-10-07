@@ -28,22 +28,27 @@ export type DrumLayout = {
 
 const REFERENCE_LAYOUT: DrumLayout = { offset: 0, frameY: device.drumFrameY, above: true, below: true };
 
+const SMALL_HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
+
 /**
- * The drum's layout for a display `height` tall, clear of the header and the `×8` footer. From
- * 360 up it's screen 04 exactly. Shorter displays (iPhone SE, ~296) first drop the step below,
- * then the step above, and centre the framed weight between the header and the footer: the
- * current weight keeps its size and frame, and nothing overlaps.
+ * The drum's layout for a display `height` tall, clear of a header ending at `headerBottom` and
+ * the `×8` footer. Under the one-line header, from 360 up, it's screen 04 exactly. A header too
+ * tall for the step above (the log's name and set row) drops that step and puts the frame
+ * `drumHeaderClear` under the header. Shorter displays (iPhone SE, ~296) then drop the step below
+ * and centre the framed weight between the header and the footer: the current weight keeps its
+ * size and frame, and nothing overlaps.
  */
-export function drumLayout(height: number): DrumLayout {
-  if (height <= 0) return REFERENCE_LAYOUT;
+export function drumLayout(height: number, headerBottom: number = SMALL_HEADER_BOTTOM): DrumLayout {
+  const aboveFits = device.drumAboveY >= headerBottom + device.drumClear;
+  const frameY = aboveFits ? device.drumFrameY : headerBottom + device.drumHeaderClear;
+  const base: DrumLayout = { offset: frameY - device.drumFrameY, frameY, above: aboveFits, below: true };
+  if (height <= 0) return base;
   const footerTop = height - device.repsFooterY - gadgetType.lcdReps.lineHeight;
-  const belowBottom = device.drumBelowY + gadgetType.lcdStep.lineHeight;
-  if (belowBottom + device.drumClear <= footerTop) return REFERENCE_LAYOUT;
-  const frameBottom = device.drumFrameY + device.drumFrameHeight;
-  if (frameBottom + 2 * device.drumClear <= footerTop) return { ...REFERENCE_LAYOUT, below: false };
-  const headerBottom = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
-  const frameY = Math.round((headerBottom + footerTop - device.drumFrameHeight) / 2);
-  return { offset: frameY - device.drumFrameY, frameY, above: false, below: false };
+  const belowBottom = device.drumBelowY + base.offset + gadgetType.lcdStep.lineHeight;
+  if (belowBottom + device.drumClear <= footerTop) return base;
+  if (frameY + device.drumFrameHeight + 2 * device.drumClear <= footerTop) return { ...base, below: false };
+  const centred = Math.round((headerBottom + footerTop - device.drumFrameHeight) / 2);
+  return { offset: centred - device.drumFrameY, frameY: centred, above: false, below: false };
 }
 
 /**
