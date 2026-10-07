@@ -5,10 +5,11 @@
  * session (Phase 4), which reads `logIntent` to know what to open.
  */
 
-export type DeviceMode = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading';
+/** `tour`: the guided tour's practice set and the launch into its reward (decision 85). */
+export type DeviceMode = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading' | 'tour';
 
 /** Modes the UI sets itself; the others follow the log session. */
-export type UiMode = Extract<DeviceMode, 'edit' | 'loading'>;
+export type UiMode = Extract<DeviceMode, 'edit' | 'loading' | 'tour'>;
 
 /** Modes that follow the open log session (Phase 4). */
 export type LogMode = Extract<DeviceMode, 'log' | 'rest' | 'finish'>;

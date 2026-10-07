@@ -48,7 +48,7 @@ const TITLES: Record<SheetKind, string> = {
 export function SheetContent({ sheet }: { sheet: OpenSheet }) {
   switch (sheet.kind) {
     case 'menu':
-      return <DeviceMenuSheet key={sheet.key} />;
+      return <DeviceMenuSheet key={sheet.key} tour={sheet.params.tour === '1'} />;
     case 'today':
       return <TodaySheet key={sheet.key} params={sheet.params} />;
     case 'keypad':

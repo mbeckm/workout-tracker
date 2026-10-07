@@ -16,6 +16,19 @@ export const DARK_FINISH: Finish = '101';
 /** Finishes without Trim Pro: Aluminium, and Graphite (given at the end of onboarding). */
 export const FREE_FINISHES: readonly Finish[] = ['212', '101'];
 
+/** The finish the guided tour gives (decision 85): free, but locked until the tour ends. */
+export const EARNED_FINISH: Finish = '101';
+
+/** Why a finish can't be kept yet: Trim Pro, or the tour that gives it. */
+export type FinishLock = 'pro' | 'tour';
+
+/** `null` when the finish can be kept. Pro owners keep every finish. */
+export function finishLock(finish: Finish, access: { isPro: boolean; tourDone: boolean }): FinishLock | null {
+  if (access.isPro) return null;
+  if (finish === EARNED_FINISH) return access.tourDone ? null : 'tour';
+  return FREE_FINISHES.includes(finish) ? null : 'pro';
+}
+
 export function isFinish(value: unknown): value is Finish {
   return typeof value === 'string' && (FINISHES as readonly string[]).includes(value);
 }

@@ -4,10 +4,10 @@ import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'r
 
 import { isStarterDayCount, planFromStarterTemplate, starterTemplateById } from '@/catalog/templates';
 import { finishColors, onboardingGeometry, sheetGeometry, space } from '@/constants/theme';
-import { FINISHES, type Finish } from '@/domain/finish';
+import { FINISHES, finishLock, type Finish } from '@/domain/finish';
 import { DeviceObject, deviceObjectScale, offLamps } from '@/device/device-object';
 import { useFinish } from '@/device/finish';
-import { FinishSwatch, isProFinish } from '@/device/finish-swatch';
+import { FinishSwatch } from '@/device/finish-swatch';
 import { useHaptics } from '@/device/haptics';
 import { EmptySlot } from '@/device/home/home-display';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -53,7 +53,7 @@ function PickFinish({
   onLoad: (() => ReturnType<typeof planFromStarterTemplate>) | null;
 }) {
   const { finish, preview, setPreview } = useFinish();
-  const { setFinish, isPro } = useWorkoutStore();
+  const { setFinish, isPro, tourDone } = useWorkoutStore();
   const haptics = useHaptics();
   const { width } = useWindowDimensions();
   const { finishWithPlan, finishBuildingOwn } = useFinishOnboarding();
@@ -70,7 +70,9 @@ function PickFinish({
     [setPreview],
   );
 
-  const locked = (id: Finish) => !isPro && isProFinish(id);
+  // Graphite is the tour's reward (decision 85): here it previews, like a Pro finish.
+  const lockOf = (id: Finish) => finishLock(id, { isPro, tourDone });
+  const locked = (id: Finish) => lockOf(id) != null;
 
   const pick = (id: Finish) => {
     if (id === finish) {
@@ -88,7 +90,7 @@ function PickFinish({
   const next = () => {
     handedOff.current = true;
     if (onLoad) {
-      finishWithPlan(onLoad(), preview != null && locked(preview) ? preview : null);
+      finishWithPlan(onLoad(), preview != null && lockOf(preview) === 'pro' ? preview : null);
     } else {
       finishBuildingOwn(days);
     }
@@ -125,7 +127,7 @@ function PickFinish({
             id={id}
             width={swatchWidth}
             selected={id === finish}
-            locked={locked(id)}
+            lock={lockOf(id)}
             onPress={() => pick(id)}
             testID={`onboarding-finish-${id}`}
           />

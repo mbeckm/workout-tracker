@@ -2226,3 +2226,74 @@ export const packColors = {
   /** An empty slot's ring (`.cart.blank`). */
   blankRing: '#3A3936',
 } as const;
+
+/* ------------------------------------------------------------------------------------------ *
+ * The guided tour (decision 85): Trim talks on its display, a focus ring on the control it
+ * names, then the launch into the Graphite reward on Trim's dot-matrix room.
+ * ------------------------------------------------------------------------------------------ */
+
+export const tourType = {
+  /** Trim's lines under the practice set. */
+  lcdChat: lcdRole(16, 20),
+  /** Trim's lines on a whole display (hello, the end). */
+  lcdChatLarge: lcdRole(24, 30),
+  /** `READY` over the last lines. */
+  lcdReady: lcdRole(56, 60),
+  /** `UNLOCKED` / `LOCKED`, stamped over the device. */
+  stamp: lcdRole(34, 40),
+} as const;
+
+export const tourColors = {
+  /** The focus ring's glow (the brand orange at ~50%). */
+  focusGlow: 'rgba(255,106,26,0.5)',
+  /** The dot-matrix room: unlit dots, lit dots, the dark ground and its vignette. */
+  roomDotOff: '#3A2214',
+  roomDotOn: '#FF6A1A',
+  roomGround: '#0A0A09',
+  vignette: '#000000',
+  vignetteOpacity: 0.8,
+  /** The device's cast shadow on the room. */
+  shadow: '#000000',
+  /** A locked pick's stamp. */
+  stampLocked: '#8C8A84',
+  stampGround: 'rgba(18,18,17,0.6)',
+} as const;
+
+export const tourGeometry = {
+  /** Trim's chat strip at the foot of the display, and its dotted rule. */
+  chatHeight: 100,
+  chatRuleWidth: 2,
+  chatRuleDash: 2,
+  chatGap: 7,
+  chatTop: 9,
+  /** The display's own focus frame on the first line (tap my screen). */
+  focusStroke: 3,
+  focusOffset: 5,
+  focusGlowRadius: 24,
+  /** The launch: the device lands perched this far up, at this scale, before the picker. */
+  perchY: -165,
+  perchScale: 0.5,
+  /** The body's depth while it spins (the insert's 44 pt). */
+  depth: 44,
+  /** The dot-matrix room: one dot every 12, radius 1.6; the ripple ring's width. */
+  dotPitch: 12,
+  dotRadius: 1.6,
+  rippleWidth: 44,
+  rippleStart: -40,
+  rippleEnd: 460,
+  /** The shadow under the perched device. */
+  shadowWidth: 210,
+  shadowHeight: 30,
+  /** The stamp's tilt and box. */
+  stampTilt: -8,
+  stampWidth: 236,
+  stampBorder: 4,
+  stampRadius: 10,
+  stampY: 412,
+  /** The wiggle on a pick: lift, scale and tilts (degrees). */
+  wiggleLift: -9,
+  wiggleScale: 0.53,
+  wiggleTilts: [-4, 3, -1.6, 0.6] as readonly number[],
+  /** The reward picker's swatches. */
+  swatchWidth: 64,
+} as const;

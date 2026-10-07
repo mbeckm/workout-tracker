@@ -31,12 +31,15 @@ import {
   sheetGeometry,
   signal,
   spacing,
+  tourGeometry,
 } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import { isSheetKind, type SheetParams } from '@/device/device-state';
 import { ExerciseArt, exerciseArt } from '@/device/exercise-art';
 import { ExerciseFigure } from '@/device/figures';
 import { useLogSession } from '@/device/log';
+import { useTour } from '@/device/tour/tour-context';
+import { TrimSays } from '@/device/tour/trim-says';
 import { estimatedOneRM, formatLoadWithUnit, formatLoggedSetLine } from '@/domain/helpers';
 import { liftSeriesFromHistory } from '@/domain/progress';
 import type { CustomExerciseDefinition, ExercisePrescription, LoggedSet } from '@/domain/types';
@@ -75,10 +78,13 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
   const { swapSheet } = useDevice();
   const { plans, customExercises, workoutHistory, units } = useWorkoutStore();
   const log = useLogSession();
+  const tour = useTour();
+  // The tour's practice lift (decision 85): its swap is the practice's, never the session's.
+  const touring = params.tour === '1' && tour.active;
   const insets = useSafeAreaInsets();
   const nameRef = useRef<Text>(null);
 
-  const exerciseId = params.exerciseId;
+  const exerciseId = touring ? tour.current?.id : params.exerciseId;
   const from = isSheetKind(params.from) ? params.from : null;
 
   const draft = useMemo(
@@ -87,8 +93,12 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
   );
 
   const row = useMemo(
-    () => draft?.prescription ?? findRow(exerciseId, plans) ?? (exerciseId ? bundledExerciseById(exerciseId) : undefined),
-    [draft, exerciseId, plans],
+    () =>
+      (touring ? tour.current : null) ??
+      draft?.prescription ??
+      findRow(exerciseId, plans) ??
+      (exerciseId ? bundledExerciseById(exerciseId) : undefined),
+    [draft, exerciseId, plans, tour.current, touring],
   );
   const custom = useMemo(
     () => findCustom(exerciseId, row, customExercises),
@@ -120,14 +130,23 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
   const back = from ? () => swapSheet(from) : close;
 
   const [picking, setPicking] = useState(false);
-  const swappable = draft != null && !draft.orphan && log.mode != null;
+  const swappable = touring || (draft != null && !draft.orphan && log.mode != null);
+  // While the tour teaches the swap, only the asked-for alternative answers.
+  const swapTask = touring && tour.lit === 'swap' ? tour.target : null;
   // Lifts already in today's session aren't alternatives.
   const alternatives = useMemo(() => {
+    if (touring) return [...tour.alternatives];
     if (!swappable || !exerciseId) return [];
     const inDay = new Set(log.drafts.map((item) => item.prescription.name.trim().toLowerCase()));
     return log.alternativesFor(exerciseId).filter((item) => !inDay.has(item.name.trim().toLowerCase()));
-  }, [exerciseId, log, swappable]);
+  }, [exerciseId, log, swappable, tour.alternatives, touring]);
   const swapTo = (exercise: ExercisePrescription) => {
+    if (touring) {
+      if (swapTask && exercise.id !== swapTask.id) return;
+      tour.dispatch({ type: 'swap', alternativeId: exercise.id });
+      back();
+      return;
+    }
     if (exerciseId) log.swapExercise(exerciseId, exercise);
     back();
   };
@@ -233,22 +252,28 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
                   {alternatives.length > 0 ? (
                     <SheetCard>
                       {alternatives.map((exercise) => (
-                        <SheetRow
-                          key={exercise.id}
-                          size="compact"
-                          title={exercise.name}
-                          sub={exercisePickerMeta(exercise)}
-                          onPress={() => {
-                            void recordExerciseSelection(exercise);
-                            swapTo(exercise);
-                          }}
-                        />
+                        <View key={exercise.id} style={swapTask?.id === exercise.id ? styles.swapTarget : undefined}>
+                          <SheetRow
+                            size="compact"
+                            title={exercise.name}
+                            sub={exercisePickerMeta(exercise)}
+                            trailing={swapTask?.id === exercise.id ? 'Swap' : undefined}
+                            onPress={() => {
+                              if (!touring) void recordExerciseSelection(exercise);
+                              swapTo(exercise);
+                            }}
+                          />
+                        </View>
                       ))}
                     </SheetCard>
                   ) : null}
-                  <SheetCard>
-                    <SheetRow size="compact" title="Choose another" onPress={() => setPicking(true)} />
-                  </SheetCard>
+                  {touring ? (
+                    swapTask ? <TrimSays>{`Swap it for ${swapTask.name}.`}</TrimSays> : null
+                  ) : (
+                    <SheetCard>
+                      <SheetRow size="compact" title="Choose another" onPress={() => setPicking(true)} />
+                    </SheetCard>
+                  )}
                 </>
               ) : null}
 
@@ -446,6 +471,13 @@ function youStats(
 }
 
 const styles = StyleSheet.create({
+  /** The alternative the tour asks for: the amber focus frame inside the card (decision 85). */
+  swapTarget: {
+    borderWidth: tourGeometry.focusStroke,
+    borderColor: signal.orange,
+    borderRadius: gadgetRadius.card,
+    borderCurve: 'continuous',
+  },
   fill: { flex: 1 },
   content: { paddingHorizontal: sheetGeometry.sidePad },
   figure: {

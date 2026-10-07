@@ -21,7 +21,7 @@ import {
   sheetGeometry,
   space,
 } from '@/constants/theme';
-import { FINISHES, FREE_FINISHES, type Finish } from '@/domain/finish';
+import { FINISHES, FREE_FINISHES, type Finish, type FinishLock } from '@/domain/finish';
 import { DEVICE, EASE_DISPLAY_FN } from '@/motion';
 
 /** Finishes Trim Pro adds (D3, decision 80): every machine but Aluminium and Graphite. */
@@ -44,17 +44,25 @@ export function FinishSwatch({
   id,
   selected,
   locked = false,
+  lock,
+  tag,
   width = sheetGeometry.swatchW,
   onPress,
   testID,
 }: {
   id: Finish;
   selected: boolean;
+  /** A Trim Pro finish (`PRO`); `lock` says why when it isn't Pro. */
   locked?: boolean;
+  /** Why it's locked: Trim Pro (`PRO`), or the tour that gives it (`EARN`, decision 85). */
+  lock?: FinishLock | null;
+  /** A chip on a finish that is the owner's: `NEW` on the tour's reward. */
+  tag?: string;
   width?: number;
   onPress: () => void;
   testID?: string;
 }) {
+  const why: FinishLock | null = lock !== undefined ? lock : locked ? 'pro' : null;
   const colors = finishColors[id];
   const reduceMotion = useReducedMotion();
   const on = useSharedValue(selected ? 1 : 0);
@@ -84,7 +92,7 @@ export function FinishSwatch({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={`Finish ${id}, ${colors.name}${locked ? ', Trim Pro' : ''}`}
+      accessibilityLabel={`Finish ${id}, ${colors.name}${why === 'pro' ? ', Trim Pro' : why === 'tour' ? ', earned at the end of the tour' : tag ? `, ${tag.toLowerCase()}` : ''}`}
       testID={testID ?? `finish-${id}`}>
       {/* One bitmap with clear room around it, so the tilt draws smooth edges (swatchEdgePad). */}
       <Animated.View shouldRasterizeIOS style={[styles.frame, { width: width + PAD * 2 }, liftStyle]}>
@@ -110,10 +118,10 @@ export function FinishSwatch({
             style={[gadgetType.swatchName, styles.name, { color: colors.swatchSub }]}>
             {colors.name}
           </Text>
-          {locked ? (
-            <View style={styles.lock}>
-              <Text maxFontSizeMultiplier={1} style={onboardingType.lock}>
-                PRO
+          {why || tag ? (
+            <View style={[styles.lock, !why && styles.tag]}>
+              <Text maxFontSizeMultiplier={1} style={[onboardingType.lock, !why && styles.tagText]}>
+                {why === 'pro' ? 'PRO' : why === 'tour' ? 'EARN' : tag}
               </Text>
             </View>
           ) : null}
@@ -162,4 +170,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tag: { backgroundColor: lcd.amber },
+  tagText: { color: lcd.lcd },
 });

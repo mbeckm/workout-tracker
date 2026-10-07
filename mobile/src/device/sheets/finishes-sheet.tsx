@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { LinearTransition, useReducedMotion } from 'react-native-reanimated';
 
 import { finishColors, sheetGeometry, space } from '@/constants/theme';
-import { FINISHES, type Finish } from '@/domain/finish';
+import { FINISHES, finishLock, type Finish } from '@/domain/finish';
 import { track } from '@/analytics/analytics';
 import { useDevice } from '@/device/device-context';
 import { useFinish } from '@/device/finish';
@@ -40,7 +40,7 @@ export function FinishesSheet() {
   const { close } = useSheetChrome();
   const { state } = useDevice();
   const { finish, savedFinish, preview, setPreview } = useFinish();
-  const { setFinish, isPro } = useWorkoutStore();
+  const { setFinish, isPro, tourDone } = useWorkoutStore();
   const log = useLogSession();
   const haptics = useHaptics();
   const reduceMotion = Boolean(useReducedMotion());
@@ -52,8 +52,10 @@ export function FinishesSheet() {
 
   const isOpen = state.sheet?.kind === 'finishes';
   const inWorkout = log.openDay != null;
-  const locked = (id: Finish) => !isPro && isProFinish(id);
-  const previewingLocked = preview != null && locked(preview);
+  // Pro finishes and, until the tour gives it, Graphite only preview (decision 85).
+  const lockOf = (id: Finish) => finishLock(id, { isPro, tourDone });
+  const locked = (id: Finish) => lockOf(id) != null;
+  const previewingLocked = preview != null && lockOf(preview) === 'pro';
 
   // Closing (✕, Done, a swipe, the scrim, or a swap away) puts the saved finish back at once,
   // while the sheet slides down; unmounting covers anything else.
@@ -120,7 +122,7 @@ export function FinishesSheet() {
             id={id}
             width={width}
             selected={id === finish}
-            locked={locked(id)}
+            lock={lockOf(id)}
             onPress={() => pick(id)}
           />
         ))}
