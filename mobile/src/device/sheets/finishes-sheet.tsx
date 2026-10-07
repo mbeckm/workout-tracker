@@ -31,9 +31,9 @@ const MOVE = LinearTransition.springify().duration(SPRING.settle.duration).dampi
 
 /**
  * Finishes (SPEC §6 Finishes, D3): a short sheet so the device stays in view and changes live.
- * 212 and 101 are free and save on tap. 305 and 408 are Trim Pro for free users: a tap previews
- * the finish on the device and shows a light `Get Trim Pro` pill, the one way to the paywall from
- * here. Closing the sheet reverts the preview silently. During a workout locked finishes preview
+ * Six machines (decision 80). 212 and 101 are free and save on tap; 707, 089, 077 and 777 are
+ * Trim Pro for free users: a tap previews the machine on the device and shows a light
+ * `Get Trim Pro` pill, the one way to the paywall from here. Closing the sheet reverts the preview silently. During a workout locked finishes preview
  * only (never a paywall mid-workout, trim-ui §12 rule 6).
  */
 export function FinishesSheet() {
@@ -47,6 +47,8 @@ export function FinishesSheet() {
   const { width: windowWidth } = useWindowDimensions();
   const width = swatchWidth(windowWidth);
   const row = useRef<ScrollView>(null);
+  /** Where the row scrolls to show a swatch, one swatch of room before it (the end clamps). */
+  const rowOffset = (id: Finish) => Math.max(0, (FINISHES.indexOf(id) - 1) * (width + sheetGeometry.swatchGap));
 
   const isOpen = state.sheet?.kind === 'finishes';
   const inWorkout = log.openDay != null;
@@ -75,13 +77,8 @@ export function FinishesSheet() {
       return;
     }
     haptics.swatch();
-    // A swatch at either end of the row scrolls fully into view as it's picked.
-    const index = FINISHES.indexOf(id);
-    if (index === FINISHES.length - 1) {
-      row.current?.scrollToEnd({ animated: !reduceMotion });
-    } else if (index === 0) {
-      row.current?.scrollTo({ x: 0, animated: !reduceMotion });
-    }
+    // The picked swatch scrolls fully into view, with its neighbour peeking on the left.
+    row.current?.scrollTo({ x: rowOffset(id), animated: !reduceMotion });
     if (locked(id)) {
       track('finish_previewed', { finish: id, locked: true });
       setPreview(id);
@@ -101,11 +98,9 @@ export function FinishesSheet() {
     }
   };
 
-  // The selected swatch starts in view (408 sits past the edge).
+  // The selected swatch starts in view.
   const onRowLayout = () => {
-    if (FINISHES.indexOf(finish) >= Math.floor(VISIBLE_SWATCHES)) {
-      row.current?.scrollToEnd({ animated: false });
-    }
+    row.current?.scrollTo({ x: rowOffset(finish), animated: false });
   };
 
   return (

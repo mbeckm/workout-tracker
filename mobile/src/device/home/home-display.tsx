@@ -3,7 +3,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -23,6 +22,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { device, gadgetRadius, gadgetType, lcd } from '@/constants/theme';
+import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
+import { useScreen } from '@/device/finish';
 import { useHaptics, useSounds } from '@/device/haptics';
 import { expandedRowHeight, type HomeModel, type HomeRow } from '@/device/home-model';
 import { DEVICE, EASE_DISPLAY, EASE_STAMP_FN } from '@/motion';
@@ -62,6 +63,7 @@ function DayRows({
   celebrateDayId: string | null;
   onPick: (dayId: string) => void;
 }) {
+  const styles = useScreenStyles(baseStyles);
   const haptics = useHaptics();
   const scrollRef = useRef<ScrollView>(null);
   const rowFrames = useRef(new Map<string, { y: number; height: number }>());
@@ -128,9 +130,9 @@ function DayRows({
       </View>
       {model.week.done ? (
         <View style={styles.footer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <Text maxFontSizeMultiplier={1} style={gadgetType.lcdSmall}>
+          <LcdText style={gadgetType.lcdSmall}>
             WEEK DONE
-          </Text>
+          </LcdText>
         </View>
       ) : null}
     </View>
@@ -148,6 +150,7 @@ function DayRow({
   onLayout: (event: LayoutChangeEvent) => void;
   onPress: () => void;
 }) {
+  const styles = useScreenStyles(baseStyles);
   const title = row.title.toUpperCase();
   const expanded = row.selected && !row.done;
 
@@ -171,20 +174,20 @@ function DayRow({
               { height: expandedRowHeight(row.liftCount, device.rowExpandedBase, device.rowExpandedLine) },
             ]}>
             <View style={styles.rowHead}>
-              <LcdText style={[gadgetType.lcdRow, styles.shrink]}>{title}</LcdText>
-              <LcdText style={gadgetType.lcdRow}>{row.estimate ?? '0 LIFTS'}</LcdText>
+              <LcdText lines={1} style={[gadgetType.lcdRow, styles.shrink]}>{title}</LcdText>
+              <LcdText lines={1} style={gadgetType.lcdRow}>{row.estimate ?? '0 LIFTS'}</LcdText>
             </View>
             {row.lines.length > 0 ? (
               <Animated.View entering={LINES_IN} style={styles.lines}>
                 {row.lines.map((line, index) =>
                   line.kind === 'more' ? (
-                    <LcdText key="more" style={[gadgetType.lcdList, styles.dim]}>
+                    <LcdText lines={1} key="more" style={[gadgetType.lcdList, styles.dim]}>
                       {`+${line.count} MORE`}
                     </LcdText>
                   ) : (
                     <View key={index} style={styles.line}>
-                      <LcdText style={[gadgetType.lcdList, styles.shrink]}>{line.name}</LcdText>
-                      <LcdText style={[gadgetType.lcdList, styles.dim]}>{` ${line.prescription}`}</LcdText>
+                      <LcdText lines={1} style={[gadgetType.lcdList, styles.shrink]}>{line.name}</LcdText>
+                      <LcdText lines={1} style={[gadgetType.lcdList, styles.dim]}>{` ${line.prescription}`}</LcdText>
                     </View>
                   ),
                 )}
@@ -194,13 +197,13 @@ function DayRow({
         ) : (
           <View style={[styles.row, styles.todoRow]}>
             <View style={styles.rowHead}>
-              <LcdText style={[gadgetType.lcdRow, styles.dim, styles.shrink]}>{title}</LcdText>
-              <LcdText style={[gadgetType.lcdRow, styles.dim]}>
+              <LcdText lines={1} style={[gadgetType.lcdRow, styles.dim, styles.shrink]}>{title}</LcdText>
+              <LcdText lines={1} style={[gadgetType.lcdRow, styles.dim]}>
                 {row.liftCount === 1 ? '1 LIFT' : `${row.liftCount} LIFTS`}
               </LcdText>
             </View>
             {row.estimate ? (
-              <LcdText style={[gadgetType.lcdMeta, styles.dim, styles.meta]}>{row.estimate}</LcdText>
+              <LcdText lines={1} style={[gadgetType.lcdMeta, styles.dim, styles.meta]}>{row.estimate}</LcdText>
             ) : null}
           </View>
         )}
@@ -215,6 +218,8 @@ function DayRow({
  * the haptic and sound play as the stamp lands.
  */
 function DoneRow({ row, title, celebrate }: { row: HomeRow; title: string; celebrate: boolean }) {
+  const styles = useScreenStyles(baseStyles);
+  const lcd = useScreen();
   const haptics = useHaptics();
   const playSound = useSounds();
   const reduceMotion = useReducedMotion();
@@ -273,24 +278,24 @@ function DoneRow({ row, title, celebrate }: { row: HomeRow; title: string; celeb
   return (
     <Animated.View style={[styles.row, styles.doneRow, rowStyle]}>
       <View style={styles.rowHead}>
-        <LcdText animated style={[gadgetType.lcdRow, styles.shrink, inkStyle]}>
+        <LcdText lines={1} glow={false} style={[gadgetType.lcdRow, styles.shrink]} animatedStyle={inkStyle}>
           {title}
         </LcdText>
-        <LcdText animated style={[gadgetType.lcdRow, inkStyle]}>
+        <LcdText lines={1} glow={false} style={gadgetType.lcdRow} animatedStyle={inkStyle}>
           ✓
         </LcdText>
       </View>
       <View style={[styles.rowHead, styles.meta]}>
-        <LcdText animated style={[gadgetType.lcdMeta, metaStyle]}>
+        <LcdText lines={1} glow={false} style={gadgetType.lcdMeta} animatedStyle={metaStyle}>
           {`${done.weekday} ${done.minutes} MIN`}
         </LcdText>
-        <LcdText animated style={[gadgetType.lcdMeta, metaStyle]}>
+        <LcdText lines={1} glow={false} style={gadgetType.lcdMeta} animatedStyle={metaStyle}>
           {done.sets === 1 ? '1 SET' : `${done.sets} SETS`}
         </LcdText>
       </View>
       {row.stamp ? (
         <Animated.View pointerEvents="none" style={[styles.stamp, stampStyle]}>
-          <LcdText style={[gadgetType.lcdStamp, styles.stampInk]}>{row.stamp.text}</LcdText>
+          <LcdText lines={1} glow={false} style={[gadgetType.lcdStamp, styles.stampInk]}>{row.stamp.text}</LcdText>
         </Animated.View>
       ) : null}
     </Animated.View>
@@ -299,6 +304,7 @@ function DoneRow({ row, title, celebrate }: { row: HomeRow; title: string; celeb
 
 /** No plans (D18): `SLOT` / `EMPTY` dim on top and a blinking `INSERT PLAN`. */
 export function EmptySlot() {
+  const styles = useScreenStyles(baseStyles);
   const blink = useSharedValue(1);
   useEffect(() => {
     const half = DEVICE.BLINK / 2;
@@ -318,8 +324,8 @@ export function EmptySlot() {
   return (
     <View style={styles.fill} accessible accessibilityLabel="No plan. Insert a plan.">
       <View style={styles.header}>
-        <LcdText style={[gadgetType.lcdSmall, styles.dim]}>SLOT</LcdText>
-        <LcdText style={[gadgetType.lcdSmall, styles.dim]}>EMPTY</LcdText>
+        <LcdText lines={1} style={[gadgetType.lcdSmall, styles.dim]}>SLOT</LcdText>
+        <LcdText lines={1} style={[gadgetType.lcdSmall, styles.dim]}>EMPTY</LcdText>
       </View>
       <Animated.View style={[styles.prompt, blinkStyle]}>
         <LcdText style={gadgetType.lcdPrompt} lines={2}>
@@ -330,27 +336,7 @@ export function EmptySlot() {
   );
 }
 
-/** Display text: fixed size (hardware), one line, cut short with … */
-function LcdText({
-  children,
-  style,
-  animated = false,
-  lines = 1,
-}: {
-  children: string;
-  style: object | object[];
-  animated?: boolean;
-  lines?: number;
-}) {
-  const Component = animated ? Animated.Text : Text;
-  return (
-    <Component maxFontSizeMultiplier={1} numberOfLines={lines} style={style}>
-      {children}
-    </Component>
-  );
-}
-
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   fill: { flex: 1 },
   rows: {
     paddingTop: device.rowInset,

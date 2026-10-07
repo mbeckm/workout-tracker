@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { device, editGeometry as geo, gadgetType, lcd } from '@/constants/theme';
+import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
 import { useDisplayHeight } from '@/device/parts';
 import { DEVICE, EASE_DISPLAY_FN } from '@/motion';
 
@@ -43,6 +44,7 @@ function SteppingNumber({ value, text, style }: { value: number; text: string; s
  * SETS × REPS (104 each) with the wheel's value framed in amber, and the plan / `N REPS`.
  */
 export function EditDisplay({ edit }: { edit: EditController }) {
+  const styles = useScreenStyles(baseStyles);
   const height = useDisplayHeight();
   const { face } = edit;
   const role = numberRole(face.setsText.length + face.valueText.length);
@@ -55,39 +57,38 @@ export function EditDisplay({ edit }: { edit: EditController }) {
   return (
     <View style={StyleSheet.absoluteFill}>
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
+        <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
           {`${edit.dayName.toUpperCase()}  EDIT`}
-        </Text>
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+        </LcdText>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
           {`${edit.index + 1} OF ${edit.count}`}
-        </Text>
+        </LcdText>
       </View>
-      <Text
-        maxFontSizeMultiplier={1}
+      <LcdText
         numberOfLines={nameLines}
         adjustsFontSizeToFit={nameLines === 1}
         minimumFontScale={geo.nameMinScale}
         style={[gadgetType.lcdName, styles.name]}>
         {edit.exercise.name.toUpperCase()}
-      </Text>
+      </LcdText>
       <View style={[styles.numbers, { top: numbersY }]}>
         <View>
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdCaption, styles.dim]}>
+          <LcdText style={[gadgetType.lcdCaption, styles.dim]}>
             SETS
-          </Text>
+          </LcdText>
           <SteppingNumber
             value={face.sets}
             text={face.setsText}
             style={[role.text, styles.number, { lineHeight: role.line }]}
           />
         </View>
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdTimes, styles.dim, styles.times]}>
+        <LcdText style={[gadgetType.lcdTimes, styles.dim, styles.times]}>
           ×
-        </Text>
+        </LcdText>
         <View>
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdCaption, styles.dim]}>
+          <LcdText style={[gadgetType.lcdCaption, styles.dim]}>
             {face.valueLabel}
-          </Text>
+          </LcdText>
           <SteppingNumber
             value={face.value}
             text={face.valueText}
@@ -103,18 +104,18 @@ export function EditDisplay({ edit }: { edit: EditController }) {
         </View>
       </View>
       <View style={styles.footer}>
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
+        <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
           {edit.planName.toUpperCase()}
-        </Text>
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+        </LcdText>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
           {face.total}
-        </Text>
+        </LcdText>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   dim: { color: lcd.amberDim },
   shrink: { flexShrink: 1 },
   header: {

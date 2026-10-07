@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 /** The device finishes (`FinishId` in src/constants/theme.ts). */
-type FinishId = '212' | '101' | '305' | '408';
+type FinishId = '212' | '101' | '707' | '089' | '077' | '777';
 
 /** Optional positions measured from the JS device, so the last frame lines up with it. */
 export type CartridgeInsertLayout = {

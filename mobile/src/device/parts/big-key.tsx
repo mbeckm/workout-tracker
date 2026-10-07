@@ -7,7 +7,7 @@ import { useHaptics } from '@/device/haptics';
 
 import { usePressDepth } from './press';
 
-/** primary: orange (graphite on Signal). metal: Skip, Done, Plans. disabled: greyed, inert. */
+/** primary: the machine's big key (orange on most). metal: Skip, Done, Plans. disabled: greyed, inert. */
 export type BigKeyVariant = 'primary' | 'metal' | 'disabled';
 
 type Look = {

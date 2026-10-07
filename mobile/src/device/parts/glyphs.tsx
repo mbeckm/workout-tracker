@@ -1,29 +1,34 @@
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 
-import { deviceColors, iconSize } from '@/constants/theme';
+import { iconSize } from '@/constants/theme';
+import { useFinish } from '@/device/finish';
 
-/** Key glyphs drawn from the prototype's inline SVGs (22 × 22). */
+/** Key glyphs drawn from the prototype's inline SVGs (22 × 22), in the machine's key ink. */
 type GlyphProps = { color?: string; size?: number };
 
 const STROKE = 2.6;
 const STROKE_THIN = 2.4;
 
 /** The menu key: two sliders. */
-export function MenuGlyph({ color = deviceColors.keyInk, size = iconSize.control }: GlyphProps) {
+export function MenuGlyph({ color: colorProp, size = iconSize.control }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 22 22">
       <G stroke={color} strokeWidth={STROKE} strokeLinecap="round">
         <Line x1={3} y1={6} x2={19} y2={6} />
         <Line x1={3} y1={16} x2={19} y2={16} />
       </G>
-      <Circle cx={8} cy={6} r={3} fill={deviceColors.key1} stroke={color} strokeWidth={STROKE_THIN} />
-      <Circle cx={14} cy={16} r={3} fill={deviceColors.key1} stroke={color} strokeWidth={STROKE_THIN} />
+      <Circle cx={8} cy={6} r={3} fill={palette.key1} stroke={color} strokeWidth={STROKE_THIN} />
+      <Circle cx={14} cy={16} r={3} fill={palette.key1} stroke={color} strokeWidth={STROKE_THIN} />
     </Svg>
   );
 }
 
 /** History: a clock. */
-export function HistoryGlyph({ color = deviceColors.keyInk, size = iconSize.control }: GlyphProps) {
+export function HistoryGlyph({ color: colorProp, size = iconSize.control }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 22 22">
       <Circle cx={11} cy={11} r={8} fill="none" stroke={color} strokeWidth={STROKE_THIN} />
@@ -39,7 +44,9 @@ export function HistoryGlyph({ color = deviceColors.keyInk, size = iconSize.cont
 }
 
 /** Today's lifts: a list. */
-export function ListGlyph({ color = deviceColors.keyInk, size = iconSize.control }: GlyphProps) {
+export function ListGlyph({ color: colorProp, size = iconSize.control }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 22 22">
       <G stroke={color} strokeWidth={STROKE} strokeLinecap="round">
@@ -61,7 +68,9 @@ const STROKE_HEAVY = 2.6;
 const STROKE_TALL = 3;
 
 /** Undo last set: the prototype's ↶, a counter-clockwise arc with an open arrowhead. */
-export function UndoGlyph({ color = deviceColors.keyInk, size = iconSize.control }: GlyphProps) {
+export function UndoGlyph({ color: colorProp, size = iconSize.control }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 22 22">
       <G
@@ -80,7 +89,9 @@ export function UndoGlyph({ color = deviceColors.keyInk, size = iconSize.control
 /** Tall key glyphs: 16pt + and − (screens 04, 05), 3pt strokes. */
 const TALL_GLYPH = 16;
 
-export function PlusGlyph({ color = deviceColors.keyInk, size = TALL_GLYPH }: GlyphProps) {
+export function PlusGlyph({ color: colorProp, size = TALL_GLYPH }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 16 16">
       <G stroke={color} strokeWidth={STROKE_TALL} strokeLinecap="round">
@@ -91,7 +102,9 @@ export function PlusGlyph({ color = deviceColors.keyInk, size = TALL_GLYPH }: Gl
   );
 }
 
-export function MinusGlyph({ color = deviceColors.keyInk, size = TALL_GLYPH }: GlyphProps) {
+export function MinusGlyph({ color: colorProp, size = TALL_GLYPH }: GlyphProps) {
+  const { palette } = useFinish();
+  const color = colorProp ?? palette.keyInk;
   return (
     <Svg width={size} height={size} viewBox="0 0 16 16">
       <Line x1={1.5} y1={8} x2={14.5} y2={8} stroke={color} strokeWidth={STROKE_TALL} strokeLinecap="round" />

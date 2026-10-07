@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -10,6 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { device, gadgetRadius, gadgetType, lcd } from '@/constants/theme';
+import { LcdText, useScreenStyles } from './lcd-text';
+import { useScreen } from '@/device/finish';
 import { DEVICE, EASE_DISPLAY_FN } from '@/motion';
 
 /** One wheel step, so the drum knows which way to roll. `id` must change on every step. */
@@ -80,6 +82,8 @@ export function Drum({
   /** From `drumLayout(displayHeight)`; screen 04's layout when left out. */
   layout?: DrumLayout;
 }) {
+  const styles = useScreenStyles(baseStyles);
+  const lcd = useScreen();
   const reduceMotion = useReducedMotion();
   const offset = useSharedValue(0);
 
@@ -111,21 +115,20 @@ export function Drum({
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, shift]}>
       <Animated.View style={[StyleSheet.absoluteFill, rollStyle]}>
         {above != null && layout.above ? (
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdStep, styles.dim, styles.above]}>
+          <LcdText style={[gadgetType.lcdStep, styles.dim, styles.above]}>
             {above}
-          </Text>
+          </LcdText>
         ) : null}
-        <Text
-          maxFontSizeMultiplier={1}
+        <LcdText
           numberOfLines={1}
           adjustsFontSizeToFit
           style={[compact ? gadgetType.lcdHeroCompact : gadgetType.lcdHero, styles.current]}>
           {current}
-        </Text>
+        </LcdText>
         {below != null && layout.below ? (
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdStep, styles.dim, styles.below]}>
+          <LcdText style={[gadgetType.lcdStep, styles.dim, styles.below]}>
             {below}
-          </Text>
+          </LcdText>
         ) : null}
       </Animated.View>
       <View
@@ -139,7 +142,7 @@ export function Drum({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   dim: { color: lcd.amberDim },
   above: { position: 'absolute', left: device.displayPad, top: device.drumAboveY },
   current: { position: 'absolute', left: device.displayPad, right: device.displayPad, top: device.drumCurrentY },

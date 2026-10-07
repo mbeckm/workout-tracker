@@ -15,12 +15,13 @@ import { useWorkoutStore } from '@/store/workout-store';
 import { useFinishOnboarding } from './finish';
 import { OnboardingFrame } from './frame';
 
-const COLUMNS = 2;
+const COLUMNS = 3;
 const GRID_GAP = space.inline;
 
 /**
- * Step 6 (N10, D3, D12): the device large on the grid, in the finish being picked, over the
- * four swatches. 212 and 101 save on tap; for free users 305 and 408 preview only (a locked
+ * Step 6 (N10, D3, D12, decision 80): the device large on the grid, in the finish being picked,
+ * over the six machines in two rows. 212 and 101 save on tap; for free users the other four
+ * preview only (a locked
  * finish stays if the paywall after "Plan ready" ends with Trim Pro). Continue loads the plan:
  * a template plays "Plan ready" then the paywall, Build my own opens the editor.
  */

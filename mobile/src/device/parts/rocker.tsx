@@ -9,8 +9,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { device, deviceColors, fontScaleCap, gadgetRadius, gadgetType } from '@/constants/theme';
-import { useFinish } from '@/device/finish';
+import { device, fontScaleCap, gadgetRadius, gadgetType } from '@/constants/theme';
+import { useFinish, type DevicePalette } from '@/device/finish';
 import { useHaptics } from '@/device/haptics';
 import { DEVICE, EASE_KEY_FN } from '@/motion';
 
@@ -127,7 +127,7 @@ export function Rocker(props: RockerProps) {
         {props.variant === 'week' ? (
           <>
             <View style={styles.end} />
-            <View style={[styles.mid, plateStyle]}>{strip}</View>
+            <View style={[styles.mid, plateStyle(palette)]}>{strip}</View>
             <View style={styles.end} />
           </>
         ) : (
@@ -147,7 +147,7 @@ export function Rocker(props: RockerProps) {
               onPressIn={() => haptics.key()}
               onPress={props.onMiddle}
               hitSlop={{ top: 13, bottom: 13 }}
-              style={[styles.mid, plateStyle]}>
+              style={[styles.mid, plateStyle(palette)]}>
               {strip}
             </Pressable>
             <RockerEnd
@@ -181,6 +181,7 @@ function RockerEnd({
   // land within a frame, and quick presses never wait on a release or the display's swap.
   // VoiceOver activates with onPress alone; a touch's own onPress is skipped.
   const actedOnPressIn = useRef(false);
+  const { palette } = useFinish();
   return (
     <Pressable
       accessibilityRole="button"
@@ -199,7 +200,7 @@ function RockerEnd({
         actedOnPressIn.current = false;
       }}
       style={[styles.end, styles.center, { opacity: disabled ? device.rockerEndDisabledOpacity : 1 }]}>
-      <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.bigKeyLabel, styles.endGlyph]}>
+      <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.bigKeyLabel, { color: palette.keyInk }]}>
         {glyph}
       </Text>
     </Pressable>
@@ -264,10 +265,10 @@ export function LampPlate({
   );
 }
 
-const plateStyle = {
-  backgroundColor: deviceColors.plate,
-  boxShadow: `inset 0 2px 4px ${deviceColors.plateShade}`,
-};
+const plateStyle = (palette: DevicePalette) => ({
+  backgroundColor: palette.plate,
+  boxShadow: `inset 0 2px 4px ${palette.plateShade}`,
+});
 
 const styles = StyleSheet.create({
   abs: { position: 'absolute', left: 0, top: 0 },
@@ -281,5 +282,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  endGlyph: { color: deviceColors.keyInk },
 });

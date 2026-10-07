@@ -103,30 +103,87 @@ export const fontScaleCap = {
  * ------------------------------------------------------------------------------------------ */
 
 /** The finish keys (mirrors `Finish` in `domain/finish.ts`, kept local so theme has no imports). */
-export type FinishId = '212' | '101' | '305' | '408';
+export type FinishId = '212' | '101' | '707' | '089' | '077' | '777';
 
-/** What changes per finish (SPEC §2 Device). */
+/** Each finish is a whole machine: a body and the screen that comes with it (decision 80). */
+export type ScreenId = 'amber' | 'night' | 'paper' | 'pea' | 'phosphor' | 'vfd';
+
+/** How the body's surface is drawn (`DeviceBody`). */
+export type BodyMaterial = 'brushed' | 'powder' | 'plastic' | 'holo';
+
+/** The extra hardware a finish draws on its body (`FinishMarks`). */
+export type FinishMarksId = 'pocket' | 'bunker' | 'field';
+
+/** The shared device colours a finish may repaint (keys, wheel, plate, lamps, metal key, rims). */
+type OverridableKey =
+  | 'key1'
+  | 'key2'
+  | 'keyInk'
+  | 'keyHighlight'
+  | 'wheelLight'
+  | 'wheelDark'
+  | 'plate'
+  | 'lampOff'
+  | 'metalHi'
+  | 'metalLo'
+  | 'bodyRim'
+  | 'bodyRimOutline'
+  | 'recessRim'
+  | 'recessRimStrong'
+  | 'bigKeyInk';
+
+/** A string or number token, widened from its `as const` literal. */
+type Widen<T> = { [K in keyof T]: T[K] extends string ? string : T[K] extends number ? number : T[K] };
+
+/** A frame around the display (Pocket's slate bezel, Bunker's CRT housing). */
+export type FinishBezel = {
+  top: string;
+  bottom: string;
+  radius: number;
+  /** Pocket's one big corner. */
+  radiusBottomRight?: number;
+  padH: number;
+  padTop: number;
+  padBottom: number;
+  /** The display's own corner inside the bezel. */
+  displayRadius: number;
+};
+
+/** What changes per finish (SPEC §2 Device, decision 80). */
 export type FinishColors = {
   /** Top of the body gradient. */
   body1: string;
   /** Bottom of the body gradient. */
   body2: string;
+  /** Diagonal stops instead of body1 → body2 (Holo's foil). */
+  bodyStops?: readonly string[];
+  material: BodyMaterial;
+  /** The top sheen's opacity. */
+  sheen: number;
+  /** The screen this machine ships with. */
+  screen: ScreenId;
   /** Engraved `.lab` text. */
   label: string;
   /** The 1pt shadow under engraved text. */
   labelShadow: string;
   /** The lip under every raised key (and the metal big key's lip). */
   keyEdge: string;
-  /** Big key, primary: radial highlight → body, and its lip. Graphite on Signal. */
+  /** The tall left keys when they differ from the round keys (Pocket's maroon pair). */
+  tallKey?: { key1: string; key2: string; ink: string; edge: string };
+  /** The lit lamp on the body (the rocker strip, the week plate). */
+  lampOn: string;
+  /** Big key, primary: radial highlight → body, and its lip. */
   bigKeyHi: string;
   bigKeyLo: string;
   bigKeyLip: string;
   /** Inset top highlight on the primary big key. */
   bigKeyHighlight: string;
-  /** Inset bottom shade on the primary big key (transparent on Signal). */
+  /** Inset bottom shade on the primary big key. */
   bigKeyShade: string;
   /** The soft cast shadow under the primary big key. */
   bigKeyGlow: string;
+  bezel?: FinishBezel;
+  marks?: FinishMarksId;
   /** Status bar text on this finish. */
   statusBar: 'dark' | 'light';
   /** Swatch name. */
@@ -134,80 +191,220 @@ export type FinishColors = {
   /** Text on this finish's swatch (finishes sheet): number and name. */
   swatchInk: string;
   swatchSub: string;
-};
+} & { [K in OverridableKey]?: string };
+
+/** The orange big key every finish but Pocket, Bunker and Holo uses (deepened for white ink, 4.3:1). */
+const ORANGE_KEY = {
+  bigKeyHi: '#FF8443',
+  bigKeyLo: '#D9480A',
+  bigKeyLip: '#9A3004',
+  bigKeyHighlight: 'rgba(255,255,255,0.45)',
+  bigKeyShade: 'rgba(150,40,0,0.25)',
+  bigKeyGlow: 'rgba(200,70,10,0.3)',
+} as const;
 
 export const finishColors: Record<FinishId, FinishColors> = {
   '212': {
-    body1: '#E4E2DC',
-    body2: '#D2CFC8',
-    label: '#7C7A73',
-    labelShadow: 'rgba(255,255,255,0.7)',
+    body1: '#E6E4DE',
+    body2: '#CFCCC4',
+    material: 'brushed',
+    sheen: 0.35,
+    screen: 'amber',
+    // 3.5:1 under `WEEK n` and at the bottom of the body (was #7C7A73, 2.7:1 at the bottom).
+    label: '#6A6862',
+    labelShadow: 'rgba(255,255,255,0.75)',
     keyEdge: '#A9A69E',
-    bigKeyHi: '#FF8A45',
-    bigKeyLo: '#F2550F',
-    bigKeyLip: '#B83A05',
-    bigKeyHighlight: 'rgba(255,255,255,0.45)',
-    bigKeyShade: 'rgba(150,40,0,0.25)',
-    bigKeyGlow: 'rgba(200,70,10,0.3)',
+    lampOn: '#FF6A1A',
+    ...ORANGE_KEY,
     statusBar: 'dark',
     name: 'Aluminium',
     swatchInk: '#1C1B18',
     swatchSub: '#6E6B64',
   },
   '101': {
-    body1: '#3A3936',
-    body2: '#232220',
-    // Raised from SPEC's #8C8A84 (1.8:1 under the sheen) to 3.3:1 on the body behind `WEEK n` (trim-ui §5).
+    body1: '#3D3C39',
+    body2: '#1D1C1A',
+    material: 'brushed',
+    sheen: 0.16,
+    screen: 'night',
     label: '#C0BEB8',
-    labelShadow: 'rgba(0,0,0,0.6)',
-    keyEdge: '#A9A69E',
-    bigKeyHi: '#FF8A45',
-    bigKeyLo: '#F2550F',
-    bigKeyLip: '#B83A05',
-    bigKeyHighlight: 'rgba(255,255,255,0.45)',
-    bigKeyShade: 'rgba(150,40,0,0.25)',
-    bigKeyGlow: 'rgba(200,70,10,0.3)',
+    labelShadow: 'rgba(0,0,0,0.65)',
+    keyEdge: '#0E0E0D',
+    key1: '#4F4E4A',
+    key2: '#31302D',
+    keyInk: '#EDEBE5',
+    keyHighlight: 'rgba(255,255,255,0.2)',
+    wheelLight: '#5C5A55',
+    wheelDark: '#232220',
+    plate: '#1A1918',
+    lampOff: '#3E3D3A',
+    metalHi: '#5E5D59',
+    metalLo: '#3A3936',
+    bodyRim: 'rgba(255,255,255,0.16)',
+    bodyRimOutline: 'rgba(255,255,255,0.08)',
+    recessRim: 'rgba(255,255,255,0.12)',
+    recessRimStrong: 'rgba(255,255,255,0.14)',
+    lampOn: '#FF6A1A',
+    ...ORANGE_KEY,
     statusBar: 'light',
     name: 'Graphite',
     swatchInk: '#F3F2EE',
-    swatchSub: '#8C8A84',
+    swatchSub: '#A9A69E',
   },
-  '305': {
-    body1: '#FF7A35',
-    body2: '#DE470A',
-    // SPEC's light #FFE2CF can't reach 3:1 on the sheen (white tops out at 2.3:1): a dark burnt
-    // engraving with a peach highlight under it, 5.5:1 at the top and 3.1:1 by the wheel (trim-ui §5).
-    label: '#562209',
-    labelShadow: 'rgba(255,226,207,0.5)',
-    keyEdge: '#9E3A0A',
-    // On Signal the primary big key is graphite (an orange key on an orange body disappears).
-    bigKeyHi: '#4A4843',
-    bigKeyLo: '#22211F',
-    bigKeyLip: '#0E0E0D',
-    bigKeyHighlight: 'rgba(255,255,255,0.2)',
-    bigKeyShade: 'rgba(0,0,0,0)',
-    bigKeyGlow: 'rgba(0,0,0,0.3)',
+  '707': {
+    body1: '#727254',
+    body2: '#4A4933',
+    material: 'powder',
+    sheen: 0.16,
+    screen: 'paper',
+    label: '#EEEAD4',
+    labelShadow: 'rgba(0,0,0,0.5)',
+    keyEdge: '#2A291C',
+    key1: '#EEE9D6',
+    key2: '#CFC8AE',
+    keyInk: '#2E2D1F',
+    wheelLight: '#E8E2CC',
+    wheelDark: '#A9A286',
+    plate: '#3A3927',
+    lampOff: '#5E5D46',
+    metalHi: '#F9F5E8',
+    metalLo: '#D6CFB6',
+    bodyRim: 'rgba(255,255,255,0.2)',
+    bodyRimOutline: 'rgba(255,255,255,0.08)',
+    recessRim: 'rgba(255,255,255,0.2)',
+    recessRimStrong: 'rgba(255,255,255,0.22)',
+    lampOn: '#FF6A1A',
+    ...ORANGE_KEY,
+    marks: 'field',
     statusBar: 'light',
-    name: 'Signal',
-    swatchInk: '#FFFFFF',
-    swatchSub: '#FFE2CF',
+    name: 'Field',
+    swatchInk: '#EEEAD4',
+    swatchSub: '#C9C5AE',
   },
-  '408': {
-    body1: '#EFE6D3',
-    body2: '#D9CBB0',
-    label: '#7A6F5C',
-    labelShadow: 'rgba(255,255,255,0.7)',
-    keyEdge: '#A9A69E',
-    bigKeyHi: '#FF8A45',
-    bigKeyLo: '#F2550F',
-    bigKeyLip: '#B83A05',
-    bigKeyHighlight: 'rgba(255,255,255,0.45)',
-    bigKeyShade: 'rgba(150,40,0,0.25)',
-    bigKeyGlow: 'rgba(200,70,10,0.3)',
+  '089': {
+    body1: '#DBD9D1',
+    body2: '#C3C0B6',
+    material: 'plastic',
+    sheen: 0.28,
+    screen: 'pea',
+    label: '#4A4C57',
+    labelShadow: 'rgba(255,255,255,0.6)',
+    keyEdge: '#222328',
+    key1: '#585961',
+    key2: '#393A41',
+    keyInk: '#E6E6EB',
+    keyHighlight: 'rgba(255,255,255,0.25)',
+    tallKey: { key1: '#AE3A6B', key2: '#7E1D48', ink: '#FFFFFF', edge: '#54122F' },
+    wheelLight: '#DAD8D0',
+    wheelDark: '#A6A39A',
+    plate: '#2F3036',
+    lampOff: '#55565E',
+    metalHi: '#676870',
+    metalLo: '#45464D',
+    lampOn: '#FF3B30',
+    bigKeyHi: '#B8437A',
+    bigKeyLo: '#7E1D48',
+    bigKeyLip: '#54122F',
+    bigKeyHighlight: 'rgba(255,255,255,0.4)',
+    bigKeyShade: 'rgba(60,0,20,0.25)',
+    bigKeyGlow: 'rgba(0,0,0,0.22)',
+    bezel: {
+      top: '#666874',
+      bottom: '#555763',
+      radius: 12,
+      radiusBottomRight: 56,
+      padH: 14,
+      padTop: 22,
+      padBottom: 26,
+      displayRadius: 4,
+    },
+    marks: 'pocket',
     statusBar: 'dark',
-    name: 'Bone',
-    swatchInk: '#3A3326',
-    swatchSub: '#7A6F5C',
+    name: 'Pocket',
+    swatchInk: '#2F3990',
+    swatchSub: '#5B5D69',
+  },
+  '077': {
+    body1: '#6E6948',
+    body2: '#47432D',
+    material: 'powder',
+    sheen: 0.12,
+    screen: 'phosphor',
+    label: '#E8E2C2',
+    labelShadow: 'rgba(0,0,0,0.55)',
+    keyEdge: '#5E4518',
+    key1: '#E6C67A',
+    key2: '#A9822F',
+    keyInk: '#241806',
+    keyHighlight: 'rgba(255,245,210,0.85)',
+    wheelLight: '#E8CA80',
+    wheelDark: '#8A6A2C',
+    plate: '#2A281C',
+    lampOff: '#5A5638',
+    metalHi: '#F7E2A6',
+    metalLo: '#B89040',
+    bodyRim: 'rgba(255,255,255,0.15)',
+    bodyRimOutline: 'rgba(255,255,255,0.06)',
+    recessRim: 'rgba(255,255,255,0.14)',
+    recessRimStrong: 'rgba(255,255,255,0.16)',
+    bigKeyInk: '#FFF6E6',
+    // A warning lamp: green on the body means done.
+    lampOn: '#FFB23A',
+    bigKeyHi: '#D9482C',
+    bigKeyLo: '#962410',
+    bigKeyLip: '#4E1207',
+    bigKeyHighlight: 'rgba(255,255,255,0.32)',
+    bigKeyShade: 'rgba(60,0,0,0.3)',
+    bigKeyGlow: 'rgba(0,0,0,0.38)',
+    bezel: {
+      top: '#3A3A32',
+      bottom: '#121210',
+      radius: 42,
+      padH: 14,
+      padTop: 16,
+      padBottom: 20,
+      // Rounder than the other screens (a CRT), but the top row must clear the corners.
+      displayRadius: 30,
+    },
+    marks: 'bunker',
+    statusBar: 'light',
+    name: 'Bunker',
+    swatchInk: '#E8E2C2',
+    swatchSub: '#B5AE8C',
+  },
+  '777': {
+    body1: '#F7D6EA',
+    body2: '#EBD5F8',
+    bodyStops: ['#F7D6EA', '#D3E6FB', '#DAF8E8', '#FBF1CC', '#EBD5F8'],
+    material: 'holo',
+    sheen: 0.35,
+    screen: 'vfd',
+    label: '#6E6890',
+    labelShadow: 'rgba(255,255,255,0.85)',
+    keyEdge: '#B7B0CC',
+    key1: '#FFFFFF',
+    key2: '#E8E4F2',
+    keyInk: '#3A3550',
+    wheelLight: '#FFFFFF',
+    wheelDark: '#C8C2DA',
+    plate: '#D8D2E6',
+    lampOff: '#B2ABC6',
+    metalHi: '#FFFFFF',
+    metalLo: '#DCD8E6',
+    bodyRim: 'rgba(255,255,255,0.85)',
+    bodyRimOutline: 'rgba(255,255,255,0.45)',
+    lampOn: '#2FD3C4',
+    bigKeyInk: '#2A2D38',
+    bigKeyHi: '#FFFFFF',
+    bigKeyLo: '#AEB3C2',
+    bigKeyLip: '#767C8E',
+    bigKeyHighlight: 'rgba(255,255,255,0.95)',
+    bigKeyShade: 'rgba(60,60,90,0.2)',
+    bigKeyGlow: 'rgba(120,100,160,0.32)',
+    statusBar: 'dark',
+    name: 'Holo',
+    swatchInk: '#3A3550',
+    swatchSub: '#6E6890',
   },
 };
 
@@ -268,25 +465,303 @@ export const deviceColors = {
   bigKeyPressedDrop: 'rgba(0,0,0,0.2)',
   /** Text on the primary big key. */
   bigKeyInk: '#FFFFFF',
+  /** The lower inner edge of a display bezel. */
+  bezelShade: 'rgba(0,0,0,0.3)',
 } as const;
 
-/** The display (SPEC §2 Display). */
-export const lcd = {
-  lcd: '#121211',
+/** Everything a device part paints with: the shared colours, repainted by the finish. */
+export type DevicePalette = Widen<typeof deviceColors> & Omit<FinishColors, OverridableKey>;
+
+export function devicePalette(finish: FinishId): DevicePalette {
+  const own = finishColors[finish];
+  const shared: Widen<typeof deviceColors> = { ...deviceColors };
+  for (const key of Object.keys(own) as (keyof FinishColors)[]) {
+    const value = own[key];
+    if (value !== undefined) (shared as Record<string, unknown>)[key] = value;
+  }
+  return shared as DevicePalette;
+}
+
+/** A display's texture: unlit dots, an LCD pixel grid, CRT scanlines, a VFD mesh, e-ink grain. */
+export type ScreenTexture = 'dots' | 'grid' | 'scan' | 'mesh' | 'grain';
+
+/**
+ * A screen (SPEC §2 Display, decision 80). The keys keep the amber names the display code has
+ * always used: `amber` is the screen's ink, `amberDim` its dim ink, and so on.
+ */
+export type ScreenColors = {
+  name: string;
+  lcd: string;
   /** The lcd ground at 0 alpha, for top/bottom fades over scrolling rows. */
-  lcdClear: 'rgba(18,18,17,0)',
-  lcdShade: 'rgba(0,0,0,0.8)',
-  amber: '#FF6A1A',
-  /** The hold ring's glow and the lamp halo, amber at ~35%. */
-  amberGlow: 'rgba(255,106,26,0.35)',
-  amberDim: '#7A3E1C',
-  amberOff: '#3A2214',
+  lcdClear: string;
+  lcdShade: string;
+  amber: string;
+  /** The hold ring's glow and the lamp halo, ink at ~35%. */
+  amberGlow: string;
+  /** Dim ink: 3.7:1 or more on every screen, so it reads mid-set. */
+  amberDim: string;
+  amberOff: string;
   /** Pressed tint behind a tappable display word (the exercise name). */
-  amberPress: '#2A1A10',
-  doneRow: '#FF6A1A',
-  doneRowInk: '#121211',
-  doneRowMeta: '#5A1E00',
-  todoRow: '#1C1610',
+  amberPress: string;
+  doneRow: string;
+  doneRowInk: string;
+  doneRowMeta: string;
+  todoRow: string;
+  /** The text glow (phosphor bloom, VFD halo); a transparent glow draws nothing. */
+  glow: string;
+  glowRadius: number;
+  /** Pea's LCD shadow: the digits cast a hard shadow down and right instead of glowing. */
+  glowOffset: { width: number; height: number };
+  texture: ScreenTexture;
+  textureColor: string;
+};
+
+const NO_OFFSET = { width: 0, height: 0 } as const;
+
+export const screenColors: Record<ScreenId, ScreenColors> = {
+  amber: {
+    name: 'Amber',
+    lcd: '#121211',
+    lcdClear: 'rgba(18,18,17,0)',
+    lcdShade: 'rgba(0,0,0,0.8)',
+    amber: '#FF6A1A',
+    amberGlow: 'rgba(255,106,26,0.35)',
+    // Raised from #7A3E1C (2.2:1) to 3.7:1 (decision 80).
+    amberDim: '#B05A20',
+    amberOff: '#3A2214',
+    amberPress: '#2A1A10',
+    doneRow: '#FF6A1A',
+    doneRowInk: '#121211',
+    doneRowMeta: '#5A1E00',
+    todoRow: '#1C1610',
+    glow: 'rgba(255,106,26,0.45)',
+    glowRadius: 8,
+    glowOffset: NO_OFFSET,
+    texture: 'dots',
+    textureColor: 'rgba(255,106,26,0.07)',
+  },
+  night: {
+    name: 'White Night',
+    lcd: '#000000',
+    lcdClear: 'rgba(0,0,0,0)',
+    lcdShade: 'rgba(0,0,0,0.9)',
+    amber: '#F6F6F3',
+    amberGlow: 'rgba(230,236,255,0.3)',
+    amberDim: '#7E7E79',
+    amberOff: '#262624',
+    amberPress: '#1A1A1A',
+    doneRow: '#F6F6F3',
+    doneRowInk: '#000000',
+    doneRowMeta: '#55554F',
+    todoRow: '#151515',
+    glow: 'rgba(215,228,255,0.35)',
+    glowRadius: 6,
+    glowOffset: NO_OFFSET,
+    texture: 'dots',
+    textureColor: 'rgba(255,255,255,0.035)',
+  },
+  paper: {
+    name: 'Paper',
+    lcd: '#E4E1D8',
+    lcdClear: 'rgba(228,225,216,0)',
+    lcdShade: 'rgba(0,0,0,0.28)',
+    amber: '#191816',
+    amberGlow: 'rgba(25,24,22,0.2)',
+    amberDim: '#6B675E',
+    amberOff: '#CFCBC0',
+    amberPress: '#D6D2C6',
+    doneRow: '#191816',
+    doneRowInk: '#E6E3DA',
+    doneRowMeta: '#8C887E',
+    todoRow: '#D8D4CA',
+    glow: 'rgba(0,0,0,0)',
+    glowRadius: 0,
+    glowOffset: NO_OFFSET,
+    texture: 'grain',
+    textureColor: 'rgba(0,0,0,0.05)',
+  },
+  pea: {
+    name: 'Pea',
+    lcd: '#AEBE62',
+    lcdClear: 'rgba(174,190,98,0)',
+    lcdShade: 'rgba(0,0,0,0.38)',
+    amber: '#0E220C',
+    amberGlow: 'rgba(14,34,12,0.25)',
+    amberDim: '#30461B',
+    amberOff: '#9AAA52',
+    amberPress: '#A2B35A',
+    doneRow: '#0E220C',
+    doneRowInk: '#B3C266',
+    doneRowMeta: '#7E9244',
+    todoRow: '#A3B358',
+    glow: 'rgba(14,34,12,0.16)',
+    glowRadius: 0,
+    glowOffset: { width: 2, height: 3 },
+    texture: 'grid',
+    textureColor: 'rgba(14,34,12,0.06)',
+  },
+  phosphor: {
+    name: 'Phosphor',
+    lcd: '#071A0C',
+    lcdClear: 'rgba(7,26,12,0)',
+    lcdShade: 'rgba(0,0,0,0.9)',
+    amber: '#72FF98',
+    amberGlow: 'rgba(92,255,134,0.4)',
+    amberDim: '#45AC62',
+    amberOff: '#123A1D',
+    amberPress: '#0E2A15',
+    doneRow: '#72FF98',
+    doneRowInk: '#06140A',
+    doneRowMeta: '#0C3A18',
+    todoRow: '#0E2614',
+    glow: 'rgba(92,255,134,0.7)',
+    glowRadius: 10,
+    glowOffset: NO_OFFSET,
+    texture: 'scan',
+    textureColor: 'rgba(0,0,0,0.2)',
+  },
+  vfd: {
+    name: 'Ice VFD',
+    lcd: '#051514',
+    lcdClear: 'rgba(5,21,20,0)',
+    lcdShade: 'rgba(0,0,0,0.85)',
+    amber: '#80FCF0',
+    amberGlow: 'rgba(98,245,230,0.4)',
+    amberDim: '#3E9E96',
+    amberOff: '#0F2E2B',
+    amberPress: '#0B2321',
+    doneRow: '#80FCF0',
+    doneRowInk: '#04110F',
+    doneRowMeta: '#0C3E3A',
+    todoRow: '#0A2220',
+    glow: 'rgba(98,245,230,0.6)',
+    glowRadius: 8,
+    glowOffset: NO_OFFSET,
+    texture: 'mesh',
+    textureColor: 'rgba(0,0,0,0.16)',
+  },
+};
+
+/**
+ * The amber screen. Sheets, onboarding and the paywall keep it whatever the finish (their lcd
+ * chips are Trim's one hue); the device's display reads the machine's screen (`useScreen`).
+ */
+export const lcd = screenColors.amber;
+
+/** How bodies and screens are drawn beyond their colours (decision 80). */
+export const bodyFinish = {
+  /** Holo's foil runs diagonally. */
+  holoAngle: 125,
+  /** The grain tile (assets/images/finish-grain.png) is 128pt square. */
+  grainTile: 128,
+  /** Grain over a powder-coated or plastic body, and over the e-ink screen. */
+  grainOpacity: { powder: 0.07, plastic: 0.04, paper: 0.06 },
+  /** The glass over every screen: a white glare fading out by 36%. */
+  glass: 'rgba(255,255,255,0.09)',
+  glassClear: 'rgba(255,255,255,0)',
+  /** Screen textures, in points. */
+  dotPitch: 5,
+  dotRadius: 1.1,
+  gridPitch: 4,
+  scanPitch: 4,
+  scanLine: 2,
+  meshPitch: 4,
+  /** The VFD's filament wires run across every 70pt. */
+  filamentPitch: 70,
+  filament: 'rgba(220,255,250,0.08)',
+  /** The lit lamp's halo (the hold ring's glow), the lamp colour at 35%. */
+  lampGlowOpacity: 0.35,
+  /** The CRT's darker edges. */
+  vignette: 'rgba(0,0,0,0.35)',
+  vignetteClear: 'rgba(0,0,0,0)',
+} as const;
+
+/** The hardware a few machines draw on their bodies and bezels (`FinishMarks`). */
+export const finishMarks = {
+  pocket: {
+    maroon: '#8E2352',
+    navy: '#2F3990',
+    ink: '#CBCCD5',
+    led: '#FF3B30',
+    ledGlow: 'rgba(255,59,48,0.9)',
+    slot: 'rgba(0,0,0,0.18)',
+    slotShade: 'rgba(0,0,0,0.3)',
+    slotRim: 'rgba(255,255,255,0.5)',
+    stripeH: 2,
+    stripeGap: 3,
+    ledSize: 9,
+    slotW: 7,
+    slotH: 30,
+    slotGap: 9,
+    slots: 6,
+    slotAngle: -28,
+    slotBottom: 18,
+    slotRight: 30,
+  },
+  bunker: {
+    screw: '#9A9272',
+    screwRim: 'rgba(0,0,0,0.4)',
+    screwSlot: 'rgba(0,0,0,0.6)',
+    screwSize: 14,
+    screwSlotW: 12,
+    screwSlotH: 2,
+    screwSlotAngle: 35,
+    /** Screws sit 22pt in from the side, bottom ones 20pt up. */
+    screwInset: 22,
+    screwBottom: 20,
+    hazardYellow: '#E8B931',
+    hazardBlack: '#1A1A16',
+    hazardW: 72,
+    hazardH: 12,
+    hazardStripe: 10,
+    hazardLeft: 44,
+    hazardBottom: 23,
+    ring: 'rgba(226,194,118,0.55)',
+    ringStroke: 3,
+    ringGap: 4,
+    stencil: 'rgba(232,185,49,0.85)',
+    /** Worn paint at the corners. */
+    wear: 'rgba(214,204,160,0.28)',
+    wearClear: 'rgba(214,204,160,0)',
+  },
+  field: {
+    stencil: 'rgba(238,234,212,0.6)',
+    stencilLeft: 30,
+    stencilBottom: 26,
+    tabHi: '#FF8A45',
+    tabLo: '#E2500F',
+    tabW: 7,
+    tabH: 44,
+    tabRadius: 4,
+  },
+  radius: 3,
+} as const;
+
+/** The words printed on a machine (`DOT MATRIX`, `Trim POCKET`, `UNIT 077`, `FIELD 707`). */
+export const marksType = {
+  print: {
+    fontFamily: Platform.OS === 'web' ? 'ui-rounded, system-ui, sans-serif' : 'ui-rounded',
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    letterSpacing: 0.6,
+  },
+  logo: {
+    fontFamily: Platform.OS === 'web' ? 'ui-rounded, system-ui, sans-serif' : 'ui-rounded',
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+  },
+  stencil: {
+    fontFamily: Platform.OS === 'web' ? 'ui-rounded, system-ui, sans-serif' : 'ui-rounded',
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: '800',
+    letterSpacing: 2.5,
+  },
 } as const;
 
 /** Dark, flat sheets (SPEC §2 Sheets, §6). */

@@ -212,41 +212,47 @@ These live in the `device` geometry block in `theme.ts` (`displayPad: 22`, `edge
 
 Color is by layer. Tokens only: no hex literals outside `theme.ts`.
 
-### Device: per finish (`finish` is a user setting; SPEC §2)
+### Device: six machines (`finish` is a user setting; PRODUCT-DECISIONS 80)
 
-| Token | 212 Aluminium (default) | 101 Graphite | 305 Signal | 408 Bone |
-| --- | --- | --- | --- | --- |
-| body1 (top of gradient) | #E4E2DC | #3A3936 | #FF7A35 | #EFE6D3 |
-| body2 (bottom) | #D2CFC8 | #232220 | #DE470A | #D9CBB0 |
-| label (engraved text) | #7C7A73 | #C0BEB8 | #562209 | #7A6F5C |
-| labelShadow | rgba(255,255,255,.7) | rgba(0,0,0,.6) | rgba(255,226,207,.5) | rgba(255,255,255,.7) |
-| keyEdge | #A9A69E | #A9A69E | #9E3A0A | #A9A69E |
+A finish is a whole machine: a body, its keys and wheel, its markings and the screen that comes with it. Body and screen never mix and match. Tokens: `finishColors` (body, label, keys, wheel, plate, lamps, big key, bezel, marks, `screen`) over the shared `deviceColors`, merged by `devicePalette()`; the screen's colours are `screenColors[palette.screen]` (`useScreen()`).
 
-**Engraved labels must read on every finish** (PLAN §11): at least 3:1 against the body right behind them, measured with the sheen and brushing (the top of the body is lighter than `body1`). SPEC's 101 `#8C8A84` (1.8:1 under `WEEK n`) and 305 `#FFE2CF` (1.9:1) failed, so they were raised (PRODUCT-DECISIONS 73). The rule for picking one: a light label with a dark shadow under it on a dark body (101), a dark label with a light highlight under it on a light or bright body (212, 408, 305). No light colour reaches 3:1 on the Signal sheen, which is why 305's engraving is a dark burnt brown. Check both the top (`WEEK n`) and the bottom of the body, which differ by up to 2× in luminance.
+| | 212 Aluminium | 101 Graphite | 707 Field | 089 Pocket | 077 Bunker | 777 Holo |
+| --- | --- | --- | --- | --- | --- | --- |
+| Body | #E6E4DE → #CFCCC4, brushed | #3D3C39 → #1D1C1A, brushed | #727254 → #4A4933, powder coat | #DBD9D1 → #C3C0B6, plastic | #6E6948 → #47432D, worn powder coat | foil, diagonal pastel stops, brushed |
+| Keys / ink | cream / #2A2925 | #4F4E4A → #31302D / #EDEBE5 | khaki #EEE9D6 / #2E2D1F | slate #585961 / #E6E6EB; tall keys maroon #AE3A6B / white | brass #E6C67A → #A9822F / #241806 | pearl #FFFFFF → #E8E4F2 / #3A3550 |
+| Big key | orange #FF8443 → #D9480A, lip #9A3004 | orange | orange | maroon #B8437A → #7E1D48 | red #D9482C → #962410, ink #FFF6E6 | chrome #FFFFFF → #AEB3C2, ink #2A2D38 |
+| Label | #6A6862 | #C0BEB8 | #EEEAD4 | #4A4C57 | #E8E2C2 | #6E6890 |
+| Lamp on | #FF6A1A | #FF6A1A | #FF6A1A | red #FF3B30 | amber #FFB23A (green means done) | cyan #2FD3C4 |
+| Screen | Amber | White Night | Paper | Pea | Phosphor | Ice VFD |
+| Hardware | | | `FIELD 707` stencil, orange tab | slate bezel (one 56 corner), stripes, `DOT MATRIX`, power lamp, `Trim POCKET`, speaker slots | CRT housing, `UNIT 077`, screws, hazard plate, brass ring round the well, worn corners | |
+| Free / Pro | free | free (given at the end of onboarding) | Pro | Pro | Pro | Pro |
 
-**Shared by every finish:** key1 #F4F3EF, key2 #DEDBD4, keyInk #2A2925; wheel ridges #F2F1ED / #C4C1B9; well rgba(0,0,0,.14); plate (the rocker's recessed strip) #C9C6BE.
+The parts never move between machines: every key, the wheel, the display and the big key sit where they always do, so every machine works in every mode. Character comes from material, colour, the bezel, the markings and the screen. A finish id that no longer exists (305 Signal, 408 Bone) falls back to 212.
 
-**Body overlays:** a top sheen, linear white .35 to 0 over the top 40%; brushing, a vertical 1 px line of white .06 then 2 px of black .02, repeating every 3 px.
+**Engraved labels must read on every finish** (PLAN §11): at least 3:1 against the body right behind them, measured with the sheen (the top of the body is lighter than `body1`). All six measure 3.4:1 or more top and bottom. The rule for picking one: a light label with a dark shadow under it on a dark body, a dark label with a light highlight under it on a light body. Key ink is 4:1 or more on every key, big-key ink 4:1 or more (white on the deepened orange is 4.3:1).
 
-**Big key:**
-- Primary: radial at 50% 22%, from #FF8A45 to #F2550F at 70%, with a bottom lip of #B83A05.
-- On the Signal finish, primary is graphite instead: #4A4843 to #22211F, lip #0E0E0D.
-- Metal (secondary: Skip, Done, Plans): #FAF9F6 to #D6D2CA, lip = keyEdge.
+**Body overlays:** a top sheen, white at the finish's `sheen` to 0 over the top 40%; brushing on metal and foil (a vertical 1 px line of white .06 then 2 px of black .02, every 3 px); grain on powder coat and plastic (the `finish-grain.png` tile, `bodyFinish.grainOpacity`).
 
-The status bar is dark text on Aluminium and Bone, light text on Graphite and Signal (D2).
+**Big key, metal** (Skip, Done, Plans): the finish's `metalHi` → `metalLo`, lip = keyEdge, ink = keyInk.
 
-### Display (`lcd`)
+The status bar is dark text on Aluminium, Pocket and Holo, light on Graphite, Field and Bunker (D2).
 
-| Token | Value | Use |
-| --- | --- | --- |
-| lcd | #121211 | Display ground (inset shadow 0 3 10 rgba(0,0,0,.8)); also chart panels and the editor's chips |
-| amber | #FF6A1A | Live text, focus frames, lamps on |
-| amberDim | #7A3E1C | Secondary display text |
-| amberOff | #3A2214 | Unlit segments, empty rings |
-| doneRowBg | #FF6A1A, ink #121211 | Stamped done day rows |
-| todoRowBg | #1C1610 | Future day rows |
+### Display (`screenColors`)
 
-The display is a one-colour instrument. On it, meaning comes from brightness (amber, dim, off), from frames (a 2 px amber outline marks what the control in use changes, or the selected row) and from fills (a done row is filled amber with dark ink and a ✓). Green lives on the lamps and in sheets, not on the display.
+Every screen has the same keys (`lcd`, `amber` for its ink, `amberDim`, `amberOff`, `doneRow`, `todoRow`, …) so the display code is written once with the amber names; `LcdText`, `useScreenStyles` and `useScreen()` (`device/parts/lcd-text.tsx`) draw it in the machine's screen. Sheets, onboarding and the paywall keep the amber screen (`lcd`): their lcd chips are Trim's one hue.
+
+| Screen | Ground | Ink | Dim | Texture | Glow |
+| --- | --- | --- | --- | --- | --- |
+| Amber (212) | #121211 | #FF6A1A | #B05A20 | unlit dots | amber, 8 |
+| White Night (101) | #000000 | #F6F6F3 | #7E7E79 | unlit dots | cool white, 6 |
+| Paper (707) | #E4E1D8 | #191816 | #6B675E | grain | none |
+| Pea (089) | #AEBE62 | #0E220C | #30461B | pixel grid | a hard shadow 2 × 3 (LCD), no glow |
+| Phosphor (077) | #071A0C | #72FF98 | #45AC62 | scanlines, dark edges | green bloom, 10 |
+| Ice VFD (777) | #051514 | #80FCF0 | #3E9E96 | mesh, filament wires every 70 | cyan, 8 |
+
+Every screen has glass over it (white .09 fading out by 36%). Ink is 6.3:1 or more on every screen and dim ink 3.7:1 or more (amber dim was #7A3E1C at 2.2:1; raised so mid-set facts read, decision 80).
+
+The display is a one-colour instrument. On it, meaning comes from brightness (ink, dim, off), from frames (a 2 px outline in ink marks what the control in use changes, or the selected row) and from fills (a done row is filled with ink, its text in the ground colour, with a ✓). On Pea and Phosphor the whole screen is green, so done reads from the fill, never from hue; green as a signal lives on the body's lamps and in sheets.
 
 ### Sheets (`sheet`)
 
@@ -286,7 +292,7 @@ There is no light or dark mode (D2). Sheets and moments are always dark; the dev
 
 ### Contrast
 
-Measured: amber on lcd 6.5:1, ink on the sheet 16:1, muted on the sheet 5.3:1 and on a card 4.6:1. These carry everything you act on or must read mid-set. amberDim on lcd (2.3:1), `sectionLabel` on the sheet (3.5:1) and engraved labels (3.1:1 to 7.0:1, measured on device) are below AA, so they only carry facts that are said again elsewhere (the VoiceOver summary, the sheet). Never use them for something the user must read to act. Check every finish (PLAN §11).
+Measured: screen ink 6.3:1 or more and dim ink 3.7:1 or more on every screen, ink on the sheet 16:1, muted on the sheet 5.3:1 and on a card 4.6:1. These carry everything you act on or must read mid-set. `sectionLabel` on the sheet (3.5:1) and engraved labels (3.4:1 to 9:1) are below AA, so they only carry facts that are said again elsewhere (the VoiceOver summary, the sheet). Never use them for something the user must read to act. Check every machine (PLAN §11).
 
 ---
 
@@ -534,7 +540,7 @@ Use these. Don't rebuild them per screen.
 | `Lamp` | `off`, `on` (amber), `done` (green with glow), `part` (a lift with some sets), `lit` (the 900 ms flicker). 10, gap 7 while they fit the rocker's 106pt strip (up to 6); then 8 with gap 4 (up to 8); beyond that the strip shows `n/m` text. |
 | `Display` | The lcd panel, r28, inset shadow, 22 padding. Owns the 220 ms content change and the one summary VoiceOver label per mode. |
 | `Drum` | Three rows: previous step (40, dim), current (104), next step (40, dim), framed by a 2 px amber r20 frame 124 tall. Steps ±24 per notch. Tap cycles the lift's wheel step (`±2` → `±1` → `±0.5`; lbs `±5` → `±2.5` → `±1`), shown in `lcdSmall` right-aligned under the frame, `amberDim` on the default step and amber once chosen (80). Long press opens the keypad sheet (D19). Flashes its frame when the first weighted set has no weight. |
-| `BigKey` | `primary`, `metal`, `disabled`; the Signal finish's graphite primary. Press: down 6, 80 ms, big-key haptic on press-in. |
+| `BigKey` | `primary` (the machine's own key: orange, Pocket's maroon, Bunker's red, Holo's chrome), `metal`, `disabled`. Press: down 6, 80 ms, big-key haptic on press-in. |
 | `Well` | 170 round recess around the big key. |
 | `HoldRing` | Stroke 6 at r80 around the well, amber with a soft glow. Fills linearly over 1100 ms while held, snaps back on release. |
 | `Wheel` | Pan on the UI thread; a notch every 16 pt; ridge texture and drum offset driven by shared values; per notch `scheduleOnRN(onNotch, ±1)` and the notch haptic. Commits to React state at most once per frame. An adjustable accessibility element. Stows on Home, finish and loading with a Reanimated CSS transition, so React's own props always hold the resting state (a worklet stow's settled props are lost after a 1–2 s JS stall, and the next commit brings the wheel back on Home or drops it from the log); a stowed wheel is hidden from VoiceOver. |
@@ -675,7 +681,7 @@ Rules for every moment:
 
 ### Pro gates
 
-20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (305 Signal, 408 Bone) preview live on the device; the finishes sheet then shows a light `Get Trim Pro` pill, the only way to the paywall from there; closing the sheet reverts the preview silently (D3).
+20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) preview live on the device; the finishes sheet then shows a light `Get Trim Pro` pill, the only way to the paywall from there; closing the sheet reverts the preview silently (D3).
 21. **Free stays whole.** Logging, history and the current plan are never gated, interrupted or nagged.
 
 ### Changing a money screen
@@ -787,7 +793,7 @@ No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinne
 
 ### Finishes (N7) [16, 17]
 
-Top edge 430. A sticky title `Finish 305, Signal`, then swatches 92 tall in a sideways row (number in Doto 22, name 13), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A swatch picked at either end scrolls fully into view. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap; for free users 305 and 408 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
+Top edge 430. A sticky title `Finish 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap; for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
 
 ### Settings (D1)
 
@@ -795,7 +801,7 @@ A dark sheet reached from the menu's last row, built like the menu and editor: c
 
 ### Onboarding (D12)
 
-Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the four swatches in a 2 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
+Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the six swatches in a 3 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
 
 ### Paywall (D13)
 
@@ -819,7 +825,7 @@ Light or dark appearance modes, navigation bars or other chrome around the devic
 
 ## 15. QA
 
-Before a surface ships, compare it with its target in `design/gadget/screens/` side by side (PLAN §10, `implement-screen`), on all four finishes where the device shows, at default and the largest accessibility text size, one-handed at arm's length. `npm run check` must pass.
+Before a surface ships, compare it with its target in `design/gadget/screens/` side by side (PLAN §10, `implement-screen`), on all six machines where the device shows, at default and the largest accessibility text size, one-handed at arm's length. `npm run check` must pass.
 
 1. **Job.** Say the surface's job in one sentence. Point to the one winner and the one primary action.
 2. **Geometry.** Within 2 pt of the target at 390 × 844. On iPhone SE and Pro Max nothing clips, keys keep their size, the display flexes.
