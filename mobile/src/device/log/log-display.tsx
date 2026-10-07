@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -13,6 +13,8 @@ import Animated, {
 import Svg, { Circle } from 'react-native-svg';
 
 import { device, gadgetType, lcd, logGeometry } from '@/constants/theme';
+import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
+import { useScreen } from '@/device/finish';
 import { Drum, drumLayout, useDisplayHeight, type DrumLayout, type DrumNudge } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { sessionDurationMinutes } from '@/domain/log-session';
@@ -40,18 +42,18 @@ function LiftName({
   large?: boolean;
   onPress: () => void;
 }) {
+  const styles = useScreenStyles(baseStyles);
   return (
     <Pressable
       onPress={onPress}
       accessible={false}
       hitSlop={{ top: device.displayHeaderY, bottom: logGeometry.namePadX, left: device.displayPad }}
       style={({ pressed }) => [styles.name, pressed && styles.namePressed]}>
-      <Text
-        maxFontSizeMultiplier={1}
+      <LcdText
         numberOfLines={1}
         style={[large ? gadgetType.lcdRow : gadgetType.lcdSmall, dim && styles.dim]}>
         {`${name.toUpperCase()} ▾`}
-      </Text>
+      </LcdText>
     </Pressable>
   );
 }
@@ -71,6 +73,7 @@ function assistY(layout: DrumLayout): number {
 
 /** The set lamps (`setLamps`): done lit, the set on the display outlined, the rest off. */
 function SetLamps({ lamps }: { lamps: readonly SetLampState[] }) {
+  const styles = useScreenStyles(baseStyles);
   const layout = setLampLayout(lamps.length);
   if (layout === 'none' || lamps.length === 0) {
     return null;
@@ -120,6 +123,7 @@ export function LogDisplay({
   onKeypad: () => void;
   onStep: () => void;
 }) {
+  const styles = useScreenStyles(baseStyles);
   const { current, drum, keys, setLabel, setLamps, footer, controls, loadStep, unlockTargets } = useLogSession();
   const height = useDisplayHeight();
   const layout = drumLayout(height, LOG_HEADER_BOTTOM);
@@ -148,11 +152,10 @@ export function LogDisplay({
         style={[styles.drumHit, { top: layout.frameY }]}
       />
       {loadStep && tagY != null ? (
-        <Text
-          maxFontSizeMultiplier={1}
+        <LcdText
           style={[gadgetType.lcdSmall, !loadStep.chosen && styles.dim, styles.stepTag, { top: tagY }]}>
           {loadStep.text}
-        </Text>
+        </LcdText>
       ) : null}
       <View style={[styles.header, styles.logHeader]} pointerEvents="box-none">
         <View style={styles.nameRow} pointerEvents="box-none">
@@ -160,25 +163,25 @@ export function LogDisplay({
         </View>
         <View style={styles.setRow}>
           <SetLamps lamps={setLamps} />
-          <Text maxFontSizeMultiplier={1} numberOfLines={1} style={gadgetType.lcdSmall}>
+          <LcdText numberOfLines={1} style={gadgetType.lcdSmall}>
             {setLabel}
-          </Text>
+          </LcdText>
         </View>
       </View>
       {drum.header ? (
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim, styles.assist, { top: assistY(layout) }]}>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim, styles.assist, { top: assistY(layout) }]}>
           {drum.header}
-        </Text>
+        </LcdText>
       ) : null}
       <View style={styles.footer} pointerEvents="box-none">
         <View style={styles.keysValue}>
-          <Text maxFontSizeMultiplier={1} numberOfLines={1} style={gadgetType.lcdReps}>
+          <LcdText numberOfLines={1} style={gadgetType.lcdReps}>
             {keysValue?.value ?? ''}
-          </Text>
+          </LcdText>
           {keysValue?.unit ? (
-            <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.besideReps]}>
+            <LcdText style={[gadgetType.lcdSmall, styles.besideReps]}>
               {keysValue.unit}
-            </Text>
+            </LcdText>
           ) : null}
         </View>
         {footer?.text ? (
@@ -188,14 +191,14 @@ export function LogDisplay({
               hitSlop={device.displayFooterY}
               onPress={() => void unlockTargets()}
               style={({ pressed }) => [styles.footerFact, pressed && styles.namePressed]}>
-              <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+              <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
                 {footer.text}
-              </Text>
+              </LcdText>
             </Pressable>
           ) : (
-            <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.footerFact]}>
+            <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.footerFact]}>
               {footer.text}
-            </Text>
+            </LcdText>
           )
         ) : null}
       </View>
@@ -209,6 +212,8 @@ export function LogDisplay({
  * blinking `GO` replaces the clock for `REST_GO_MS` (D6); then the log view returns.
  */
 export function RestDisplay({ onName }: { onName: () => void }) {
+  const styles = useScreenStyles(baseStyles);
+  const lcd = useScreen();
   const { current, stage, setLabel } = useLogSession();
   const rest = useRest();
   const height = useDisplayHeight();
@@ -251,13 +256,13 @@ export function RestDisplay({ onName }: { onName: () => void }) {
   return (
     <View style={StyleSheet.absoluteFill}>
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
           REST
-        </Text>
+        </LcdText>
         {next ? (
-          <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim]}>
+          <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim]}>
             {next}
-          </Text>
+          </LcdText>
         ) : null}
       </View>
       <View style={[styles.ring, { top, height: box }]}>
@@ -286,22 +291,22 @@ export function RestDisplay({ onName }: { onName: () => void }) {
         <View style={[StyleSheet.absoluteFill, styles.centered]}>
           {rest.go ? (
             <Blink>
-              <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdBig, clockSize]}>
+              <LcdText style={[gadgetType.lcdBig, clockSize]}>
                 GO
-              </Text>
+              </LcdText>
             </Blink>
           ) : (
-            <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdBig, clockSize, styles.tabular]}>
+            <LcdText style={[gadgetType.lcdBig, clockSize, styles.tabular]}>
               {rest.clock}
-            </Text>
+            </LcdText>
           )}
         </View>
       </View>
       <View style={[styles.footer, styles.restFooter]} pointerEvents="box-none">
         <LiftName name={current.prescription.name} dim onPress={onName} />
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
+        <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
           {setLabel}
-        </Text>
+        </LcdText>
       </View>
     </View>
   );
@@ -373,6 +378,7 @@ function finishGrid(count: number): { columns: number; lamp: number; gap: number
  * key's VoiceOver label carries it (SPEC §10).
  */
 export function FinishDisplay() {
+  const styles = useScreenStyles(baseStyles);
   const { day, openDay, finishSummary } = useLogSession();
   const minutes = useMinutes(openDay?.startedAt);
   if (!finishSummary) {
@@ -388,16 +394,16 @@ export function FinishDisplay() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <View style={styles.header}>
-        <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
+        <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.shrink]}>
           {(day?.title ?? '').toUpperCase()}
-        </Text>
-        <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
+        </LcdText>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
           {`${minutes} MIN`}
-        </Text>
+        </LcdText>
       </View>
-      <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdTitle, styles.finishTitle]}>
+      <LcdText numberOfLines={1} style={[gadgetType.lcdTitle, styles.finishTitle]}>
         {finishSummary.headline}
-      </Text>
+      </LcdText>
       <View style={[styles.grid, { gap: grid.gap }]}>
         {rows.map((row, rowIndex) => (
           <View key={rowIndex} style={[styles.gridRow, { gap: grid.gap }]}>
@@ -414,20 +420,20 @@ export function FinishDisplay() {
         ))}
       </View>
       <View style={styles.stats}>
-        <Text maxFontSizeMultiplier={1} style={gadgetType.lcdStat}>
+        <LcdText style={gadgetType.lcdStat}>
           {finishSummary.setsText}
-        </Text>
+        </LcdText>
         {finishSummary.volumeText ? (
-          <Text maxFontSizeMultiplier={1} style={gadgetType.lcdStat}>
+          <LcdText style={gadgetType.lcdStat}>
             {finishSummary.volumeText}
-          </Text>
+          </LcdText>
         ) : null}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   dim: { color: lcd.amberDim },
   shrink: { flexShrink: 1 },
   noShrink: { flexShrink: 0 },

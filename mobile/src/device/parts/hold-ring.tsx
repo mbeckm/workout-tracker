@@ -1,8 +1,9 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 
-import { device, lcd } from '@/constants/theme';
+import { bodyFinish, device } from '@/constants/theme';
+import { useFinish } from '@/device/finish';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -25,6 +26,7 @@ export function HoldRing({
   progress: SharedValue<number>;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { palette } = useFinish();
   const ringProps = useAnimatedProps(() => {
     const p = Math.min(1, Math.max(0, progress.get()));
     return { strokeDashoffset: CIRCUMFERENCE * (1 - p), strokeOpacity: p > 0 ? 1 : 0 };
@@ -33,24 +35,26 @@ export function HoldRing({
   return (
     <View pointerEvents="none" style={[{ width: SIZE, height: SIZE }, style]}>
       <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+        <G opacity={bodyFinish.lampGlowOpacity}>
+          <AnimatedCircle
+            cx={CENTER}
+            cy={CENTER}
+            r={R}
+            fill="none"
+            stroke={palette.lampOn}
+            strokeWidth={GLOW_STROKE}
+            strokeLinecap="round"
+            strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+            transform={`rotate(-90 ${CENTER} ${CENTER})`}
+            animatedProps={ringProps}
+          />
+        </G>
         <AnimatedCircle
           cx={CENTER}
           cy={CENTER}
           r={R}
           fill="none"
-          stroke={lcd.amberGlow}
-          strokeWidth={GLOW_STROKE}
-          strokeLinecap="round"
-          strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-          transform={`rotate(-90 ${CENTER} ${CENTER})`}
-          animatedProps={ringProps}
-        />
-        <AnimatedCircle
-          cx={CENTER}
-          cy={CENTER}
-          r={R}
-          fill="none"
-          stroke={lcd.amber}
+          stroke={palette.lampOn}
           strokeWidth={device.holdRingStroke}
           strokeLinecap="round"
           strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}

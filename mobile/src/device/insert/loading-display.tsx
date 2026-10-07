@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Platform, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useReducedMotion } from 'react-native-reanimated';
 
 import { device, gadgetType, insertColors, insertGeometry as geo, lcd } from '@/constants/theme';
+import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
 import { EmptySlot } from '@/device/home/home-display';
 import { DEVICE, EASE_DISPLAY } from '@/motion';
 
@@ -30,6 +31,7 @@ export function LoadingDisplay({ insert }: { insert: InsertController }) {
 }
 
 function Loaded({ insert }: { insert: InsertController }) {
+  const styles = useScreenStyles(baseStyles);
   const reduceMotion = useReducedMotion();
   const [height, setHeight] = useState(0);
   const n = insert.days.length;
@@ -56,27 +58,27 @@ function Loaded({ insert }: { insert: InsertController }) {
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.flash2, flash2]} />
       <Animated.View style={[StyleSheet.absoluteFill, bootStyle]}>
         <View style={styles.header}>
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+          <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
             LOADED
-          </Text>
-          <Text maxFontSizeMultiplier={1} style={[gadgetType.lcdSmall, styles.dim]}>
+          </LcdText>
+          <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
             {`${insert.ticked}/${n}`}
-          </Text>
+          </LcdText>
         </View>
-        <Text maxFontSizeMultiplier={1} numberOfLines={2} style={[gadgetType.lcdPrompt, styles.name]}>
+        <LcdText numberOfLines={2} style={[gadgetType.lcdPrompt, styles.name]}>
           {insert.planName.toUpperCase()}
-        </Text>
+        </LcdText>
         <View style={styles.list}>
           {insert.days.slice(0, insert.ticked).map((day, index) => (
             <Animated.View
               key={index}
               entering={!ANIMATES ? undefined : reduceMotion ? ROW_IN_REDUCED : ROW_IN}
               style={{ height: line }}>
-              <Text maxFontSizeMultiplier={1} numberOfLines={1} style={[gadgetType.lcdLoadDay, { lineHeight: line }]}>
+              <LcdText numberOfLines={1} style={[gadgetType.lcdLoadDay, { lineHeight: line }]}>
                 {`${day.title.toUpperCase()} `}
-                <Text style={styles.dim}>{`${day.lifts} ${day.lifts === 1 ? 'LIFT' : 'LIFTS'}`}</Text>
+                <LcdText style={styles.dim}>{`${day.lifts} ${day.lifts === 1 ? 'LIFT' : 'LIFTS'}`}</LcdText>
                 {' ✓'}
-              </Text>
+              </LcdText>
             </Animated.View>
           ))}
         </View>
@@ -90,7 +92,7 @@ function Loaded({ insert }: { insert: InsertController }) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   dim: { color: lcd.amberDim },
   header: {
     position: 'absolute',

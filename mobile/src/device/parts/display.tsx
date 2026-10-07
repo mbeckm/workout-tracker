@@ -11,8 +11,12 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 
-import { device, deviceColors, gadgetRadius, lcd } from '@/constants/theme';
+import { device, gadgetRadius } from '@/constants/theme';
+import { useFinish } from '@/device/finish';
 import { DEVICE, EASE_DISPLAY } from '@/motion';
+
+import { BezelMarks } from './finish-marks';
+import { ScreenSurface } from './screen-surface';
 
 const CONTENT_IN = FadeInUp.duration(DEVICE.DISPLAY)
   .easing(EASE_DISPLAY)
@@ -33,10 +37,12 @@ export function useDisplayHeight(): number {
 }
 
 /**
- * The display (SPEC §4): the lcd panel, r28, with a deep inset shadow and a light catch under
- * its lower edge. Content swaps when `contentKey` changes, fading and rising 8pt over 220 ms
- * (a plain fade with Reduce Motion). Children lay out absolutely inside, as on the prototype;
- * use `device.displayPad` for the inner padding.
+ * The display (SPEC §4): the machine's screen (decision 80), r28, with a deep inset shadow, its
+ * texture and glass on top, and a light catch under its lower edge. Pocket and Bunker sit it in
+ * a bezel, which takes the same slot; the content lays out from the screen inside. Content swaps
+ * when `contentKey` changes, fading and rising 8pt over 220 ms (a plain fade with Reduce Motion).
+ * Children lay out absolutely inside, as on the prototype; use `device.displayPad` for the inner
+ * padding.
  */
 export function Display({
   contentKey,
@@ -57,38 +63,62 @@ export function Display({
   onAccessibilityAction?: (event: AccessibilityActionEvent) => void;
 }) {
   const reduceMotion = useReducedMotion();
+  const { finish, palette, screen } = useFinish();
   const [height, setHeight] = useState(0);
-  return (
+  const bezel = palette.bezel;
+  const radius = bezel ? bezel.displayRadius : gadgetRadius.display;
+  const panel = (
     <View
       onLayout={(event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height)}
       accessible={accessibilityLabel != null}
       accessibilityLabel={accessibilityLabel}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
-      style={[styles.panel, style]}>
-      <View style={[StyleSheet.absoluteFill, styles.clip]}>
+      style={[
+        styles.panel,
+        {
+          borderRadius: radius,
+          backgroundColor: screen.lcd,
+          boxShadow: `inset 0 3px 10px ${screen.lcdShade}, 0 1px 0 ${palette.recessRim}`,
+        },
+        bezel ? styles.fill : style,
+      ]}>
+      <View style={[StyleSheet.absoluteFill, styles.clip, { borderRadius: radius }]}>
         <Animated.View
           key={contentKey}
           entering={!ANIMATES ? undefined : reduceMotion ? CONTENT_IN_REDUCED : CONTENT_IN}
           style={StyleSheet.absoluteFill}>
           <DisplayHeight value={height}>{children}</DisplayHeight>
         </Animated.View>
+        <ScreenSurface screen={screen} id={`screen-${finish}`} />
       </View>
+    </View>
+  );
+  if (!bezel) return panel;
+  return (
+    <View
+      style={[
+        style,
+        {
+          borderRadius: bezel.radius,
+          borderBottomRightRadius: bezel.radiusBottomRight ?? bezel.radius,
+          paddingHorizontal: bezel.padH,
+          paddingTop: bezel.padTop,
+          paddingBottom: bezel.padBottom,
+          backgroundColor: bezel.bottom,
+          experimental_backgroundImage: `linear-gradient(180deg, ${bezel.top}, ${bezel.bottom})`,
+          boxShadow: `inset 0 2px 0 ${palette.bodyRimOutline}, inset 0 -2px 0 ${palette.bezelShade}, 0 1px 0 ${palette.recessRim}`,
+        },
+      ]}>
+      {panel}
+      <BezelMarks />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   // Like CSS, the inset shadow paints under the content (a done row covers it).
-  panel: {
-    borderRadius: gadgetRadius.display,
-    borderCurve: 'continuous',
-    backgroundColor: lcd.lcd,
-    boxShadow: `inset 0 3px 10px ${lcd.lcdShade}, 0 1px 0 ${deviceColors.recessRim}`,
-  },
-  clip: {
-    borderRadius: gadgetRadius.display,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-  },
+  panel: { borderCurve: 'continuous' },
+  fill: { flex: 1 },
+  clip: { borderCurve: 'continuous', overflow: 'hidden' },
 });

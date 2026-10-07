@@ -14,10 +14,10 @@ import { usePressDepth } from './press';
  * Glyph labels drawn in SVG, because the text glyphs in SF Rounded are lighter and smaller
  * than the prototype's (+ and − 16pt at 3pt; ↶ a bold arc).
  */
-const DRAWN: Record<string, () => ReactNode> = {
-  '+': () => <PlusGlyph />,
-  '−': () => <MinusGlyph />,
-  '↶': () => <UndoGlyph />,
+const DRAWN: Record<string, (color: string) => ReactNode> = {
+  '+': (color) => <PlusGlyph color={color} />,
+  '−': (color) => <MinusGlyph color={color} />,
+  '↶': (color) => <UndoGlyph color={color} />,
 };
 
 /** Which `gadgetType` key role the text label uses. */
@@ -63,8 +63,15 @@ function RaisedKey({
   text = 'glyph',
   children,
   style,
-}: RaisedKeyProps & { width: number; height: number; radius: number }) {
+  tall = false,
+}: RaisedKeyProps & { width: number; height: number; radius: number; tall?: boolean }) {
   const { palette } = useFinish();
+  // Pocket's tall keys are maroon; every other machine's keys match.
+  const own = tall ? palette.tallKey : undefined;
+  const key1 = own?.key1 ?? palette.key1;
+  const key2 = own?.key2 ?? palette.key2;
+  const edge = own?.edge ?? palette.keyEdge;
+  const ink = own?.ink ?? palette.keyInk;
   const haptics = useHaptics();
   const { pressIn, pressOut, faceStyle, lipStyle } = usePressDepth(device.keyPress);
   const shape = { width, height, borderRadius: radius, borderCurve: 'continuous' as const };
@@ -83,7 +90,7 @@ function RaisedKey({
           shape,
           {
             top: device.keyLip,
-            backgroundColor: palette.keyEdge,
+            backgroundColor: edge,
             // The prototype's 0 6 10 cast shadow, measured from the face; the lip sits 3 lower.
             boxShadow: `0 ${6 - device.keyLip}px 10px ${palette.keyDrop}`,
           },
@@ -112,16 +119,16 @@ function RaisedKey({
             shape,
             styles.center,
             {
-              backgroundColor: palette.key2,
-              experimental_backgroundImage: `linear-gradient(180deg, ${palette.key1}, ${palette.key2})`,
+              backgroundColor: key2,
+              experimental_backgroundImage: `linear-gradient(180deg, ${key1}, ${key2})`,
               boxShadow: `inset 0 1px 0 ${palette.keyHighlight}`,
             },
             faceStyle,
           ]}>
           {label != null && DRAWN[label] ? (
-            DRAWN[label]()
+            DRAWN[label](ink)
           ) : label != null ? (
-            <Text maxFontSizeMultiplier={fontScaleCap.display} style={TEXT_ROLE[text]}>
+            <Text maxFontSizeMultiplier={fontScaleCap.display} style={[TEXT_ROLE[text], { color: ink }]}>
               {label}
             </Text>
           ) : (
@@ -147,6 +154,7 @@ export function TallKey(props: RaisedKeyProps) {
       width={device.tallKeyWidth}
       height={device.tallKeyHeight}
       radius={gadgetRadius.tallKey}
+      tall
     />
   );
 }

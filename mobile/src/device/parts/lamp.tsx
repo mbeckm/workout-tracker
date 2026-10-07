@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { device, lcd, signal } from '@/constants/theme';
+import { device, signal } from '@/constants/theme';
 import { useFinish } from '@/device/finish';
 import { DEVICE } from '@/motion';
 
@@ -86,10 +86,10 @@ export function Lamp({
   }
 
   const fill =
-    state === 'on' ? lcd.amber : state === 'part' && surface === 'rocker' ? palette.lampPart : offFill;
+    state === 'on' ? palette.lampOn : state === 'part' && surface === 'rocker' ? palette.lampPart : offFill;
   const shadow =
     state === 'on'
-      ? `0 0 ${surface === 'plate' ? 8 : 6}px ${lcd.amber}`
+      ? `0 0 ${surface === 'plate' ? 8 : 6}px ${palette.lampOn}`
       : surface === 'plate'
         ? `inset 0 1px 2px ${palette.plateLampShade}`
         : undefined;

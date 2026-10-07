@@ -13,6 +13,7 @@ import { commandFromParams, deviceMode } from '@/device/device-state';
 import { EditDisplay } from '@/device/edit/edit-display';
 import { useEditDevice } from '@/device/edit/use-edit-device';
 import { useFinish } from '@/device/finish';
+import { BodyMarks } from '@/device/parts/finish-marks';
 import { useAppFonts } from '@/device/fonts';
 import { HomeDisplay } from '@/device/home/home-display';
 import { InsertBackdrop, InsertBody, SlotGlow, useInsertDeviceStyle } from '@/device/insert/insert-scene';
@@ -216,6 +217,7 @@ function DeviceSurface() {
           rim={jsClock != null}
           rimRadius={insertGeometry.bodyRadius}
           style={jsClock ? styles.bodyObject : undefined}>
+          {jsClock ? null : <BodyMarks screwTop={topRowY + device.keySize + device.labelGap} />}
           {/*
             VoiceOver groups every view's children and reads siblings top-left first, so the
             top-right key sits outside this column (drawn over its top-right slot): the order is
