@@ -786,6 +786,11 @@ export const device = {
    * step below, then the step above, and centre the frame between the header and the footer.
    */
   drumClear: 8,
+  /**
+   * Under a header too tall for the step above (the log's name and set row), the frame sits this
+   * far below the header and the step above drops.
+   */
+  drumHeaderClear: 32,
   /** Display header top and footer bottom. */
   displayHeaderY: 20,
   displayFooterY: 22,
@@ -889,6 +894,18 @@ export const logGeometry = {
   namePadX: 8,
   namePadY: 2,
   nameRadius: 8,
+  /** The log header: the lift name (`lcdRow`), then the set row this far under it. */
+  nameSetGap: 6,
+  /** The set lamps beside `SET 2/4`: 22 × 10 pills 8 apart, 12 wide 5 apart past 6 sets. */
+  setLampWidth: 22,
+  setLampWidthCompact: 12,
+  setLampHeight: 10,
+  setLampGap: 8,
+  setLampGapCompact: 5,
+  /** From the last lamp to `SET 2/4`. */
+  setLampLabelGap: 12,
+  /** From the reps number to `REPS`. */
+  repsUnitGap: 8,
   /** Rest: the ring's 230 box, centred between header and footer (r95, stroke 12; the track dashed 3 on, 7 off). */
   restRingBox: 230,
   restRingDash: '3 7',
