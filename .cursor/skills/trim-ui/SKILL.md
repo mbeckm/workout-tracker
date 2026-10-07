@@ -21,7 +21,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 
 1. **One surface, one job, one primary action.** Each device mode has one job and one big key. Each sheet answers one question. Anything else moves a layer down (§2) or goes away.
 2. **Fast is the feature.** Launch to the first logged set is two presses (Start, Log). A prefilled set is one. Nothing we add may cost the loop a press or make it wait (`PRODUCT.md` → Principles).
-3. **The interface explains itself.** No helper text, gesture hints or summaries, on the display or in sheets. If something needs a sentence, the layout is wrong.
+3. **The interface explains itself.** No helper text, gesture hints or summaries, on the display or in sheets. If something needs a sentence, the layout is wrong. The one exception is the guided tour (decision 85, §12 Moments): once, after onboarding, Trim talks on its own display and has the owner use each essential control.
 4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest ring, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
 5. **Layout carries hierarchy.** Size, brightness (amber, dim, off) and position say what matters. Labels that only restate hierarchy are banned.
 6. **Three layers, never mixed.** Device: physical metal, raised keys, a recessed display. Sheets: flat and dark. Moments: physical 3D objects on a dark grid. A sheet never gets a bevel, and the device never gets a flat list.
@@ -73,7 +73,7 @@ Information lives on the lowest layer that serves the job:
 
 ### Key map (device modes)
 
-`DeviceMode` is `home`, `log`, `rest`, `finish`, `edit` or `loading` (PLAN §4.2). The parts never move; only their content changes.
+`DeviceMode` is `home`, `log`, `rest`, `finish`, `edit`, `loading` or `tour` (PLAN §4.2, decision 85). The parts never move; only their content changes.
 
 | Mode | Top left | Rocker | Top right | Left keys | Wheel | Big key |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -83,6 +83,7 @@ Information lives on the lowest layer that serves the job:
 | **finish** | Menu | lamps per lift on the recessed plate (green when done) | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
 | **edit** | `‹` back to the editor | `‹` `›` move between the day's lifts; the middle returns to the editor | Remove lift (`✕`) | `+` / `−` sets | reps (or seconds, minutes) | `Done` (metal) |
 | **loading** | inert | lamps off, then flicking on | hidden | none | stowed | inert |
+| **tour** | Menu (from its line on; opens the tour's menu) | lamps off, then `‹` `›` between the practice lifts as in log; all green at the end | `Skip` on the first screen, then Undo | `+` / `−` reps, `+15` / `−15` in rest | weight, then time in rest; stowed on the first and last screens | `Show me`, `Log`, `Skip` (metal), `Start`; metal until the line names it |
 
 ### Sheets and their top edges (SPEC §6)
 
@@ -488,7 +489,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Summaries of what's already on screen.
 - Motivational or celebratory copy (`Great job!`), exclamation marks, emoji.
 - Possessives that add nothing: `Your plans`, `My workouts`.
-- Coach marks, tooltips, tours.
+- Coach marks and tooltips. The one tour is Trim talking on its own display after onboarding (decision 85); nothing else explains itself in words.
 
 ### Say each fact once
 
@@ -640,12 +641,13 @@ We study the highest-converting apps and use their principles, never their dark 
 | **Goals and milestones** | Printed on the receipt: the milestone line under `TRIM`, one `GOAL <LIFT> <target> ✓` line per goal reached (D7). No badges, no trophy screen. |
 | **Week complete** | After the receipt's Done, the finished-week report prints onto the spike (D15): lifts up, records, volume, best. Once per week. |
 | **A plan saved** | The cartridges file onto the shelf. |
+| **The guided tour's reward** (decision 85) | Start throws the device up into a spin over Trim's dot-matrix room (the body's edge and back show while it turns); it slows to face the owner in the new finish, hangs, drops, squashes and settles perched. A ring of lit dots ripples out from it, `UNLOCKED` stamps on with the stamp's thud, and the finish picker rises. Each pick re-dresses the device with the ripple and a wiggle. About 5 s to the picker (once, like first open). |
 | **First Pro purchase** | The thing they wanted happens within 100 ms of Apple's confirmation (the finish applies, the range switches), a toast confirms `Trim Pro is on`, with a success haptic. |
 
 Rules for every moment:
 - **Once** where it's a first or a milestone (a persisted flag; `weekMomentsShown` for the week).
 - **After the action lands, never in its way.** Input is live throughout; a tap skips to the end.
-- **Short.** Under 4 s, the insert included.
+- **Short.** Under 4 s, the insert included. First open and the tour's reward are the two once-only exceptions, and a tap still skips the first.
 - **One at a time.** Queue them: the Home stamp, then the week moment, then the post-workout paywall. Never two modal moments at once.
 - **Built from Trim's own parts:** the device, cartridges, receipts, stamps, lamps, the spike, the knob. No confetti, emoji, stickers, mascots or fireworks. Sounds only from §8.
 - **Words stay facts.** No `Congrats!`, no `You crushed it`.
@@ -655,9 +657,10 @@ Rules for every moment:
 
 1. **Every question changes the product.** Units, days a week, a plan, a finish: each answer shapes what they leave with. Name is the one optional question; it pays off on the receipt header. No vanity or marketing questions.
 2. **Value before asks.** It ends with a real, active plan on a working Home, Start one press away. No account, no permission prompts (Live Activity asks at the first rest, with the system prompt only).
-3. **Short.** Welcome, Name, Units, Days, Pick a plan (packs as cartridges, or Build my own), Pick your finish, then the insert as "Plan ready", then the paywall on the template path. One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
+3. **Short.** Welcome, Name, Units, Days, Pick a plan (packs as cartridges, or Build my own), Pick your finish, then the insert as "Plan ready", then the guided tour (§12 Moments, decision 85), then the paywall on the template path. One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
 4. **Descriptions describe options, not the UI.** A plan pack may carry one line saying what it is (`Upper and lower body, twice each`).
-5. **Build my own** inserts an empty plan with n days and opens the editor sheet.
+5. **Build my own** inserts an empty plan with n days, plays the tour (on a push day's first three lifts), then opens the editor sheet.
+6. **The guided tour** (decision 85). Trim's lines type onto the foot of the display under the practice set (dim line before, current line, a blinking `▸` when a tap goes on), or fill the display on the first and last screens. The first line also says `TAP MY SCREEN TO GO ON`. A line about a control types out first, then the control wears the focus ring (`FocusRing`: the display's 2-pt amber frame, 5 off, with a glow) and the next line waits for it. Only taught controls respond. In a tall sheet the line moves into the sheet (`TrimSays`, a small panel of the machine's screen): the exercise sheet frames the alternative to swap to, the tour's menu says on each row what's inside. Lines are facts and verbs in Trim's voice, sentence by sentence; no exclamation marks. Nothing is logged or saved.
 
 ### Paywall (D13)
 
@@ -793,7 +796,7 @@ No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinne
 
 ### Finishes (N7) [16, 17]
 
-Top edge 430. A sticky title `Finish 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap; for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
+Top edge 430. A sticky title `Finish 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap (101 once the guided tour has given it; until then it carries `EARN` and previews only); for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
 
 ### Settings (D1)
 
@@ -801,7 +804,7 @@ A dark sheet reached from the menu's last row, built like the menu and editor: c
 
 ### Onboarding (D12)
 
-Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the six swatches in a 3 × 2 grid; free finishes save on tap, locked ones preview only. Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
+Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the six swatches in a 3 × 2 grid; free finishes save on tap, locked ones preview only (Graphite shows `EARN`: the guided tour gives it). Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
 
 ### Paywall (D13)
 

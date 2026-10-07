@@ -20,6 +20,8 @@ import { trackedLiftCount } from '@/device/progress-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { ObjectIcon } from './object-icon';
+import { TrimSays } from '@/device/tour/trim-says';
+
 import { SheetCard, SheetHeader, SheetRow, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
@@ -27,7 +29,7 @@ import { useSheetChrome } from './sheet-context';
 export type MenuWorkout = { logged: number; total: number; onEnd: () => void; onDiscard: () => void };
 
 /** The menu with the open workout's End and Discard (PLAN Phase 4, screen 10). */
-export function DeviceMenuSheet() {
+export function DeviceMenuSheet({ tour = false }: { tour?: boolean }) {
   const log = useLogSession();
   const { close } = useSheetChrome();
   const workout: MenuWorkout | null = log.openDay
@@ -44,7 +46,7 @@ export function DeviceMenuSheet() {
         },
       }
     : null;
-  return <MenuSheet workout={workout} />;
+  return <MenuSheet workout={workout} tour={tour} />;
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -53,9 +55,11 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  * The menu (SPEC §6 Menu, N4, D1): End workout during a session, the finish card, then Plans,
  * Progress, History and Settings. Every row swaps the sheet's content in place; ‹ comes back.
  */
-export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
+export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | null; tour?: boolean }) {
   const { close } = useSheetChrome();
-  const { swapSheet } = useDevice();
+  const { swapSheet: swapTo } = useDevice();
+  // The tour's menu (decision 85): each row says what's inside and only closes the menu.
+  const swapSheet: typeof swapTo = tour ? () => close() : swapTo;
   const { activePlan, workoutHistory } = useWorkoutStore();
 
   // The lifts Progress lists (weighted sets); no rank line (D4).
@@ -76,12 +80,18 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
           <SheetRow title="Discard workout" size="compact" destructive onPress={workout.onDiscard} />
         </SheetCard>
       ) : null}
-      <FinishCard onPress={() => swapSheet('finishes', from)} />
+      {tour ? null : <FinishCard onPress={() => swapSheet('finishes', from)} />}
       <SheetCard>
         <SheetRow
           icon={<ObjectIcon kind="knob" />}
           title="Plans"
-          sub={activePlan ? `${activePlan.name}, ${plural(activePlan.days.length, 'day', 'days')}` : undefined}
+          sub={
+            tour
+              ? 'Days, lifts, sets and reps'
+              : activePlan
+                ? `${activePlan.name}, ${plural(activePlan.days.length, 'day', 'days')}`
+                : undefined
+          }
           onPress={() => swapSheet('plans', from)}
           testID="menu-plans"
         />
@@ -91,7 +101,7 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
           icon={<ObjectIcon kind="gauge" />}
           title="Progress"
           // rank: the gauge and "top n%" wait for strength-standards data (PLAN D4).
-          sub={trackedLifts > 0 ? plural(trackedLifts, 'lift tracked', 'lifts tracked') : undefined}
+          sub={tour ? 'Your lifts and goals over time' : trackedLifts > 0 ? plural(trackedLifts, 'lift tracked', 'lifts tracked') : undefined}
           onPress={() => swapSheet('progress', from)}
           testID="menu-progress"
         />
@@ -100,7 +110,7 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
         <SheetRow
           icon={<ObjectIcon kind="receipt" />}
           title="History"
-          sub={workoutHistory.length > 0 ? plural(workoutHistory.length, 'workout', 'workouts') : undefined}
+          sub={tour ? 'Every workout, as a receipt' : workoutHistory.length > 0 ? plural(workoutHistory.length, 'workout', 'workouts') : undefined}
           onPress={() => swapSheet('history', from)}
           testID="menu-history"
         />
@@ -109,10 +119,12 @@ export function MenuSheet({ workout }: { workout: MenuWorkout | null }) {
         <SheetRow
           icon={<ObjectIcon kind="toggles" />}
           title="Settings"
+          sub={tour ? 'Units, sounds, Trim Pro' : undefined}
           onPress={() => swapSheet('settings', from)}
           testID="menu-settings"
         />
       </SheetCard>
+      {tour ? <TrimSays>{"That's the menu. Close it when you've had a look."}</TrimSays> : null}
     </SheetScroll>
   );
 }

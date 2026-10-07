@@ -20,7 +20,7 @@ These decide product calls. When a feature, screen or behavior conflicts with on
 2. **Fast is the feature.** From launch to the first logged set is two presses (Start, Log), and a prefilled set is one. A change that adds a tap or a wait to that loop needs an exceptional reason.
 3. **One screen, one job, one primary action.** Each screen answers one question. Detail is disclosed progressively: the device → a sheet → a `…`, long-press or swipe → Settings. We never overload a screen to save a tap somewhere rare.
 4. **The user is in control.** Trim does what the user tells it, and nothing on their behalf. Nobody should ever think "why did it do that?" (see Control below).
-5. **The interface explains itself.** No info text, explainer subheadings, summaries, tips or tours. If something needs explaining, we fix the design.
+5. **The interface explains itself.** No info text, explainer subheadings, summaries, tips or coach marks. If something needs explaining, we fix the design. The one exception is the guided tour after onboarding (decision 85): the essentials (the wheel, the keys, Log, Undo, the rocker, swapping a lift, the menu) are never left to be discovered, so Trim teaches them once, in its own voice on its own display, by having the owner use each control.
 6. **Whitespace is confident.** We don't fill space for the sake of filling it. An empty-looking start is correct, and screens fill with the user's own work.
 7. **Motion serves speed, fluidity or joy.** An animation must make Trim feel faster, more fluid or more loveable. If it can't, it doesn't ship. Every touch gets a visible reaction within 100ms, and nothing waits on an animation.
 8. **Everything is a sale.** Making money isn't evil, and helping someone decide isn't either. The sale starts at the first tap, not at the paywall, and every interaction is the store clerk. So the product is the salesperson: every detail gets the same care as the paywall, without plastering CTAs anywhere. We borrow the principles of the best-converting apps and never their dark patterns: real prices, a clear trial timeline, an exit that's always visible, no pressure tricks, and always Trim's own look. Buying Pro is itself a rewarding moment. See `trim-ui` → Selling.
@@ -61,7 +61,9 @@ The exercise catalog is local-only: about 200 exercises written for Trim, plus t
 
 ## Onboarding
 
-Welcome (the device fades in on a dark grid) → Name (optional, printed on receipts) → Units → Days a week → Pick a plan (the free starter templates as cartridge packs, or Build my own) → Pick your finish (free finishes, plus Pro ones that preview) → the plan inserts into the device as Plan ready → paywall (template path only, soft). It always ends with a real, active plan. Build my own inserts an empty plan with the chosen number of days and opens the editor.
+Welcome (the device fades in on a dark grid) → Name (optional, printed on receipts) → Units → Days a week → Pick a plan (the free starter templates as cartridge packs, or Build my own) → Pick your finish (free finishes, plus Pro ones that preview) → the plan inserts into the device as Plan ready → the guided tour → paywall (template path only, soft). It always ends with a real, active plan. Build my own inserts an empty plan with the chosen number of days, plays the tour, then opens the editor.
+
+**The guided tour (decision 85).** Trim introduces itself on its display (`Hi, I'm Trim.`) and talks the owner through one practice set on the first lifts of their plan: the wheel, the reps keys, Log, the rest timer, Undo, the rocker, swapping a lift in the exercise sheet, and the menu. Each line waits for a tap on the screen or for the control it names, which wears a focus ring; only taught controls respond. Nothing is logged or saved. Skip on the first screen goes straight to the end. Start then launches the device into a spin over Trim's dot-matrix room; it lands with a ripple, `UNLOCKED` stamps on and a finish picker offers 101 Graphite (`NEW`) next to the current finish, with the Pro machines locked. The finish they keep is saved. A tour cut short by quitting the app starts again on the next launch.
 
 ## Device and menu
 
@@ -90,7 +92,7 @@ One lift, one set at a time, on the device:
 
 ## Trim Pro
 
-Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, next-session targets, and every finish (212 Aluminium and 101 Graphite are free; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
+Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, next-session targets, and every finish (212 Aluminium and 101 Graphite are free, Graphite once the guided tour has given it; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
 
 The paywall appears only at these moments: the end of onboarding (template path), once after the first completed workout (from the receipt's Done), when the user taps a Pro-locked feature, and from Settings → Trim Pro. A locked finish only previews on the device; the paywall opens from the finishes sheet's `Get Trim Pro` pill, never from the swatch itself and never during a workout.
 

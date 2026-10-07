@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CartridgeInsert } from '../../modules/trim-device';
 
-import { device, editGeometry, finishColors, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
+import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
+import { track } from '@/analytics/analytics';
 import { useDevice } from '@/device/device-context';
 import { commandFromParams, deviceMode } from '@/device/device-state';
 import { EditDisplay } from '@/device/edit/edit-display';
@@ -43,6 +44,11 @@ import {
   Wheel,
 } from '@/device/parts';
 import { SheetHost } from '@/device/sheets';
+import { FocusRing } from '@/device/tour/focus-ring';
+import { useTour } from '@/device/tour/tour-context';
+import { TourDisplay } from '@/device/tour/tour-display';
+import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourMotion } from '@/device/tour/tour-launch';
+import { tourLiftLamps } from '@/device/tour/tour-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
@@ -93,6 +99,9 @@ function DeviceSurface() {
   const jsClock = insert?.engine === 'js' && insert.phase === 'scene' ? insert.clock : null;
   const deviceMotion = useInsertDeviceStyle(jsClock);
   const hidden = insert?.engine === 'native' && insert.phase === 'scene' && insert.nativeShowing;
+  const tour = useTour();
+  const tourMotion = useTourMotion();
+  const tourStyle = useTourDeviceStyle(tourMotion);
   const { log } = work;
   /**
    * What the big key meant when the finger landed. The release runs that, even if the mode
@@ -102,6 +111,7 @@ function DeviceSurface() {
   const pressed = useRef<BigKeyAction | null>(null);
   useDeviceParams();
   useDevInsertParam();
+  useDevTourParam();
 
   // Readers outside the session (`useDevice().mode`, Home's stamp) see the log's mode too.
   useEffect(() => {
@@ -114,7 +124,11 @@ function DeviceSurface() {
 
   const mode = deviceMode(state, log.mode);
   const view: DeviceView =
-    mode === 'edit'
+    mode === 'tour'
+      ? tour.active
+        ? 'tour'
+        : 'home'
+      : mode === 'edit'
       ? edit
         ? 'edit'
         : 'home'
@@ -142,7 +156,9 @@ function DeviceSurface() {
   const displayHeight = bottomRowY - ROW_GAP - displayY;
   const stage = log.stage;
   const contentKey =
-    view === 'log' && stage
+    view === 'tour'
+      ? `tour:${tour.state.screen}`
+      : view === 'log' && stage
       ? `log:${stage.current.prescription.id}:${stage.kind}:${stage.setIndex}`
       : view === 'home'
         ? home.model.kind
@@ -179,6 +195,18 @@ function DeviceSurface() {
         return { label: 'Start', accessibilityLabel: 'Start', variant: 'disabled' as const };
       case 'edit':
         return { label: 'Done', accessibilityLabel: 'Done', variant: 'metal' as const, onPress: edit?.back };
+      case 'tour':
+        switch (tour.state.screen) {
+          case 'intro':
+            // Metal until Trim's line asks for it: before that, the screen is what to tap.
+            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('metal' as const), onPress: () => tour.dispatch({ type: 'show' }) };
+          case 'rest':
+            return { label: 'Skip', accessibilityLabel: 'Skip rest', variant: 'metal' as const, onPress: () => tour.dispatch({ type: 'skipRest' }) };
+          case 'ready':
+            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('metal' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
+          default:
+            return { label: 'Log', accessibilityLabel: 'Log set', variant: 'primary' as const, onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
+        }
       default:
         return {
           label: home.startLabel,
@@ -190,11 +218,14 @@ function DeviceSurface() {
   })();
 
   const leftX = edge + KEY_INSET;
+  const lit = view === 'tour' && !sheetUp ? tour.lit : null;
+  const tourWorking = view === 'tour' && (tour.state.screen === 'log' || tour.state.screen === 'rest');
 
   return (
     <View style={styles.root}>
       <StatusBar style={onScene ? 'light' : finishColors[finish].statusBar} />
       {jsClock ? <InsertBackdrop clock={jsClock} width={width} height={height} /> : null}
+      {tour.launch ? <TourRoom motion={tourMotion} /> : null}
       {/*
         The sheet's own `accessibilityViewIsModal` only hides its siblings inside SheetHost, so
         the device hides itself from VoiceOver while a sheet is up (trim-ui §10 SheetHost).
@@ -206,7 +237,8 @@ function DeviceSurface() {
         aria-hidden={sheetUp}
         accessibilityElementsHidden={sheetUp}
         importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
-        style={[StyleSheet.absoluteFill, deviceMotion, hidden && styles.hidden]}>
+        pointerEvents={tour.launch ? 'none' : 'auto'}
+        style={[StyleSheet.absoluteFill, tour.launch ? tourStyle : deviceMotion, hidden && styles.hidden]}>
         {jsClock && insert ? (
           <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
         ) : null}
@@ -227,6 +259,16 @@ function DeviceSurface() {
             <View style={[styles.topRow, { paddingHorizontal: edge }]}>
               {view === 'edit' && edit ? (
                 <RoundKey label="‹" accessibilityLabel="Back to the plan" onPress={edit.back} />
+              ) : view === 'tour' ? (
+                <FocusRing active={lit === 'menu'} radius={gadgetRadius.key}>
+                  <RoundKey
+                    accessibilityLabel="Menu"
+                    onPress={() => {
+                      if (tour.taught('menu')) openSheet('menu', { tour: '1' });
+                    }}>
+                    <MenuGlyph />
+                  </RoundKey>
+                </FocusRing>
               ) : (
                 <RoundKey accessibilityLabel="Menu" onPress={() => openSheet('menu')}>
                   <MenuGlyph />
@@ -244,6 +286,29 @@ function DeviceSurface() {
                   middleLabel="Back to the plan"
                   style={styles.rocker}
                 />
+              ) : view === 'tour' ? (
+                tourWorking ? (
+                  <FocusRing active={lit === 'next'} radius={gadgetRadius.key} style={styles.rocker}>
+                    <Rocker
+                      variant="lifts"
+                      lamps={tourLiftLamps(tour.state)}
+                      prevDisabled={!tour.taught('next') || tour.state.lift <= 0}
+                      nextDisabled={!tour.taught('next') || tour.state.lift >= tour.state.lifts.length - 1}
+                      onPrev={() => tour.dispatch({ type: 'lift', direction: -1 })}
+                      onNext={() => tour.dispatch({ type: 'lift', direction: 1 })}
+                      onMiddle={() => undefined}
+                      middleLabel="Lifts"
+                    />
+                  </FocusRing>
+                ) : (
+                  <View style={styles.rocker}>
+                    <Rocker
+                      variant="week"
+                      lamps={tour.state.lifts.map(() => (tour.state.screen === 'ready' ? 'done' : 'off'))}
+                      accessibilityLabel=""
+                    />
+                  </View>
+                )
               ) : view === 'loading' && insert ? (
                 <View style={styles.rocker}>
                   <Rocker variant="week" lamps={insert.lamps} accessibilityLabel="" />
@@ -280,7 +345,13 @@ function DeviceSurface() {
                 styles.display,
                 { marginHorizontal: edge, minHeight: height >= TALL_SCREEN ? DISPLAY_MIN : undefined },
               ]}>
-              {view === 'loading' && insert ? (
+              {view === 'tour' ? (
+                <TourDisplay
+                  onName={() => {
+                    if (tour.taught('swap')) openSheet('exercise', { tour: '1' });
+                  }}
+                />
+              ) : view === 'loading' && insert ? (
                 <LoadingDisplay insert={insert} />
               ) : view === 'edit' && edit ? (
                 <EditDisplay edit={edit} />
@@ -363,6 +434,34 @@ function DeviceSurface() {
                   </EngravedLabel>
                 </>
               ) : null}
+              {view === 'tour' && tour.state.screen === 'log' ? (
+                <>
+                  <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}>
+                    <TallKey label="+" accessibilityLabel="More reps" onPress={() => tour.dispatch({ type: 'reps', direction: 1 })} />
+                  </FocusRing>
+                  <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}>
+                    <TallKey label="−" accessibilityLabel="Fewer reps" onPress={() => tour.dispatch({ type: 'reps', direction: -1 })} />
+                  </FocusRing>
+                </>
+              ) : null}
+              {view === 'tour' && tour.state.screen === 'rest' ? (
+                <>
+                  <TallKey
+                    label="+15"
+                    text="word"
+                    accessibilityLabel="Add 15 seconds"
+                    onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: 15, now: Date.now() })}
+                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
+                  />
+                  <TallKey
+                    label="−15"
+                    text="word"
+                    accessibilityLabel="Take off 15 seconds"
+                    onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: -15, now: Date.now() })}
+                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
+                  />
+                </>
+              ) : null}
               {view === 'finish' ? (
                 <TallKey
                   label="Back"
@@ -381,6 +480,7 @@ function DeviceSurface() {
                 </View>
               ) : null}
               <View style={[styles.centered, { top: BIG_KEY_Y }]}>
+                <FocusRing active={lit === 'show' || lit === 'log' || lit === 'start'} radius={device.bigKeySize / 2}>
                 <BigKey
                   label={bigKey.label}
                   variant={bigKey.variant}
@@ -392,9 +492,14 @@ function DeviceSurface() {
                   onPressOut={() => pressed.current?.onPressOut?.()}
                   onPress={() => pressed.current?.onPress?.()}
                 />
+                </FocusRing>
               </View>
+              <FocusRing
+                active={lit === 'wheel'}
+                radius={gadgetRadius.wheel}
+                style={[styles.wheel, { right: edge + KEY_INSET, width: device.wheelWidth, height: device.wheelHeight }]}>
               <Wheel
-                stowed={view === 'home' || view === 'finish' || view === 'loading'}
+                stowed={view === 'home' || view === 'finish' || view === 'loading' || (view === 'tour' && !tourWorking)}
                 accessibilityLabel={
                   working ? work.wheel.accessibilityLabel : view === 'edit' && edit ? (edit.face.kind === 'reps' ? 'Reps' : 'Time') : 'Weight'
                 }
@@ -402,14 +507,20 @@ function DeviceSurface() {
                   working ? work.wheel.accessibilityValue : view === 'edit' && edit ? edit.face.spokenValue : undefined
                 }
                 onNotch={
-                  view === 'log' || view === 'rest'
-                    ? work.onWheelNotch
+                  view === 'tour'
+                    ? (direction) => {
+                        if (!tour.taught('wheel')) return false;
+                        tour.dispatch({ type: 'wheel', direction, step: tour.loadStep });
+                        return true;
+                      }
+                    : view === 'log' || view === 'rest'
+                      ? work.onWheelNotch
                     : view === 'edit' && edit
                       ? (direction) => edit.stepValue(direction)
                       : NO_LIFT
                 }
-                style={[styles.wheel, { right: edge + KEY_INSET }]}
               />
+              </FocusRing>
             </View>
           </View>
           {view === 'edit' && edit ? (
@@ -419,6 +530,28 @@ function DeviceSurface() {
               onPress={edit.remove}
               style={[styles.historyKey, { top: topRowY, right: edge }]}
             />
+          ) : view === 'tour' ? (
+            tour.state.screen === 'intro' ? (
+              <RoundKey
+                label="Skip"
+                text="wordSmall"
+                accessibilityLabel="Skip the tour"
+                onPress={() => {
+                  track('tour_skipped', {});
+                  tour.dispatch({ type: 'skip' });
+                }}
+                style={[styles.historyKey, { top: topRowY, right: edge }]}
+              />
+            ) : (
+              <FocusRing active={lit === 'undo'} radius={gadgetRadius.key} style={[styles.historyKey, { top: topRowY, right: edge }]}>
+                <RoundKey
+                  label="↶"
+                  accessibilityLabel="Undo last set"
+                  disabled={!tourWorking || tour.state.logged === 0}
+                  onPress={() => tour.dispatch({ type: 'undo' })}
+                />
+              </FocusRing>
+            )
           ) : view === 'loading' ? null : working ? (
             <RoundKey
               label="↶"
@@ -437,7 +570,10 @@ function DeviceSurface() {
           )}
         </DeviceBody>
         {jsClock ? <SlotGlow clock={jsClock} width={width} /> : null}
+        {tour.launch ? <TourBack motion={tourMotion} palette={palette} /> : null}
       </Animated.View>
+      {tour.launch ? <TourEdge motion={tourMotion} palette={palette} /> : null}
+      <TourReward />
       <SheetHost />
       <MomentHost />
       {/* Onboarding's "Plan ready": the dark of the finish step holds until the insert scene is in, so Home never flashes. */}
@@ -476,7 +612,7 @@ function DeviceSurface() {
   );
 }
 
-type DeviceView = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading';
+type DeviceView = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading' | 'tour';
 
 type BigKeyAction = {
   label: string;
@@ -514,6 +650,22 @@ function useDevInsertParam() {
     // Once per link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine, isHydrated]);
+}
+
+/** Development: `/?tour=1` plays the guided tour (decision 85) on the active plan, changing nothing until its reward is kept. */
+function useDevTourParam() {
+  const params = useLocalSearchParams<{ tour?: string }>();
+  const router = useRouter();
+  const { run } = useTour();
+  const { isHydrated } = useWorkoutStore();
+  const wanted = __DEV__ && params.tour === '1';
+  useEffect(() => {
+    if (!wanted || !isHydrated) return;
+    void run();
+    router.setParams({ tour: undefined });
+    // Once per link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted, isHydrated]);
 }
 
 /**

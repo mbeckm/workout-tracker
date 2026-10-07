@@ -13,6 +13,7 @@ import { KeyboardProvider } from '@/keyboard';
 import { gadgetType, sheetColors, signal, space } from '@/constants/theme';
 import { DeviceProvider, useDevice } from '@/device/device-context';
 import { FinishProvider } from '@/device/finish';
+import { TourProvider } from '@/device/tour/tour-context';
 import { logCommandForLink } from '@/device/log-link';
 import { parseWorkoutLogUrl } from '@/live-activity/url';
 import { startEntitlementSync } from '@/purchases/purchases';
@@ -77,9 +78,11 @@ function DeviceApp() {
   return (
     <FinishProvider>
       <DeviceProvider>
-        <NavigationThemeProvider value={NAVIGATION_THEME}>
-          <RootNav />
-        </NavigationThemeProvider>
+        <TourProvider>
+          <NavigationThemeProvider value={NAVIGATION_THEME}>
+            <RootNav />
+          </NavigationThemeProvider>
+        </TourProvider>
         <ScreenTracker />
         {/* Above SheetHost (which lives in the device screen); the paywall modal mounts its own. */}
         <ToastHost />

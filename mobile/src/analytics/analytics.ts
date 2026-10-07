@@ -55,7 +55,13 @@ export type AnalyticsEvent =
   /** A plan went into the slot (PLAN §9): from the rack's editor, or onboarding. */
   | { name: 'plan_activated'; props: { source: 'rack' | 'onboarding' } }
   /** The week report played (D15). No contents. */
-  | { name: 'week_completed'; props: Record<string, never> };
+  | { name: 'week_completed'; props: Record<string, never> }
+  /** The guided tour started (after onboarding, or again on a cold launch before it ended). */
+  | { name: 'tour_started'; props: Record<string, never> }
+  /** Skip on the tour's first screen. */
+  | { name: 'tour_skipped'; props: Record<string, never> }
+  /** The tour's reward was kept: the finish the owner left it on. */
+  | { name: 'tour_completed'; props: { finish: string } };
 
 const KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY?.trim() || null;
 const HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || 'https://eu.i.posthog.com';

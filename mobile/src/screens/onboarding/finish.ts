@@ -7,6 +7,8 @@ import type { WorkoutPlan } from '@/domain/types';
 import { useInsertMoment } from '@/device/activation';
 import { isProFinish } from '@/device/finish-swatch';
 import { useDevice } from '@/device/device-context';
+import { useTour } from '@/device/tour/tour-context';
+import { setTourHandoff } from '@/device/tour/tour-done';
 import { useFinish } from '@/device/finish';
 import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -18,8 +20,9 @@ import { track } from '@/analytics/analytics';
  *    leaves a plan without completed onboarding, or the reverse);
  * 2. replaces the onboarding stack with the device, so Back can never re-enter it;
  * 3. plays "Plan ready" (the cartridge insert on the device, D12) and, once it has ended (played,
- *    skipped, Reduce Motion or backgrounded), opens what comes next: the soft paywall, or the
- *    editor sheet. Never two moments at once.
+ *    skipped, Reduce Motion or backgrounded), the guided tour (decision 85: a practice set, the
+ *    launch and Graphite); once that's kept, what comes next: the soft paywall, or the editor
+ *    sheet. Never two moments at once.
  *
  * The finish (D3): a free finish was saved when it was picked. A locked one is only previewed;
  * it stays if the paywall ends with Trim Pro, otherwise the device falls back to the free finish
@@ -35,6 +38,7 @@ export function useFinishOnboarding() {
   const { openSheet } = useDevice();
   // The plan is already active (saved with `activate`), so the moment plays without Use plan's gates.
   const playPlanReady = useInsertMoment();
+  const { run: runTour } = useTour();
   const finished = useRef(false);
 
   const keepFinish = useCallback(
@@ -60,19 +64,23 @@ export function useFinishOnboarding() {
         days_per_week: plan.days.length,
         has_name: userName !== '',
       });
+      setTourHandoff(true);
       router.replace('/');
       void (async () => {
         await playPlanReady(plan.id, 'onboarding');
+        // The tour's reward saved the finish the owner left it on; only a Pro finish previewed
+        // in onboarding and then bought replaces it.
+        await runTour();
         if (isPro) {
-          keepFinish(lockedFinish ?? savedFinish);
+          if (lockedFinish) keepFinish(lockedFinish);
           return;
         }
         const outcome = await openPaywall('onboarding');
         const bought = outcome === 'purchased' || outcome === 'restored';
-        keepFinish(lockedFinish && bought ? lockedFinish : savedFinish);
+        if (lockedFinish && bought) keepFinish(lockedFinish);
       })();
     },
-    [completeOnboarding, isPro, keepFinish, playPlanReady, router, savePlan, savedFinish, userName],
+    [completeOnboarding, isPro, keepFinish, playPlanReady, router, runTour, savePlan, userName],
   );
 
   /**
@@ -92,13 +100,15 @@ export function useFinishOnboarding() {
       completeOnboarding();
       keepFinish(savedFinish);
       track('onboarding_completed', { path: 'own', days_per_week: daysPerWeek, has_name: userName !== '' });
+      setTourHandoff(true);
       router.replace('/');
       void (async () => {
         await playPlanReady(plan.id, 'onboarding');
+        await runTour();
         openSheet('editor', { planId: plan.id, new: '1' });
       })();
     },
-    [completeOnboarding, keepFinish, openSheet, playPlanReady, router, savePlan, savedFinish, userName],
+    [completeOnboarding, keepFinish, openSheet, playPlanReady, router, runTour, savePlan, savedFinish, userName],
   );
 
   return { finishWithPlan, finishBuildingOwn };

@@ -53,6 +53,8 @@ export type WorkoutSnapshot = {
   weekMomentsShown: string[];
   /** Wheel steps chosen on the drum, saved per exercise (PRODUCT-DECISIONS 80). */
   loadSteps: LoadSteps;
+  /** The guided tour has ended (finished or skipped) and given Graphite (decision 85). */
+  tourDone: boolean;
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -79,6 +81,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   appearanceMigratedToFinish: false,
   weekMomentsShown: [],
   loadSteps: {},
+  tourDone: false,
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -204,6 +207,8 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     weekMomentsShown: normalizeWeekKeys(data.weekMomentsShown),
     // Snapshots from before chosen wheel steps have none.
     loadSteps: normalizeLoadSteps(data.loadSteps),
+    // Owners from before the tour never get it, and keep Graphite.
+    tourDone: typeof data.tourDone === 'boolean' ? data.tourDone : data.hasCompletedOnboarding === true,
   };
 }
 

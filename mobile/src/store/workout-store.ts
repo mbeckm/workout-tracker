@@ -179,6 +179,10 @@ type WorkoutStoreState = {
   loadSteps: LoadSteps;
   /** Saves this lift's wheel step in the current unit; its default step clears it. */
   setLoadStep: (name: string, step: number, defaultStep: number) => void;
+  /** The guided tour ended and gave Graphite (decision 85). */
+  tourDone: boolean;
+  /** Ends the tour: Graphite is the owner's, and keeps `finish` if one is passed (the reward's pick). */
+  completeTour: (finish?: Finish) => void;
 };
 
 export type RemovedGoal = { goal: Goal; index: number };
@@ -671,6 +675,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => (current.soundsOn === soundsOn ? current : { ...current, soundsOn }));
   }, []);
 
+  const completeTour = useCallback((finish?: Finish) => {
+    setSnapshot((current) => ({ ...current, tourDone: true, finish: finish ?? current.finish }));
+  }, []);
+
   const setLoadStep = useCallback((name: string, step: number, defaultStep: number) => {
     setSnapshot((current) => ({
       ...current,
@@ -822,6 +830,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       markWeekMomentShown,
       loadSteps: snapshot.loadSteps,
       setLoadStep,
+      tourDone: snapshot.tourDone,
+      completeTour,
     };
   }, [
     snapshot,
@@ -867,6 +877,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSoundsOn,
     markWeekMomentShown,
     setLoadStep,
+    completeTour,
   ]);
 
   return createElement(WorkoutStoreContext.Provider, { value }, children);

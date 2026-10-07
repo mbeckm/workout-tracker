@@ -8,6 +8,19 @@
  */
 import { deviceReducer, initialDeviceState } from '@/device/device-state';
 import {
+  READY_BEAT,
+  TEACH,
+  TOUR_SCRIPT,
+  initialTourState,
+  lineOf,
+  litControl,
+  tourReducer,
+  type TourAction,
+  type TourLift,
+  type TourState,
+} from '@/device/tour/tour-model';
+import { finishLock } from '@/domain/finish';
+import {
   HOME_LIFT_LINES,
   displayPrescription,
   expandedRowHeight,
@@ -444,6 +457,107 @@ check('edit: the rocker moves the lift; leaving puts the editor back', () => {
   assert.equal(left.uiMode, null);
   assert.equal(left.sheet?.kind, 'editor');
   assert.equal(left.sheet?.params.dirty, '1');
+});
+
+/* The guided tour (decision 85). */
+
+const TOUR_FACTS = { name: 'Sam' };
+const TOUR_LIFTS: TourLift[] = [
+  { id: 'a', name: 'Bench', alternatives: [{ id: 'a1', name: 'DB Bench', meta: '' }, { id: 'a2', name: 'Machine', meta: '' }] },
+  { id: 'b', name: 'Incline', alternatives: [{ id: 'b1', name: 'Incline Barbell', meta: '' }, { id: 'b2', name: 'Fly', meta: '' }] },
+  { id: 'c', name: 'Press', alternatives: [] },
+];
+
+function tourStep(state: TourState, action: TourAction): TourState {
+  return tourReducer(state, action, TOUR_FACTS);
+}
+
+/** Types the current line out, then taps (a `tap` beat goes on). */
+function tourTap(state: TourState): TourState {
+  return tourStep(tourStep(state, { type: 'tap' }), { type: 'tap' });
+}
+
+check('tour: a tap first finishes the line, then goes on', () => {
+  const start = initialTourState(TOUR_LIFTS);
+  const typed = tourStep(start, { type: 'tap' });
+  assert.equal(typed.beat, 0);
+  assert.equal(typed.typed, lineOf(0, TOUR_FACTS).length);
+  const next = tourStep(typed, { type: 'tap' });
+  assert.equal(next.beat, 1);
+  assert.equal(next.previous, lineOf(0, TOUR_FACTS));
+});
+
+check('tour: controls do nothing before they are taught', () => {
+  let state = initialTourState(TOUR_LIFTS);
+  state = tourTap(tourTap(state));
+  state = tourStep(state, { type: 'show' });
+  assert.equal(state.screen, 'log');
+  const logged = tourStep(state, { type: 'log', now: 0 });
+  assert.equal(logged.logged, 0);
+  const undone = tourStep(state, { type: 'undo' });
+  assert.equal(undone.beat, state.beat);
+});
+
+check('tour: the whole script, each control answering its own line', () => {
+  let state = initialTourState(TOUR_LIFTS);
+  state = tourTap(tourTap(state));
+  state = tourStep(state, { type: 'show' });
+  state = tourTap(state);
+  assert.equal(state.beat, TEACH.wheel);
+  // The line types before the wheel lights.
+  assert.equal(litControl(state, TOUR_FACTS), null);
+  state = tourStep(state, { type: 'tap' });
+  assert.equal(litControl(state, TOUR_FACTS), 'wheel');
+  state = tourStep(state, { type: 'wheel', direction: 1, step: 2.5 });
+  assert.equal(state.beat, TEACH.wheel);
+  state = tourStep(state, { type: 'wheel', direction: 1, step: 2.5 });
+  assert.equal(state.beat, TEACH.wheel + 1);
+  assert.equal(state.weight, 25);
+  state = tourTap(state);
+  state = tourStep(state, { type: 'reps', direction: 1 });
+  assert.equal(state.reps, 9);
+  state = tourTap(state);
+  state = tourStep(state, { type: 'log', now: 1000 });
+  assert.equal(state.screen, 'rest');
+  assert.equal(state.logged, 1);
+  state = tourTap(state);
+  assert.equal(state.beat, TEACH.undo);
+  state = tourStep(state, { type: 'undo' });
+  assert.equal(state.logged, 0);
+  assert.equal(state.screen, 'log');
+  state = tourTap(state);
+  state = tourStep(state, { type: 'lift', direction: 1 });
+  assert.equal(state.lift, 1);
+  state = tourTap(state);
+  assert.equal(state.beat, TEACH.swap);
+  // Only the asked-for alternative answers the swap line.
+  const wrong = tourStep(state, { type: 'swap', alternativeId: 'b2' });
+  assert.equal(wrong.beat, TEACH.swap);
+  state = tourStep(state, { type: 'swap', alternativeId: 'b1' });
+  assert.equal(state.lifts[1].name, 'Incline Barbell');
+  assert.equal(state.previous, '');
+  state = tourTap(state);
+  assert.equal(state.beat, TEACH.menu);
+  state = tourStep(state, { type: 'menuClosed' });
+  assert.equal(state.beat, READY_BEAT);
+  assert.equal(state.screen, 'ready');
+  assert.equal(lineOf(state.beat, TOUR_FACTS), "That's the tour, Sam.");
+  state = tourTap(state);
+  assert.equal(state.beat, TOUR_SCRIPT.length - 1);
+});
+
+check('tour: Skip on the first screen goes to the end', () => {
+  const skipped = tourStep(initialTourState(TOUR_LIFTS), { type: 'skip' });
+  assert.equal(skipped.beat, READY_BEAT);
+  assert.equal(skipped.screen, 'ready');
+});
+
+check('finishes: Graphite is earned by the tour, Pro finishes need Pro', () => {
+  assert.equal(finishLock('101', { isPro: false, tourDone: false }), 'tour');
+  assert.equal(finishLock('101', { isPro: false, tourDone: true }), null);
+  assert.equal(finishLock('707', { isPro: false, tourDone: true }), 'pro');
+  assert.equal(finishLock('707', { isPro: true, tourDone: false }), null);
+  assert.equal(finishLock('212', { isPro: false, tourDone: false }), null);
 });
 
 if (failures > 0) {
