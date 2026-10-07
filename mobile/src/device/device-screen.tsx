@@ -393,9 +393,6 @@ function DeviceSurface() {
               </View>
               <Wheel
                 stowed={view === 'home' || view === 'finish' || view === 'loading'}
-                label={
-                  view === 'log' || view === 'rest' ? work.wheel.label : view === 'edit' ? edit?.face.wheelLabel : undefined
-                }
                 accessibilityLabel={
                   working ? work.wheel.accessibilityLabel : view === 'edit' && edit ? (edit.face.kind === 'reps' ? 'Reps' : 'Time') : 'Weight'
                 }
