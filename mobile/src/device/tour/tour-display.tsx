@@ -50,7 +50,7 @@ export function TourDisplay({ onName }: { onName: () => void }) {
       accessibilityHint={waitsForTap ? 'Continues' : undefined}
       style={full ? styles.chatFull : [styles.chat, { height: tourGeometry.chatHeight }]}>
       {state.previous ? (
-        <LcdText style={[full ? tourType.lcdChatLarge : tourType.lcdChat, styles.dim]}>
+        <LcdText numberOfLines={full ? undefined : 1} style={[full ? tourType.lcdChatLarge : tourType.lcdChat, styles.dim]}>
           {state.previous.toUpperCase()}
         </LcdText>
       ) : null}
@@ -69,25 +69,26 @@ export function TourDisplay({ onName }: { onName: () => void }) {
 
   if (full) {
     return (
-      <View style={StyleSheet.absoluteFill}>
+      <Pressable accessible={false} onPress={tap} style={StyleSheet.absoluteFill}>
         {state.screen === 'ready' ? (
           <LcdText style={[tourType.lcdReady, styles.ready]}>READY</LcdText>
         ) : null}
         {chat}
-      </View>
+      </Pressable>
     );
   }
 
   const contentHeight = Math.max(0, height - tourGeometry.chatHeight);
   return (
     <View style={StyleSheet.absoluteFill}>
-      <View style={[styles.content, { height: contentHeight }]}>
+      {/* "Tap my screen": anywhere on the display goes on (the lift name keeps its own tap). */}
+      <Pressable accessible={false} onPress={tap} style={[styles.content, { height: contentHeight }]}>
         {state.screen === 'rest' ? (
           <TourRest height={contentHeight} />
         ) : (
           <TourLog height={contentHeight} onName={onName} />
         )}
-      </View>
+      </Pressable>
       {chat}
     </View>
   );

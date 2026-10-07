@@ -111,6 +111,7 @@ function DeviceSurface() {
   const pressed = useRef<BigKeyAction | null>(null);
   useDeviceParams();
   useDevInsertParam();
+  useDevTourParam();
 
   // Readers outside the session (`useDevice().mode`, Home's stamp) see the log's mode too.
   useEffect(() => {
@@ -197,11 +198,12 @@ function DeviceSurface() {
       case 'tour':
         switch (tour.state.screen) {
           case 'intro':
-            return { label: 'Show me', accessibilityLabel: 'Show me', variant: 'primary' as const, onPress: () => tour.dispatch({ type: 'show' }) };
+            // Metal until Trim's line asks for it: before that, the screen is what to tap.
+            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('metal' as const), onPress: () => tour.dispatch({ type: 'show' }) };
           case 'rest':
             return { label: 'Skip', accessibilityLabel: 'Skip rest', variant: 'metal' as const, onPress: () => tour.dispatch({ type: 'skipRest' }) };
           case 'ready':
-            return { label: 'Start', accessibilityLabel: 'Start', variant: 'primary' as const, onPress: tour.lit === 'start' ? tour.start : undefined };
+            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('metal' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
           default:
             return { label: 'Log', accessibilityLabel: 'Log set', variant: 'primary' as const, onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
         }
@@ -648,6 +650,22 @@ function useDevInsertParam() {
     // Once per link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine, isHydrated]);
+}
+
+/** Development: `/?tour=1` plays the guided tour (decision 85) on the active plan, changing nothing until its reward is kept. */
+function useDevTourParam() {
+  const params = useLocalSearchParams<{ tour?: string }>();
+  const router = useRouter();
+  const { run } = useTour();
+  const { isHydrated } = useWorkoutStore();
+  const wanted = __DEV__ && params.tour === '1';
+  useEffect(() => {
+    if (!wanted || !isHydrated) return;
+    void run();
+    router.setParams({ tour: undefined });
+    // Once per link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted, isHydrated]);
 }
 
 /**

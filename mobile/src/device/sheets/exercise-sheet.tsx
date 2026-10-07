@@ -248,6 +248,7 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
 
               {swappable ? (
                 <>
+                  {swapTask ? <TrimSays>{`Swap it for ${swapTask.name}.`}</TrimSays> : null}
                   <SectionLabel>Swap for</SectionLabel>
                   {alternatives.length > 0 ? (
                     <SheetCard>
@@ -267,9 +268,7 @@ export function ExerciseSheet({ params }: { params: SheetParams }) {
                       ))}
                     </SheetCard>
                   ) : null}
-                  {touring ? (
-                    swapTask ? <TrimSays>{`Swap it for ${swapTask.name}.`}</TrimSays> : null
-                  ) : (
+                  {touring ? null : (
                     <SheetCard>
                       <SheetRow size="compact" title="Choose another" onPress={() => setPicking(true)} />
                     </SheetCard>

@@ -131,10 +131,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setBefore(store.finish);
     setPick(EARNED_FINISH);
     setRipple(0);
+    closeSheet();
     setUiMode('tour');
     track('tour_started', {});
     return whenTourDone();
-  }, [practiceLifts, setUiMode, store.customExercises, store.finish]);
+  }, [closeSheet, practiceLifts, setUiMode, store.customExercises, store.finish]);
 
   // Typing: one character at a time while a line is incomplete.
   const line = tour ? lineOf(tour.beat, facts) : '';

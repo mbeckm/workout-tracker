@@ -2261,7 +2261,7 @@ export const tourColors = {
 
 export const tourGeometry = {
   /** Trim's chat strip at the foot of the display, and its dotted rule. */
-  chatHeight: 100,
+  chatHeight: 108,
   chatRuleWidth: 2,
   chatRuleDash: 2,
   chatGap: 7,
@@ -2294,6 +2294,4 @@ export const tourGeometry = {
   wiggleLift: -9,
   wiggleScale: 0.53,
   wiggleTilts: [-4, 3, -1.6, 0.6] as readonly number[],
-  /** The reward picker's swatches. */
-  swatchWidth: 64,
 } as const;

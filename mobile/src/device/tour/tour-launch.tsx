@@ -19,6 +19,7 @@ import { finishColors, fontScaleCap, gadgetRadius, gadgetType, insertGeometry, l
 import { EARNED_FINISH, FINISHES, FREE_FINISHES, finishLock, type Finish } from '@/domain/finish';
 import type { DevicePalette } from '@/device/finish';
 import { FinishSwatch } from '@/device/finish-swatch';
+import { swatchWidth } from '@/device/sheets/finishes-sheet';
 import { PillButton } from '@/device/sheets/primitives';
 import { DEVICE, EASE_DISPLAY_FN, EASE_STAMP_FN, TOUR_POSE, TOUR_POSE_EASE, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
@@ -280,6 +281,8 @@ export function TourReward() {
   const lock = finishLock(pick, { isPro, tourDone: true });
   const isNew = pick === EARNED_FINISH && pick !== before;
   const finishes = useMemo(() => rewardFinishes(before, EARNED_FINISH), [before]);
+  // The finishes sheet's swatch size, so the reward looks like the picker it previews.
+  const swatchW = swatchWidth(useWindowDimensions().width);
 
   const stamp = useSharedValue(0);
   const rise = useSharedValue(0);
@@ -344,7 +347,7 @@ export function TourReward() {
             <FinishSwatch
               key={id}
               id={id}
-              width={tourGeometry.swatchWidth}
+              width={swatchW}
               selected={id === pick}
               lock={finishLock(id, { isPro, tourDone: true })}
               tag={id === EARNED_FINISH && id !== before ? 'NEW' : undefined}
