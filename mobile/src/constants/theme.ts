@@ -1217,6 +1217,14 @@ export const plansGeometry = {
   pickPadY: 12,
   pickPadX: 18,
   pickGap: 12,
+  /** A row with the lift's art tile: the tile sets the height (52 + 2 × 10 = 72). */
+  pickArtPadY: 10,
+  /** The art tile (decision 83): a small lcd with the lift's working frame. */
+  artTile: 52,
+  artTileRadius: 10,
+  artTileRing: 1,
+  /** A lift already in the day keeps its tile, quieter. */
+  artTileTaken: 0.4,
   tick: 30,
   tickRing: 2,
 } as const;

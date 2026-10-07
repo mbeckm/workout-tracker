@@ -776,7 +776,7 @@ The plan name (28) with an `Active` badge, tappable to rename inline. Per day a 
 
 ### Add lifts (PA3) [23]
 
-Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways (catalog sections; `Recent` first when there are recents; a chip shows that section, its lifts A to Z by name, `Recent` newest first; search results stay ranked by match), rows with name, `kit, muscle` and a round tick (orange when picked; lifts already in the day read `In this day`), creating a custom exercise from a search with no exact match. A sticky `Add N lifts` (`Pick lifts`, dimmed, with none). The list is the shared `ExercisePicker` (`multi`, or `replace` for Choose another).
+Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways (catalog sections; `Recent` first when there are recents; a chip shows that section, its lifts A to Z by name, `Recent` newest first; search results stay ranked by match), rows led by the lift's art tile (decision 83: a 52 `lcd` square, r10, 1 px `rule` ring, showing the lift's last frame cropped to the figure, still; rows without art, such as stretches, cardio and custom exercises, show the bare dot grid so the column lines up; 72 tall), then name, `kit, muscle` and a round tick (orange when picked; lifts already in the day read `In this day`, their tile at 40%), creating a custom exercise from a search with no exact match. A sticky `Add N lifts` (`Pick lifts`, dimmed, with none). The list is the shared `ExercisePicker` (`multi`, or `replace` for Choose another).
 
 ### Progress (QA1, without the gauge) [18]
 
