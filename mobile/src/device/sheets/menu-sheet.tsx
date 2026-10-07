@@ -7,7 +7,6 @@ import {
   fontScaleCap,
   gadgetRadius,
   gadgetType,
-  lcd,
   sheetColors,
   sheetGeometry,
   finishColors,
@@ -144,7 +143,7 @@ function FinishCard({ onPress }: { onPress: () => void }) {
 
 /** The device in miniature (prototype menu): body, screen, the big key and a sliver of wheel. */
 function MiniDevice() {
-  const { finish, palette } = useFinish();
+  const { finish, palette, screen: lcdOwn } = useFinish();
   const id = `mini-${finish}`;
   const w = sheetGeometry.miniDeviceW;
   const h = sheetGeometry.miniDeviceH;
@@ -155,17 +154,18 @@ function MiniDevice() {
     <View style={[styles.mini, { transform: [{ rotate: `${sheetGeometry.miniDeviceTilt}deg` }] }]}>
       <Svg width={w} height={h}>
         <Defs>
-          <LinearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={palette.body1} />
-            <Stop offset="1" stopColor={palette.body2} />
+          <LinearGradient id={`${id}-body`} x1="0" y1="0" x2={palette.bodyStops ? '1' : '0'} y2="1">
+            {(palette.bodyStops ?? [palette.body1, palette.body2]).map((color, i, all) => (
+              <Stop key={color} offset={i / (all.length - 1)} stopColor={color} />
+            ))}
           </LinearGradient>
           <LinearGradient id={`${id}-key`} x1="0.5" y1="0" x2="0.5" y2="1">
             <Stop offset="0" stopColor={palette.bigKeyHi} />
             <Stop offset="1" stopColor={palette.bigKeyLo} />
           </LinearGradient>
           <Pattern id={`${id}-ridges`} width={wheel.w} height={4} patternUnits="userSpaceOnUse">
-            <Rect width={wheel.w} height={3} fill={deviceColors.wheelLight} />
-            <Rect y={3} width={wheel.w} height={1} fill={deviceColors.wheelDark} />
+            <Rect width={wheel.w} height={3} fill={palette.wheelLight} />
+            <Rect y={3} width={wheel.w} height={1} fill={palette.wheelDark} />
           </Pattern>
         </Defs>
         <Rect width={w} height={h} rx={gadgetRadius.miniDevice} fill={`url(#${id}-body)`} />
@@ -175,7 +175,7 @@ function MiniDevice() {
           width={screen.w}
           height={screen.h}
           rx={gadgetRadius.miniScreen}
-          fill={lcd.lcd}
+          fill={lcdOwn.lcd}
         />
         <Rect
           x={key.cx - key.r}

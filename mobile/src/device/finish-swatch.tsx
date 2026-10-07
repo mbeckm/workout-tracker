@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
+  bodyFinish,
   finishColors,
   fontScaleCap,
   gadgetRadius,
@@ -20,11 +21,11 @@ import {
   sheetGeometry,
   space,
 } from '@/constants/theme';
-import type { Finish } from '@/domain/finish';
+import { FINISHES, FREE_FINISHES, type Finish } from '@/domain/finish';
 import { DEVICE, EASE_DISPLAY_FN } from '@/motion';
 
-/** Finishes Trim Pro adds (D3): 212 and 101 are free. */
-export const PRO_FINISHES: readonly Finish[] = ['305', '408'];
+/** Finishes Trim Pro adds (D3, decision 80): every machine but Aluminium and Graphite. */
+export const PRO_FINISHES: readonly Finish[] = FINISHES.filter((id) => !FREE_FINISHES.includes(id));
 
 export function isProFinish(finish: Finish): boolean {
   return PRO_FINISHES.includes(finish);
@@ -93,7 +94,9 @@ export function FinishSwatch({
             styles.swatch,
             {
               backgroundColor: colors.body2,
-              experimental_backgroundImage: `linear-gradient(180deg, ${colors.body1}, ${colors.body2})`,
+              experimental_backgroundImage: colors.bodyStops
+                ? `linear-gradient(${HOLO_ANGLE}deg, ${colors.bodyStops.join(', ')})`
+                : `linear-gradient(180deg, ${colors.body1}, ${colors.body2})`,
             },
           ]}>
           <Text
@@ -121,6 +124,7 @@ export function FinishSwatch({
 }
 
 const RING = sheetGeometry.swatchRing;
+const HOLO_ANGLE = bodyFinish.holoAngle;
 const PAD = sheetGeometry.swatchEdgePad;
 
 const styles = StyleSheet.create({

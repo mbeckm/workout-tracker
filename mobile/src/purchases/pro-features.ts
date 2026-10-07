@@ -48,7 +48,7 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   {
     id: 'finishes',
     title: 'Every finish',
-    detail: 'Signal orange and Bone, on the device.',
+    detail: 'Pocket, Bunker, Field and Holo machines.',
     symbol: 'paintpalette',
     shipped: true,
     reasons: ['finishes'],
