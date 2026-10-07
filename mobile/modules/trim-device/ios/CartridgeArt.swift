@@ -43,10 +43,12 @@ struct InsertFinish {
 
   static func named(_ id: String) -> InsertFinish {
     switch id {
-    case "101": return InsertFinish(body1: UIColor(hex: 0x3A3936), body2: UIColor(hex: 0x232220), keyEdge: UIColor(hex: 0xA9A69E))
-    case "305": return InsertFinish(body1: UIColor(hex: 0xFF7A35), body2: UIColor(hex: 0xDE470A), keyEdge: UIColor(hex: 0x9E3A0A))
-    case "408": return InsertFinish(body1: UIColor(hex: 0xEFE6D3), body2: UIColor(hex: 0xD9CBB0), keyEdge: UIColor(hex: 0xA9A69E))
-    default: return InsertFinish(body1: UIColor(hex: 0xE4E2DC), body2: UIColor(hex: 0xD2CFC8), keyEdge: UIColor(hex: 0xA9A69E))
+    case "101": return InsertFinish(body1: UIColor(hex: 0x3D3C39), body2: UIColor(hex: 0x1D1C1A), keyEdge: UIColor(hex: 0x0E0E0D))
+    case "707": return InsertFinish(body1: UIColor(hex: 0x727254), body2: UIColor(hex: 0x4A4933), keyEdge: UIColor(hex: 0x2A291C))
+    case "089": return InsertFinish(body1: UIColor(hex: 0xDBD9D1), body2: UIColor(hex: 0xC3C0B6), keyEdge: UIColor(hex: 0x222328))
+    case "077": return InsertFinish(body1: UIColor(hex: 0x6E6948), body2: UIColor(hex: 0x47432D), keyEdge: UIColor(hex: 0x5E4518))
+    case "777": return InsertFinish(body1: UIColor(hex: 0xF7D6EA), body2: UIColor(hex: 0xEBD5F8), keyEdge: UIColor(hex: 0xB7B0CC))
+    default: return InsertFinish(body1: UIColor(hex: 0xE6E4DE), body2: UIColor(hex: 0xCFCCC4), keyEdge: UIColor(hex: 0xA9A69E))
     }
   }
 }

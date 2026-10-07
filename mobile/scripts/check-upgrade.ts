@@ -177,8 +177,8 @@ check('D2: dark appearance → 101 Graphite, once, nothing else touched', () => 
     assert.equal(migrated.appearanceMigratedToFinish, true);
     assert.deepEqual({ ...migrated, finish: loaded.finish, appearanceMigratedToFinish: false }, loaded);
     // Runs once: a later pick survives the next launch.
-    const picked = withAppearanceMigratedToFinish({ ...migrated, finish: '305' }, 'dark');
-    assert.equal(picked.finish, '305');
+    const picked = withAppearanceMigratedToFinish({ ...migrated, finish: '707' }, 'dark');
+    assert.equal(picked.finish, '707');
   }
 });
 
