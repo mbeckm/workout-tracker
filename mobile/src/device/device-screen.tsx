@@ -37,6 +37,7 @@ import {
   HoldRing,
   LampPlate,
   MenuGlyph,
+  NextCard,
   Rocker,
   RollCall,
   RoundKey,
@@ -45,6 +46,7 @@ import {
   Wheel,
   useRollCall,
 } from '@/device/parts';
+import { displayPrescription } from '@/device/home-model';
 import { planRollRows, sessionRollRows, tourRollRows } from '@/device/roll-call-model';
 import { SheetHost } from '@/device/sheets';
 import { FocusRing } from '@/device/tour/focus-ring';
@@ -122,11 +124,18 @@ function DeviceSurface() {
     setLogMode(log.mode);
   }, [log.mode, setLogMode]);
 
-  // A sheet ends the roll call; so does any key in the bottom row (onTouchStart below).
+  // A sheet ends the roll call and the hand-off; so does any key in the bottom row (onTouchStart below).
   const sheetOpen = state.sheet != null;
+  const { endHandoff } = work;
   useEffect(() => {
-    if (sheetOpen) dismissRoll();
-  }, [sheetOpen, dismissRoll]);
+    if (!sheetOpen) return;
+    dismissRoll();
+    endHandoff();
+  }, [sheetOpen, dismissRoll, endHandoff]);
+  const dismissOverlays = () => {
+    dismissRoll();
+    endHandoff();
+  };
 
   if (!fontsReady) {
     return null;
@@ -245,6 +254,15 @@ function DeviceSurface() {
       <RollCall title={edit.dayName.toUpperCase()} rows={planRollRows(edit.day.exercises)} index={edit.index} from={rollFrom} />
     ) : tourWorking ? (
       <RollCall title="PRACTICE" rows={tourRollRows(tour.state)} index={tour.state.lift} from={rollFrom} />
+    ) : null;
+  // The hand-off (decision 87): a set that finished a lift names the next one before rest shows.
+  const nextCard =
+    work.handoff && !sheetUp && (view === 'log' || view === 'rest') ? (
+      <NextCard
+        key={work.handoff.prescription.id}
+        name={work.handoff.prescription.name.toUpperCase()}
+        meta={displayPrescription(work.handoff.prescription)}
+      />
     ) : null;
 
   return (
@@ -367,10 +385,12 @@ function DeviceSurface() {
                   prevDisabled={log.exerciseIndex <= 0}
                   nextDisabled={log.exerciseIndex >= log.drafts.length - 1}
                   onPrev={() => {
+                    endHandoff();
                     showRoll(log.exerciseIndex);
                     log.stepExercise(-1);
                   }}
                   onNext={() => {
+                    endHandoff();
                     showRoll(log.exerciseIndex);
                     log.stepExercise(1);
                   }}
@@ -382,7 +402,7 @@ function DeviceSurface() {
 
             <Display
               contentKey={contentKey}
-              overlay={rollCall}
+              overlay={rollCall ?? nextCard}
               accessibilityLabel={working ? work.display.summary : view === 'edit' ? edit?.summary : undefined}
               accessibilityActions={working ? work.display.actions : undefined}
               onAccessibilityAction={working ? work.display.onAction : undefined}
@@ -417,7 +437,7 @@ function DeviceSurface() {
               )}
             </Display>
 
-            <View style={styles.bottomRow} onTouchStart={dismissRoll}>
+            <View style={styles.bottomRow} onTouchStart={dismissOverlays}>
               {view === 'log' && log.controls?.keys ? (
                 <>
                   <TallKey

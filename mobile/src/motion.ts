@@ -146,6 +146,13 @@ export const DEVICE = {
   ROLL_MOVE: 180,
   ROLL_HOLD: 900,
   ROLL_OUT: 180,
+  /**
+   * The hand-off (decision 87): after a set that finishes a lift, the next lift's name comes in
+   * over NEXT_IN, holds NEXT_HOLD, then shrinks up toward the header over NEXT_OUT.
+   */
+  NEXT_IN: 140,
+  NEXT_HOLD: 1400,
+  NEXT_OUT: 280,
   /** Lamp colour change (`transition: background .25s`). */
   LAMP: 250,
   /** Hold to finish: linear ring fill. */
