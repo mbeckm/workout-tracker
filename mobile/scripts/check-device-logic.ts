@@ -19,6 +19,7 @@ import {
   type TourLift,
   type TourState,
 } from '@/device/tour/tour-model';
+import { rollWindow, tourRollRows } from '@/device/roll-call-model';
 import { finishLock } from '@/domain/finish';
 import {
   HOME_LIFT_LINES,
@@ -558,6 +559,23 @@ check('finishes: Graphite is earned by the tour, Pro finishes need Pro', () => {
   assert.equal(finishLock('707', { isPro: false, tourDone: true }), 'pro');
   assert.equal(finishLock('707', { isPro: true, tourDone: false }), null);
   assert.equal(finishLock('212', { isPro: false, tourDone: false }), null);
+});
+
+check('roll call: every row fits, or a window keeps the current lift near the middle', () => {
+  assert.deepEqual(rollWindow(6, 2, 8), { start: 0, end: 6 });
+  assert.deepEqual(rollWindow(8, 0, 6), { start: 0, end: 6 });
+  assert.deepEqual(rollWindow(8, 4, 6), { start: 1, end: 7 });
+  assert.deepEqual(rollWindow(8, 7, 6), { start: 2, end: 8 });
+  assert.deepEqual(rollWindow(3, 1, 0), { start: 1, end: 2 });
+});
+
+check('roll call: the tour marks lifts before the current one done', () => {
+  const state = { ...initialTourState(TOUR_LIFTS), lift: 1, logged: 1 };
+  const rows = tourRollRows(state);
+  assert.deepEqual(
+    rows.map((row) => [row.done, row.meta]),
+    TOUR_LIFTS.map((_, index) => [index < 1, `${index === 1 ? 1 : 0}/${state.setsPerLift}`]),
+  );
 });
 
 if (failures > 0) {

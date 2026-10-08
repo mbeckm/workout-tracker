@@ -1401,6 +1401,25 @@ export const logGeometry = {
    * reaches the stats.
    */
   finishGridClear: 6,
+  /**
+   * The roll call (decision 86): today's lifts as rows (`lcdRow`), 8 apart (room for the frame's
+   * ring), centred under the header; a display too short for all of them shows a window around
+   * the current lift.
+   */
+  rollRowHeight: 36,
+  rollRowGap: 8,
+  rollHeaderGap: 12,
+  /**
+   * The hand-off card (decision 87): `NEXT`, the lift's name in `lcdTitle` (up to 3 lines,
+   * shrinking to fit) and its prescription, 14 apart, centred. It leaves by rising 150 and
+   * shrinking to half, toward the header.
+   */
+  nextGap: 14,
+  nextNameLines: 3,
+  nextNameMinScale: 0.6,
+  nextOutRise: 150,
+  nextOutScale: 0.5,
+  nextInScale: 0.97,
 } as const;
 
 /** Today (M3, screen 07; prototype `.lift`, `.bars`, `.info`). */

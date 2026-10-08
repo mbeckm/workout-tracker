@@ -149,6 +149,16 @@ export function useLogDevice() {
   const [flash, setFlash] = useState(0);
   const nudgeId = useRef(0);
 
+  // The hand-off (decision 87): a set that finishes a lift names the next one for NEXT_HOLD.
+  const [handoff, setHandoff] = useState<number | null>(null);
+  const handoffTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endHandoff = useCallback(() => {
+    if (handoffTimer.current) clearTimeout(handoffTimer.current);
+    handoffTimer.current = null;
+    setHandoff(null);
+  }, []);
+  useEffect(() => endHandoff, [endHandoff]);
+
   // Wheel notches can outrun renders: the next notch steps from the values the last one made.
   const latest = useRef({ values: log.stage?.values ?? null, kind: log.controls?.drum ?? null, increment: log.increment });
   useEffect(() => {
@@ -206,6 +216,14 @@ export function useLogDevice() {
       setFlash((value) => value + 1);
     } else if (result.kind === 'logged' || result.kind === 'saved') {
       haptics.logSet();
+    }
+    if (result.kind === 'logged' && result.advancedTo != null) {
+      if (handoffTimer.current) clearTimeout(handoffTimer.current);
+      setHandoff(result.advancedTo);
+      handoffTimer.current = setTimeout(() => {
+        handoffTimer.current = null;
+        setHandoff(null);
+      }, DEVICE.NEXT_HOLD);
     }
   }, [haptics, log]);
 
@@ -318,5 +336,8 @@ export function useLogDevice() {
     cycleLoadStep,
     wheel,
     display: { summary, actions, onAction: onDisplayAction },
+    /** The lift the hand-off names while it shows; gone once the log is elsewhere (Undo, the rocker). */
+    handoff: handoff != null && handoff === log.exerciseIndex ? log.drafts[handoff] ?? null : null,
+    endHandoff,
   };
 }

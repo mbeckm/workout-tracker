@@ -178,6 +178,14 @@ check('auto-advance: a finished lift moves to the next lift with work left', () 
   assert.equal(stageOf(state)?.setIndex, 0);
 });
 
+check('the hand-off: only the set that finishes a lift reports the lift it moved to', () => {
+  const start = stateFor([lift('Bench press'), lift('Row')]);
+  const first = completeSet(start, ctx);
+  assert.equal(first.result.kind === 'logged' && first.result.advancedTo, null);
+  const second = completeSet(first.state, ctx);
+  assert.equal(second.result.kind === 'logged' && second.result.advancedTo, 1);
+});
+
 check('auto-advance is forward only (wrap: false)', () => {
   let state = stateFor([lift('Bench press'), lift('Row'), lift('Squat')]);
   state = { ...state, exerciseIndex: 2 };

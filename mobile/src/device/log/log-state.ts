@@ -325,6 +325,8 @@ export type CompleteResult =
       extra: boolean;
       /** The workout's last set: no rest, finish mode. */
       workoutDone: boolean;
+      /** The lift is done and the log moved on to this lift (its index), else null (decision 87). */
+      advancedTo: number | null;
     };
 
 /**
@@ -405,13 +407,15 @@ export function completeSet(state: LogState, context: CompleteContext): { state:
     restOver: workoutDone ? state.restOver : false,
     finishing: workoutDone,
   };
+  let advancedTo: number | null = null;
   if (!workoutDone && exerciseIsComplete(drafts[state.exerciseIndex])) {
     const advanceTo = nextIncompleteIndex(drafts, state.exerciseIndex, { wrap: false });
     if (advanceTo >= 0) {
       next = { ...next, exerciseIndex: advanceTo };
+      advancedTo = advanceTo;
     }
   }
-  return { state: next, result: { kind: 'logged', exerciseId, setId, setNumber, extra, workoutDone } };
+  return { state: next, result: { kind: 'logged', exerciseId, setId, setNumber, extra, workoutDone, advancedTo } };
 }
 
 // ---------------------------------------------------------------------------

@@ -47,6 +47,7 @@ export function useDisplayHeight(): number {
 export function Display({
   contentKey,
   children,
+  overlay,
   style,
   accessibilityLabel,
   accessibilityActions,
@@ -55,6 +56,8 @@ export function Display({
   /** Change it on every mode change (home → log → rest …) to play the swap. */
   contentKey: string;
   children: ReactNode;
+  /** Drawn over the content and outliving its swaps (the roll call, decision 86). */
+  overlay?: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** One summary per mode (PLAN §7 VoiceOver). */
   accessibilityLabel?: string;
@@ -90,6 +93,7 @@ export function Display({
           style={StyleSheet.absoluteFill}>
           <DisplayHeight value={height}>{children}</DisplayHeight>
         </Animated.View>
+        {overlay ? <DisplayHeight value={height}>{overlay}</DisplayHeight> : null}
         <ScreenSurface screen={screen} id={`screen-${finish}`} />
       </View>
     </View>
