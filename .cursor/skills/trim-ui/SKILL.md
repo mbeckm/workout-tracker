@@ -92,7 +92,8 @@ Information lives on the lowest layer that serves the job:
 | 96 (the device's top row stays visible) | menu, plans rack, history wall, settings, and other short sheets |
 | 60 (tall) | progress, lift detail, exercise, editor, add lifts, receipt |
 | 200 | Today |
-| 430 | finishes (short, so the device behind is visible while you pick) |
+| bottom-anchored, 372 tall | finishes (as tall as its content, so the device behind stays visible on every phone height; a fixed top edge made it grow on tall phones) |
+| 430 | keypad (short, so the drum stays in view) |
 
 ### Jobs
 

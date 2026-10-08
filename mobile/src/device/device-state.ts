@@ -44,11 +44,11 @@ export function isSheetKind(value: unknown): value is SheetKind {
 export type SheetParams = Readonly<Record<string, string | undefined>>;
 
 /** Where a sheet's top edge sits (SPEC §6 Top edge); the host maps it to points. */
-export type SheetTop = 'default' | 'tall' | 'today' | 'finishes';
+export type SheetTop = 'default' | 'tall' | 'today' | 'finishes' | 'swatches';
 
 const TOPS: Record<SheetKind, SheetTop> = {
   menu: 'default',
-  finishes: 'finishes',
+  finishes: 'swatches',
   settings: 'default',
   plans: 'default',
   editor: 'tall',
