@@ -1399,6 +1399,14 @@ export const logGeometry = {
    * reaches the stats.
    */
   finishGridClear: 6,
+  /**
+   * The roll call (decision 86): today's lifts as rows (`lcdRow`), 8 apart (room for the frame's
+   * ring), centred under the header; a display too short for all of them shows a window around
+   * the current lift.
+   */
+  rollRowHeight: 36,
+  rollRowGap: 8,
+  rollHeaderGap: 12,
 } as const;
 
 /** Today (M3, screen 07; prototype `.lift`, `.bars`, `.info`). */

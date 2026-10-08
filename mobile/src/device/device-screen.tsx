@@ -38,11 +38,14 @@ import {
   LampPlate,
   MenuGlyph,
   Rocker,
+  RollCall,
   RoundKey,
   TallKey,
   Well,
   Wheel,
+  useRollCall,
 } from '@/device/parts';
+import { planRollRows, sessionRollRows, tourRollRows } from '@/device/roll-call-model';
 import { SheetHost } from '@/device/sheets';
 import { FocusRing } from '@/device/tour/focus-ring';
 import { useTour } from '@/device/tour/tour-context';
@@ -112,11 +115,18 @@ function DeviceSurface() {
   useDeviceParams();
   useDevInsertParam();
   useDevTourParam();
+  const { from: rollFrom, show: showRoll, dismiss: dismissRoll } = useRollCall();
 
   // Readers outside the session (`useDevice().mode`, Home's stamp) see the log's mode too.
   useEffect(() => {
     setLogMode(log.mode);
   }, [log.mode, setLogMode]);
+
+  // A sheet ends the roll call; so does any key in the bottom row (onTouchStart below).
+  const sheetOpen = state.sheet != null;
+  useEffect(() => {
+    if (sheetOpen) dismissRoll();
+  }, [sheetOpen, dismissRoll]);
 
   if (!fontsReady) {
     return null;
@@ -221,6 +231,22 @@ function DeviceSurface() {
   const lit = view === 'tour' && !sheetUp ? tour.lit : null;
   const tourWorking = view === 'tour' && (tour.state.screen === 'log' || tour.state.screen === 'rest');
 
+  // The roll call (decision 86): wherever the rocker moves between lifts, today's lifts flash
+  // over the display and a ring steps to the new one.
+  const rollCall =
+    rollFrom == null || sheetUp ? null : (view === 'log' || view === 'rest') && log.drafts.length > 0 ? (
+      <RollCall
+        title={(log.day?.title ?? '').toUpperCase()}
+        rows={sessionRollRows(log.drafts, log.lamps)}
+        index={log.exerciseIndex}
+        from={rollFrom}
+      />
+    ) : view === 'edit' && edit ? (
+      <RollCall title={edit.dayName.toUpperCase()} rows={planRollRows(edit.day.exercises)} index={edit.index} from={rollFrom} />
+    ) : tourWorking ? (
+      <RollCall title="PRACTICE" rows={tourRollRows(tour.state)} index={tour.state.lift} from={rollFrom} />
+    ) : null;
+
   return (
     <View style={styles.root}>
       <StatusBar style={onScene ? 'light' : finishColors[finish].statusBar} />
@@ -280,8 +306,14 @@ function DeviceSurface() {
                   lamps={edit.day.exercises.map((_, index) => (index === edit.index ? 'on' : 'off'))}
                   prevDisabled={edit.index <= 0}
                   nextDisabled={edit.index >= edit.count - 1}
-                  onPrev={edit.prev}
-                  onNext={edit.next}
+                  onPrev={() => {
+                    showRoll(edit.index);
+                    edit.prev();
+                  }}
+                  onNext={() => {
+                    showRoll(edit.index);
+                    edit.next();
+                  }}
                   onMiddle={edit.back}
                   middleLabel="Back to the plan"
                   style={styles.rocker}
@@ -294,8 +326,14 @@ function DeviceSurface() {
                       lamps={tourLiftLamps(tour.state)}
                       prevDisabled={!tour.taught('next') || tour.state.lift <= 0}
                       nextDisabled={!tour.taught('next') || tour.state.lift >= tour.state.lifts.length - 1}
-                      onPrev={() => tour.dispatch({ type: 'lift', direction: -1 })}
-                      onNext={() => tour.dispatch({ type: 'lift', direction: 1 })}
+                      onPrev={() => {
+                        showRoll(tour.state.lift);
+                        tour.dispatch({ type: 'lift', direction: -1 });
+                      }}
+                      onNext={() => {
+                        showRoll(tour.state.lift);
+                        tour.dispatch({ type: 'lift', direction: 1 });
+                      }}
                       onMiddle={() => undefined}
                       middleLabel="Lifts"
                     />
@@ -328,8 +366,14 @@ function DeviceSurface() {
                   lamps={log.lamps}
                   prevDisabled={log.exerciseIndex <= 0}
                   nextDisabled={log.exerciseIndex >= log.drafts.length - 1}
-                  onPrev={() => log.stepExercise(-1)}
-                  onNext={() => log.stepExercise(1)}
+                  onPrev={() => {
+                    showRoll(log.exerciseIndex);
+                    log.stepExercise(-1);
+                  }}
+                  onNext={() => {
+                    showRoll(log.exerciseIndex);
+                    log.stepExercise(1);
+                  }}
                   onMiddle={() => openSheet('today')}
                 />
               )}
@@ -338,6 +382,7 @@ function DeviceSurface() {
 
             <Display
               contentKey={contentKey}
+              overlay={rollCall}
               accessibilityLabel={working ? work.display.summary : view === 'edit' ? edit?.summary : undefined}
               accessibilityActions={working ? work.display.actions : undefined}
               onAccessibilityAction={working ? work.display.onAction : undefined}
@@ -372,7 +417,7 @@ function DeviceSurface() {
               )}
             </Display>
 
-            <View style={styles.bottomRow}>
+            <View style={styles.bottomRow} onTouchStart={dismissRoll}>
               {view === 'log' && log.controls?.keys ? (
                 <>
                   <TallKey

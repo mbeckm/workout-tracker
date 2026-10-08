@@ -9,5 +9,6 @@ export { HoldRing } from './hold-ring';
 export { Lamp, type LampState, type LampSurface } from './lamp';
 export { RoundKey, TallKey, type KeyText, type RaisedKeyProps } from './raised-key';
 export { LampPlate, Rocker, type RockerProps } from './rocker';
+export { RollCall, useRollCall } from './roll-call';
 export { Well } from './well';
 export { Wheel, type NotchResult } from './wheel';

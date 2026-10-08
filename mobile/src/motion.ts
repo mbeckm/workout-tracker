@@ -137,6 +137,15 @@ export const DEVICE = {
   /** Rocker tilt rotateY ±10° on an end press: held for ROCKER, easing in and out over ROCKER_TILT. */
   ROCKER: 160,
   ROCKER_TILT: 120,
+  /**
+   * The roll call (decision 86): today's lifts flash in over ROLL_IN on a rocker press, the frame
+   * glides to the new row over ROLL_MOVE, the list holds ROLL_HOLD after the last press, then
+   * fades out over ROLL_OUT. Any other key ends it at once.
+   */
+  ROLL_IN: 100,
+  ROLL_MOVE: 180,
+  ROLL_HOLD: 900,
+  ROLL_OUT: 180,
   /** Lamp colour change (`transition: background .25s`). */
   LAMP: 250,
   /** Hold to finish: linear ring fill. */
