@@ -53,7 +53,7 @@ import { FocusRing } from '@/device/tour/focus-ring';
 import { useTour } from '@/device/tour/tour-context';
 import { TourDisplay } from '@/device/tour/tour-display';
 import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourMotion } from '@/device/tour/tour-launch';
-import { tourLiftLamps } from '@/device/tour/tour-model';
+import { loggedOn, tourLiftDone, tourLiftLamps } from '@/device/tour/tour-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
@@ -360,7 +360,7 @@ function DeviceSurface() {
                   <View style={styles.rocker}>
                     <Rocker
                       variant="week"
-                      lamps={tour.state.lifts.map(() => (tour.state.screen === 'ready' ? 'done' : 'off'))}
+                      lamps={tour.state.lifts.map((_, index) => (tourLiftDone(tour.state, index) ? 'done' : 'off'))}
                       accessibilityLabel=""
                     />
                   </View>
@@ -612,7 +612,7 @@ function DeviceSurface() {
                 <RoundKey
                   label="↶"
                   accessibilityLabel="Undo last set"
-                  disabled={!tourWorking || tour.state.logged === 0}
+                  disabled={!tourWorking || loggedOn(tour.state) === 0}
                   onPress={() => tour.dispatch({ type: 'undo' })}
                 />
               </FocusRing>

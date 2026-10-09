@@ -96,8 +96,8 @@ export type TourState = {
   screen: TourScreen;
   lifts: readonly TourLift[];
   lift: number;
-  /** Sets logged on the current lift (0 or 1; Undo takes it back). */
-  logged: number;
+  /** Sets logged per practice lift, by index (Undo takes the current lift's last one back). */
+  sets: readonly number[];
   setsPerLift: number;
   weight: number;
   reps: number;
@@ -124,7 +124,7 @@ export function initialTourState(lifts: readonly TourLift[]): TourState {
     screen: 'intro',
     lifts,
     lift: 0,
-    logged: 0,
+    sets: lifts.map(() => 0),
     setsPerLift: TOUR_SETS,
     weight: TOUR_START_WEIGHT,
     reps: TOUR_START_REPS,
@@ -223,9 +223,8 @@ export function tourReducer(state: TourState, action: TourAction, facts: TourFac
     }
     case 'log': {
       if (!taught(state, 'log') || state.screen !== 'log') return state;
-      const logged = Math.min(state.setsPerLift, state.logged + 1);
       return answer(state, facts, 'log', {
-        logged,
+        sets: withSets(state, Math.min(state.setsPerLift, loggedOn(state) + 1)),
         screen: 'rest',
         restEndsAt: action.now + TOUR_REST_SECONDS * 1000,
         restLongest: TOUR_REST_SECONDS,
@@ -242,14 +241,14 @@ export function tourReducer(state: TourState, action: TourAction, facts: TourFac
           }
         : state;
     case 'undo': {
-      if (!taught(state, 'undo') || state.logged === 0) return state;
-      return answer(state, facts, 'undo', { logged: state.logged - 1, screen: 'log', restEndsAt: 0 });
+      if (!taught(state, 'undo') || loggedOn(state) === 0) return state;
+      return answer(state, facts, 'undo', { sets: withSets(state, loggedOn(state) - 1), screen: 'log', restEndsAt: 0 });
     }
     case 'lift': {
       if (!taught(state, 'next') || (state.screen !== 'log' && state.screen !== 'rest')) return state;
       const lift = Math.min(state.lifts.length - 1, Math.max(0, state.lift + action.direction));
       if (lift === state.lift) return state;
-      const patch = { lift, logged: 0, screen: 'log' as const, restEndsAt: 0 };
+      const patch = { lift, screen: 'log' as const, restEndsAt: 0 };
       return action.direction > 0 ? answer(state, facts, 'next', patch) : { ...state, ...patch };
     }
     case 'swap': {
@@ -276,21 +275,39 @@ export function tourReducer(state: TourState, action: TourAction, facts: TourFac
   }
 }
 
+/** Sets logged on the current practice lift. */
+export function loggedOn(state: TourState): number {
+  return state.sets[state.lift] ?? 0;
+}
+
+function withSets(state: TourState, logged: number): number[] {
+  return state.lifts.map((_, index) => (index === state.lift ? logged : (state.sets[index] ?? 0)));
+}
+
 function roundTo(value: number, step: number): number {
   return step > 0 ? Math.round(value / step) * step : value;
 }
 
 /** The practice set's lamps under the lift name: done lit, the set on the display outlined. */
 export function tourSetLamps(state: TourState): ('done' | 'on' | 'off')[] {
+  const logged = loggedOn(state);
   return Array.from({ length: state.setsPerLift }, (_, index) =>
-    index < state.logged ? 'done' : index === state.logged ? 'on' : 'off',
+    index < logged ? 'done' : index === logged ? 'on' : 'off',
   );
 }
 
-/** The rocker's lamps: lifts before the current one done, the current one on (part once a set is in). */
+/** True when every set of practice lift `index` is logged. */
+export function tourLiftDone(state: TourState, index: number): boolean {
+  return (state.sets[index] ?? 0) >= state.setsPerLift;
+}
+
+/**
+ * The rocker's lamps, as the log's (`liftLamps`): done only when its sets are, the current one on,
+ * part once a set is in, off otherwise. Moving on doesn't finish a lift.
+ */
 export function tourLiftLamps(state: TourState): ('done' | 'on' | 'part' | 'off')[] {
   return state.lifts.map((_, index) =>
-    index < state.lift ? 'done' : index === state.lift ? (state.logged > 0 ? 'part' : 'on') : 'off',
+    tourLiftDone(state, index) ? 'done' : index === state.lift ? 'on' : (state.sets[index] ?? 0) > 0 ? 'part' : 'off',
   );
 }
 
