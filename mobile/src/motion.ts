@@ -329,9 +329,9 @@ export const TOUR_POSE = [
   { at: 0.54, y: -212, sx: 0.34, sy: 0.34, turn: 2160 },
   { at: 0.69, y: -196, sx: 0.38, sy: 0.38, turn: 2520 },
   { at: 0.77, y: -204, sx: 0.38, sy: 0.38, turn: 2520 },
-  { at: 0.9375, y: -150, sx: 0.53, sy: 0.45, turn: 2520 },
-  { at: 0.969, y: -178, sx: 0.48, sy: 0.53, turn: 2520 },
-  { at: 1, y: -165, sx: 0.5, sy: 0.5, turn: 2520 },
+  { at: 0.9375, y: -115, sx: 0.53, sy: 0.45, turn: 2520 },
+  { at: 0.969, y: -143, sx: 0.48, sy: 0.53, turn: 2520 },
+  { at: 1, y: -130, sx: 0.5, sy: 0.5, turn: 2520 },
 ] as const;
 
 /** Each segment's easing (the prototype's): anticipation, throw, a steady spin, the slow-down, the hang, the fall, the bounce, the settle. As data, so the native 3D launch plays the same curves. */

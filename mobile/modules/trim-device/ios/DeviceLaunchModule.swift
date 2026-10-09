@@ -18,6 +18,9 @@ public class DeviceLaunchModule: Module {
       Prop("duration") { (view: DeviceLaunchView, value: Double) in
         view.duration = value
       }
+      Prop("soundsOn") { (view: DeviceLaunchView, value: Bool?) in
+        view.soundsOn = value ?? true
+      }
       Prop("prepare") { (view: DeviceLaunchView, value: Bool) in
         view.prepare = value
       }

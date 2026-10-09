@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Renders the device sounds (SPEC §9) as WAVs for the TrimDevice module: 44.1 kHz mono 16-bit,
-// peak −3 dBFS, each under 1 s. Pure Node, seeded noise, so a re-render is byte-identical.
+// peak −3 dBFS, each under 1 s except the moments' (first open, the tour's `spin`). Pure Node, seeded noise, so a re-render is byte-identical.
 //
 //   node scripts/render-sounds.mjs
 //
@@ -311,6 +311,123 @@ const SOUNDS = {
     }
     return voice;
   },
+};
+
+/** CSS `cubic-bezier()`: progress → eased progress (bisection on x; plenty for audio blocks). */
+function bezier(x1, y1, x2, y2) {
+  const at = (a, b, t) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  return (x) => {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 30; i++) {
+      const mid = (lo + hi) / 2;
+      if (at(x1, x2, mid) < x) lo = mid;
+      else hi = mid;
+    }
+    return at(y1, y2, (lo + hi) / 2);
+  };
+}
+
+// The tour's launch, keep in step with TOUR_POSE, TOUR_POSE_CURVES and DEVICE.TOUR_LAUNCH in
+// src/motion.ts: `spin` is drawn from the same turn curve, so every whoosh lands on a half turn.
+const LAUNCH_SECONDS = 4.8;
+const LAUNCH_TURNS = [
+  [0, 0],
+  [0.094, 0],
+  [0.26, 720],
+  [0.54, 2160],
+  [0.69, 2520],
+  [0.77, 2520],
+  [0.9375, 2520],
+  [0.969, 2520],
+  [1, 2520],
+];
+const LAUNCH_CURVES = [
+  [0.3, 0, 0.6, 1],
+  [0.25, 0.6, 0.6, 1],
+  [0, 0, 1, 1],
+  [0.15, 0.6, 0.3, 1],
+  [0.42, 0, 0.58, 1],
+  [0.55, 0, 0.9, 0.4],
+  [0, 0, 0.58, 1],
+  [0.42, 0, 0.58, 1],
+].map((c) => bezier(...c));
+
+/** The launch's turn in degrees at `seconds`. */
+function launchTurn(seconds) {
+  const t = Math.min(Math.max(seconds / LAUNCH_SECONDS, 0), 1);
+  let i = 0;
+  while (i < LAUNCH_TURNS.length - 2 && t > LAUNCH_TURNS[i + 1][0]) i++;
+  const [a, from] = LAUNCH_TURNS[i];
+  const [b, to] = LAUNCH_TURNS[i + 1];
+  return from + (to - from) * LAUNCH_CURVES[i]((t - a) / (b - a));
+}
+
+SOUNDS.spin = () => {
+  // The tour's launch: a flick as it's thrown, a whoosh on every half turn (higher and denser as
+  // the spin speeds up, gone in the hang), air as it drops, then the landing's thud and bounce.
+  const voice = makeVoice(4.95, 27);
+  const block = 64;
+  const q = 1.1;
+  let x1 = 0;
+  let x2 = 0;
+  let y1 = 0;
+  let y2 = 0;
+  let hum = 0;
+  for (let b = 0; b < voice.buffer.length; b += block) {
+    const sec = b / RATE;
+    const turn = launchTurn(sec);
+    const speed = (launchTurn(sec + 0.01) - launchTurn(sec - 0.01)) / 0.02; // degrees per second
+    const level = Math.min(1, speed / 1100);
+    const face = Math.sin((turn * Math.PI) / 180) ** 2;
+    const gain = Math.pow(level, 1.3) * (0.18 + 0.82 * face);
+    const freq = Math.min(2600, 260 + speed * 1.25);
+    const w0 = (2 * Math.PI * freq) / RATE;
+    const alpha = Math.sin(w0) / (2 * q);
+    const a0 = 1 + alpha;
+    for (let i = b; i < Math.min(b + block, voice.buffer.length); i++) {
+      const x = voice.random() * 2 - 1;
+      const y = (alpha / a0) * x - (alpha / a0) * x2 - ((-2 * Math.cos(w0)) / a0) * y1 - ((1 - alpha) / a0) * y2;
+      x2 = x1;
+      x1 = x;
+      y2 = y1;
+      y1 = y;
+      hum += (2 * Math.PI * (38 + speed * 0.05)) / RATE;
+      voice.buffer[i] += y * gain * 0.9 + Math.sin(hum) * level * 0.12;
+    }
+  }
+  // The throw: a quick rising flick off the crouch.
+  sweep(voice, 0.4, 0.14, 380, 2600, 1.3, 0.6, (p) => Math.sin(Math.PI * p));
+  // The drop: falling air, rising as it nears the ground.
+  sweep(voice, 3.7, 0.8, 500, 1500, 0.9, 0.22, (p) => p * p);
+  // The landing and the bounce.
+  thump(voice, 4.5, 130, 44, 1.0, 0.22);
+  hit(voice, 4.5, 520, 0.8, 0.55, 0.05);
+  thump(voice, 4.65, 95, 52, 0.35, 0.09);
+  return voice;
+};
+
+// The tour's ring of lit dots ripples out from the device: a soft sonar pulse that opens up.
+SOUNDS.pulse = () => {
+  const voice = makeVoice(1.4, 28);
+  const env = (p) => (p < 0.02 ? p / 0.02 : Math.pow(1 - p, 2.2));
+  glide(voice, 0, 1.3, 330, 495, 0.5, env);
+  glide(voice, 0, 1.3, 660, 990, 0.18, env);
+  glide(voice, 0.01, 1.0, 1320, 1980, 0.06, env);
+  sweep(voice, 0, 1.2, 500, 3000, 0.8, 0.12, (p) => Math.sin(Math.PI * Math.min(1, p * 1.6)) * (1 - p));
+  return voice;
+};
+
+// The machine changes its skin: a quick zip, a magnetic clack and a bright two-note chime. Its
+// own sound, apart from `swatch` (the paywall's and the choice cards' tile).
+SOUNDS.reskin = () => {
+  const voice = makeVoice(0.45, 29);
+  sweep(voice, 0, 0.07, 1500, 6200, 1.4, 0.55, (p) => Math.sin(Math.PI * p));
+  hit(voice, 0.07, 2900, 1.5, 1.0, 0.012);
+  thump(voice, 0.07, 210, 95, 0.55, 0.06);
+  ring(voice, 0.075, 2637, 0.09, 0.09);
+  ring(voice, 0.12, 3951, 0.07, 0.08);
+  return voice;
 };
 
 // The parts snapping on, each a whole step higher than the last (D74: the build climbs).

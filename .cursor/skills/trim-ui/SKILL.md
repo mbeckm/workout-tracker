@@ -422,7 +422,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | Stamp lands; the week report lands on the spike | transient .9 / .2 | `impactAsync(Heavy)` |
 | Cartridge click | t0 transient 1.0 / 1.0 (latch), t65 transient 1.0 / .2 (seat), then continuous .3 / .1 for 80 ms | `impactAsync(Rigid)`, then `impactAsync(Heavy)` 65 ms later |
 | Day ticks in (loading) | transient .6 / .7, with the `notch` click | `selectionAsync` |
-| Finish swatch picked | transient .8 / .6, then 25 ms later .35 / .3; with the `swatch` clack | `selectionAsync` |
+| Finish swatch picked | transient .8 / .6, then 25 ms later .35 / .3; with the `swatch` clack (`reskin` when it changes the device's skin) | `selectionAsync` |
 | A cartridge files onto its shelf (one per cartridge, where its drop lands) | `key` | `impactAsync(Light)` |
 | Onboarding days wheel: each day passed; 6 days | the wheel notch; at 6 the major notch | `selectionAsync` |
 | Onboarding days wheel: past 2 or 6 (`wheelStop`) | transient .9 / .1, then 50 ms later .35 / .1 | `impactAsync(Heavy)` |
@@ -447,7 +447,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `press` | a heavy mechanical clunk | The big key pressed |
 | `rocker` | a short tick with a little body | The rocker tilts |
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
-| `swatch` | a metal tile set down | A finish picked |
+| `swatch` | a metal tile set down | A choice card or a paywall plan picked |
+| `reskin` | a quick zip, a magnetic clack and a bright two-note chime | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
 | `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
@@ -456,6 +457,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
 | `bang` | a heavy low thud, a sharp metal hit and a short ring | First open: the Start key slams home |
 | `boot` | two tiny electronic blips | First open: the display boots |
+| `spin` | a flick, then a whoosh on every half turn (denser and higher as it speeds up, gone in the hang), falling air, a landing thud and bounce; drawn from `TOUR_POSE` | The tour's launch, started by the 3D body's first frame |
+| `pulse` | a soft sonar pulse that opens up | The tour's ring of lit dots: at the landing and on each pick |
 
 No other sounds.
 

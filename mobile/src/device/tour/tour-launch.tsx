@@ -25,6 +25,8 @@ import { PillButton } from '@/device/sheets/primitives';
 import { DEVICE, EASE_DISPLAY_FN, EASE_STAMP_FN, TOUR_POSE, TOUR_POSE_EASE, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
+import { useSounds } from '@/device/haptics';
+
 import { useTour, type TourLaunchPhase } from './tour-context';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -217,6 +219,7 @@ export function TourEdge({ motion, palette }: { motion: TourMotion; palette: Dev
  */
 export function TourRoom({ motion }: { motion: TourMotion }) {
   const { launch, ripple } = useTour();
+  const sound = useSounds();
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const room = useSharedValue(0);
@@ -228,21 +231,24 @@ export function TourRoom({ motion }: { motion: TourMotion }) {
     room.set(withTiming(launch && launch !== 'landing' ? 1 : 0, { duration: DEVICE.TOUR_ROOM }));
   }, [launch, room]);
 
-  // The landing's ring, then one per pick.
+  // The landing's ring, then one per pick, each with its pulse.
   useEffect(() => {
     if (launch !== 'launch' || reduceMotion) return;
     ring.set(0);
     ringOpacity.set(0);
     const land = DEVICE.TOUR_LAUNCH - DEVICE.TOUR_PICKER;
+    const pulse = setTimeout(() => sound('pulse'), land);
     ring.set(withDelay(land, withTiming(1, { duration: DEVICE.TOUR_LAND_RIPPLE, easing: EASE_DISPLAY_FN })));
     ringOpacity.set(withDelay(land, withSequence(withTiming(1, { duration: DEVICE.SNAP }), withTiming(0, { duration: DEVICE.TOUR_LAND_RIPPLE }))));
-  }, [launch, reduceMotion, ring, ringOpacity]);
+    return () => clearTimeout(pulse);
+  }, [launch, reduceMotion, ring, ringOpacity, sound]);
   useEffect(() => {
     if (ripple === 0 || reduceMotion) return;
+    sound('pulse');
     ring.set(0);
     ring.set(withTiming(1, { duration: DEVICE.TOUR_RIPPLE, easing: EASE_DISPLAY_FN }));
     ringOpacity.set(withSequence(withTiming(1, { duration: DEVICE.SNAP }), withTiming(0, { duration: DEVICE.TOUR_RIPPLE })));
-  }, [reduceMotion, ring, ringOpacity, ripple]);
+  }, [reduceMotion, ring, ringOpacity, ripple, sound]);
 
   const roomStyle = useAnimatedStyle(() => ({ opacity: room.get() }));
   const ringProps = useAnimatedProps(() => ({
@@ -399,6 +405,9 @@ export function launching(phase: TourLaunchPhase | null): boolean {
   return phase != null;
 }
 
+/** The picker's text and its first swatch share one column, as a sheet's section labels do. */
+const PICKER_X = sheetGeometry.sidePad + sheetGeometry.sectionX;
+
 const styles = StyleSheet.create({
   room: { backgroundColor: tourColors.roomGround },
   back: { alignItems: 'center', justifyContent: 'center', borderRadius: insertGeometry.bodyRadius, borderCurve: 'continuous' },
@@ -437,13 +446,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: gadgetRadius.sheet,
     borderCurve: 'continuous',
     paddingTop: sheetGeometry.sectionX,
-    paddingHorizontal: sheetGeometry.sidePad,
+    paddingHorizontal: PICKER_X,
   },
   pickerLabel: { color: lcd.amber },
   pickerSub: { marginTop: space.pair },
-  swatchRow: { marginHorizontal: -sheetGeometry.sidePad },
+  swatchRow: { marginHorizontal: -PICKER_X },
   swatches: {
-    paddingHorizontal: sheetGeometry.sidePad,
+    paddingHorizontal: PICKER_X,
     flexDirection: 'row',
     gap: sheetGeometry.swatchGap,
     paddingTop: space.related + sheetGeometry.swatchLift,

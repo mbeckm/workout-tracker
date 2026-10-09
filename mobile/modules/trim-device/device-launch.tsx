@@ -10,6 +10,8 @@ export type DeviceLaunchPose = { at: number; y: number; sx: number; sy: number; 
 export type DeviceLaunchProps = {
   /** The finish the body wears; a change mid-flight re-dresses it (photographs the children again). */
   finish: FinishId;
+  /** The Sounds setting (D14): `spin` plays with the first frame. Default true. */
+  soundsOn?: boolean;
   /** Warm the 3D body up ahead of `launch` (shaders, geometry), so the throw's first frame isn't lost. */
   prepare: boolean;
   /** `launch` photographs the children and plays; `idle` hands back to them. */

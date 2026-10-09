@@ -2293,8 +2293,8 @@ export const tourGeometry = {
   focusStroke: 3,
   focusOffset: 5,
   focusGlowRadius: 24,
-  /** The launch: the device lands perched this far up, at this scale, before the picker. */
-  perchY: -165,
+  /** The launch: the device lands perched this far up, at this scale, before the picker (clear of the Dynamic Island, centred over the picker). */
+  perchY: -130,
   perchScale: 0.5,
   /** The body's depth while it spins (the insert's 44 pt). */
   depth: 44,
@@ -2315,7 +2315,7 @@ export const tourGeometry = {
   stampWidth: 236,
   stampBorder: 4,
   stampRadius: 10,
-  stampY: 412,
+  stampY: 446,
   /** The wiggle on a pick: lift, scale and tilts (degrees). */
   wiggleLift: -9,
   wiggleScale: 0.53,

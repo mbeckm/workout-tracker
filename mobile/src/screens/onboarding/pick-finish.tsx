@@ -97,7 +97,7 @@ function PickFinish({
     if (id === finish) {
       return;
     }
-    haptics.swatch();
+    haptics.reskin();
     if (locked(id)) {
       setPreview(id);
       return;

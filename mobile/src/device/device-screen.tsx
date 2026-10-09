@@ -283,6 +283,7 @@ function DeviceSurface() {
       <DeviceLaunch
         style={StyleSheet.absoluteFill}
         finish={finish}
+        soundsOn={soundsOn}
         prepare={launch3d.prepare}
         phase={launch3d.phase}
         duration={DEVICE.TOUR_LAUNCH}

@@ -44,6 +44,8 @@ export const haptics = {
   /** A day ticks in while the plan loads. */
   dayTick: pressed('dayTick', 'notch'),
   swatch: pressed('swatch', 'swatch'),
+  /** The device changes its skin (a finish picked): its own zip and chime, not the swatch tile. */
+  reskin: pressed('swatch', 'reskin'),
   /** The onboarding wheel hits 2 or 6 days. */
   wheelStop: pattern('wheelStop'),
   /** First open: a part snaps onto the body. */

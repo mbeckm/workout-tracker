@@ -45,6 +45,9 @@ export type DeviceSound =
   | 'charge'
   | 'bang'
   | 'boot'
+  | 'spin'
+  | 'pulse'
+  | 'reskin'
   | SnapSound;
 
 type TrimDeviceNative = {

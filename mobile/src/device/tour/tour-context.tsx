@@ -217,7 +217,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const choose = useCallback(
     (finish: Finish) => {
       if (finish === pick || launch === 'landing') return;
-      haptics.swatch();
+      haptics.reskin();
       setPick(finish);
       setPreview(finish === store.finish ? null : finish);
       setRipple((n) => n + 1);

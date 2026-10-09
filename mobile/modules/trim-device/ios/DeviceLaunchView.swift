@@ -20,6 +20,8 @@ final class DeviceLaunchView: ExpoView, SCNSceneRendererDelegate {
   // MARK: Props
 
   var finish = "212"
+  /// The Sounds setting (D14): `spin` plays with the launch's first frame.
+  var soundsOn = true
   /// Warm up ahead of the launch (the tour is on): build the body, compile its shaders and draw
   /// a few invisible frames, so the first frame after Start is immediate instead of a lost throw.
   var prepare = false
@@ -226,6 +228,7 @@ final class DeviceLaunchView: ExpoView, SCNSceneRendererDelegate {
     guard timeline.didRender(now: CACurrentMediaTime()) else { return }
     DispatchQueue.main.async { [weak self] in
       guard let self, self.running else { return }
+      if self.soundsOn { TrimDeviceFeel.shared.playSound("spin") }
       self.onSceneReady([:])
     }
   }
