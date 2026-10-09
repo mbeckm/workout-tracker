@@ -34,6 +34,7 @@ export const SHEET_KINDS = [
   'checkin',
   // Import plan (decision 88): paste or screenshots, reading, fixing unknown lifts.
   'import',
+  'new-plan',
 ] as const;
 
 export type SheetKind = (typeof SHEET_KINDS)[number];
@@ -67,6 +68,7 @@ const TOPS: Record<SheetKind, SheetTop> = {
   goal: 'tall',
   checkin: 'tall',
   import: 'tall',
+  'new-plan': 'tall',
 };
 
 export function sheetTop(kind: SheetKind): SheetTop {

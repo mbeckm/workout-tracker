@@ -23,7 +23,8 @@ import { PillButton, SheetHeader, SheetScroll, StickyActionBar } from './primiti
 type Step = 'start' | 'read' | 'fix';
 
 /**
- * Import plan from the rack (decision 88): the same three steps as onboarding, as one tall sheet.
+ * Import plan from the rack's New plan sheet (decision 88): the same three steps as onboarding, as
+ * one tall sheet.
  * Import plan (the illustration, Paste, Screenshots) → Reading → Fix when a lift wasn't
  * recognized. The new plan opens in the editor like every new plan (Done, "Plan created"); it
  * becomes active only when it's the first plan, as with `Build one`. The rack checked the
@@ -59,10 +60,11 @@ export function ImportSheet({ params }: { params: SheetParams }) {
     setStep('read');
   };
 
-  const toRack = () => {
+  /** ‹ on the first step: back to the New plan cards, the import dropped. */
+  const toNewPlan = () => {
     Keyboard.dismiss();
     clearImport();
-    swapSheet('plans', via);
+    swapSheet('new-plan', via);
   };
 
   const finish = () => {
@@ -74,7 +76,7 @@ export function ImportSheet({ params }: { params: SheetParams }) {
 
   if (step === 'start') {
     return (
-      <SheetScroll header={<SheetHeader title="Import plan" left={{ kind: 'back', onPress: toRack }} />}>
+      <SheetScroll header={<SheetHeader title="Import plan" left={{ kind: 'back', onPress: toNewPlan }} />}>
         <View style={styles.page} testID="import-sheet">
           <Text maxFontSizeMultiplier={fontScaleCap.title} style={[onboardingType.sub, styles.sub]}>
             {IMPORT_SUB}

@@ -21,8 +21,6 @@ import {
   plansType,
   signal,
 } from '@/constants/theme';
-import { track } from '@/analytics/analytics';
-import { emptyPlan } from '@/domain/helpers';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
 import { haptics } from '@/device/haptics';
@@ -31,8 +29,7 @@ import { DEVICE, EASE_FILE_FN } from '@/motion';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
-import { showActions } from './editor-sheet';
-import { SheetHeader, SheetScroll } from './primitives';
+import { PillButton, SheetHeader, SheetScroll, StickyActionBar } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
 /** Where bezier(.3,1.4,.5,1) first reaches the shelf: the cartridge seats there (trim-ui §8 rule 3). */
@@ -42,15 +39,15 @@ const GRIP_RIDGES = Math.ceil((geo.cartWidth - geo.gripInsetX * 2) / geo.gripPit
 
 /**
  * The rack (PB3, screen 20): one shelf per plan, the active one first and outlined, each with
- * its days as cartridges. `+` asks for Pro first on a second plan (`second_plan`), then offers
- * Import plan (decision 88: read one from text or screenshots) or Build one (an empty plan in the
- * editor) in the system action sheet. A shelf opens its editor. Coming back from the editor after a change (`filed`), that plan's cartridges
+ * its days as cartridges, and `New plan` at the bottom: on a second plan it asks for Pro first
+ * (`second_plan`), then opens the New plan sheet (Import plan, decision 88, or Build one). A shelf
+ * opens its editor. Coming back from the editor after a change (`filed`), that plan's cartridges
  * drop onto their shelf and the shelf flashes (SPEC §7).
  */
 export function PlansSheet({ params }: { params: SheetParams }) {
   const { close } = useSheetChrome();
   const { swapSheet } = useDevice();
-  const { plans, activePlanId, workoutHistory, savePlan } = useWorkoutStore();
+  const { plans, activePlanId, workoutHistory } = useWorkoutStore();
   const fromMenu = params.from === 'menu';
   const via: SheetParams = fromMenu ? { via: 'menu' } : {};
   const gating = useRef(false);
@@ -75,30 +72,23 @@ export function PlansSheet({ params }: { params: SheetParams }) {
     });
   };
 
-  const build = () => {
-    const plan = emptyPlan();
-    track('plan_created', { plan_count: plans.length });
-    savePlan(plan, { activate: plans.length === 0 });
-    swapSheet('editor', { planId: plan.id, new: '1', ...via });
-  };
-
   const create = async () => {
-    if (!(await mayCreate())) {
-      return;
+    if (await mayCreate()) {
+      swapSheet('new-plan', via);
     }
-    showActions('New plan', [
-      { label: 'Import plan', run: () => swapSheet('import', via) },
-      { label: 'Build one', run: build },
-    ]);
   };
 
   return (
     <SheetScroll
+      actionBar={
+        <StickyActionBar>
+          <PillButton title="New plan" onPress={() => void create()} testID="plans-new" />
+        </StickyActionBar>
+      }
       header={
         <SheetHeader
           title="Plans"
           left={fromMenu ? { kind: 'back', onPress: () => swapSheet('menu') } : { kind: 'close', onPress: close }}
-          right={{ kind: 'text', label: '+', accessibilityLabel: 'New plan', onPress: () => void create() }}
         />
       }>
       <View testID="plans-sheet">

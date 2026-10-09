@@ -11,6 +11,7 @@ import { KeypadSheet } from './keypad-sheet';
 import { DeviceMenuSheet } from './menu-sheet';
 import { HistorySheet } from './history-sheet';
 import { ImportSheet } from './import-sheet';
+import { NewPlanSheet } from './new-plan-sheet';
 import { PlansSheet } from './plans-sheet';
 import { ReceiptSheet } from './receipt-sheet';
 import { GoalSheet } from './goal-sheet';
@@ -44,6 +45,7 @@ const TITLES: Record<SheetKind, string> = {
   goal: 'Goal',
   checkin: 'Check in',
   import: 'Import plan',
+  'new-plan': 'New plan',
 };
 
 /** The content for the open sheet. Keyed by the open, so a swap starts fresh (scroll at top). */
@@ -79,6 +81,8 @@ export function SheetContent({ sheet }: { sheet: OpenSheet }) {
       return <BodySheet key={sheet.key} params={sheet.params} />;
     case 'goal':
       return <GoalSheet key={sheet.key} params={sheet.params} />;
+    case 'new-plan':
+      return <NewPlanSheet key={sheet.key} params={sheet.params} />;
     case 'import':
       return <ImportSheet key={sheet.key} params={sheet.params} />;
     case 'checkin':

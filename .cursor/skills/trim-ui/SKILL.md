@@ -107,7 +107,7 @@ Information lives on the lowest layer that serves the job:
 | Receipt | What I just did | The paper | `Done` (light pill) |
 | Menu | Go somewhere | The rows | none |
 | Today | Jump, reorder or change today's lifts | The current row | none |
-| Plans rack | Which plan is in, which others exist | The active shelf | `+` (Import plan or Build one) |
+| Plans rack | Which plan is in, which others exist | The active shelf | `New plan` (then Import plan or Build one) |
 | Editor | What's in this plan | The plan name | `Use plan` when inactive |
 | Progress | Is each lift going up | GOALS, then LIFTS | none |
 | Lift detail | How strong I am on this lift | The big number | none |
@@ -783,7 +783,7 @@ Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue ru
 
 ### Plans rack (PB3) [20, 24]
 
-Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. `+` in the header makes a plan (decision 88): on a second plan it asks for Pro first, then the system action sheet `New plan` offers `Import plan` and `Build one`. Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
+Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. A sticky light `New plan` pill at the bottom makes a plan (decision 88): on a second plan it asks for Pro first, then opens the tall `New plan` sheet with two big cards in the onboarding fork's look (`ForkCard`, 280 tall): `Import plan` (tilted notes, `Notes, ChatGPT, another app`) and `Build one` (three empty cartridge slots, `Start empty`). A card is the button; no Continue. Import plan's ‹ comes back to these cards. Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
 
 ### Import plan, Reading, Fix (decision 88)
 

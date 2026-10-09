@@ -2,23 +2,12 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import {
-  fontScaleCap,
-  gadgetType,
-  importGeometry,
-  importColors,
-  importType,
-  onboardingGeometry as G,
-  packColors,
-  sheetColors,
-  signal,
-  space,
-} from '@/constants/theme';
+import { fontScaleCap, gadgetType, importGeometry, onboardingGeometry as G, sheetColors, signal, space } from '@/constants/theme';
+import { CartsArt, ForkCard, NotesArt } from '@/screens/plan-import/fork-cards';
 import { PRESS_SCALE } from '@/motion';
 
 import { selectionTick } from './choice';
 import { OnboardingFrame } from './frame';
-import { Cartridge } from './pack';
 
 type Answer = 'have' | 'pick' | 'own';
 
@@ -51,29 +40,24 @@ export function OnboardingHavePlan() {
       action={{ title: 'Continue', onPress: next }}
       testID="onboarding-have-plan">
       <View accessibilityRole="radiogroup" accessibilityLabel="Got a plan?" style={styles.stage}>
-        <Card
+        <ForkCard
           title="I have one"
           sub="Notes, ChatGPT, another app"
           selected={answer === 'have'}
-          onSelect={() => pick('have')}
+          onPress={() => pick('have')}
+          style={styles.fill}
           testID="onboarding-have-plan-yes">
-          <View style={styles.notes}>
-            <Note tilt={-importGeometry.noteTilt} />
-            <Note tilt={importGeometry.noteTilt} back />
-          </View>
-        </Card>
-        <Card
+          <NotesArt />
+        </ForkCard>
+        <ForkCard
           title="Pick one for me"
           sub="Starter plans"
           selected={answer === 'pick'}
-          onSelect={() => pick('pick')}
+          onPress={() => pick('pick')}
+          style={styles.fill}
           testID="onboarding-have-plan-pick">
-          <View style={styles.carts}>
-            {['UA', 'LA', 'UB'].map((label, index) => (
-              <Cartridge key={label} label={label} hop={answer === 'pick'} order={index} />
-            ))}
-          </View>
-        </Card>
+          <CartsArt labels={['UA', 'LA', 'UB']} hop={answer === 'pick'} />
+        </ForkCard>
         <Pressable
           accessibilityRole="radio"
           accessibilityState={{ checked: answer === 'own' }}
@@ -91,84 +75,10 @@ export function OnboardingHavePlan() {
   );
 }
 
-function Card({
-  title,
-  sub,
-  selected,
-  onSelect,
-  children,
-  testID,
-}: {
-  title: string;
-  sub: string;
-  selected: boolean;
-  onSelect: () => void;
-  children: React.ReactNode;
-  testID: string;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={`${title}, ${sub}`}
-      onPress={onSelect}
-      testID={testID}
-      style={({ pressed }) => [styles.card, selected && styles.on, pressed && !selected && styles.pressed]}>
-      {children}
-      <View style={styles.cardText}>
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.forkTitle}>
-          {title}
-        </Text>
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.forkSub}>
-          {sub}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-/** A sheet of notes in the drawing: paper with a heading line and three text lines. */
-function Note({ tilt, back = false }: { tilt: number; back?: boolean }) {
-  return (
-    <View style={[styles.note, back && styles.noteBack, { transform: [{ rotate: `${tilt}deg` }, { translateY: back ? space.tight : 0 }] }]}>
-      <View style={[styles.noteLine, styles.noteHeading]} />
-      <View style={[styles.noteLine, styles.w100]} />
-      <View style={[styles.noteLine, styles.w80]} />
-      <View style={[styles.noteLine, styles.w100]} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   stage: { flex: 1, gap: G.packGap, paddingTop: space.gutter, paddingBottom: space.related },
-  card: {
-    flex: 1,
-    borderRadius: G.packRadius,
-    borderCurve: 'continuous',
-    backgroundColor: packColors.pack,
-    boxShadow: `inset 0 1px 0 ${packColors.packHighlight}`,
-    paddingHorizontal: G.packPadX,
-    paddingVertical: G.packPadX,
-    justifyContent: 'space-between',
-  },
-  on: { boxShadow: `inset 0 0 0 ${G.packRing}px ${signal.orange}` },
+  fill: { flex: 1 },
   pressed: { transform: [{ scale: PRESS_SCALE }] },
-  cardText: { gap: space.pair },
-  notes: { flexDirection: 'row', gap: space.related },
-  carts: { flexDirection: 'row', gap: G.cartGap },
-  note: {
-    width: importGeometry.noteWidth,
-    height: importGeometry.noteHeight,
-    borderRadius: importGeometry.rowIconRadius + 2,
-    backgroundColor: importColors.paper,
-    padding: space.related,
-    gap: space.tight,
-  },
-  noteBack: { backgroundColor: importColors.paperLineSoft },
-  noteLine: { height: importGeometry.bar - 2, borderRadius: importGeometry.barRadius, backgroundColor: importColors.paperLineSoft },
-  noteHeading: { width: '70%', height: importGeometry.bar - 1, backgroundColor: importColors.paperLineStrong },
-  w100: { width: '100%' },
-  w80: { width: '80%' },
   own: {
     alignSelf: 'center',
     minHeight: importGeometry.choiceHeight,

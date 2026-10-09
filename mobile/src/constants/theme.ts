@@ -2405,6 +2405,8 @@ export const importGeometry = {
   /** A Fix card's choice rows and the search field. */
   choiceHeight: 48,
   choiceRadius: 14,
+  /** New plan (the rack's sheet): each of the two cards is this tall. */
+  forkCardHeight: 280,
   /** Got a plan?: the two cards' art. */
   noteWidth: 54,
   noteHeight: 76,
