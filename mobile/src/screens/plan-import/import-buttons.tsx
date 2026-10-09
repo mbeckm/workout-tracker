@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import { fontScaleCap, gadgetType, importGeometry, sheetColors, space } from '@/constants/theme';
+import { fontScaleCap, gadgetType, importGeometry, importType, sheetColors, space } from '@/constants/theme';
 import { PRESS_SCALE } from '@/motion';
 
 import { usePulseStyle } from './import-art';
@@ -119,9 +119,15 @@ export function ImportButtons({
           }
         />
       </Animated.View>
+      <Text maxFontSizeMultiplier={fontScaleCap.text} style={[importType.choiceMeta, styles.note]}>
+        {IMPORT_NOTE}
+      </Text>
     </View>
   );
 }
+
+/** Where an import goes (decision 88): said once, where it's sent, in plain words. */
+export const IMPORT_NOTE = 'Trim sends what you import to Claude by Anthropic to read it. Trim doesn’t keep it.';
 
 function Pill({
   title,
@@ -172,6 +178,7 @@ function Pill({
 const styles = StyleSheet.create({
   stack: { gap: space.related },
   native: { width: '100%' },
+  note: { textAlign: 'center', paddingHorizontal: space.gutter },
   pill: {
     borderCurve: 'continuous',
     flexDirection: 'row',

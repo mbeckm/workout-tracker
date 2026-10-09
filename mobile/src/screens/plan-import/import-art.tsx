@@ -65,8 +65,11 @@ export function ImportArt({
   const [height, setHeight] = useState(0);
   const onLayout = (event: LayoutChangeEvent) => setHeight(event.nativeEvent.layout.height);
 
-  const snippetFly = height + reach.paste - G.snippetTop - G.snippetHeight / 2;
-  const shotFly = height + reach.screenshots - G.phoneTop - G.phoneHeight / 2;
+  // The drawing sits in the middle of the tile; the flights end at the buttons below it.
+  const stage = G.phoneHeight + G.phoneTop * 2;
+  const stageTop = Math.max(0, (height - stage) / 2);
+  const snippetFly = height - stageTop + reach.paste - G.snippetTop - G.snippetHeight / 2;
+  const shotFly = height - stageTop + reach.screenshots - G.phoneTop - G.phoneHeight / 2;
 
   const chatScene = useAnimatedStyle(() => ({ opacity: clamp(t.get(), [0, 0.05, 0.45, 0.5], [0, 1, 1, 0]) }));
   const selection = useAnimatedStyle(() => ({
@@ -99,7 +102,7 @@ export function ImportArt({
       accessible
       accessibilityRole="image"
       accessibilityLabel="A plan copied from a chat, and another workout app being screenshotted">
-      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
           <Pattern id="import-dots" width={G.tileDotPitch} height={G.tileDotPitch} patternUnits="userSpaceOnUse">
             <Circle cx={G.tileDotPitch / 2} cy={G.tileDotPitch / 2} r={G.tileDotRadius} fill={C.tileDot} />
@@ -108,7 +111,7 @@ export function ImportArt({
         <Rect width="100%" height="100%" fill="url(#import-dots)" />
       </Svg>
 
-      <Animated.View style={[StyleSheet.absoluteFill, chatScene]} pointerEvents="none">
+      <Animated.View style={[styles.stage, { top: stageTop, height: stage }, chatScene]} pointerEvents="none">
         <View style={styles.phone}>
           <View style={styles.bubble} />
           <View style={styles.reply}>
@@ -140,7 +143,7 @@ export function ImportArt({
         </Animated.View>
       </Animated.View>
 
-      <Animated.View style={[StyleSheet.absoluteFill, appScene]} pointerEvents="none">
+      <Animated.View style={[styles.stage, { top: stageTop, height: stage }, appScene]} pointerEvents="none">
         <Animated.View style={[styles.phone, styles.shotPhone, shot]}>
           <View style={[styles.textBar, styles.appTitle]} />
           {[80, 65, 75, 60].map((width) => (
@@ -185,6 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.tile,
     overflow: 'visible',
   },
+  stage: { position: 'absolute', left: 0, right: 0 },
   phone: {
     position: 'absolute',
     top: G.phoneTop,

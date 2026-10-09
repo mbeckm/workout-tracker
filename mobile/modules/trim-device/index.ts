@@ -157,4 +157,4 @@ export {
   type CartridgeInsertProps,
 } from './cartridge-insert';
 
-export { canRecognizeText, recognizeTextInImage } from './text';
+export { canRecognizeText, prepareImageForUpload, recognizeTextInImage } from './text';

@@ -2,6 +2,7 @@ import { requireOptionalNativeModule } from 'expo';
 
 type TrimTextNative = {
   recognizeText(uri: string): Promise<string[]>;
+  prepareImage(uri: string, maxSide: number, quality: number): Promise<string>;
 };
 
 // Null on web, Android and dev builds from before the module.
@@ -20,4 +21,15 @@ export async function recognizeTextInImage(uri: string): Promise<string[]> {
     throw new Error('Text recognition is not available in this build.');
   }
   return native.recognizeText(uri);
+}
+
+/**
+ * An image as a base64 JPEG (no `data:` prefix) at most `maxSide` px on its longest side, for
+ * Import plan's upload. Same inputs as `recognizeTextInImage`.
+ */
+export async function prepareImageForUpload(uri: string, maxSide = 1568, quality = 0.8): Promise<string> {
+  if (!native) {
+    throw new Error('Image preparation is not available in this build.');
+  }
+  return native.prepareImage(uri, maxSide, quality);
 }

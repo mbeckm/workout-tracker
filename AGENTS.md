@@ -81,7 +81,8 @@ Store builds: see `APP_STORE_RELEASE_GUIDE.md` (`npx eas-cli build --platform io
 
 - **Purchases:** RevenueCat project "Scratch", entitlement `Scratch Pro`, current offering `default` (`$rc_annual`, `$rc_monthly`). Key: `EXPO_PUBLIC_REVENUECAT_API_KEY` (`appl_…`) in `mobile/.env` and EAS.
 - **Analytics:** PostHog EU, anonymous (`mobile/src/analytics/analytics.ts`). Key: `EXPO_PUBLIC_POSTHOG_KEY`. Development builds only log events unless `EXPO_PUBLIC_ANALYTICS_IN_DEV=1`. Keep events free of workout contents; if what's collected changes, update `legal/privacy.html` and App Privacy.
-- **Persistence:** local only (`mobile/src/store/persistence*.ts`). No backend.
+- **Plan import (decision 88):** Vercel project `trim-api` (code in `server/`, region fra1), the only backend. It forwards pasted text and downscaled screenshots to the Claude API (Claude Haiku 5.5) and returns the plan structure; it never stores or logs the content. Key: `ANTHROPIC_API_KEY` on Vercel only, never in the app. Offline or on failure the app reads the plan locally (Apple text recognition + the local parser). It's the one place user content leaves the phone: if what's sent changes, update `legal/privacy.html` and App Privacy.
+- **Persistence:** local only (`mobile/src/store/persistence*.ts`). No backend for user data.
 
 ## Names that must not change
 

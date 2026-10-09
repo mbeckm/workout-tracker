@@ -8,6 +8,31 @@ public class TrimTextModule: Module {
   public func definition() -> ModuleDefinition {
     Name("TrimText")
 
+    // Import plan sends screenshots to Trim's server: a JPEG at most `maxSide` px, base64 (no prefix).
+    AsyncFunction("prepareImage") { (uri: String, maxSide: Double, quality: Double, promise: Promise) in
+      DispatchQueue.global(qos: .userInitiated).async {
+        guard let image = TextRecognizer.image(at: uri) else {
+          promise.reject(ImageLoadException(uri.hasPrefix("data:") ? "data URI" : uri))
+          return
+        }
+        let longest = max(image.size.width * image.scale, image.size.height * image.scale)
+        let factor = longest > CGFloat(maxSide) ? CGFloat(maxSide) / longest : 1
+        let size = CGSize(
+          width: (image.size.width * image.scale * factor).rounded(),
+          height: (image.size.height * image.scale * factor).rounded())
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+          image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        guard let data = resized.jpegData(compressionQuality: CGFloat(quality)) else {
+          promise.reject(ImageLoadException("encoding"))
+          return
+        }
+        promise.resolve(data.base64EncodedString())
+      }
+    }
+
     AsyncFunction("recognizeText") { (uri: String, promise: Promise) in
       DispatchQueue.global(qos: .userInitiated).async {
         do {
@@ -64,6 +89,8 @@ private enum TextRecognizer {
     }
     return group(cells)
   }
+
+  static func image(at uri: String) -> UIImage? { loadImage(uri) }
 
   /// A `file://` URI, a plain path, or a base64 `data:image/…` URI (expo-clipboard's pasted image).
   private static func loadImage(_ uri: String) -> UIImage? {
