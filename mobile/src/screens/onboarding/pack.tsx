@@ -91,7 +91,7 @@ export function PlanPack({
   );
 }
 
-function Cartridge({ label, hop, order }: { label: string; hop: boolean; order: number }) {
+export function Cartridge({ label, hop, order }: { label: string; hop: boolean; order: number }) {
   const reduceMotion = useReducedMotion();
   const y = useSharedValue(0);
   // The pack picked when the step opens doesn't hop; only a pick does.

@@ -347,3 +347,34 @@ export const TOUR_POSE_EASE = [
 
 /** The reference height the pose's `y` is measured on. */
 export const TOUR_POSE_HEIGHT = 844;
+
+/**
+ * Import plan (decision 88). The illustration is one loop: the first half copies a plan out of a
+ * chat into Paste, the second half screenshots another app into Screenshots. Reading reveals each
+ * found lift on a short stagger, so the work shows even when parsing was instant.
+ */
+export const IMPORT = {
+  /** One full loop of the illustration (both scenes). */
+  ART_LOOP: 8000,
+  /** A scene fades in and out over this. */
+  ART_FADE: 400,
+  /** The selection sweeps over the reply. */
+  ART_SELECT: 900,
+  /** The Copy pill pops and holds. */
+  ART_PILL: 600,
+  /** The copied text, or the shot, flies to its button. */
+  ART_FLY: 1000,
+  /** The screenshot flash. */
+  ART_FLASH: 280,
+  /** The shot shrinks to a thumbnail and holds before it flies. */
+  ART_SHRINK: 700,
+  ART_HOLD: 500,
+  /** Each found lift lands this long after the one before. */
+  ROW_STAGGER: 140,
+  /** A found lift drops in over this. */
+  ROW_IN: 280,
+  /** The placeholders breathe on this half-cycle before the first lift. */
+  BREATHE: 700,
+  /** The progress bar eases to each new value over this. */
+  BAR: 300,
+} as const;

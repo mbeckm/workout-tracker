@@ -19,6 +19,7 @@ import {
   plansColors,
   plansGeometry as geo,
   plansType,
+  sheetColors,
   signal,
 } from '@/constants/theme';
 import { track } from '@/analytics/analytics';
@@ -31,7 +32,7 @@ import { DEVICE, EASE_FILE_FN } from '@/motion';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
-import { SheetHeader, SheetScroll } from './primitives';
+import { PillButton, SheetHeader, SheetScroll } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
 /** Where bezier(.3,1.4,.5,1) first reaches the shelf: the cartridge seats there (trim-ui §8 rule 3). */
@@ -41,8 +42,9 @@ const GRIP_RIDGES = Math.ceil((geo.cartWidth - geo.gripInsetX * 2) / geo.gripPit
 
 /**
  * The rack (PB3, screen 20): one shelf per plan, the active one first and outlined, each with
- * its days as cartridges. `+` makes a plan (the second one asks for Pro, `second_plan`); a shelf
- * opens its editor. Coming back from the editor after a change (`filed`), that plan's cartridges
+ * its days as cartridges, then the New plan slot (decision 88): Import plan reads one from text or
+ * screenshots, Build one starts an empty plan in the editor (the second plan asks for Pro,
+ * `second_plan`, either way). A shelf opens its editor. Coming back from the editor after a change (`filed`), that plan's cartridges
  * drop onto their shelf and the shelf flashes (SPEC §7).
  */
 export function PlansSheet({ params }: { params: SheetParams }) {
@@ -58,19 +60,30 @@ export function PlansSheet({ params }: { params: SheetParams }) {
     [plans, activePlanId, workoutHistory],
   );
 
-  const create = async () => {
+  /** The second plan asks for Pro first (`second_plan`), for an import as for a blank one. */
+  const mayCreate = async () => {
     if (gating.current) {
-      return;
+      return false;
     }
     const reason = createPlanGate(plans.length);
-    if (reason) {
-      gating.current = true;
-      const allowed = await requirePro(reason).finally(() => {
-        gating.current = false;
-      });
-      if (!allowed) {
-        return;
-      }
+    if (!reason) {
+      return true;
+    }
+    gating.current = true;
+    return requirePro(reason).finally(() => {
+      gating.current = false;
+    });
+  };
+
+  const importPlan = async () => {
+    if (await mayCreate()) {
+      swapSheet('import', via);
+    }
+  };
+
+  const create = async () => {
+    if (!(await mayCreate())) {
+      return;
     }
     const plan = emptyPlan();
     track('plan_created', { plan_count: plans.length });
@@ -84,24 +97,26 @@ export function PlansSheet({ params }: { params: SheetParams }) {
         <SheetHeader
           title="Plans"
           left={fromMenu ? { kind: 'back', onPress: () => swapSheet('menu') } : { kind: 'close', onPress: close }}
-          right={{ kind: 'text', label: '+', accessibilityLabel: 'New plan', onPress: create }}
         />
       }>
       <View testID="plans-sheet">
-        {shelves.length === 0 ? (
-          <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowSub, styles.empty]}>
-            No plans yet
+        {shelves.map((shelf) => (
+          <Shelf
+            key={shelf.planId}
+            shelf={shelf}
+            filing={shelf.planId === params.filed}
+            onPress={() => swapSheet('editor', { planId: shelf.planId, ...via })}
+          />
+        ))}
+        <View style={styles.slot} testID="plans-new-slot">
+          <Text maxFontSizeMultiplier={fontScaleCap.text} style={[plansType.shelfName, styles.slotTitle]}>
+            New plan
           </Text>
-        ) : (
-          shelves.map((shelf) => (
-            <Shelf
-              key={shelf.planId}
-              shelf={shelf}
-              filing={shelf.planId === params.filed}
-              onPress={() => swapSheet('editor', { planId: shelf.planId, ...via })}
-            />
-          ))
-        )}
+          <View style={styles.slotActions}>
+            <PillButton title="Import plan" onPress={() => void importPlan()} style={styles.slotPill} testID="plans-import" />
+            <PillButton title="Build one" variant="dark" onPress={() => void create()} style={styles.slotPill} testID="plans-build" />
+          </View>
+        </View>
       </View>
     </SheetScroll>
   );
@@ -237,7 +252,18 @@ function Cartridge({
 }
 
 const styles = StyleSheet.create({
-  empty: { textAlign: 'center', marginTop: geo.emptyTop },
+  slot: {
+    borderRadius: gadgetRadius.card,
+    borderCurve: 'continuous',
+    borderWidth: geo.shelfOutline,
+    borderColor: plansColors.shelf,
+    paddingVertical: geo.shelfPadY,
+    paddingHorizontal: geo.shelfPadX,
+    gap: geo.shelfGap,
+  },
+  slotTitle: { color: sheetColors.muted },
+  slotActions: { flexDirection: 'row', gap: geo.cartGap * 2 },
+  slotPill: { flex: 1 },
   pressed: { opacity: PRESSED_OPACITY },
   shelf: {
     height: geo.shelfHeight,

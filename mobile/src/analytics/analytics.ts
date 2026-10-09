@@ -14,7 +14,7 @@ export type AnalyticsEvent =
   | {
       name: 'onboarding_completed';
       /** `has_name`: whether a name was given. The name itself never leaves the device. */
-      props: { path: 'template' | 'own'; days_per_week: number; has_name: boolean };
+      props: { path: 'template' | 'import' | 'own'; days_per_week: number; has_name: boolean };
     }
   | { name: 'workout_started'; props: { exercises: number; resumed: boolean } }
   | { name: 'set_logged'; props: { set_number: number } }
@@ -47,6 +47,15 @@ export type AnalyticsEvent =
   | { name: 'finish_previewed'; props: { finish: string; locked: boolean } }
   /** A blank plan was created from the rack's +. */
   | { name: 'plan_created'; props: { plan_count: number } }
+  /**
+   * An import was read (decision 88): what it came from and what was found, never the contents.
+   * `kept` once its plan was saved, with how many unknown lifts were fixed or left out.
+   */
+  | {
+      name: 'plan_import_read';
+      props: { source: 'text' | 'screenshots'; screenshots: number; days: number; lifts: number; unknown: number; where: 'onboarding' | 'plans' };
+    }
+  | { name: 'plan_imported'; props: { days: number; lifts: number; left_out: number; custom: number; where: 'onboarding' | 'plans' } }
   /** The editor closed with the plan kept (`saved`) or an empty new one dropped (`discarded`). */
   | {
       name: 'plan_editor_closed';

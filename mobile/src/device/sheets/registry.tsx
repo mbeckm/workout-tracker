@@ -10,6 +10,7 @@ import { FinishesSheet } from './finishes-sheet';
 import { KeypadSheet } from './keypad-sheet';
 import { DeviceMenuSheet } from './menu-sheet';
 import { HistorySheet } from './history-sheet';
+import { ImportSheet } from './import-sheet';
 import { PlansSheet } from './plans-sheet';
 import { ReceiptSheet } from './receipt-sheet';
 import { GoalSheet } from './goal-sheet';
@@ -18,7 +19,7 @@ import { SettingsSheet } from './settings-sheet';
 import { TodaySheet } from './today-sheet';
 
 /** Sheets with a text field: their content ends above the keyboard. */
-const KEYBOARD_SHEETS: readonly SheetKind[] = ['settings', 'editor', 'add', 'goal', 'checkin', 'today'];
+const KEYBOARD_SHEETS: readonly SheetKind[] = ['settings', 'editor', 'add', 'goal', 'checkin', 'today', 'import'];
 
 export function sheetUsesKeyboard(kind: SheetKind): boolean {
   return KEYBOARD_SHEETS.includes(kind);
@@ -42,6 +43,7 @@ const TITLES: Record<SheetKind, string> = {
   keypad: 'Weight',
   goal: 'Goal',
   checkin: 'Check in',
+  import: 'Import plan',
 };
 
 /** The content for the open sheet. Keyed by the open, so a swap starts fresh (scroll at top). */
@@ -77,6 +79,8 @@ export function SheetContent({ sheet }: { sheet: OpenSheet }) {
       return <BodySheet key={sheet.key} params={sheet.params} />;
     case 'goal':
       return <GoalSheet key={sheet.key} params={sheet.params} />;
+    case 'import':
+      return <ImportSheet key={sheet.key} params={sheet.params} />;
     case 'checkin':
       return <CheckInSheet key={sheet.key} params={sheet.params} />;
     default:

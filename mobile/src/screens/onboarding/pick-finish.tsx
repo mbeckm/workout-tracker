@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 
 import { isStarterDayCount, planFromStarterTemplate, starterTemplateById } from '@/catalog/templates';
+import type { WorkoutPlan } from '@/domain/types';
+import { importedPlan } from '@/screens/plan-import/finish-import';
+import { getImportSession } from '@/screens/plan-import/session';
 import { finishColors, onboardingGeometry, sheetGeometry, space } from '@/constants/theme';
 import { FINISHES, finishLock, type Finish } from '@/domain/finish';
 import { DeviceObject, deviceObjectScale, offLamps } from '@/device/device-object';
@@ -26,7 +29,21 @@ const GRID_GAP = space.inline;
  * a template plays "Plan ready" then the paywall, Build my own opens the editor.
  */
 export function OnboardingPickFinish() {
-  const params = useLocalSearchParams<{ days?: string; template?: string; own?: string }>();
+  const params = useLocalSearchParams<{ days?: string; template?: string; own?: string; imported?: string }>();
+  if (params.imported === '1') {
+    const session = getImportSession();
+    if (!session.match) {
+      return <Redirect href="/onboarding/import" />;
+    }
+    return (
+      <PickFinish
+        days={session.match.days.length}
+        planName={session.name.trim() || null}
+        onLoad={() => importedPlan(session, 'onboarding')}
+        path="import"
+      />
+    );
+  }
   const days = Number(params.days);
   const template = starterTemplateById(params.template);
   const own = params.own === '1';
@@ -46,11 +63,13 @@ function PickFinish({
   days,
   planName,
   onLoad,
+  path = 'template',
 }: {
   days: number;
   planName: string | null;
-  /** Builds the template's plan; null on the Build my own path. */
-  onLoad: (() => ReturnType<typeof planFromStarterTemplate>) | null;
+  /** Builds the template's (or the imported) plan; null on the Build my own path. */
+  onLoad: (() => WorkoutPlan) | null;
+  path?: 'template' | 'import';
 }) {
   const { finish, preview, setPreview } = useFinish();
   const { setFinish, isPro, tourDone } = useWorkoutStore();
@@ -90,7 +109,7 @@ function PickFinish({
   const next = () => {
     handedOff.current = true;
     if (onLoad) {
-      finishWithPlan(onLoad(), preview != null && lockOf(preview) === 'pro' ? preview : null);
+      finishWithPlan(onLoad(), preview != null && lockOf(preview) === 'pro' ? preview : null, path);
     } else {
       finishBuildingOwn(days);
     }

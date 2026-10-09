@@ -2316,3 +2316,116 @@ export const tourGeometry = {
   wiggleScale: 0.53,
   wiggleTilts: [-4, 3, -1.6, 0.6] as readonly number[],
 } as const;
+
+/**
+ * Import plan (decision 88): the illustration on the dotted tile, the reading screen's progress bar
+ * and found-lift marks, and the Fix screen's cards. Onboarding and the Plans sheet share them.
+ */
+export const importColors = {
+  /** The illustration's tile and its dots. */
+  tile: '#161615',
+  tileDot: '#2A2A27',
+  /** The drawn phone: its outline, screen, list rows and the bars that stand for text. */
+  phoneEdge: '#3A3936',
+  phoneScreen: '#0E0E0D',
+  phoneRow: '#1F1F1D',
+  barStrong: '#8C8A84',
+  barSoft: '#4A4946',
+  barFaint: '#3A3936',
+  /** The copied snippet flying to Paste: paper with grey lines. */
+  paper: '#F3F2EE',
+  paperLineStrong: '#8C8A84',
+  paperLineSoft: '#C9C6BF',
+  /** The selection over the copied reply (orange at .28). */
+  selection: 'rgba(255,106,26,0.28)',
+  flash: '#FFFFFF',
+  /** A found lift's ✓ and an unknown one's ?. */
+  found: '#4C8F57',
+  unknown: '#F2550F',
+  markInk: '#FFFFFF',
+  /** The placeholders that breathe before the first lift is found. */
+  placeholder: '#1A1A19',
+  placeholderLabel: '#232321',
+} as const;
+
+export const importGeometry = {
+  /** The illustration: a tile filling the stage, a drawn phone in its middle. */
+  tileRadius: 28,
+  tileDotPitch: 14,
+  tileDotRadius: 1.2,
+  tileMinHeight: 300,
+  phoneWidth: 150,
+  phoneHeight: 270,
+  phoneRadius: 28,
+  phoneBorder: 2,
+  phoneTop: 28,
+  phonePadTop: 26,
+  phonePadX: 12,
+  /** A text bar in the drawing, and a heading bar. */
+  bar: 5,
+  barHeading: 6,
+  barRadius: 3,
+  bubbleWidth: 78,
+  bubbleHeight: 22,
+  bubbleRadius: 11,
+  selectionRadius: 10,
+  pillHeight: 22,
+  pillPadX: 10,
+  pillRise: 26,
+  rowHeight: 40,
+  rowRadius: 10,
+  rowIcon: 22,
+  rowIconRadius: 6,
+  /** The badge naming the scene (a chat bubble, a screenshot frame). */
+  badge: 44,
+  badgeOffsetX: -100,
+  badgeTop: 14,
+  /** The copied snippet: paper this size, flying this far down at this scale. */
+  snippetWidth: 100,
+  snippetHeight: 84,
+  snippetRadius: 12,
+  snippetTop: 110,
+  flyScale: 0.24,
+  shotScale: 0.42,
+  shotFlyScale: 0.12,
+  /** The reading screen's progress bar. */
+  barHeight: 4,
+  barTrackRadius: 2,
+  /** A found lift's row, and its ✓ / ? mark. */
+  liftRow: 48,
+  mark: 22,
+  markRadius: 11,
+  /** The placeholders before the first lift: label width, and two card heights. */
+  placeholderLabelWidth: 80,
+  placeholderLabelHeight: 13,
+  placeholderCardTall: 184,
+  placeholderCardShort: 138,
+  /** The plan name field on the reading screen. */
+  nameHeight: 40,
+  /** A Fix card's choice rows and the search field. */
+  choiceHeight: 48,
+  choiceRadius: 14,
+  /** Got a plan?: the two cards' art. */
+  noteWidth: 54,
+  noteHeight: 76,
+  noteTilt: 6,
+} as const;
+
+export const importType = {
+  /** A Fix card's quoted name and a tracking choice's title. */
+  cardTitle: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.ink },
+  cardMeta: { ...roundedRole(14, 18, weight.semibold), color: sheetColors.muted },
+  choice: { ...roundedRole(16, 20, weight.semibold), color: sheetColors.ink },
+  choiceMeta: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.sectionLabel },
+  /** A found lift's name and its sets × reps. */
+  lift: { ...roundedRole(17, 22, weight.semibold), color: sheetColors.ink },
+  liftValue: { ...roundedRole(15, 20, weight.semibold), color: sheetColors.muted },
+  mark: { ...roundedRole(13, 16, weight.heavy), color: importColors.markInk },
+  /** The plan name field (no line height: a TextInput). */
+  name: { fontFamily: fontFamily.rounded, fontSize: 30, fontWeight: weight.heavy, color: sheetColors.ink },
+  /** Got a plan?: a card's title and its one line. */
+  forkTitle: { ...roundedRole(26, 30, weight.heavy, -0.4), color: sheetColors.ink },
+  forkSub: { ...roundedRole(15, 20, weight.semibold), color: sheetColors.muted },
+  /** The drawn Copy pill. */
+  artPill: { ...roundedRole(11, 13, weight.heavy), color: sheetColors.pillLightInk },
+} as const;
