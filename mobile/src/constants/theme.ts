@@ -2358,6 +2358,9 @@ export const importColors = {
   sourceAiInk: '#EDEBE5',
   sourceApp: '#5E5D59',
   sourceAppInk: '#FFFFFF',
+  /** The arrows from the sources down to Trim: quiet metal, brighter on the source's turn. */
+  arrow: '#5E5D59',
+  arrowOn: '#D9D6CF',
   /** The placeholders that breathe before the first lift is found. */
   placeholder: '#1A1A19',
   placeholderLabel: '#232321',
@@ -2421,18 +2424,18 @@ export const importGeometry = {
   choiceHeight: 48,
   choiceRadius: 14,
   /** New plan (the rack's sheet): each of the two cards is this tall. */
-  forkCardHeight: 300,
+  forkCardHeight: 320,
   /** New plan's device cards: the face, the display, the source chips and the keys. */
   deviceRadius: 28,
   devicePad: 14,
   displayRadius: 16,
   displayPad: 12,
-  sourceColumn: 104,
-  sourceChip: 46,
+  sourceChip: 58,
   sourceChipRadius: 14,
   sourceTile: 26,
   sourceTileRadius: 8,
-  pushKey: 38,
+  /** The arrow under each source, pointing down at Trim. */
+  arrow: 18,
   sideKey: 46,
   keyLip: 3,
   /** A built lift's row on the display. */

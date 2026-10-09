@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
-  FadeInLeft,
+  FadeInUp,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -98,8 +98,9 @@ const SOURCES = [
 ] as const;
 
 /**
- * Import plan: a note, an AI chat and another workout app take turns; the one whose turn it is
- * lights up, the orange arrow key pushes, and its lift lands on Trim's display.
+ * Import plan: a note, an AI chat and another workout app sit along the top and take turns; the
+ * one on turn is ringed, the arrow under it brightens and nudges down, and its lift lands on Trim's
+ * display at the bottom.
  */
 export function ImportDeviceCard({ onPress }: { onPress: () => void }) {
   const clock = useLoopClock(IMPORT.SOURCE_STEP * SOURCES.length, DURATION.change);
@@ -108,36 +109,44 @@ export function ImportDeviceCard({ onPress }: { onPress: () => void }) {
 
   return (
     <DeviceCard title="Import plan" sub="From a note, an AI chat or another app" onPress={onPress} testID="new-plan-import">
-      <View style={styles.art}>
+      <View style={styles.importArt}>
         <View style={styles.sources}>
-          {SOURCES.map((source, index) => (
-            <View key={source.name} style={[styles.chip, clock != null && index === turn && styles.chipOn]}>
-              <View style={[styles.tile, { backgroundColor: source.tile }]}>
-                <Svg width={G.sourceTile - space.related} height={G.sourceTile - space.related} viewBox="0 0 24 24" fill="none" stroke={source.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d={source.icon} />
-                </Svg>
+          {SOURCES.map((source, index) => {
+            const on = clock != null && index === turn;
+            return (
+              <View key={source.name} style={styles.sourceColumn}>
+                <View style={[styles.chip, on && styles.chipOn]}>
+                  <View style={[styles.tile, { backgroundColor: source.tile }]}>
+                    <Svg width={G.sourceTile - space.related} height={G.sourceTile - space.related} viewBox="0 0 24 24" fill="none" stroke={source.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                      <Path d={source.icon} />
+                    </Svg>
+                  </View>
+                  <Text numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={fontScaleCap.display} style={importType.sourceName}>
+                    {source.name}
+                  </Text>
+                </View>
+                <Animated.View style={on ? push : undefined}>
+                  <Svg width={G.arrow} height={G.arrow} viewBox="0 0 24 24" fill="none" stroke={on ? C.arrowOn : C.arrow} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M12 4v15M6 13l6 6 6-6" />
+                  </Svg>
+                </Animated.View>
               </View>
-              <Text numberOfLines={2} maxFontSizeMultiplier={fontScaleCap.display} style={importType.sourceName}>
-                {source.name}
-              </Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
-        <Animated.View style={[styles.pushKey, push]}>
-          <Svg width={G.pushKey / 2} height={G.pushKey / 2} viewBox="0 0 24 24" fill="none" stroke={C.keyInk} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-            <Path d="M5 12h13M13 6l6 6-6 6" />
-          </Svg>
-        </Animated.View>
         <View style={styles.display}>
           <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
             TRIM
           </Text>
           {SOURCES.slice(0, turn + 1).map((source) => (
-            <Animated.View key={`${source.name}-${clock == null ? 'still' : 'loop'}`} entering={clock == null ? undefined : FadeInLeft.duration(DURATION.change)}>
-              <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.display} style={gadgetType.lcdCaption}>
+            <Animated.View
+              key={`${source.name}-${clock == null ? 'still' : 'loop'}`}
+              entering={clock == null ? undefined : FadeInUp.duration(DURATION.change)}
+              style={styles.landed}>
+              <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdSmall, styles.liftName]}>
                 {source.lift}
               </Text>
-              <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
+              <Text maxFontSizeMultiplier={fontScaleCap.display} style={gadgetType.lcdMeta}>
                 {source.chip}
               </Text>
             </Animated.View>
@@ -227,32 +236,26 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ scale: PRESS_SCALE }] },
   titles: { gap: space.pair, paddingHorizontal: space.tight, paddingBottom: space.tight },
   sub: { color: C.deviceSub },
-  art: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.tight + space.pair },
-  sources: { width: G.sourceColumn, gap: space.related },
+  importArt: { flex: 1, gap: space.tight },
+  sources: { flexDirection: 'row', gap: space.related },
+  sourceColumn: { flex: 1, alignItems: 'center', gap: space.tight },
   chip: {
+    alignSelf: 'stretch',
     height: G.sourceChip,
     borderRadius: G.sourceChipRadius,
     borderCurve: 'continuous',
     backgroundColor: C.sourceChip,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: space.related,
-    paddingHorizontal: space.related + space.pair,
+    justifyContent: 'center',
+    gap: space.tight,
+    paddingHorizontal: space.tight,
   },
-  chipOn: { boxShadow: `inset 0 0 0 2px ${signal.orange}`, transform: [{ translateX: space.pair + 1 }] },
+  chipOn: { boxShadow: `inset 0 0 0 2px ${signal.orange}` },
+  landed: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
   tile: {
     width: G.sourceTile,
     height: G.sourceTile,
     borderRadius: G.sourceTileRadius,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pushKey: {
-    width: G.pushKey,
-    height: G.pushKey,
-    borderRadius: G.pushKey / 2,
-    experimental_backgroundImage: `radial-gradient(circle at 40% 35%, ${C.keyHi}, ${C.keyLo})`,
-    boxShadow: `0 ${G.keyLip}px 0 ${C.keyLip}`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
     backgroundColor: lcd.lcd,
     boxShadow: `inset 0 2px 8px ${lcd.lcdShade}`,
     padding: G.displayPad,
-    gap: space.related,
+    gap: space.tight,
     overflow: 'hidden',
   },
   buildDisplay: { gap: space.tight },
