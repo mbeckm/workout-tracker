@@ -20,6 +20,7 @@ import {
   type TourState,
 } from '@/device/tour/tour-model';
 import { rollWindow, tourRollRows } from '@/device/roll-call-model';
+import { estimateDayMinutes, TIME_BUFFER } from '@/domain/day-facts';
 import { finishLock } from '@/domain/finish';
 import {
   HOME_LIFT_LINES,
@@ -261,6 +262,15 @@ check('lamps: a repeated day lights a lamp; the row shows its latest workout', (
   assert.equal(home.rows[0].done?.minutes, 51);
 });
 
+check('estimate: a prescription is stretched by TIME_BUFFER; timed history is not (D93)', () => {
+  const days = fourDays();
+  const plan = makePlan(days);
+  assert.equal(TIME_BUFFER, 1.3);
+  assert.equal(estimateDayMinutes(plan, days[2], []), 45);
+  const history = newestFirst([trained(plan, days[2], MON, { minutes: 40 }), trained(plan, days[2], WED, { minutes: 51 })]);
+  assert.equal(estimateDayMinutes(plan, days[2], history), 51);
+});
+
 check('lamps: the just-finished day flickers its own slot', () => {
   const days = fourDays();
   const plan = makePlan(days);
@@ -294,7 +304,8 @@ check('selection: the plan loop’s next day', () => {
   const home = model({ plan, history });
   assert.equal(home.selectedIndex, 2);
   assert.equal(home.rows[2].selected, true);
-  assert.equal(home.rows[2].accessibilityLabel, 'Push 1, next, 6 lifts, about 35 minutes');
+  // The prescription's work and rest, × TIME_BUFFER (D93), to the nearest 5.
+  assert.equal(home.rows[2].accessibilityLabel, 'Push 1, next, 6 lifts, about 45 minutes');
 });
 
 check('selection: no history selects the first day (after onboarding)', () => {
@@ -352,7 +363,7 @@ check('rows: only trainable days; the expanded row lists 3 lifts and +N MORE pas
   assert.deepEqual(pushRow.lines[0], { kind: 'lift', name: 'BENCH PRESS', prescription: '3×8' });
   assert.deepEqual(pushRow.lines[3], { kind: 'more', count: 3 });
   assert.equal(home.rows[3].lines.length, 3);
-  assert.equal(pushRow.estimate, '~35 MIN');
+  assert.equal(pushRow.estimate, '~45 MIN');
   assert.equal(expandedRowHeight(6, 70, 27), 178);
   assert.equal(expandedRowHeight(3, 70, 27), 151);
   assert.equal(expandedRowHeight(1, 70, 27), 97);
