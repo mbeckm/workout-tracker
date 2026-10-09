@@ -18,6 +18,12 @@ public class DeviceLaunchModule: Module {
       Prop("duration") { (view: DeviceLaunchView, value: Double) in
         view.duration = value
       }
+      Prop("prepare") { (view: DeviceLaunchView, value: Bool) in
+        view.prepare = value
+      }
+      Prop("swapAt") { (view: DeviceLaunchView, value: Double) in
+        view.swapAt = value
+      }
       Prop("pose") { (view: DeviceLaunchView, value: [[String: Double]]) in
         view.pose = value
       }

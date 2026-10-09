@@ -283,8 +283,10 @@ function DeviceSurface() {
       <DeviceLaunch
         style={StyleSheet.absoluteFill}
         finish={finish}
+        prepare={launch3d.prepare}
         phase={launch3d.phase}
         duration={DEVICE.TOUR_LAUNCH}
+        swapAt={DEVICE.TOUR_SWAP}
         pose={TOUR_POSE}
         curves={TOUR_POSE_CURVES}
         poseHeight={TOUR_POSE_HEIGHT}

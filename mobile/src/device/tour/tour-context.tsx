@@ -66,6 +66,12 @@ type TourContextValue = {
   /** The finish the owner had before the reward (the picker's first swatch). */
   before: Finish;
   start: () => void;
+  /**
+   * The 3D launch has the device photographed and hidden: dress it in the new finish now, during
+   * the crouch, so the re-skin's work lands while the body barely moves. The 3D body shows it
+   * edge-on at `DEVICE.TOUR_SWAP`, as the 2D slab does.
+   */
+  dressEarly: () => void;
   choose: (finish: Finish) => void;
   keep: () => void;
 };
@@ -204,6 +210,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
     }, DEVICE.TOUR_LAUNCH);
   }, [closeSheet, haptics, later, launch, setPreview]);
 
+  const dressEarly = useCallback(() => {
+    if (launch === 'launch') setPreview(EARNED_FINISH);
+  }, [launch, setPreview]);
+
   const choose = useCallback(
     (finish: Finish) => {
       if (finish === pick || launch === 'landing') return;
@@ -275,10 +285,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
       ripple,
       before,
       start,
+      dressEarly,
       choose,
       keep,
     }),
-    [active, alternatives, before, choose, current, dispatch, facts, keep, launch, line, loadStep, pick, restLeft, ripple, run, start, state, target],
+    [active, alternatives, before, choose, current, dispatch, dressEarly, facts, keep, launch, line, loadStep, pick, restLeft, ripple, run, start, state, target],
   );
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;

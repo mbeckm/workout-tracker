@@ -10,9 +10,13 @@ export type DeviceLaunchPose = { at: number; y: number; sx: number; sy: number; 
 export type DeviceLaunchProps = {
   /** The finish the body wears; a change mid-flight re-dresses it (photographs the children again). */
   finish: FinishId;
+  /** Warm the 3D body up ahead of `launch` (shaders, geometry), so the throw's first frame isn't lost. */
+  prepare: boolean;
   /** `launch` photographs the children and plays; `idle` hands back to them. */
   phase: 'idle' | 'launch' | 'perched' | 'landing';
   duration: number;
+  /** A finish that arrives before this (ms into the launch) waits for it: the body re-dresses edge-on. */
+  swapAt: number;
   /** Keyframes, `at` 0–1 of `duration`, `y` on a `poseHeight`-tall screen, `turn` in degrees. */
   pose: readonly DeviceLaunchPose[];
   /** One cubic-bezier `[x1, y1, x2, y2]` per segment of `pose`. */

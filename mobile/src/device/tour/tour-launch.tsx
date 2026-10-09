@@ -115,9 +115,10 @@ export function useTourMotion(): TourMotion {
  * landing is done. Reduce Motion keeps the 2D fade.
  */
 export function useTourLaunch3d() {
-  const { launch, ripple } = useTour();
+  const { active, launch, ripple, dressEarly } = useTour();
   const reduceMotion = useReducedMotion();
-  const playing = isDeviceLaunchAvailable && !reduceMotion && launch != null;
+  const enabled = isDeviceLaunchAvailable && !reduceMotion;
+  const playing = enabled && launch != null;
   const [ready, setReady] = useState(false);
   // A new launch waits for its own first frame.
   const [wasPlaying, setWasPlaying] = useState(playing);
@@ -125,8 +126,11 @@ export function useTourLaunch3d() {
     setWasPlaying(playing);
     if (!playing) setReady(false);
   }
-  const onSceneReady = useCallback(() => setReady(true), []);
-  return { phase: playing && launch ? launch : ('idle' as const), playing, showing: playing && ready, ripple, onSceneReady };
+  const onSceneReady = useCallback(() => {
+    setReady(true);
+    dressEarly();
+  }, [dressEarly]);
+  return { phase: playing && launch ? launch : ('idle' as const), prepare: enabled && active, playing, showing: playing && ready, ripple, onSceneReady };
 }
 
 /** The pose for the frame: in the air, perched (with the wiggle), or settling home. */
