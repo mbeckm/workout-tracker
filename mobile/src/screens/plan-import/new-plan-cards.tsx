@@ -120,10 +120,11 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
   const clock = useLoopClock(IMPORT.SOURCE_STEP * SOURCES.length, DURATION.change);
   const turn = clock == null ? SOURCES.length - 1 : Math.floor(clock / IMPORT.SOURCE_STEP);
   const push = usePress(clock == null ? -1 : turn);
-  // The display is as tall as the card leaves it: a line that would only half fit stays hidden
-  // rather than being cut by the display's edge.
-  const [room, setRoom] = useState(Infinity);
-  const [bottoms, setBottoms] = useState<Record<string, number>>({});
+  // The display is as tall as the card leaves it. Lines are whole rows (G.displayRow), so it shows
+  // as many as fit, newest last; a line is never cut by the display's edge.
+  const [fit, setFit] = useState(0);
+  const landed = SOURCES.slice(0, turn + 1);
+  const shown = fit > 0 ? landed.slice(-fit) : [];
 
   return (
     <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
@@ -152,19 +153,18 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
             );
           })}
         </View>
-        <View style={styles.display} onLayout={(event) => setRoom(event.nativeEvent.layout.height - G.displayPad)}>
+        <View style={styles.display} onLayout={(event) => {
+            const free = event.nativeEvent.layout.height - 2 * G.displayPad - gadgetType.lcdMeta.lineHeight;
+            setFit(Math.max(0, Math.floor(free / (G.displayRow + space.tight))));
+          }}>
           <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
             TRIM
           </Text>
-          {SOURCES.slice(0, turn + 1).map((source) => (
+          {shown.map((source) => (
             <Animated.View
               key={`${source.name}-${clock == null ? 'still' : 'loop'}`}
               entering={clock == null ? undefined : FadeInUp.duration(DURATION.change)}
-              onLayout={(event) => {
-                const { y, height } = event.nativeEvent.layout;
-                setBottoms((current) => (current[source.name] === y + height ? current : { ...current, [source.name]: y + height }));
-              }}
-              style={[styles.landed, (bottoms[source.name] ?? 0) > room && styles.hidden]}>
+              style={styles.landed}>
               <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdSmall, styles.liftName]}>
                 {source.lift}
               </Text>
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.tight,
   },
   chipOn: { boxShadow: `inset 0 0 0 2px ${C.sourceRing}` },
-  landed: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
+  landed: { height: G.displayRow, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
   tile: {
     width: G.sourceTile,
     height: G.sourceTile,
@@ -330,7 +330,6 @@ const styles = StyleSheet.create({
   },
   buildDisplay: { gap: space.tight },
   dim: { color: lcd.amberDim },
-  hidden: { opacity: 0 },
   row: { height: G.displayRow, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.related },
   liftName: { flexShrink: 1 },
   liftChip: { color: lcd.amber },
