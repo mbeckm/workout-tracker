@@ -375,6 +375,13 @@ export const IMPORT = {
   ROW_IN: 280,
   /** The placeholders breathe on this half-cycle before the first lift. */
   BREATHE: 700,
+  /** New plan's Import card: each source's turn (lights, the arrow pushes, its lift lands). */
+  SOURCE_STEP: 2000,
+  /** New plan's Build card: each press of + adds a lift, typed a letter at a time. */
+  LIFT_STEP: 1600,
+  TYPE_CHAR: 55,
+  /** The key's press: down, then back. */
+  KEY_DOWN: 90,
   /** The progress bar eases to each new value over this. */
   BAR: 300,
 } as const;

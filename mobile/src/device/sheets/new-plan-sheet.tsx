@@ -5,14 +5,14 @@ import { importGeometry, sheetGeometry, space } from '@/constants/theme';
 import { emptyPlan } from '@/domain/helpers';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
-import { EmptySlotsArt, ForkCard, NotesArt } from '@/screens/plan-import/fork-cards';
+import { BuildDeviceCard, ImportDeviceCard } from '@/screens/plan-import/new-plan-cards';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { SheetHeader, SheetScroll } from './primitives';
 
 /**
- * New plan (decision 88): the rack's `New plan` opens two big cards, the onboarding fork's look.
- * Import plan goes on to reading one from text or screenshots; Build one starts an empty plan in
+ * New plan (decision 88): the rack's `New plan` opens two small Trim machines whose displays show
+ * what each choice does (round 6 on the canvas, I2). Import plan goes on to reading one from text or screenshots; Build one starts an empty plan in
  * the editor (active only when it's the first plan). The rack checked the second-plan gate.
  */
 export function NewPlanSheet({ params }: { params: SheetParams }) {
@@ -30,17 +30,12 @@ export function NewPlanSheet({ params }: { params: SheetParams }) {
   return (
     <SheetScroll header={<SheetHeader title="New plan" left={{ kind: 'back', onPress: () => swapSheet('plans', via) }} />}>
       <View style={styles.cards} testID="new-plan-sheet">
-        <ForkCard
-          title="Import plan"
-          sub="Notes, ChatGPT, another app"
-          onPress={() => swapSheet('import', via)}
-          style={styles.card}
-          testID="new-plan-import">
-          <NotesArt />
-        </ForkCard>
-        <ForkCard title="Build one" sub="Start empty" onPress={build} style={styles.card} testID="new-plan-build">
-          <EmptySlotsArt />
-        </ForkCard>
+        <View style={styles.card}>
+          <ImportDeviceCard onPress={() => swapSheet('import', via)} />
+        </View>
+        <View style={styles.card}>
+          <BuildDeviceCard onPress={build} />
+        </View>
       </View>
     </SheetScroll>
   );

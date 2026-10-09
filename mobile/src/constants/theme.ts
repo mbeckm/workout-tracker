@@ -2343,6 +2343,21 @@ export const importColors = {
   found: '#4C8F57',
   unknown: '#F2550F',
   markInk: '#FFFFFF',
+  /** New plan's device cards: a metal face, Trim's own keys, the three sources. */
+  deviceHi: '#3D3C39',
+  deviceLo: '#1D1C1A',
+  deviceSub: '#A9A69E',
+  keyHi: '#FF8443',
+  keyLo: '#D9480A',
+  keyLip: '#9A3004',
+  keyInk: '#FFFFFF',
+  sourceChip: '#262624',
+  sourceNote: '#FBFAF7',
+  sourceNoteInk: '#1C1B18',
+  sourceAi: '#3A3936',
+  sourceAiInk: '#EDEBE5',
+  sourceApp: '#5E5D59',
+  sourceAppInk: '#FFFFFF',
   /** The placeholders that breathe before the first lift is found. */
   placeholder: '#1A1A19',
   placeholderLabel: '#232321',
@@ -2406,7 +2421,22 @@ export const importGeometry = {
   choiceHeight: 48,
   choiceRadius: 14,
   /** New plan (the rack's sheet): each of the two cards is this tall. */
-  forkCardHeight: 280,
+  forkCardHeight: 300,
+  /** New plan's device cards: the face, the display, the source chips and the keys. */
+  deviceRadius: 28,
+  devicePad: 14,
+  displayRadius: 16,
+  displayPad: 12,
+  sourceColumn: 104,
+  sourceChip: 46,
+  sourceChipRadius: 14,
+  sourceTile: 26,
+  sourceTileRadius: 8,
+  pushKey: 38,
+  sideKey: 46,
+  keyLip: 3,
+  /** A built lift's row on the display. */
+  displayRow: 22,
   /** Got a plan?: the two cards' art. */
   noteWidth: 54,
   noteHeight: 76,
@@ -2428,6 +2458,9 @@ export const importType = {
   /** Got a plan?: a card's title and its one line. */
   forkTitle: { ...roundedRole(26, 30, weight.heavy, -0.4), color: sheetColors.ink },
   forkSub: { ...roundedRole(15, 20, weight.semibold), color: sheetColors.muted },
+  /** New plan's source chips (Note, AI chat, Workout app) and the + key's glyph. */
+  sourceName: { ...roundedRole(13, 15, weight.heavy), color: sheetColors.inkSoft },
+  keyGlyph: { ...roundedRole(24, 26, weight.heavy), color: importColors.keyInk },
   /** The drawn Copy pill. */
   artPill: { ...roundedRole(11, 13, weight.heavy), color: sheetColors.pillLightInk },
 } as const;
