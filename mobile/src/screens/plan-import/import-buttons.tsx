@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -9,12 +9,6 @@ import { PRESS_SCALE } from '@/motion';
 
 import { usePulseStyle } from './import-art';
 import type { ImportInput } from './session';
-
-/**
- * Past this text size Apple's paste control draws a blank box, so Trim's own pill pastes instead
- * (iOS then asks once to allow pasting).
- */
-const PASTE_LABEL_MAX_SCALE = 1.3;
 
 /** Screenshots: a routine rarely spans more than a few. */
 const MAX_SCREENSHOTS = 10;
@@ -28,9 +22,11 @@ export function importButtonReach(pillHeight: number, gapAbove: number) {
 }
 
 /**
- * Import plan's two ways in (decision 88). Paste is the system paste control where iOS has one,
- * so pasting never asks for permission; it takes text or an image. Screenshots opens the photo
- * picker (no library access needed) for up to ten, in the order picked.
+ * Import plan's two ways in (decision 88), as two matching Trim pills. Paste reads the clipboard
+ * (text, else an image); iOS asks the owner to allow it, which a paste they just tapped expects.
+ * Apple's own paste control skips that prompt but draws in the system font and breaks at large
+ * text sizes, so it was dropped in visual QA. Screenshots opens the photo picker (no library
+ * access needed) for up to ten, in the order picked.
  */
 export function ImportButtons({
   t,
@@ -41,19 +37,10 @@ export function ImportButtons({
   pillHeight: number;
   onInput: (input: ImportInput) => void;
 }) {
-  const { fontScale } = useWindowDimensions();
   const pastePulse = usePulseStyle(t, 'paste');
   const shotsPulse = usePulseStyle(t, 'screenshots');
 
-  const pasted = (payload: Clipboard.PasteEventPayload) => {
-    if (payload.type === 'text') {
-      if (payload.text.trim()) onInput({ kind: 'text', text: payload.text });
-      return;
-    }
-    onInput({ kind: 'images', uris: [payload.data] });
-  };
-
-  const pasteFallback = async () => {
+  const paste = async () => {
     const text = await Clipboard.getStringAsync();
     if (text.trim()) {
       onInput({ kind: 'text', text });
@@ -83,33 +70,19 @@ export function ImportButtons({
   return (
     <View style={styles.stack}>
       <Animated.View style={pastePulse}>
-        {Clipboard.isPasteButtonAvailable && fontScale <= PASTE_LABEL_MAX_SCALE ? (
-          <Clipboard.ClipboardPasteButton
-            onPress={pasted}
-            acceptedContentTypes={['plain-text', 'image']}
-            imageOptions={{ format: 'jpeg', jpegQuality: 0.9 }}
-            backgroundColor={sheetColors.pillLight}
-            foregroundColor={sheetColors.pillLightInk}
-            cornerStyle="capsule"
-            displayMode="iconAndLabel"
-            style={[styles.native, { height: pillHeight }]}
-            testID="import-paste"
-          />
-        ) : (
-          <Pill
-            title="Paste"
-            light
-            style={pill}
-            onPress={() => void pasteFallback()}
-            testID="import-paste"
-            icon={
-              <>
-                <Rect x={8} y={3} width={8} height={4} rx={1} />
-                <Path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-              </>
-            }
-          />
-        )}
+        <Pill
+          title="Paste"
+          light
+          style={pill}
+          onPress={() => void paste()}
+          testID="import-paste"
+          icon={
+            <>
+              <Rect x={8} y={3} width={8} height={4} rx={1} />
+              <Path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+            </>
+          }
+        />
       </Animated.View>
       <Animated.View style={shotsPulse}>
         <Pill
@@ -184,7 +157,6 @@ function Pill({
 
 const styles = StyleSheet.create({
   stack: { gap: space.related },
-  native: { width: '100%' },
   note: { textAlign: 'center', paddingHorizontal: space.gutter },
   pill: {
     borderCurve: 'continuous',
