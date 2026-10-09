@@ -7,7 +7,12 @@ import { useWorkoutStore } from '@/store/workout-store';
 
 import { OnboardingFrame } from './frame';
 
-export const FIX_SUB = 'Trim couldn’t recognize all exercises. Replace them with alternatives, or create custom ones.';
+const FIX_SUB = 'Trim couldn’t recognize all exercises. Replace them with alternatives, or create custom ones.';
+
+/** The one line of explanation, while there's something left to fix; `All set` needs none. */
+export function fixSub(left: number): string | undefined {
+  return left === 0 ? undefined : FIX_SUB;
+}
 
 /** `Fix 2 lifts`, counting down as they're answered; `All set` when none are left. */
 export function fixTitle(left: number): string {
@@ -32,7 +37,7 @@ export function OnboardingImportFix() {
   return (
     <OnboardingFrame
       title={fixTitle(left)}
-      sub={FIX_SUB}
+      sub={fixSub(left)}
       action={typing ? undefined : {
         title: 'Continue',
         disabled: !allFixed(match, session.fixes),

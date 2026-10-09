@@ -341,7 +341,6 @@ check('Matching: common gym spellings find the catalog row', () => {
     ['Barbell row', 'Barbell Row'],
     ['Back squat', 'Barbell Back Squat'],
     ['Leg press', 'Leg Press'],
-    ['Calf raise', 'Standing Calf Raise'],
     ['Incline DB press', 'Incline Dumbbell Press'],
     ['Tricep pushdown', 'Tricep Pushdowns'],
     ['Pull-ups', 'Pull-Ups'],
@@ -354,17 +353,62 @@ check('Matching: common gym spellings find the catalog row', () => {
     ['Dumbbell flyes', 'Dumbbell Fly'],
     ['Pushups', 'Push-Up'],
     ['Plank', 'Plank'],
+    ['Hammer curls', 'Hammer Curl'],
+    ['Squat', 'Barbell Back Squat'],
+    ['Barbell bench press', 'Flat Barbell Bench Press'],
+    ['Dumbbell lateral raise', 'Lateral Raises'],
   ];
   for (const [name, expected] of cases) {
     assert.deepEqual([name, matchOne(name).exercise?.name ?? null], [name, expected]);
   }
 });
 
-check('Matching: an equipment qualifier picks the variant', () => {
+check('Matching: an equipment qualifier picks the variant, or the row that already uses it', () => {
   assert.equal(matchOne('Bench Press', 'Barbell').exercise?.name, 'Flat Barbell Bench Press');
   assert.equal(matchOne('Incline Bench Press', 'Dumbbell').exercise?.name, 'Incline Bench Press (Dumbbells)');
   assert.equal(matchOne('Bicep Curl', 'Barbell').exercise?.name, 'Barbell Curl');
-  assert.equal(matchOne('Shoulder Press', 'Dumbbell').exercise?.name, 'Seated Dumbbell Shoulder Press');
+  assert.equal(matchOne('Lat Pulldown', 'Cable').exercise?.name, 'Lat Pulldown');
+  assert.equal(matchOne('Pull Up', 'Bodyweight').exercise?.name, 'Pull-Ups');
+});
+
+/** Flagged: asked about in Fix like an unknown lift, with the guess as its first choice. */
+function guessOf(name: string, qualifier: string | null = null): string | null {
+  const match = matchOne(name, qualifier);
+  if (match.exercise) {
+    throw new Error(`"${name}" was recognized as ${match.exercise.name}, expected a guess`);
+  }
+  return match.alternatives[0]?.name ?? null;
+}
+
+check('Matching: a guess is flagged, the guess first (decision 91)', () => {
+  // Equipment or a variant the source didn't state.
+  assert.equal(guessOf('Chest-supported row'), 'Chest-Supported Dumbbell Row');
+  assert.equal(guessOf('Calf raise'), 'Standing Calf Raise');
+  assert.equal(guessOf('Shoulder Press', 'Dumbbell'), 'Seated Dumbbell Shoulder Press');
+  // A qualifier the match drops.
+  assert.equal(guessOf('Weighted chin-ups'), 'Chin-Up');
+  assert.equal(guessOf('Deficit deadlift'), 'Deadlift');
+  assert.equal(guessOf('Paused squat'), 'Barbell Back Squat');
+  assert.equal(guessOf('Single-arm row'), 'Single-Arm Cable Row');
+  assert.equal(matchOne('Chest-supported row').alternatives.length <= 3, true);
+});
+
+check('Matching: what the source never names stays unknown', () => {
+  const jm = matchOne('JM press');
+  assert.equal(jm.exercise, null);
+  assert.equal(jm.alternatives.some((exercise) => /JM/i.test(exercise.name)), false);
+});
+
+check("Matching: Claude's pick is a guess unless the owner's words say it", () => {
+  const remote = (name: string, suggestion: string) => {
+    const lift: ImportedLift = { raw: name, name, qualifier: null, sets: null, reps: null, seconds: null, suggestion };
+    return matchParsedPlan({ name: null, days: [{ title: null, lifts: [lift] }] }, []).days[0].lifts[0];
+  };
+  const row = remote('Chest-supported row', 'Chest-Supported Dumbbell Row');
+  assert.deepEqual([row.exercise, row.alternatives[0]?.name], [null, 'Chest-Supported Dumbbell Row']);
+  assert.equal(remote('Weighted chin-ups', 'Chin-Up').exercise, null);
+  assert.equal(remote('Military press', 'Overhead Press').exercise?.name, 'Overhead Press');
+  assert.equal(remote('Kroc row', 'One-Arm Dumbbell Row').alternatives[0]?.name, 'One-Arm Dumbbell Row');
 });
 
 check('Matching: unknown lifts stay null with up to 3 alternatives', () => {

@@ -88,11 +88,13 @@ const ul = plan('Upper Lower', [
   ['Lower A', [squat]],
 ]);
 
-check('cart labels: uppercase, no spaces, 6 characters', () => {
-  assert.equal(cartLabel('Push 1'), 'PUSH1');
-  assert.equal(cartLabel('Upper A'), 'UPPERA');
-  assert.equal(cartLabel('Full body day'), 'FULLBO');
+check('cart labels: title if it fits 6, else initials', () => {
+  assert.equal(cartLabel('Push 1'), 'PUSH 1');
+  assert.equal(cartLabel('Upper A'), 'UA');
+  assert.equal(cartLabel('Full body day'), 'FBD');
   assert.equal(cartLabel('  legs  '), 'LEGS');
+  assert.equal(cartLabel('Upper Hypertrophy'), 'UH');
+  assert.equal(cartLabel('Day 1'), 'DAY 1');
 });
 
 check('shelf summary and plurals', () => {
@@ -126,7 +128,7 @@ check('rack: active first, green only for this week on the active plan', () => {
   const old = { ...workout, id: 'w0', completedAt: new Date(weekStart - 86_400_000).toISOString() } as LoggedWorkout;
   const shelves = rackModel({ plans: [ul, ppl], activePlanId: ppl.id, history: [workout, old], now });
   assert.deepEqual(shelves.map((s) => s.name), ['Push Pull Legs', 'Upper Lower']);
-  assert.deepEqual(shelves[0].carts.map((c) => `${c.label}:${c.done}`), ['PULL1:true', 'LEGS1:false', 'PUSH1:false', 'LEGS2:false']);
+  assert.deepEqual(shelves[0].carts.map((c) => `${c.label}:${c.done}`), ['PULL 1:true', 'LEGS 1:false', 'PUSH 1:false', 'LEGS 2:false']);
   assert.deepEqual(shelves[1].carts.map((c) => c.done), [false, false]);
   assert.equal(shelves[0].accessibilityLabel, 'Push Pull Legs, active, 4 days, 3 lifts');
 });

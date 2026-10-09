@@ -1,13 +1,16 @@
-/** Title-case catalog names for display ("barbell bench press" → "Barbell Bench Press"). */
+/**
+ * Title-case catalog names for display ("barbell bench press" → "Barbell Bench Press"). A word
+ * the owner already cased stays as written ("JM press" → "JM Press", "EZ-bar curl" → "EZ-bar
+ * Curl"); only all-lowercase words get a capital. History matches names case-insensitively.
+ */
 export function exerciseCatalogDisplayText(value: string | null | undefined): string {
   if (value == null || value === '') {
     return '';
   }
   return value
-    .toLowerCase()
     .split(/\s+/)
     .filter(Boolean)
-    .map((word) => (word[0] ? word[0].toUpperCase() + word.slice(1) : ''))
+    .map((word) => (word === word.toLowerCase() ? word[0].toUpperCase() + word.slice(1) : word))
     .join(' ');
 }
 

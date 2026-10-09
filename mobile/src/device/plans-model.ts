@@ -15,9 +15,21 @@ import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } fro
 /** A cartridge's label window holds this many Doto 9 characters (prototype `cartLabel`). */
 export const CART_LABEL_MAX = 6;
 
-/** `Push 1` → `PUSH1`, `Upper A` → `UPPERA`: uppercase, no spaces, at most 6 characters. */
-export function cartLabel(name: string): string {
-  return name.toUpperCase().replace(/\s+/g, '').slice(0, CART_LABEL_MAX);
+/**
+ * A cartridge's label (trim-ui §13 Plans rack): the day title uppercase when it fits the window,
+ * otherwise its initials (`Push 1` → `PUSH 1`, `Upper A` → `UA`, `Full Body B` → `FBB`). Shared
+ * with onboarding's plan packs, which pass their own narrower window.
+ */
+export function cartLabel(name: string, max: number = CART_LABEL_MAX): string {
+  const upper = name.trim().toUpperCase();
+  if (upper.length <= max) {
+    return upper;
+  }
+  const initials = upper
+    .split(/\s+/)
+    .map((word) => word[0] ?? '')
+    .join('');
+  return initials.slice(0, max);
 }
 
 function plural(count: number, one: string, many: string): string {

@@ -8,7 +8,7 @@ import type { ExercisePrescription } from '@/domain/types';
 
 import { displayPrescription } from './home-model';
 import type { LiftLampState } from './log/log-model';
-import type { TourState } from './tour/tour-model';
+import { tourLiftDone, type TourState } from './tour/tour-model';
 
 export type RollRow = {
   key: string;
@@ -40,13 +40,13 @@ export function planRollRows(exercises: readonly ExercisePrescription[]): RollRo
   }));
 }
 
-/** The tour's practice lifts: the ones before the current one done. */
+/** The tour's practice lifts: done only when their sets are, as the log's. */
 export function tourRollRows(state: TourState): RollRow[] {
   return state.lifts.map((lift, index) => ({
     key: lift.id,
     name: lift.name.toUpperCase(),
-    meta: `${index === state.lift ? state.logged : 0}/${state.setsPerLift}`,
-    done: index < state.lift,
+    meta: `${state.sets[index] ?? 0}/${state.setsPerLift}`,
+    done: tourLiftDone(state, index),
   }));
 }
 

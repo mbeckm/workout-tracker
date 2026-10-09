@@ -12,6 +12,9 @@ public class CartridgeInsertModule: Module {
       Prop("finish") { (view: CartridgeInsertView, value: String) in
         view.finish = value
       }
+      Prop("screen") { (view: CartridgeInsertView, value: [String: String]?) in
+        view.screen = InsertScreen(value)
+      }
       Prop("planName") { (view: CartridgeInsertView, value: String) in
         view.planName = value
       }
