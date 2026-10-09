@@ -1,6 +1,6 @@
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -14,7 +14,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FullWindowOverlay } from 'react-native-screens';
 
 import {
   PRESSED_OPACITY,
@@ -69,9 +68,6 @@ function hideToast(id: number) {
   }
 }
 
-/** How far above the window's bottom edge the toast sits while a screen asks (the paywall); null: the top. */
-let bottomOffset: number | null = null;
-
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -108,28 +104,12 @@ const EXIT_TOP = exitTowards(-1);
 const EXIT_BOTTOM = exitTowards(1);
 
 /**
- * A screen whose top is busy (the paywall, a full-screen modal) moves the toast to `bottom`
- * points above the window's bottom edge while it's mounted.
+ * Mount once at the root, after the navigator: it draws above the device and SheetHost. A
+ * full-screen modal that needs toasts (the paywall) mounts its own with `bottom`, because the
+ * root one is drawn underneath it.
  */
-export function useToastBottom(bottom: number) {
-  useEffect(() => {
-    bottomOffset = bottom;
-    emit();
-    return () => {
-      bottomOffset = null;
-      emit();
-    };
-  }, [bottom]);
-}
-
-/**
- * Mount once at the root, after the navigator. On iOS it draws in a `FullWindowOverlay`, above
- * every native-stack screen and modal (the device and its sheets, onboarding, the paywall): a
- * plain sibling of the navigator is painted under pushed screens.
- */
-export function ToastHost() {
+export function ToastHost({ bottom }: { bottom?: number } = {}) {
   const toast = useSyncExternalStore(subscribe, () => current, () => null);
-  const bottom = useSyncExternalStore(subscribe, () => bottomOffset, () => null);
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const atTop = bottom == null;
@@ -159,46 +139,27 @@ export function ToastHost() {
   }, [toast]);
 
   return (
-    <ToastLayer>
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
-          // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
-          paddingHorizontal: space.gutter,
-          alignItems: 'center',
-        }}>
-        {toast ? (
-          <Animated.View
-            key={toast.id}
-            style={{ maxWidth: '100%' }}
-            entering={reduceMotion ? FadeIn.duration(DURATION.fade) : atTop ? ENTER_TOP : ENTER_BOTTOM}
-            exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : atTop ? EXIT_TOP : EXIT_BOTTOM}>
-            <ToastPill toast={toast} direction={atTop ? -1 : 1} />
-          </Animated.View>
-        ) : null}
-      </View>
-    </ToastLayer>
-  );
-}
-
-/**
- * iOS: a window-level overlay. Touches outside the pill pass through, it isn't a VoiceOver modal,
- * and it sits outside the app's gesture root, so it brings its own for the swipe to dismiss.
- */
-function ToastLayer({ children }: { children: ReactNode }) {
-  if (Platform.OS !== 'ios') {
-    return children;
-  }
-  return (
-    <FullWindowOverlay unstable_accessibilityContainerViewIsModal={false}>
-      <GestureHandlerRootView style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        {children}
-      </GestureHandlerRootView>
-    </FullWindowOverlay>
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
+        // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
+        paddingHorizontal: space.gutter,
+        alignItems: 'center',
+      }}>
+      {toast ? (
+        <Animated.View
+          key={toast.id}
+          style={{ maxWidth: '100%' }}
+          entering={reduceMotion ? FadeIn.duration(DURATION.fade) : atTop ? ENTER_TOP : ENTER_BOTTOM}
+          exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : atTop ? EXIT_TOP : EXIT_BOTTOM}>
+          <ToastPill toast={toast} direction={atTop ? -1 : 1} />
+        </Animated.View>
+      ) : null}
+    </View>
   );
 }
 

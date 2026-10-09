@@ -84,7 +84,7 @@ function DeviceApp() {
           </NavigationThemeProvider>
         </TourProvider>
         <ScreenTracker />
-        {/* Above every screen and sheet (a window overlay on iOS); the paywall moves it to the bottom. */}
+        {/* Above SheetHost (which lives in the device screen); the paywall modal mounts its own. */}
         <ToastHost />
       </DeviceProvider>
     </FinishProvider>
