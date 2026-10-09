@@ -8,5 +8,5 @@ screenshots with Claude Haiku 5.5 and returns its structure. It stores and logs 
   Anthropic Console.
 - Rate limit: a Vercel Firewall rule on `/api/import-plan` (per IP).
 - `catalog-names.json` is generated from the app's catalog: `cd ../mobile && npx tsx scripts/export-catalog-names.ts`.
-- The app reads `EXPO_PUBLIC_IMPORT_API_URL` (default `https://trim-api.vercel.app`) and falls back
+- The app reads `EXPO_PUBLIC_IMPORT_API_URL` (default `https://trim-api-five.vercel.app`) and falls back
   to reading on the phone when this endpoint fails.

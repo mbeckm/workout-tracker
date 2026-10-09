@@ -6,7 +6,7 @@ import type { ImportedDay, ImportedLift, ParsedPlan } from '@/domain/plan-import
  * which then goes through the same catalog matching as the on-device parser. Any failure
  * (offline, slow, refused) throws, and the caller reads on the phone instead.
  */
-const ENDPOINT = `${process.env.EXPO_PUBLIC_IMPORT_API_URL?.trim() || 'https://trim-api.vercel.app'}/api/import-plan`;
+const ENDPOINT = `${process.env.EXPO_PUBLIC_IMPORT_API_URL?.trim() || 'https://trim-api-five.vercel.app'}/api/import-plan`;
 
 /** A screenshot import takes a few seconds; past this the phone reads it itself. */
 const TIMEOUT_MS = 45_000;
