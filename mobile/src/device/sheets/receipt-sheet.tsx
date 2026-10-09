@@ -42,17 +42,24 @@ export function useReceiptWorkout(workoutId: string | undefined): LoggedWorkout 
  * the header states the week and Done closes (the moments queue runs when it's gone). From the
  * History wall (`from=history`): the day's name with ‹ back to the wall. Reduce Motion: the paper
  * fades in where it ends; the haptic and the sound stay. Under a fresh receipt, one card per lift
- * swapped today asks whether the plan keeps it (Keep in plan / Just today); leaving it unanswered
- * keeps the plan as it was.
+ * swapped today asks whether the plan keeps it (Keep in plan / Just today), and so does one more
+ * for a new order dragged in Today (D92); leaving them unanswered keeps the plan as it was.
  */
 export function ReceiptSheet({ params }: { params: SheetParams }) {
   const { close } = useSheetChrome();
   const { swapSheet } = useDevice();
-  const { workoutHistory, units, userName, goals, milestoneFor, claimMilestone, activePlan } = useWorkoutStore();
+  const { workoutHistory, units, userName, goals, milestoneFor, claimMilestone, activePlan, plans } = useWorkoutStore();
   const workout = useReceiptWorkout(params.workoutId);
   const fresh = params.fresh === '1';
-  const { planSwaps, answerSwap } = useLogSession();
+  const { planSwaps, answerSwap, answerOrder } = useLogSession();
   const swaps = fresh && workout && planSwaps?.workoutId === workout.id ? planSwaps : null;
+  const orderNames = useMemo(() => {
+    const day = swaps?.order
+      ? plans.find((item) => item.id === swaps.planId)?.days.find((item) => item.id === swaps.dayId)
+      : undefined;
+    const names = (swaps?.order ?? []).flatMap((slotId) => day?.exercises.find((item) => item.id === slotId)?.name ?? []);
+    return names.length > 1 ? names.join(', ') : null;
+  }, [plans, swaps]);
   const fromHistory = params.from === 'history';
 
   const milestone = workout ? milestoneFor(workout) : null;
@@ -128,6 +135,34 @@ export function ReceiptSheet({ params }: { params: SheetParams }) {
           </View>
         </SheetCard>
       ))}
+      {swaps && orderNames ? (
+        <SheetCard style={styles.swap}>
+          <View style={styles.swapBody}>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={gadgetType.rowTitle}>
+              {`This order in ${swaps.dayTitle}?`}
+            </Text>
+            <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowSub, styles.swapSub]}>
+              {orderNames}
+            </Text>
+            <View style={styles.swapActions}>
+              <PillButton
+                title="Keep in plan"
+                onPress={() => {
+                  answerOrder(true);
+                  showToast({ title: `${swaps.dayTitle} updated` });
+                }}
+                style={styles.swapPill}
+              />
+              <PillButton
+                title="Just today"
+                variant="dark"
+                onPress={() => answerOrder(false)}
+                style={styles.swapPill}
+              />
+            </View>
+          </View>
+        </SheetCard>
+      ) : null}
       <View style={styles.actions}>
         {receipt ? (
           <PillButton title="Share" variant="dark" onPress={share} style={styles.share} testID="receipt-share" />
