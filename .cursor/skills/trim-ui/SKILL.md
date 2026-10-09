@@ -107,7 +107,7 @@ Information lives on the lowest layer that serves the job:
 | Receipt | What I just did | The paper | `Done` (light pill) |
 | Menu | Go somewhere | The rows | none |
 | Today | Jump, reorder or change today's lifts | The current row | none |
-| Plans rack | Which plan is in, which others exist | The active shelf | `+` |
+| Plans rack | Which plan is in, which others exist | The active shelf | `Import plan` / `Build one` in the New plan slot |
 | Editor | What's in this plan | The plan name | `Use plan` when inactive |
 | Progress | Is each lift going up | GOALS, then LIFTS | none |
 | Lift detail | How strong I am on this lift | The big number | none |
@@ -662,7 +662,7 @@ Rules for every moment:
 
 1. **Every question changes the product.** Units, days a week, a plan, a finish: each answer shapes what they leave with. Name is the one optional question; it pays off on the receipt header. No vanity or marketing questions.
 2. **Value before asks.** It ends with a real, active plan on a working Home, Start one press away. No account, no permission prompts (Live Activity asks at the first rest, with the system prompt only).
-3. **Short.** Welcome, Name, Units, Days, Pick a plan (packs as cartridges, or Build my own), Pick your finish, then the insert as "Plan ready", then the guided tour (§12 Moments, decision 85), then the paywall on the template path. One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
+3. **Short.** Welcome, Name, Units, Got a plan? (decision 88), then Import plan → Reading → Fix, or Days → Pick a plan (packs as cartridges), or Build my own → Days; then Pick your finish, then the insert as "Plan ready", then the guided tour (§12 Moments, decision 85), then the paywall on the template path. One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
 4. **Descriptions describe options, not the UI.** A plan pack may carry one line saying what it is (`Upper and lower body, twice each`).
 5. **Build my own** inserts an empty plan with n days, plays the tour (on a push day's first three lifts), then opens the editor sheet.
 6. **The guided tour** (decision 85). Trim's lines type onto the foot of the display under the practice set (dim line before, current line, a blinking `▸` when a tap goes on), or fill the display on the first and last screens. The first line also says `TAP MY SCREEN TO GO ON`. A line about a control types out first, then the control wears the focus ring (`FocusRing`: the display's 2-pt amber frame, 5 off, with a glow) and the next line waits for it. Only taught controls respond. In a tall sheet the line moves into the sheet (`TrimSays`, a small panel of the machine's screen): the exercise sheet frames the alternative to swap to, the tour's menu says on each row what's inside. Lines are facts and verbs in Trim's voice, sentence by sentence; no exclamation marks. Nothing is logged or saved.
@@ -783,7 +783,15 @@ Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue ru
 
 ### Plans rack (PB3) [20, 24]
 
-Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. `+` makes a plan (free users with one plan get the paywall). Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
+Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. The `New plan` slot ends the rack (decision 88): an outlined shelf with `New plan` (muted) over two pills, `Import plan` (light) and `Build one` (dark); either asks for Pro on a second plan. Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
+
+### Import plan, Reading, Fix (decision 88)
+
+Onboarding steps on the grid, and one tall `import` sheet from the rack with the same three steps (`src/screens/plan-import/`, tokens `importColors`, `importGeometry`, `importType`, motion `IMPORT`).
+- **Got a plan?** Two pack-style cards filling the stage (`I have one` with two tilted notes, `Pick one for me` with three cartridges that hop when picked), and a quiet `Build my own` text pill under them. Continue.
+- **Import plan.** Title, one line saying what can come in (an exception to rule 3 in §1, kept to this line). The illustration is a drawing, never Trim's UI: a phone outline (150 × 270, 2-pt edge) on a dotted tile (r28), text as grey bars, a round badge naming the scene. One 8 s loop: a chat reply is selected, `Copy` pops, the snippet flies into Paste and the pill pulses; then an app's routine flashes white, shrinks to a thumbnail and flies into Screenshots. Reduce Motion holds the selected frame. No Continue: Paste (the system paste control, capsule, light) and Screenshots (dark pill, photo icon) are the actions.
+- **Reading.** `Reading…`, a status line (`Reading screenshot 1 of 2`, then `6 lifts found`, then `10 lifts in 2 days`, `, 2 to fix` in orange), a 4-pt orange progress bar that fades out when done. Two day-shaped placeholders breathe until the first lift. Lifts drop in one by one (140 ms apart) under their day's section label, each row the name (orange when unknown), sets × reps, and a 22-pt mark: green ✓ or orange ?. When done the title becomes the name field (`Name your plan` placeholder). Continue is disabled while reading; `Try again` when nothing was found.
+- **Fix.** `Fix 2 lifts` (counting down, `All set`), one line, then one card per unknown lift: `"their words"` over `Day 1, 3 × 15`. The open card is ringed orange: up to three closest lifts (name and `kit, muscle`), `⌕ Search all lifts` (an inline field starting with their words, four results, `Create "…"`), then `Create custom` (outlined) and `Leave it out` (bare). `Create` asks how it's tracked with the picker's four kinds. Answered cards fold to their answer on the right; tap to reopen. Continue is disabled until all are answered.
 
 ### Editor (PA1) [21, 25]
 
