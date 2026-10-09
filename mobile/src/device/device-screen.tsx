@@ -54,7 +54,7 @@ import { useTour } from '@/device/tour/tour-context';
 import { TourDisplay } from '@/device/tour/tour-display';
 import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourLaunch3d, useTourMotion } from '@/device/tour/tour-launch';
 import { tourLiftLamps } from '@/device/tour/tour-model';
-import { TOUR_POSE, TOUR_POSE_CURVES, TOUR_POSE_HEIGHT, DEVICE } from '@/motion';
+import { DEVICE, EASE_DISPLAY_CURVE, TOUR_POSE, TOUR_POSE_CURVES, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
@@ -283,13 +283,20 @@ function DeviceSurface() {
       <DeviceLaunch
         style={StyleSheet.absoluteFill}
         finish={finish}
-        playing={launch3d.playing}
+        phase={launch3d.phase}
         duration={DEVICE.TOUR_LAUNCH}
         pose={TOUR_POSE}
         curves={TOUR_POSE_CURVES}
         poseHeight={TOUR_POSE_HEIGHT}
         depth={tourGeometry.depth}
         bodyRadius={insertGeometry.bodyRadius}
+        perchTilt={PERCH_TILT}
+        perchTiltDuration={DEVICE.TOUR_PICKER}
+        wiggle={launch3d.ripple}
+        wiggleTilts={tourGeometry.wiggleTilts}
+        wiggleDuration={DEVICE.TOUR_WIGGLE}
+        settleDuration={DEVICE.TOUR_SETTLE}
+        displayCurve={EASE_DISPLAY_CURVE}
         onSceneReady={launch3d.onSceneReady}>
         <Animated.View
           aria-hidden={sheetUp}
@@ -691,6 +698,8 @@ function DeviceSurface() {
     </View>
   );
 }
+
+const PERCH_TILT = [tourGeometry.perchTiltX, tourGeometry.perchTiltY];
 
 type DeviceView = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading' | 'tour';
 

@@ -109,14 +109,15 @@ export function useTourMotion(): TourMotion {
 
 /**
  * The launch on the cartridge insert's SceneKit body (`DeviceLaunch`), when the build has it: the
- * same 44 pt deep slab the owner saw at the end of onboarding, rather than the 2D face, edge and
- * back. `showing` once its first frame is up: the JS device, edge and back hide under it until
- * the perch, where the JS device takes over face-on. Reduce Motion keeps the 2D fade.
+ * same 44 pt deep slab the owner saw at the end of onboarding, from the throw through the perch
+ * and the picks to the landing, rather than the 2D face, edge and back and a flat perched device.
+ * `showing` once its first frame is up: the JS device, edge and back hide under it until the
+ * landing is done. Reduce Motion keeps the 2D fade.
  */
 export function useTourLaunch3d() {
-  const { launch } = useTour();
+  const { launch, ripple } = useTour();
   const reduceMotion = useReducedMotion();
-  const playing = isDeviceLaunchAvailable && !reduceMotion && launch === 'launch';
+  const playing = isDeviceLaunchAvailable && !reduceMotion && launch != null;
   const [ready, setReady] = useState(false);
   // A new launch waits for its own first frame.
   const [wasPlaying, setWasPlaying] = useState(playing);
@@ -125,7 +126,7 @@ export function useTourLaunch3d() {
     if (!playing) setReady(false);
   }
   const onSceneReady = useCallback(() => setReady(true), []);
-  return { playing, showing: playing && ready, onSceneReady };
+  return { phase: playing && launch ? launch : ('idle' as const), playing, showing: playing && ready, ripple, onSceneReady };
 }
 
 /** The pose for the frame: in the air, perched (with the wiggle), or settling home. */

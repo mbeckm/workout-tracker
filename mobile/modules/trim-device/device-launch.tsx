@@ -10,8 +10,8 @@ export type DeviceLaunchPose = { at: number; y: number; sx: number; sy: number; 
 export type DeviceLaunchProps = {
   /** The finish the body wears; a change mid-flight re-dresses it (photographs the children again). */
   finish: FinishId;
-  /** false → true photographs the children and plays; true → false hands back to them. */
-  playing: boolean;
+  /** `launch` photographs the children and plays; `idle` hands back to them. */
+  phase: 'idle' | 'launch' | 'perched' | 'landing';
   duration: number;
   /** Keyframes, `at` 0–1 of `duration`, `y` on a `poseHeight`-tall screen, `turn` in degrees. */
   pose: readonly DeviceLaunchPose[];
@@ -21,6 +21,17 @@ export type DeviceLaunchProps = {
   /** The body's depth and corner radius (the insert's 44 and 52). */
   depth: number;
   bodyRadius: number;
+  /** The lean once perched, CSS degrees `[rotateX, rotateY]`, eased in over `perchTiltDuration`. */
+  perchTilt: readonly number[];
+  perchTiltDuration: number;
+  /** Bump to wiggle: `wiggleTilts` (CSS `rotate` degrees) in turn, then back to 0. */
+  wiggle: number;
+  wiggleTilts: readonly number[];
+  wiggleDuration: number;
+  /** `landing`: perch to full size, face-on. */
+  settleDuration: number;
+  /** The lean's, the wiggle's and the landing's cubic-bezier. */
+  displayCurve: readonly number[];
   /** The slab's first frame is up: the JS device can hide. */
   onSceneReady?: (event: NativeSyntheticEvent<Record<string, never>>) => void;
   style?: StyleProp<ViewStyle>;
@@ -39,8 +50,8 @@ const NativeLaunch: ComponentType<DeviceLaunchProps> | null = isDeviceLaunchAvai
 
 /**
  * The tour's launch (decision 85) on the cartridge insert's SceneKit body. It wraps the JS device:
- * idle, a plain container; playing, the device photographed onto a 44 pt deep slab and flown on
- * `pose`. Without the native view, a plain `View`.
+ * idle, a plain container; from `launch` until `idle`, the device photographed onto a 44 pt deep
+ * slab, flown on `pose`, perched with a lean, wiggled on picks and settled home. Without the native view, a plain `View`.
  */
 export function DeviceLaunch({ children, style, ...props }: DeviceLaunchProps) {
   if (NativeLaunch == null) {

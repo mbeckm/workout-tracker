@@ -2298,6 +2298,9 @@ export const tourGeometry = {
   perchScale: 0.5,
   /** The body's depth while it spins (the insert's 44 pt). */
   depth: 44,
+  /** The 3D body's lean once perched (CSS rotateX, rotateY degrees), so it reads as an object, not a picture. */
+  perchTiltX: -10,
+  perchTiltY: -20,
   /** The dot-matrix room: one dot every 12, radius 1.6; the ripple ring's width. */
   dotPitch: 12,
   dotRadius: 1.6,

@@ -84,8 +84,9 @@ export function exitFade(reduceMotion: boolean): EntryOrExitLayoutType {
  * ------------------------------------------------------------------------------------------ */
 
 /** Display content change and drum step: bezier(.2,.8,.3,1). */
-export const EASE_DISPLAY = Easing.bezier(0.2, 0.8, 0.3, 1);
-export const EASE_DISPLAY_FN = Easing.bezierFn(0.2, 0.8, 0.3, 1);
+export const EASE_DISPLAY_CURVE = [0.2, 0.8, 0.3, 1] as const;
+export const EASE_DISPLAY = Easing.bezier(...EASE_DISPLAY_CURVE);
+export const EASE_DISPLAY_FN = Easing.bezierFn(...EASE_DISPLAY_CURVE);
 /** Gadget sheets and the wheel stow: bezier(.2,.9,.3,1). */
 export const EASE_SHEET_GADGET = Easing.bezier(0.2, 0.9, 0.3, 1);
 export const EASE_SHEET_GADGET_FN = Easing.bezierFn(0.2, 0.9, 0.3, 1);

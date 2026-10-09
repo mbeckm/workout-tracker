@@ -7,18 +7,21 @@ import UIKit
 /// (`InsertGeometry.slab`, 44 pt deep, the chamfer and the finish's sides), thrown up, spun and
 /// landed on the pose keyframes from `TOUR_POSE` in src/motion.ts.
 ///
-/// The view wraps the JS device. Idle it draws nothing of its own. On `playing` it photographs
+/// The view wraps the JS device. Idle it draws nothing of its own. On `launch` it photographs
 /// its children face-on (the device as it is right now) for the slab's face, then plays the pose
-/// on its own clock. A new `finish` re-photographs the children for the face and redraws the
-/// sides and back: the tour swaps the finish while the device is edge-on. The JS device hides
-/// itself on `onSceneReady` and takes over again, face-on, once `playing` goes false.
+/// on its own clock and stays on screen through the perch: it leans into `perchTilt` once landed
+/// so the body reads as an object, wiggles on each `wiggle`, and on `landing` settles to full
+/// size, face-on. A new `finish` re-photographs the children for the face and redraws the sides
+/// and back. The JS device hides itself on `onSceneReady` and takes over again at `idle`, when
+/// the slab's last frame is exactly the JS device.
 final class DeviceLaunchView: ExpoView {
   let onSceneReady = EventDispatcher()
 
   // MARK: Props
 
   var finish = "212"
-  var playing = false
+  /// `idle`, `launch`, `perched` or `landing` (the tour's `TourLaunchPhase`).
+  var phase = "idle"
   var duration: Double = 4800
   /// `[{ at, y, sx, sy, turn }]`, `at` 0–1 of `duration`, `y` on a `poseHeight`-tall screen.
   var pose: [[String: Double]] = []
@@ -27,12 +30,25 @@ final class DeviceLaunchView: ExpoView {
   var poseHeight: Double = 844
   var depth: Double = 44
   var bodyRadius: Double = 52
+  /// The lean at the perch, CSS degrees `[rotateX, rotateY]`, eased in over `perchTiltDuration`.
+  var perchTilt: [Double] = [0, 0]
+  var perchTiltDuration: Double = 700
+  /// Bumped on each pick: the wiggle (CSS `rotate` degrees, then back to 0).
+  var wiggle: Double = 0
+  var wiggleTilts: [Double] = []
+  var wiggleDuration: Double = 700
+  var settleDuration: Double = 1000
+  /// The wiggle's, the lean's and the landing's curve.
+  var displayCurve: [Double] = [0.2, 0.8, 0.3, 1]
 
   // MARK: State
 
-  private var phase = Phase.idle
-  private enum Phase { case idle, running, finished }
-  private var startTime: CFTimeInterval = 0
+  private var running = false
+  private var launchStart: CFTimeInterval = 0
+  private var settleStart: CFTimeInterval?
+  private var wiggleStart: CFTimeInterval?
+  private var wiggleDirection: Double = 1
+  private var shownWiggle: Double = 0
   private var link: CADisplayLink?
   private var shownFinish = ""
   private var readySent = false
@@ -66,19 +82,31 @@ final class DeviceLaunchView: ExpoView {
 
   override func didMoveToWindow() {
     super.didMoveToWindow()
-    if window == nil { stopLink() } else if phase == .running { startLink() }
+    if window == nil { stopLink() } else if running { startLink() }
   }
 
   func propsDidUpdate() {
-    if playing {
-      if phase == .idle {
-        start()
-      } else if finish != shownFinish {
-        // After this mount transaction: the children wear the new finish by then.
-        DispatchQueue.main.async { [weak self] in self?.redress() }
-      }
-    } else if phase != .idle {
-      stop()
+    guard phase != "idle" else {
+      if running { stop() }
+      return
+    }
+    if !running {
+      start()
+      return
+    }
+    if finish != shownFinish {
+      // After this mount transaction: the children wear the new finish by then.
+      DispatchQueue.main.async { [weak self] in self?.redress() }
+    }
+    if wiggle != shownWiggle {
+      shownWiggle = wiggle
+      wiggleStart = CACurrentMediaTime()
+      wiggleDirection = Int(wiggle) % 2 == 0 ? -1 : 1
+      startLink()
+    }
+    if phase == "landing", settleStart == nil {
+      settleStart = CACurrentMediaTime()
+      startLink()
     }
   }
 
@@ -86,19 +114,22 @@ final class DeviceLaunchView: ExpoView {
 
   private func start() {
     guard bounds.width > 0, bounds.height > 0 else { return }
-    phase = .running
+    running = true
     readySent = false
+    settleStart = nil
+    wiggleStart = nil
+    shownWiggle = wiggle
     let view = ensureSceneView()
     build(face: photographChildren())
     shownFinish = finish
-    startTime = CACurrentMediaTime()
-    apply(0)
+    launchStart = CACurrentMediaTime()
+    apply(launchStart)
     view.isHidden = false
     view.rendersContinuously = true
     startLink()
     // The first frame is in on the next display refresh: then the JS device can hide.
     DispatchQueue.main.async { [weak self] in
-      guard let self, self.phase != .idle, !self.readySent else { return }
+      guard let self, self.running, !self.readySent else { return }
       self.readySent = true
       self.onSceneReady([:])
     }
@@ -106,16 +137,18 @@ final class DeviceLaunchView: ExpoView {
 
   private func stop() {
     stopLink()
-    phase = .idle
+    running = false
     scnView?.rendersContinuously = false
     scnView?.isHidden = true
     bodyNode.removeFromParentNode()
   }
 
   private func redress() {
-    guard phase != .idle, finish != shownFinish else { return }
+    guard running, finish != shownFinish else { return }
     shownFinish = finish
     applyMaterials(face: photographChildren())
+    // A still frame doesn't redraw by itself.
+    if link == nil { apply(CACurrentMediaTime()) }
   }
 
   private func ensureSceneView() -> SCNView {
@@ -136,35 +169,43 @@ final class DeviceLaunchView: ExpoView {
   // MARK: Clock
 
   private func startLink() {
-    guard link == nil else { return }
+    guard link == nil, running, window != nil else { return }
     let l = CADisplayLink(target: LaunchLinkProxy(self), selector: #selector(LaunchLinkProxy.tick))
     l.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
     l.add(to: .main, forMode: .common)
     link = l
+    scnView?.rendersContinuously = true
   }
 
   private func stopLink() {
     link?.invalidate()
     link = nil
+    scnView?.rendersContinuously = false
   }
 
   fileprivate func tick() {
-    guard phase == .running else { return stopLink() }
-    let t = (CACurrentMediaTime() - startTime) * 1000
-    apply(min(t, duration))
-    if t >= duration {
-      // Hold the landing frame until JS takes over (`playing` → false).
-      phase = .finished
-      stopLink()
-      scnView?.rendersContinuously = false
-    }
+    guard running else { return stopLink() }
+    let now = CACurrentMediaTime()
+    apply(now)
+    // Nothing moves while perched between picks: no idle loop, no frames.
+    if !moving(at: now) { stopLink() }
+  }
+
+  private func moving(at now: CFTimeInterval) -> Bool {
+    let ms = { (from: CFTimeInterval) in (now - from) * 1000 }
+    if ms(launchStart) < duration + perchTiltDuration { return true }
+    if let w = wiggleStart, ms(w) < wiggleDuration { return true }
+    if let s = settleStart, ms(s) < settleDuration { return true }
+    return false
   }
 
   // MARK: Building
 
-  /// The children face-on and untransformed, at screen scale. Each child layer is drawn on its
-  /// own, so the wrapper's opacity and transform (the JS device hides and moves itself) don't
-  /// count, and a child that is transparent right now (the 2D launch's back) is left out.
+  /// The children face-on and untransformed, at screen scale. Each child's parts are drawn on
+  /// their own, so the wrapper's opacity and transform (the JS device hides and moves itself)
+  /// don't count, and a part that is transparent right now is left out. `drawHierarchy` after
+  /// screen updates draws what the screen would, even while the device is hidden (SVG glyphs,
+  /// text, a new finish); a layer without a view falls back to `render(in:)`.
   private func photographChildren() -> UIImage {
     let size = bounds.size
     let format = UIGraphicsImageRendererFormat()
@@ -175,11 +216,17 @@ final class DeviceLaunchView: ExpoView {
       for child in subviews where child !== scnView {
         // Not `frame`: mid-flight the child is scaled, and its frame is the scaled box.
         let origin = Self.untransformedOrigin(child.layer)
+        let views = Dictionary(child.subviews.map { (ObjectIdentifier($0.layer), $0) }, uniquingKeysWith: { a, _ in a })
         for sub in child.layer.sublayers ?? [] {
           guard !sub.isHidden, sub.opacity > 0.01 else { continue }
           let subOrigin = Self.untransformedOrigin(sub)
+          let rect = CGRect(
+            x: origin.x + subOrigin.x, y: origin.y + subOrigin.y, width: sub.bounds.width, height: sub.bounds.height)
+          let view = views[ObjectIdentifier(sub)]
+          let drawn = view?.drawHierarchy(in: rect, afterScreenUpdates: true) ?? false
+          if drawn { continue }
           ctx.saveGState()
-          ctx.translateBy(x: origin.x + subOrigin.x, y: origin.y + subOrigin.y)
+          ctx.translateBy(x: rect.minX, y: rect.minY)
           ctx.setAlpha(CGFloat(sub.opacity))
           sub.render(in: ctx)
           ctx.restoreGState()
@@ -224,17 +271,44 @@ final class DeviceLaunchView: ExpoView {
 
   // MARK: Apply t
 
-  private func apply(_ t: Double) {
+  private func apply(_ now: CFTimeInterval) {
     guard builtSize.width > 0, pose.count >= 2 else { return }
-    let p = poseAt(duration > 0 ? t / duration : 1)
+    let curve = displayCurve.count == 4
+      ? CubicBezier(displayCurve[0], displayCurve[1], displayCurve[2], displayCurve[3])
+      : CubicBezier(0.2, 0.8, 0.3, 1)
+    let t = (now - launchStart) * 1000
+    var p = poseAt(duration > 0 ? t / duration : 1)
+    var lean = curve(min(max((t - duration) / max(perchTiltDuration, 1), 0), 1))
+    if let s = settleStart {
+      // The landing: from the perch to full size, face-on (the JS device's own frame).
+      let left = 1 - curve(min((now - s) * 1000 / max(settleDuration, 1), 1))
+      p = (p.y * left, 1 + (p.sx - 1) * left, 1 + (p.sy - 1) * left, p.turn)
+      lean *= left
+    }
+    var tilt = 0.0
+    if let w = wiggleStart, !wiggleTilts.isEmpty {
+      // The tilts in turn, then back to 0, each step eased (`withSequence` in tour-launch.tsx).
+      let stops = [0] + wiggleTilts.map { $0 * wiggleDirection } + [0]
+      let steps = Double(stops.count - 1)
+      let k = min((now - w) * 1000 / max(wiggleDuration, 1), 1) * steps
+      let i = min(Int(k), stops.count - 2)
+      tilt = stops[i] + (stops[i + 1] - stops[i]) * curve(k - Double(i))
+    }
     let k = Double(builtSize.height) / poseHeight
+    let tiltX = perchTilt.count > 0 ? perchTilt[0] : 0
+    let tiltY = perchTilt.count > 1 ? perchTilt[1] : 0
+    func rad(_ d: Double) -> Float { Float(d * .pi / 180) }
     SCNTransaction.begin()
     SCNTransaction.animationDuration = 0
-    // CSS `translateY(y) scale(sx, sy) rotateY(turn)` in SceneKit (y up: translateY flips sign).
+    // CSS `translateY(y) rotate(tilt) scale(sx, sy) rotateX rotateY rotateY(turn)` in SceneKit
+    // (y up: translateY, rotate and rotateX flip sign; rotateY doesn't).
     var m = matrix_identity_float4x4
     m.columns.3 = SIMD4(0, Float(-p.y * k), 0, 1)
+    m *= simd_float4x4(simd_quatf(angle: rad(-tilt), axis: SIMD3(0, 0, 1)))
     m *= simd_float4x4(diagonal: SIMD4(Float(p.sx), Float(p.sy), Float((p.sx + p.sy) / 2), 1))
-    m *= simd_float4x4(simd_quatf(angle: Float(p.turn * .pi / 180), axis: SIMD3(0, 1, 0)))
+    m *= simd_float4x4(simd_quatf(angle: rad(-tiltX * lean), axis: SIMD3(1, 0, 0)))
+    m *= simd_float4x4(simd_quatf(angle: rad(tiltY * lean), axis: SIMD3(0, 1, 0)))
+    m *= simd_float4x4(simd_quatf(angle: rad(p.turn), axis: SIMD3(0, 1, 0)))
     deviceNode.simdTransform = m
     SCNTransaction.commit()
   }
