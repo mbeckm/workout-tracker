@@ -1808,9 +1808,6 @@ export const insertColors = {
   glowHalo: 'rgba(255,106,26,0.7)',
   pulseRing: 'rgba(255,106,26,0.5)',
   pulseHalo: 'rgba(255,106,26,0.25)',
-  /** The display's boot flicker (`@keyframes boot`). */
-  bootFlash1: '#3A2214',
-  bootFlash2: '#2A1A10',
   /** The body's depth layers: brightness from the front layer to the back one (`.edge`, .6). */
   depthFront: 0.72,
   depthBack: 0.42,
