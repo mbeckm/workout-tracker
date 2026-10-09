@@ -418,15 +418,15 @@ SOUNDS.pulse = () => {
   return voice;
 };
 
-// The machine changes its skin: a quick zip, a magnetic clack and a bright two-note chime. Its
-// own sound, apart from `swatch` (the paywall's and the choice cards' tile).
+// The machine changes its skin: a tight closed-hat tick and a short blip on one note (D7). Short
+// and high, its own sound apart from `swatch` (the paywall's and the choice cards' tile).
 SOUNDS.reskin = () => {
-  const voice = makeVoice(0.45, 29);
-  sweep(voice, 0, 0.07, 1500, 6200, 1.4, 0.55, (p) => Math.sin(Math.PI * p));
-  hit(voice, 0.07, 2900, 1.5, 1.0, 0.012);
-  thump(voice, 0.07, 210, 95, 0.55, 0.06);
-  ring(voice, 0.075, 2637, 0.09, 0.09);
-  ring(voice, 0.12, 3951, 0.07, 0.08);
+  const voice = makeVoice(0.09, 29);
+  hit(voice, 0, 9000, 1.2, 0.9, 0.025);
+  hit(voice, 0, 6200, 1.6, 0.35, 0.015);
+  const env = (p) => (p < 0.06 ? p / 0.06 : Math.pow(1 - p, 3));
+  glide(voice, 0.003, 0.055, 2349, 2349, 0.55, env);
+  glide(voice, 0.003, 0.04, 4698, 4698, 0.12, env);
   return voice;
 };
 

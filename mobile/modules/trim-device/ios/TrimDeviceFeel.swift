@@ -312,7 +312,7 @@ final class TrimDeviceFeel: @unchecked Sendable {
   private static let soundVolumes: [String: Float] = [
     "key": 0.55, "press": 0.7, "rocker": 0.5, "notch": 0.35, "swatch": 0.6, "blip": 0.3, "ready": 0.75, "alarm": 0.6,
     "arrive": 0.6, "charge": 0.65, "boot": 0.45,
-    "spin": 0.6, "pulse": 0.45, "reskin": 0.7,
+    "spin": 0.6, "pulse": 0.45, "reskin": 0.55,
     "snap-1": 0.5, "snap-2": 0.5, "snap-3": 0.5, "snap-4": 0.5, "snap-5": 0.5, "snap-6": 0.5, "snap-7": 0.5,
   ]
 

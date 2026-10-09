@@ -448,7 +448,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `rocker` | a short tick with a little body | The rocker tilts |
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
 | `swatch` | a metal tile set down | A choice card or a paywall plan picked |
-| `reskin` | a quick zip, a magnetic clack and a bright two-note chime | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
+| `reskin` | a tight closed-hat tick and a short blip on one note (D7), 90 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
 | `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
