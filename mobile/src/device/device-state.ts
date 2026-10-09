@@ -32,6 +32,9 @@ export const SHEET_KINDS = [
   // Phase 7: a lift's or body measurement's goal, and the body check-in (D11).
   'goal',
   'checkin',
+  // Import plan (decision 88): paste or screenshots, reading, fixing unknown lifts.
+  'import',
+  'new-plan',
 ] as const;
 
 export type SheetKind = (typeof SHEET_KINDS)[number];
@@ -64,6 +67,8 @@ const TOPS: Record<SheetKind, SheetTop> = {
   keypad: 'finishes',
   goal: 'tall',
   checkin: 'tall',
+  import: 'tall',
+  'new-plan': 'tall',
 };
 
 export function sheetTop(kind: SheetKind): SheetTop {

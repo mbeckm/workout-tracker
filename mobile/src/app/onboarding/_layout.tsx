@@ -20,6 +20,10 @@ export default function OnboardingLayout() {
       <Stack.Screen name="index" options={{ title: 'Welcome', gestureEnabled: false }} />
       <Stack.Screen name="name" options={{ title: 'Name' }} />
       <Stack.Screen name="units" options={{ title: 'Units' }} />
+      <Stack.Screen name="have-plan" options={{ title: 'Got a plan?' }} />
+      <Stack.Screen name="import" options={{ title: 'Import plan' }} />
+      <Stack.Screen name="import-read" options={{ title: 'Reading' }} />
+      <Stack.Screen name="import-fix" options={{ title: 'Fix lifts' }} />
       <Stack.Screen name="days" options={{ title: 'Days a week' }} />
       <Stack.Screen name="plan" options={{ title: 'Pick a plan' }} />
       <Stack.Screen name="finish" options={{ title: 'Pick your finish' }} />

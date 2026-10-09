@@ -42,7 +42,8 @@ export function OnboardingFrame({
   /** One fact under the title (`4 days a week`). */
   sub?: string;
   back?: boolean;
-  action: { title: string; onPress: () => void; testID?: string; disabled?: boolean };
+  /** The light pill at the thumb; left out when the stage brings its own actions (Import plan). */
+  action?: { title: string; onPress: () => void; testID?: string; disabled?: boolean };
   children: ReactNode;
   stageStyle?: StyleProp<ViewStyle>;
   /** Off for a step that lays its stage out to the screen (Welcome, Pick your finish). */
@@ -93,18 +94,20 @@ export function OnboardingFrame({
           {children}
         </View>
       )}
-      <KeyboardStickyView
-        offset={{ closed: 0, opened: bottom - space.inline }}
-        style={[styles.footer, { paddingBottom: bottom }]}>
-        <Animated.View key={actionKey} entering={actionEntering}>
-          <WidePill
-            title={action.title}
-            onPress={action.onPress}
-            disabled={action.disabled}
-            testID={action.testID ?? 'onboarding-continue'}
-          />
-        </Animated.View>
-      </KeyboardStickyView>
+      {action ? (
+        <KeyboardStickyView
+          offset={{ closed: 0, opened: bottom - space.inline }}
+          style={[styles.footer, { paddingBottom: bottom }]}>
+          <Animated.View key={actionKey} entering={actionEntering}>
+            <WidePill
+              title={action.title}
+              onPress={action.onPress}
+              disabled={action.disabled}
+              testID={action.testID ?? 'onboarding-continue'}
+            />
+          </Animated.View>
+        </KeyboardStickyView>
+      ) : null}
     </View>
   );
 }

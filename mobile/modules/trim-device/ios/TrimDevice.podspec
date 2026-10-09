@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
   s.name           = 'TrimDevice'
   s.version        = '1.0.0'
-  s.summary        = 'Trim device haptics (Core Haptics), sounds and the SceneKit cartridge insert.'
+  s.summary        = 'Trim device haptics (Core Haptics), sounds, the SceneKit cartridge insert and Vision text recognition.'
   s.description    = 'Named Core Haptics patterns and short device sounds for the Trim Gadget UI.'
   s.author         = ''
   s.homepage       = 'https://scratch-legal.vercel.app'
@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
   s.source_files   = '**/*.{h,m,swift}'
   # Rendered by `node scripts/render-sounds.mjs`; native, so they change only with a build.
   s.resources      = 'sounds/*.wav'
-  s.frameworks     = 'CoreHaptics', 'AVFoundation', 'SceneKit', 'QuartzCore'
+  s.frameworks     = 'CoreHaptics', 'AVFoundation', 'SceneKit', 'QuartzCore', 'Vision'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

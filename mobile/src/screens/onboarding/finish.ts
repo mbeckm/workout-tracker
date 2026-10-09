@@ -50,9 +50,12 @@ export function useFinishOnboarding() {
     [setFinish, setPreview],
   );
 
-  /** Template path: the plan loads into the device ("Plan ready"), then the `onboarding` paywall. */
+  /**
+   * Template and import paths: the plan loads into the device ("Plan ready"), then the
+   * `onboarding` paywall. An imported plan is a real plan like a template's (decision 88).
+   */
   const finishWithPlan = useCallback(
-    (plan: WorkoutPlan, lockedFinish: Finish | null) => {
+    (plan: WorkoutPlan, lockedFinish: Finish | null, path: 'template' | 'import' = 'template') => {
       if (finished.current) {
         return;
       }
@@ -60,7 +63,7 @@ export function useFinishOnboarding() {
       savePlan(plan, { activate: true });
       completeOnboarding();
       track('onboarding_completed', {
-        path: 'template',
+        path,
         days_per_week: plan.days.length,
         has_name: userName !== '',
       });

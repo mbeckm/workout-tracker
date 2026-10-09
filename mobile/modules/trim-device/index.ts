@@ -156,3 +156,5 @@ export {
   type CartridgeInsertLayout,
   type CartridgeInsertProps,
 } from './cartridge-insert';
+
+export { canRecognizeText, prepareImageForUpload, recognizeTextInImage } from './text';
