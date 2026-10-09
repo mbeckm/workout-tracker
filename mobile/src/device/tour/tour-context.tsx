@@ -11,7 +11,7 @@ import { alternativesFor } from '@/device/log/log-state';
 import { EARNED_FINISH, finishLock, type Finish } from '@/domain/finish';
 import { defaultLoadStep } from '@/domain/load-step';
 import { trainableDays } from '@/domain/plan-loop';
-import type { ExercisePrescription } from '@/domain/types';
+import type { ExercisePrescription, WorkoutPlan } from '@/domain/types';
 import { DEVICE } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -57,8 +57,12 @@ type TourContextValue = {
   alternatives: readonly ExercisePrescription[];
   /** The alternative the swap beat asks for. */
   target: ExercisePrescription | null;
-  /** Plays the tour from the start; resolves once the reward is chosen and the device is home. */
-  run: () => Promise<void>;
+  /**
+   * Plays the tour from the start; resolves once the reward is chosen and the device is home.
+   * `plan` is the plan to practise on (onboarding passes the one it just saved); without it, the
+   * active plan.
+   */
+  run: (plan?: WorkoutPlan) => Promise<void>;
   /** The launch and the reward picker. */
   launch: TourLaunchPhase | null;
   pick: Finish;
@@ -80,6 +84,13 @@ const TourContext = createContext<TourContextValue | null>(null);
 
 function prescriptionByName(name: string): ExercisePrescription | undefined {
   return BUNDLED_EXERCISES.find((item) => item.name === name);
+}
+
+/** The first trainable day's first lifts, or the fallback when the plan has none (Build my own). */
+function practiceLifts(plan: WorkoutPlan | null): ExercisePrescription[] {
+  const fromPlan = plan ? (trainableDays(plan)[0]?.exercises ?? []).slice(0, PRACTICE_LIFTS) : [];
+  if (fromPlan.length > 0) return fromPlan;
+  return FALLBACK_LIFTS.map(prescriptionByName).filter((item): item is ExercisePrescription => item != null);
 }
 
 /**
@@ -104,6 +115,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     factsRef.current = facts;
   }, [facts]);
+  // `run` is often called from a closure made before the plan was saved (onboarding's hand-off),
+  // so it reads the store from here, not from the render that made it.
+  const latest = useRef({ activePlan: store.activePlan, customExercises: store.customExercises, finish: store.finish });
+  useEffect(() => {
+    latest.current = { activePlan: store.activePlan, customExercises: store.customExercises, finish: store.finish };
+  }, [store.activePlan, store.customExercises, store.finish]);
   const active = tour != null && device.uiMode === 'tour';
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -115,33 +132,29 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setTour((current) => (current ? tourReducer(current, action, factsRef.current) : current));
   }, []);
 
-  const practiceLifts = useCallback((): ExercisePrescription[] => {
-    const plan = store.activePlan;
-    const fromPlan = plan ? (trainableDays(plan)[0]?.exercises ?? []).slice(0, PRACTICE_LIFTS) : [];
-    if (fromPlan.length > 0) return fromPlan;
-    return FALLBACK_LIFTS.map(prescriptionByName).filter((item): item is ExercisePrescription => item != null);
-  }, [store.activePlan]);
-
-  const run = useCallback(() => {
-    setTourHandoff(false);
-    const lifts = practiceLifts();
-    const pool = offlineCatalogExercises(store.customExercises);
-    const withAlternatives: TourLift[] = lifts.map((lift) => ({
-      id: lift.id,
-      name: lift.name,
-      alternatives: alternativesFor(lift, pool).map((item) => ({ id: item.id, name: item.name, meta: exercisePickerMeta(item) })),
-    }));
-    setPractice([...lifts, ...lifts.flatMap((lift) => alternativesFor(lift, pool))]);
-    setTour(initialTourState(withAlternatives));
-    setLaunch(null);
-    setBefore(store.finish);
-    setPick(EARNED_FINISH);
-    setRipple(0);
-    closeSheet();
-    setUiMode('tour');
-    track('tour_started', {});
-    return whenTourDone();
-  }, [closeSheet, practiceLifts, setUiMode, store.customExercises, store.finish]);
+  const run = useCallback(
+    (plan?: WorkoutPlan) => {
+      setTourHandoff(false);
+      const lifts = practiceLifts(plan ?? latest.current.activePlan);
+      const pool = offlineCatalogExercises(latest.current.customExercises);
+      const withAlternatives: TourLift[] = lifts.map((lift) => ({
+        id: lift.id,
+        name: lift.name,
+        alternatives: alternativesFor(lift, pool).map((item) => ({ id: item.id, name: item.name, meta: exercisePickerMeta(item) })),
+      }));
+      setPractice([...lifts, ...lifts.flatMap((lift) => alternativesFor(lift, pool))]);
+      setTour(initialTourState(withAlternatives));
+      setLaunch(null);
+      setBefore(latest.current.finish);
+      setPick(EARNED_FINISH);
+      setRipple(0);
+      closeSheet();
+      setUiMode('tour');
+      track('tour_started', {});
+      return whenTourDone();
+    },
+    [closeSheet, setUiMode],
+  );
 
   // Typing: one character at a time while a line is incomplete.
   const line = tour ? lineOf(tour.beat, facts) : '';

@@ -981,6 +981,20 @@ export const gadgetType = {
   receiptWeek: { fontFamily: fontFamily.receipt, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
   receiptWeekBold: { fontFamily: fontFamily.receiptBold, fontSize: 12, lineHeight: 18, color: receiptColors.ink },
   receiptWeekTitle: { fontFamily: fontFamily.receiptBold, fontSize: 14, lineHeight: 18, color: receiptColors.title },
+  /** The receipt (decision 90): `TRIM` in Doto, the record big, its lines in Plex Mono 11/16. */
+  receiptMast: { fontFamily: fontFamily.lcd, fontSize: 18, lineHeight: 22, letterSpacing: 3, color: receiptColors.title },
+  receiptHero: { fontFamily: fontFamily.lcd, fontSize: 46, lineHeight: 50, color: receiptColors.title },
+  receiptHeroSmall: { fontFamily: fontFamily.lcd, fontSize: 28, lineHeight: 30, color: receiptColors.title },
+  receiptStub: { fontFamily: fontFamily.receipt, fontSize: 11, lineHeight: 16, color: receiptColors.ink },
+  receiptStubBold: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 16, color: receiptColors.ink },
+  receiptStubName: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 18, letterSpacing: 1, color: receiptColors.ink },
+  receiptStamp: { fontFamily: fontFamily.receiptBold, fontSize: 10, lineHeight: 11, color: receiptColors.pr },
+  /** A History slip (H2): Plex Mono 11/15 bold, its big lines in Doto 26/28. */
+  receiptSlip: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 15, color: receiptColors.ink },
+  receiptSlipBig: { fontFamily: fontFamily.lcd, fontSize: 26, lineHeight: 28, color: receiptColors.title },
+  receiptSlipMid: { fontFamily: fontFamily.lcd, fontSize: 18, lineHeight: 20, color: receiptColors.title },
+  /** The finish screen's three stats (decision 90). */
+  finishStat: { ...roundedRole(26, 30, weight.heavy, -0.4), color: sheetColors.ink },
   /** A moment's headline on the grid ground (QC2 `Week 12 done`). */
   momentTitle: { ...roundedRole(30, 34, weight.heavy, -0.5), color: sheetColors.ink },
   /** Menu item titles (`.item b`). */
@@ -1179,6 +1193,56 @@ export const receiptGeometry = {
   momentShadowBlur: 12,
   gridCell: 28,
   momentBottom: 44,
+  // The finish screen (decision 90, F3a): stats over the lifts, the receipt printing up at the bottom
+  /** The three stats in one card. */
+  statPadX: 18,
+  statPadY: 16,
+  statDeltaTop: 4,
+  /** A lift's row: name left, its line against last time right. */
+  liftRowHeight: 50,
+  /** The receipt (stub): 244 wide, torn at the top (it feeds up out of the slot under it). */
+  stubWidth: 244,
+  stubPadTop: 22,
+  stubPadX: 18,
+  stubPadBottom: 16,
+  stubToothWidth: 10,
+  stubToothDepth: 6,
+  stubRuleGap: 8,
+  /** The double rule under `TRIM` (`.rule2`: 1.5 lines 3 apart). */
+  stubRuleLine: 1.5,
+  stubRuleSpace: 3,
+  /** Space between record lines on a receipt with several. */
+  stubRecordGap: 6,
+  /** The barcode: bars 1–3 wide, 20 tall, inset 16. */
+  barcodeHeight: 20,
+  barcodeInset: 16,
+  barcodeTop: 10,
+  barcodeBars: [2, 2, 1, 3, 3, 1, 1, 4, 2, 2, 1, 1, 3, 2, 2, 3, 1, 2, 1, 4, 2, 1, 3, 1, 1, 2, 2, 3],
+  /** The rubber stamp: a 62 ring, 2.5 line, bottom right over the barcode, tilted −12°. */
+  stampSize: 62,
+  stampLine: 2.5,
+  stampRight: 10,
+  stampBottom: 8,
+  stampTilt: -12,
+  /** It lands from 2.4× and −30°. */
+  stampFromScale: 2.4,
+  stampFromAngle: -30,
+  /** The slot the receipt prints up out of, above the actions; inset from the sheet's sides. */
+  stubSlotInset: 50,
+  stubSlotTop: 24,
+  /** The paper's shadow points up (it rises out of the slot). */
+  stubShadowY: -6,
+  stubShadowBlur: 14,
+  // History (H2): clean rows; a workout that printed is its slip
+  logRowHeight: 64,
+  slipInsetX: 4,
+  slipGap: 12,
+  slipPadTop: 12,
+  slipPadX: 16,
+  slipPadBottom: 18,
+  slipColumnGap: 12,
+  /** Each slip's tilt by its place in History (degrees). */
+  slipTilts: [-1, 1, -0.5, 0.75],
 } as const;
 
 /** Device geometry at the 390 × 844 reference (SPEC §4). Keys keep these sizes on every phone. */
@@ -1808,9 +1872,6 @@ export const insertColors = {
   glowHalo: 'rgba(255,106,26,0.7)',
   pulseRing: 'rgba(255,106,26,0.5)',
   pulseHalo: 'rgba(255,106,26,0.25)',
-  /** The display's boot flicker (`@keyframes boot`). */
-  bootFlash1: '#3A2214',
-  bootFlash2: '#2A1A10',
   /** The body's depth layers: brightness from the front layer to the back one (`.edge`, .6). */
   depthFront: 0.72,
   depthBack: 0.42,

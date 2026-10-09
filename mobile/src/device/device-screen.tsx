@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CartridgeInsert, DeviceLaunch } from '../../modules/trim-device';
+import { CartridgeInsert, DeviceLaunch, type CartridgeInsertScreen } from '../../modules/trim-device';
 
 import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, tourGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
 import { track } from '@/analytics/analytics';
@@ -53,7 +53,7 @@ import { FocusRing } from '@/device/tour/focus-ring';
 import { useTour } from '@/device/tour/tour-context';
 import { TourDisplay } from '@/device/tour/tour-display';
 import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourLaunch3d, useTourMotion } from '@/device/tour/tour-launch';
-import { tourLiftLamps } from '@/device/tour/tour-model';
+import { loggedOn, tourLiftDone, tourLiftLamps } from '@/device/tour/tour-model';
 import { DEVICE, EASE_DISPLAY_CURVE, TOUR_POSE, TOUR_POSE_CURVES, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -93,7 +93,19 @@ export function DeviceScreen() {
  */
 function DeviceSurface() {
   const fontsReady = useAppFonts();
-  const { finish, palette } = useFinish();
+  const { finish, palette, screen } = useFinish();
+  // The native insert draws its display in this machine's screen, as the JS device that takes over does.
+  const insertScreen = useMemo<CartridgeInsertScreen>(
+    () => ({
+      lcd: screen.lcd,
+      ink: screen.amber,
+      dim: screen.amberDim,
+      off: screen.amberOff,
+      flash1: screen.amberOff,
+      flash2: screen.amberPress,
+    }),
+    [screen],
+  );
   const { soundsOn } = useWorkoutStore();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -218,15 +230,16 @@ function DeviceSurface() {
         return { label: 'Done', accessibilityLabel: 'Done', variant: 'metal' as const, onPress: edit?.back };
       case 'tour':
         switch (tour.state.screen) {
+          // Like every untaught control, the big key is dimmed and inert until its line: before
+          // that, the screen is what to tap.
           case 'intro':
-            // Metal until Trim's line asks for it: before that, the screen is what to tap.
-            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('metal' as const), onPress: () => tour.dispatch({ type: 'show' }) };
+            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('disabled' as const), onPress: () => tour.dispatch({ type: 'show' }) };
           case 'rest':
             return { label: 'Skip', accessibilityLabel: 'Skip rest', variant: 'metal' as const, onPress: () => tour.dispatch({ type: 'skipRest' }) };
           case 'ready':
-            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('metal' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
+            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('disabled' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
           default:
-            return { label: 'Log', accessibilityLabel: 'Log set', variant: 'primary' as const, onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
+            return { label: 'Log', accessibilityLabel: 'Log set', variant: tour.taught('log') ? ('primary' as const) : ('disabled' as const), onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
         }
       default:
         return {
@@ -384,7 +397,7 @@ function DeviceSurface() {
                     <View style={styles.rocker}>
                       <Rocker
                         variant="week"
-                        lamps={tour.state.lifts.map(() => (tour.state.screen === 'ready' ? 'done' : 'off'))}
+                        lamps={tour.state.lifts.map((_, index) => (tourLiftDone(tour.state, index) ? 'done' : 'off'))}
                         accessibilityLabel=""
                       />
                     </View>
@@ -636,7 +649,7 @@ function DeviceSurface() {
                   <RoundKey
                     label="↶"
                     accessibilityLabel="Undo last set"
-                    disabled={!tourWorking || tour.state.logged === 0}
+                    disabled={!tourWorking || loggedOn(tour.state) === 0}
                     onPress={() => tour.dispatch({ type: 'undo' })}
                   />
                 </FocusRing>
@@ -674,6 +687,7 @@ function DeviceSurface() {
         <CartridgeInsert
           style={StyleSheet.absoluteFill}
           finish={finish}
+          screen={insertScreen}
           planName={insert.planName}
           days={insert.days.map((day) => day.title)}
           playing

@@ -53,11 +53,12 @@ import {
   reorderDrafts,
   restPhase,
   restoreDraft,
+  sessionOrder,
   sessionSwaps,
   stageOf,
   swapInDrafts,
   swappedPrescription,
-  planExercisesFrom,
+  withSessionOrder,
   type CompleteContext,
   type LogState,
 } from '@/device/log/log-state';
@@ -382,8 +383,8 @@ check('swap before any set: the slot takes the new lift and remembers the plan\'
   assert.equal(swapped.drafts[0]?.prescription.id, state.drafts[0]?.prescription.id);
   assert.equal(swapped.drafts[0]?.swappedFrom?.name, 'Lateral raises');
   assert.equal(swapped.drafts[0]?.sets.length, 3);
-  // The plan keeps its own lift until Keep in plan.
-  assert.deepEqual(planExercisesFrom(swapped.drafts).map((item) => item.name), ['Lateral raises', 'Row']);
+  // A swap isn't a new order.
+  assert.equal(sessionOrder(swapped.drafts, state.drafts.map((item) => item.prescription)), null);
   // Nothing logged on the new lift: the receipt asks nothing.
   assert.equal(sessionSwaps(swapped.drafts).length, 0);
 });
@@ -419,6 +420,50 @@ check('a saved session restores a swap against the plan\'s lift', () => {
   assert.equal(restored[0]?.prescription.name, 'Cable lateral raise');
   assert.equal(restored[0]?.sets.filter((set) => set.done).length, 1);
   assert.equal(restored[0]?.swappedFrom?.name, 'Lateral raises');
+});
+
+check('reorder is today only: the plan keeps its order until Keep in plan (D92)', () => {
+  const plan = [lift('Bench press'), lift('Row'), lift('Squat')];
+  const frozen = show(plan);
+  const reordered = reorderDrafts(stateFor(plan), 2, 0);
+  assert.deepEqual(reordered.drafts.map((item) => item.prescription.name), ['Squat', 'Bench press', 'Row']);
+  // Reordering never touches the plan; the receipt gets the new order to ask about.
+  assert.equal(show(plan), frozen);
+  const order = sessionOrder(reordered.drafts, plan);
+  assert.deepEqual(order, [plan[2]!.id, plan[0]!.id, plan[1]!.id]);
+  // Keep in plan writes it.
+  assert.deepEqual(withSessionOrder(plan, order!).map((item) => item.name), ['Squat', 'Bench press', 'Row']);
+});
+
+check('dragging back to the plan\'s order asks nothing', () => {
+  const plan = [lift('Bench press'), lift('Row'), lift('Squat')];
+  const back = reorderDrafts(reorderDrafts(stateFor(plan), 0, 2), 2, 0);
+  assert.equal(sessionOrder(back.drafts, plan), null);
+  assert.equal(sessionOrder(stateFor(plan).drafts, plan), null);
+});
+
+check('session order ignores orphans and lifts removed today; Keep in plan leaves other lifts in place', () => {
+  const plan = [lift('Bench press', 3), lift('Row'), lift('Squat'), lift('Curl')];
+  const state = log(stateFor(plan));
+  // Bench gets a set, then leaves today (an orphan); Curl leaves with nothing logged.
+  const removed = removeDraft(removeDraft(state, plan[0]!.id).state, plan[3]!.id).state;
+  assert.equal(sessionOrder(removed.drafts, plan), null);
+  const reordered = reorderDrafts(removed, 2, 1);
+  const order = sessionOrder(reordered.drafts, plan);
+  assert.deepEqual(order, [plan[2]!.id, plan[1]!.id]);
+  // Bench and Curl keep their places; Row and Squat swap theirs.
+  assert.deepEqual(withSessionOrder(plan, order!).map((item) => item.name), ['Bench press', 'Squat', 'Row', 'Curl']);
+});
+
+check('a saved session restores its own order, not the plan\'s', () => {
+  const plan = [lift('Bench press'), lift('Row'), lift('Squat')];
+  const reordered = reorderDrafts(stateFor(plan), 2, 0);
+  const restored = restoreDrafts({ drafts: reordered.drafts }, { id: 'd', title: 'Push 1', exercises: plan } as never, () => []);
+  assert.deepEqual(restored.map((item) => item.prescription.name), ['Squat', 'Bench press', 'Row']);
+  // A lift new in the plan since keeps its plan place.
+  const grown = [...plan, lift('Curl')];
+  const again = restoreDrafts({ drafts: reordered.drafts }, { id: 'd', title: 'Push 1', exercises: grown } as never, () => []);
+  assert.deepEqual(again.map((item) => item.prescription.name), ['Squat', 'Bench press', 'Row', 'Curl']);
 });
 
 check('Live Activity focus on a removed lift falls back to the first lift with work', () => {

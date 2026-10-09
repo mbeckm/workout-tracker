@@ -158,6 +158,7 @@ export {
   isCartridgeInsertAvailable,
   type CartridgeInsertLayout,
   type CartridgeInsertProps,
+  type CartridgeInsertScreen,
 } from './cartridge-insert';
 export { DeviceLaunch, isDeviceLaunchAvailable, type DeviceLaunchPose, type DeviceLaunchProps } from './device-launch';
 

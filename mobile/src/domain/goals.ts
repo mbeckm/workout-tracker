@@ -1,3 +1,4 @@
+import { roundOneRM } from '@/domain/helpers';
 import { bestOneRMForExercise, liftSeriesFromHistory } from '@/domain/progress';
 import { newId, normalizedStatsKey, type LoggedWorkout } from '@/domain/types';
 
@@ -46,10 +47,13 @@ export function pinnedGoals(goals: readonly Goal[]): Goal[] {
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 }
 
-/** A lift's latest estimated 1RM (what lift detail's hero shows), or null before any set. */
+/**
+ * A lift's latest estimated 1RM as shown (whole, `roundOneRM`; what lift detail's hero shows), or
+ * null before any set. Goals measure against this, so `Now 100 kg` and a 100 kg goal agree.
+ */
 export function currentOneRM(exerciseName: string, history: LoggedWorkout[]): number | null {
   const series = liftSeriesFromHistory(exerciseName, history);
-  return series.length > 0 ? series[series.length - 1].oneRM : null;
+  return series.length > 0 ? roundOneRM(series[series.length - 1].oneRM) : null;
 }
 
 /** How far along the track is, 0 to 1. A reached goal is full. */
@@ -63,7 +67,7 @@ export function goalProgress(goal: Goal, current: number | null): number {
   return Math.max(0, Math.min(1, current / goal.target));
 }
 
-/** Goals not reached yet that `workout` reaches: a session's estimated 1RM ≥ the target. */
+/** Goals not reached yet that `workout` reaches: a session's shown (whole) estimated 1RM ≥ the target. */
 export function goalsReachedBy(workout: LoggedWorkout, goals: readonly Goal[]): Goal[] {
   return goals.filter((goal) => {
     if (goal.reachedAt) {
@@ -75,7 +79,7 @@ export function goalsReachedBy(workout: LoggedWorkout, goals: readonly Goal[]): 
         return false;
       }
       const oneRM = bestOneRMForExercise(exercise);
-      return oneRM != null && oneRM >= goal.target;
+      return oneRM != null && roundOneRM(oneRM) >= goal.target;
     });
   });
 }

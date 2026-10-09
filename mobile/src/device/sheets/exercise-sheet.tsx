@@ -40,7 +40,7 @@ import { ExerciseFigure } from '@/device/figures';
 import { useLogSession } from '@/device/log';
 import { useTour } from '@/device/tour/tour-context';
 import { TrimSays } from '@/device/tour/trim-says';
-import { estimatedOneRM, formatLoadWithUnit, formatLoggedSetLine } from '@/domain/helpers';
+import { estimatedOneRM, formatLoadWithUnit, formatLoggedSetLine, roundOneRM } from '@/domain/helpers';
 import { liftSeriesFromHistory } from '@/domain/progress';
 import type { CustomExerciseDefinition, ExercisePrescription, LoggedSet } from '@/domain/types';
 import { DEVICE } from '@/motion';
@@ -425,11 +425,6 @@ function bestSet(sets: readonly LoggedSet[]): LoggedSet | null {
   return best;
 }
 
-/** The estimated max to the nearest half (prototype `Math.round(est * 2) / 2`). */
-function roundHalf(value: number): number {
-  return Math.round(value * 2) / 2;
-}
-
 /**
  * YOU (D4, no rank): the estimated max from history, raised by today's sets while logging,
  * then the best set today or, before the first set, the best set last time.
@@ -449,7 +444,7 @@ function youStats(
   }, null);
   const estimate = Math.max(fromHistory ?? 0, fromToday ?? 0);
   if (estimate > 0) {
-    stats.push({ value: formatLoadWithUnit(roundHalf(estimate), units), label: 'Estimated max' });
+    stats.push({ value: formatLoadWithUnit(roundOneRM(estimate), units), label: 'Estimated max' });
   }
 
   const todayBest = bestSet(today);

@@ -12,6 +12,9 @@ const ENDPOINT = `${process.env.EXPO_PUBLIC_IMPORT_API_URL?.trim() || 'https://t
 const TIMEOUT_MS = 45_000;
 
 type RemoteLift = {
+  /** The source's own words (older endpoints don't send it). */
+  asWritten?: string | null;
+  /** Trim's catalog name when Claude thinks it's the same lift, else the source's words. */
   name: string;
   qualifier: string | null;
   sets: number | null;
@@ -24,8 +27,14 @@ function clampInt(value: unknown, min: number, max: number): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : null;
 }
 
+/**
+ * The owner's words are the lift; Claude's catalog name is only a suggestion, so the phone decides
+ * whether it's recognized or a guess to ask about (decision 91).
+ */
 function toLift(lift: RemoteLift): ImportedLift | null {
-  const name = typeof lift.name === 'string' ? lift.name.trim() : '';
+  const picked = typeof lift.name === 'string' ? lift.name.trim() : '';
+  const written = typeof lift.asWritten === 'string' ? lift.asWritten.trim() : '';
+  const name = written || picked;
   if (!name) return null;
   return {
     raw: name,
@@ -34,6 +43,7 @@ function toLift(lift: RemoteLift): ImportedLift | null {
     sets: clampInt(lift.sets, 1, 10),
     reps: clampInt(lift.reps, 1, 100),
     seconds: clampInt(lift.seconds, 5, 600),
+    suggestion: picked && picked !== name ? picked : null,
   };
 }
 

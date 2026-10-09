@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Platform, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, useReducedMotion } from 'react-native-reanimated';
 
-import { device, gadgetType, insertColors, insertGeometry as geo, lcd } from '@/constants/theme';
+import { device, gadgetType, insertGeometry as geo, lcd } from '@/constants/theme';
 import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
 import { EmptySlot } from '@/device/home/home-display';
 import { DEVICE, EASE_DISPLAY } from '@/motion';
@@ -114,6 +114,7 @@ const baseStyles = StyleSheet.create({
   },
   segment: { flex: 1, height: geo.barHeight, backgroundColor: lcd.amberOff },
   segmentOn: { backgroundColor: lcd.amber },
-  flash1: { backgroundColor: insertColors.bootFlash1 },
-  flash2: { backgroundColor: insertColors.bootFlash2 },
+  // The boot flicker's two lit grounds (`@keyframes boot`), in the machine's screen.
+  flash1: { backgroundColor: lcd.amberOff },
+  flash2: { backgroundColor: lcd.amberPress },
 });

@@ -6,7 +6,7 @@ import type { PlanMatch } from '@/catalog/plan-import-match';
 import { fontScaleCap, gadgetType, importGeometry, onboardingType, sheetGeometry, space } from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
-import { FIX_SUB, fixTitle } from '@/screens/onboarding/import-fix';
+import { fixSub, fixTitle } from '@/screens/onboarding/import-fix';
 import { IMPORT_SUB } from '@/screens/onboarding/import';
 import { allFixed, FixView, unknownLifts } from '@/screens/plan-import/fix-view';
 import { importedPlan } from '@/screens/plan-import/finish-import';
@@ -125,6 +125,7 @@ export function ImportSheet({ params }: { params: SheetParams }) {
     return null;
   }
   const left = unknownLifts(match).filter((item) => !session.fixes.has(item.key)).length;
+  const sub = fixSub(left);
   return (
     <SheetScroll
       header={<SheetHeader title="Import plan" left={{ kind: 'back', onPress: () => setStep('read') }} />}
@@ -144,9 +145,11 @@ export function ImportSheet({ params }: { params: SheetParams }) {
         <Text accessibilityRole="header" maxFontSizeMultiplier={fontScaleCap.title} style={gadgetType.sheetHero}>
           {fixTitle(left)}
         </Text>
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={[onboardingType.sub, styles.sub]}>
-          {FIX_SUB}
-        </Text>
+        {sub ? (
+          <Text maxFontSizeMultiplier={fontScaleCap.title} style={[onboardingType.sub, styles.sub]}>
+            {sub}
+          </Text>
+        ) : null}
         <View style={styles.fix}>
           <FixView
             match={match}

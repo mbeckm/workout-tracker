@@ -11,15 +11,18 @@ import {
   READY_BEAT,
   TEACH,
   TOUR_SCRIPT,
+  TOUR_SETS,
   initialTourState,
   lineOf,
   litControl,
+  tourLiftLamps,
   tourReducer,
   type TourAction,
   type TourLift,
   type TourState,
 } from '@/device/tour/tour-model';
 import { rollWindow, tourRollRows } from '@/device/roll-call-model';
+import { estimateDayMinutes, TIME_BUFFER } from '@/domain/day-facts';
 import { finishLock } from '@/domain/finish';
 import {
   HOME_LIFT_LINES,
@@ -261,6 +264,15 @@ check('lamps: a repeated day lights a lamp; the row shows its latest workout', (
   assert.equal(home.rows[0].done?.minutes, 51);
 });
 
+check('estimate: a prescription is stretched by TIME_BUFFER; timed history is not (D93)', () => {
+  const days = fourDays();
+  const plan = makePlan(days);
+  assert.equal(TIME_BUFFER, 1.3);
+  assert.equal(estimateDayMinutes(plan, days[2], []), 45);
+  const history = newestFirst([trained(plan, days[2], MON, { minutes: 40 }), trained(plan, days[2], WED, { minutes: 51 })]);
+  assert.equal(estimateDayMinutes(plan, days[2], history), 51);
+});
+
 check('lamps: the just-finished day flickers its own slot', () => {
   const days = fourDays();
   const plan = makePlan(days);
@@ -294,7 +306,8 @@ check('selection: the plan loop’s next day', () => {
   const home = model({ plan, history });
   assert.equal(home.selectedIndex, 2);
   assert.equal(home.rows[2].selected, true);
-  assert.equal(home.rows[2].accessibilityLabel, 'Push 1, next, 6 lifts, about 35 minutes');
+  // The prescription's work and rest, × TIME_BUFFER (D93), to the nearest 5.
+  assert.equal(home.rows[2].accessibilityLabel, 'Push 1, next, 6 lifts, about 45 minutes');
 });
 
 check('selection: no history selects the first day (after onboarding)', () => {
@@ -352,7 +365,7 @@ check('rows: only trainable days; the expanded row lists 3 lifts and +N MORE pas
   assert.deepEqual(pushRow.lines[0], { kind: 'lift', name: 'BENCH PRESS', prescription: '3×8' });
   assert.deepEqual(pushRow.lines[3], { kind: 'more', count: 3 });
   assert.equal(home.rows[3].lines.length, 3);
-  assert.equal(pushRow.estimate, '~35 MIN');
+  assert.equal(pushRow.estimate, '~45 MIN');
   assert.equal(expandedRowHeight(6, 70, 27), 178);
   assert.equal(expandedRowHeight(3, 70, 27), 151);
   assert.equal(expandedRowHeight(1, 70, 27), 97);
@@ -494,7 +507,7 @@ check('tour: controls do nothing before they are taught', () => {
   state = tourStep(state, { type: 'show' });
   assert.equal(state.screen, 'log');
   const logged = tourStep(state, { type: 'log', now: 0 });
-  assert.equal(logged.logged, 0);
+  assert.deepEqual(logged.sets, [0, 0, 0]);
   const undone = tourStep(state, { type: 'undo' });
   assert.equal(undone.beat, state.beat);
 });
@@ -520,15 +533,17 @@ check('tour: the whole script, each control answering its own line', () => {
   state = tourTap(state);
   state = tourStep(state, { type: 'log', now: 1000 });
   assert.equal(state.screen, 'rest');
-  assert.equal(state.logged, 1);
+  assert.deepEqual(state.sets, [1, 0, 0]);
   state = tourTap(state);
   assert.equal(state.beat, TEACH.undo);
   state = tourStep(state, { type: 'undo' });
-  assert.equal(state.logged, 0);
+  assert.deepEqual(state.sets, [0, 0, 0]);
   assert.equal(state.screen, 'log');
   state = tourTap(state);
   state = tourStep(state, { type: 'lift', direction: 1 });
   assert.equal(state.lift, 1);
+  // Moving on doesn't finish a lift: the one left behind with nothing logged goes dark.
+  assert.deepEqual(tourLiftLamps(state), ['off', 'on', 'off']);
   state = tourTap(state);
   assert.equal(state.beat, TEACH.swap);
   // Only the asked-for alternative answers the swap line.
@@ -569,13 +584,18 @@ check('roll call: every row fits, or a window keeps the current lift near the mi
   assert.deepEqual(rollWindow(3, 1, 0), { start: 1, end: 2 });
 });
 
-check('roll call: the tour marks lifts before the current one done', () => {
-  const state = { ...initialTourState(TOUR_LIFTS), lift: 1, logged: 1 };
+check('roll call and lamps: a tour lift is done only when its sets are', () => {
+  const state = { ...initialTourState(TOUR_LIFTS), lift: 2, sets: [TOUR_SETS, 1, 0] };
   const rows = tourRollRows(state);
   assert.deepEqual(
     rows.map((row) => [row.done, row.meta]),
-    TOUR_LIFTS.map((_, index) => [index < 1, `${index === 1 ? 1 : 0}/${state.setsPerLift}`]),
+    [
+      [true, `${TOUR_SETS}/${TOUR_SETS}`],
+      [false, `1/${TOUR_SETS}`],
+      [false, `0/${TOUR_SETS}`],
+    ],
   );
+  assert.deepEqual(tourLiftLamps(state), ['done', 'part', 'on']);
 });
 
 if (failures > 0) {
