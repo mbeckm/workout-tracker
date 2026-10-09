@@ -83,7 +83,7 @@ Information lives on the lowest layer that serves the job:
 | **finish** | Menu | lamps per lift on the recessed plate (green when done) | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
 | **edit** | `‹` back to the editor | `‹` `›` move between the day's lifts; the middle returns to the editor | Remove lift (`✕`) | `+` / `−` sets | reps (or seconds, minutes) | `Done` (metal) |
 | **loading** | inert | lamps off, then flicking on | hidden | none | stowed | inert |
-| **tour** | Menu (from its line on; opens the tour's menu) | lamps off, then `‹` `›` between the practice lifts as in log; all green at the end | `Skip` on the first screen, then Undo | `+` / `−` reps, `+15` / `−15` in rest | weight, then time in rest; stowed on the first and last screens | `Show me`, `Log`, `Skip` (metal), `Start`; metal until the line names it |
+| **tour** | Menu (from its line on; opens the tour's menu) | lamps off, then `‹` `›` between the practice lifts as in log (a lift is green only once its sets are logged) | `Skip` on the first screen, then Undo | `+` / `−` reps, `+15` / `−15` in rest | weight, then time in rest; stowed on the first and last screens | `Show me`, `Log`, `Skip` (metal), `Start`; dimmed and inert until the line names it (`Log` until it's taught) |
 
 ### Sheets and their top edges (SPEC §6)
 
@@ -104,14 +104,14 @@ Information lives on the lowest layer that serves the job:
 | Rest | How long until the next set | The time in the ring | `Skip` (metal) |
 | Finish | End the workout on purpose | `ALL DONE` / `END EARLY?` | `Finish`, held |
 | Edit | This lift's sets × reps | The framed number the wheel controls | `Done` (metal) |
-| Receipt | What I just did | The paper | `Done` (light pill) |
+| Receipt (finish screen) | What I just did, against last time | The three stats; on a moment, the paper | `Done` (light pill) |
 | Menu | Go somewhere | The rows | none |
 | Today | Jump, reorder or change today's lifts | The current row | none |
 | Plans rack | Which plan is in, which others exist | The active shelf | `New plan` (then Import plan or Build one) |
 | Editor | What's in this plan | The plan name | `Use plan` when inactive |
 | Progress | Is each lift going up | GOALS, then LIFTS | none |
 | Lift detail | How strong I am on this lift | The big number | none |
-| History wall | What I finished | The receipts | none |
+| History | What I finished | The weeks; the paper slips stand out | none |
 | Settings | Change units, sounds, Pro, data | The rows | none |
 | Paywall | What Pro adds and what it costs | The knob and the headline | Start free trial / Subscribe |
 | Onboarding step | One question | The question | Continue |
@@ -372,7 +372,9 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Hand-off (decision 87) | The card comes in over 140 ms (scale .97 → 1), holds 1400 ms, then rises 150 and shrinks to half over 280 ms (`EASE_OUT_FN`) as rest shows | Any key or a sheet ends it at once. Reduce Motion: plain fades |
 | Roll call (decision 86) | The list fades in over 100 ms, the ring glides to the new row over 180 ms (`EASE_OUT_FN`), holds 900 ms after the last press, fades out over 180 ms | Any other key or a sheet ends it at once. Reduce Motion: the ring jumps |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
-| Receipt feed | translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms) | Tapping the paper completes it. Plays from the wall too. Reduce Motion: the paper fades in where it ends |
+| Finish screen (decision 90) | The cards rise 16 and fade in over 420 ms (`EASE_OUT_FN`), 80 apart; the stats count up from 0 over 850 ms (ease-out cubic), 150 in | Fresh only; from History everything is in place. Reduce Motion: no rise, no count |
+| Receipt feed | On a moment, 800 ms in: up out of the bottom slot, translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms); the screen scrolls to it | Tapping the paper completes it. Fresh only. Reduce Motion: the paper fades in where it ends |
+| Receipt stamp | 100 ms after the feed: scale 2.4 → 1, rotate −30° → −12°, 380 ms, bezier(.3,1.4,.5,1); the thud (stamp haptic and sound) 150 ms in, where the paper jolts 4 down and back over 260 ms | Reduce Motion: it fades in |
 | Week moment (D15) | the grid ground fades in over 600 ms; 250 ms in, the report drops onto the spike from 120 above, −4° → 1.5°, 700 ms, bezier(.3,1.3,.5,1); Done fades it out over 300 ms | The thud at 315 ms into the drop (where the curve first meets the spike). A tap on the scene skips to the end |
 | Stamp (new PR or done day) | scale 2.4 → 1, rotate −12° → 7°, opacity 0 → 1, 500 ms, delay 450, bezier(.2,1.6,.4,1); the row fills from todo to done over 500 ms | When Home reappears after the receipt |
 | Lamp turns green (day finished) | flicker off, on, off, on over 900 ms (steps) | |
@@ -527,7 +529,7 @@ Banned everywhere, money screens included:
 - **Numbers:** a unit on every load in sheets (`60 kg × 8`). `×` joins load and reps or sets and reps. `−` (minus sign) in steppers and keys. Times are `1:32` and `52 min`; estimates `~45 min`.
 - **Dates:** `Today`, `Yesterday`, `Thu 2 Oct`. No year unless it isn't this year.
 - **Alerts and action sheets** are system-styled and only for actions that can't be undone (§10 Forgiveness). The title names the action and the object (`Delete Push 1 from Thu 2 Oct?`, `Discard workout?` with `N sets logged will not be saved.`). Buttons are `Cancel` + the verb.
-- **Toasts** confirm a result that isn't on screen yet, or offer Undo: `Bench Press set 2 undone` + `Undo`, `Plan deleted` + `Undo`, `Push Pull Legs is your plan`, `Add a lift first`, `Finish your workout first`, `Add lifts to this day first`. Never errors, never things already visible.
+- **Toasts** confirm a result that isn't on screen yet, or offer Undo: `Bench Press set 2 undone` + `Undo`, `Plan deleted` + `Undo`, `Push Pull Legs is your plan`, `Add a lift first`, `Finish your workout first`, `Add lifts to this day first`, `Copy your plan first` (Paste on Import plan with an empty clipboard). Never errors, never things already visible.
 
 ---
 
@@ -590,7 +592,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | Close a sheet | Swipe down + scrim tap + ✕ / `Done` |
 | Reorder lifts | Drag in Today or the editor + Move up / Move down accessibility actions |
 | Remove a lift in the editor | Swipe the row + the device's Remove key in edit |
-| Delete a workout | Long-press a mini receipt → action sheet (D9) |
+| Delete a workout | Long-press a History row or slip → action sheet (D9) |
 | Day actions | The `…` on the day header |
 
 No other custom gestures (double-tap, two-finger, shake).
@@ -643,9 +645,9 @@ We study the highest-converting apps and use their principles, never their dark 
 | --- | --- |
 | **First open** (D74) | The machine is born: it floats in out of space, its parts snap on on a quickening beat, the Start key hovers and trembles while it charges, then slams home with a bang, and the grid floor lights. From that moment it's yours. About 6.5 s to Continue (shown once, so it takes its time); a tap skips it. |
 | **Plan ready** (onboarding and every activation) | The cartridge insert (§8): the click, the display boots, the days tick in, the lamps light. The plan the user picked is the reward. |
-| **A workout finished** | Hold to finish, then the receipt prints out of the slot with the print haptic and sound. On Home the day stamps in and its lamp flickers green. |
-| **A new personal record** | The PR line on the receipt (`BENCH PR ★`), and the PR stamp on Home's row. |
-| **Goals and milestones** | Printed on the receipt: the milestone line under `TRIM`, one `GOAL <LIFT> <target> ✓` line per goal reached (D7). No badges, no trophy screen. |
+| **A workout finished** | Hold to finish, then the finish screen: the stats rise in and count up. On Home the day stamps in and its lamp flickers green. |
+| **A new personal record** | The receipt prints (decision 90): every record, the old one struck through, the `★ BEST EVER` stamp slams on. Gold `★` on the lift's line and the PR stamp on Home's row. |
+| **Goals and milestones** | The receipt prints: the milestone, `GOAL REACHED ✓` with the target per goal (D7). No badges, no trophy screen. A workout without a record, goal or milestone prints nothing. |
 | **Week complete** | After the receipt's Done, the finished-week report prints onto the spike (D15): lifts up, records, volume, best. Once per week. |
 | **A plan saved** | The cartridges file onto the shelf. |
 | **The guided tour's reward** (decision 85) | Start throws the device up into a spin over Trim's dot-matrix room (the body's edge and back show while it turns); it slows to face the owner in the new finish, hangs, drops, squashes and settles perched. A ring of lit dots ripples out from it, `UNLOCKED` stamps on with the stamp's thud, and the finish picker rises. Each pick re-dresses the device with the ripple and a wiggle. About 5 s to the picker (once, like first open). |
@@ -769,17 +771,19 @@ Top edge 200. Rows: name, sub (`Now, set 2/3`, the logged sets, or `3 × 8 at 85
 
 A 230 illustration panel (D5; no panel without art or a figure): the lift's own dot-matrix art when it has approved art (a `card` bezel around an `lcd` screen, frames from `exercise-art.generated.ts` looping every 900 ms, the last frame held under Reduce Motion), otherwise our SVG figure for the movement pattern. The art is a faceless mid-grey mannequin with dark-grey equipment and the working muscles lit orange, about 64% of the panel height (a lying body no bigger than a standing one) and clear of the close button; it's made offline with `mobile/scripts/exercise-art/`, never drawn by hand in code. Custom exercises get no panel. Then the name (30/800), the kit and muscle line, muscle chips (primary orange), `HOW TO` with 3 numbered steps (only where written), then, for a lift in the open workout, `SWAP FOR`: up to 3 alternatives (`Cable, side delts`; lifts already in today's session left out) and `Choose another` in its own card (the picker in place, ‹ back). One tap swaps for today (D81) and closes the sheet (‹ to Today when opened from it). Then `YOU` with the estimated max and best today or last time. No rank. The display's lift name ▾ opens this sheet, so swapping mid-set is two taps.
 
-### History wall (HR1) [02]
+### History (decision 90, H2)
 
-Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then a 3-column grid, gap 10, of mini receipts tilted 0 / 1.5 / −1 / 1 / −1.5°, each with a torn zigzag bottom: day, date, sets, kg, PR or minutes (Plex Mono 9 / 13). Tap prints the full receipt with ‹ back to the wall (the wall keeps its scroll). Long-press deletes after an action sheet (`Delete Push 1 from Thu 2 Oct?`; VoiceOver: a Delete action). Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts (`SheetList`, FlashList: a week header or one row of three per item); minis are drawn without measuring (`SlipPaper`), so recycled cells never show stale paper.
+Training weeks (Monday start), newest first: a Doto week header with that week's lamps, then the week's workouts. A workout that printed nothing is a clean row (64 tall: `Push 1` row title over `Thu 9 Oct, 52 min` row sub, the volume, or `12 sets` without a load, in the trailing lane); consecutive rows share one card with a rule between them. A workout that printed (a record, a goal reached, a milestone) is its paper slip instead, full width, tilted −1 / 1 / −0.5 / 0.75° by its place in History, torn at the bottom: the heading in record ink (`★ RECORD`, `★ 2 RECORDS`, `GOAL REACHED`, `10TH WORKOUT`), the day's name, the date and the volume on the left (Plex Mono 11 / 15 bold); what it printed big on the right (Doto 26: `90 × 8` over `BENCH PRESS`, or the goal's target, or the workout count; with several, up to three lines, the lift with its set in Doto 18 in the lane). Doto is monospaced, so its sets join × without spaces, as on the display (`90×8`). Tap opens the workout's finish screen with ‹ back to History (History keeps its scroll); pressed, a slip settles to .96 and a row raises. Long-press deletes after an action sheet (`Delete Push 1 from Thu 2 Oct?`; VoiceOver: a Delete action). Empty: one blank torn receipt reading `NO WORKOUTS YET`. Virtualized for 100+ workouts (`SheetList`, FlashList: a week header, a row or a slip per item); slips are drawn without measuring (`SlipPaper`), so recycled cells never show stale paper.
 
 - The week header reads `WEEK n` in the active plan's weeks (Home's numbering); weeks before the plan existed read `WEEK OF 22 SEP`. Lamps are the plan's trainable days, lit by the week's workouts (capped).
 - The header has ✕; ‹ back to the menu only when it was opened from the menu (Home's History key opens it directly).
 - Workouts from deleted plans keep their own title. The PR line uses `workoutPersonalBests`, as the old History detail did.
 
-### Receipt [13, 03]
+### Receipt: the finish screen (decision 90, F3a) [13, 03]
 
-A black slot (12 tall), paper feeding out in 18 steps over 1.8 s, with a shadow where it leaves the slot, faint thermal lines, a vignette and a zigzag bottom (teeth 14 wide, 9 deep). Content: `TRIM` (and the name on the next line when set), the milestone (bold) when there is one, the day, `date N MIN`; per lift the name and set count with an indented `w × r, r, r` line (`compressSetLines`; `w×r` per set when weights differ); `SETS`, `VOLUME`, the estimated max of the first lift that has one (`BENCH E1RM`, the stamp word), one PR line per record lift (`BENCH PR ★`) in #C2410C, one `GOAL BENCH 100 ✓` line per goal reached (D7). On a fresh receipt, one card per lift swapped today that got a set (D81), between the paper and the actions: `Cable Lateral Raise in Push 1?` (row title), `Instead of Lateral Raises` (row sub), and two pills, `Keep in plan` (light; writes the plan's slot with its own sets and reps, toast `Push 1 updated`) and `Just today` (dark). Answered cards go; unanswered ones leave the plan as it was. Actions: `Share` (dark pill, the receipt as 32-column text) and `Done` (light pill) on a fresh receipt. The fresh receipt's header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from the wall the header is the day's name with ‹. The fresh receipt claims its milestone (`claimMilestone`).
+The stats lead, in the sheet's own cards. One card holds three stats (26 / 30 heavy, tabular, over a 12 / 16 label and a delta line): volume (`5,908` / `kg`; sets without any load), minutes, and the estimated max of the first lift that has one (`Bench e1RM`; lifts without loads: the count of lifts), each against the last time this plan day was done (by day id, else by title): `↑ 312`, `↓ 6`, `Same`; green (`signal.done`) only when more is better and it went up, else muted; a record's max is gold (`signal.record`) with `★ +3`. Then a card with a row per lift (50 tall): the name, and its line against its own last session (by name, any workout): `★ +2.5 kg` (gold, a record), `+2.5 kg` / `+1 rep` (green), `Same`, `−2 reps`, `First time` (muted); a lift without a load reads its set count.
+
+The receipt only prints for a moment: one or more records (`workoutPersonalBests`; every one prints), a goal reached (D7) or a milestone. A workout without one prints nothing. It rises out of a black slot (12 tall, inset 50) above the actions, after the stats: 244 wide, thermal lines, torn at the top (teeth 10 wide, 6 deep), its shadow cast upward. Content (Plex Mono 11 / 16): `TRIM` (Doto 18) with `No. 047` (the workout's number in all of history) in its lane, the owner's name (bold 13, no label) when set (D20), a double rule, then `★ <MILESTONE>`, `GOAL REACHED ✓` with the target in Doto 28 and the lift per goal, `★ NEW RECORD` with the old record struck through (and its date in the lane) over the new one in Doto 46 (`90×8`, joined as on the display) and the lift, or `★ 3 NEW RECORDS` with a row per lift (old struck left, new in Doto 28 right), all in #C2410C for the headings; a dashed rule, the day's name with its volume (or `52 MIN`) in the lane, the date under it, a barcode. A rubber stamp, a 62 ring in record ink tilted −12°, slams on bottom right over the barcode once the paper is out: `★ BEST EVER` (one record), `★ 3 IN A DAY` (several), `GOAL ✓`, `★ 10TH`. On a fresh screen, one card per lift swapped today that got a set (D81), under the lifts: `Cable Lateral Raise in Push 1?` (row title), `Instead of Lateral Raises` (row sub), and two pills, `Keep in plan` (light; writes the plan's slot with its own sets and reps, toast `Push 1 updated`) and `Just today` (dark). Answered cards go; unanswered ones leave the plan as it was. Actions: `Share` (dark pill, only with a receipt; the receipt as text) and `Done` (light pill) on a fresh screen. The fresh header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from History the header is the day's name with ‹, and nothing animates. The fresh screen claims its milestone (`claimMilestone`).
 
 Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue runs (`device/moments.ts`, `moment/moment-host.tsx`), one at a time: the Home stamp (`justFinished`; it waits until Home is in front and the stamp has played), the week moment if this workout filled the week and its ISO week isn't in `weekMomentsShown`, then the post-workout paywall. Phase 4's finish calls `openReceiptAfterFinish(workoutId)`.
 

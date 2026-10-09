@@ -11,7 +11,7 @@ import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
 import { DEVICE } from '@/motion';
 
 import { useTour } from './tour-context';
-import { tourSetLamps } from './tour-model';
+import { loggedOn, tourSetLamps } from './tour-model';
 
 /** The log header: the lift name, then the set lamps (as the log display, decision 84). */
 const HEADER_BOTTOM =
@@ -136,7 +136,7 @@ function TourLog({ height, onName }: { height: number; onName: () => void }) {
               />
             ))}
           </View>
-          <LcdText style={gadgetType.lcdSmall}>{`SET ${Math.min(state.logged + 1, state.setsPerLift)}/${state.setsPerLift}`}</LcdText>
+          <LcdText style={gadgetType.lcdSmall}>{`SET ${Math.min(loggedOn(state) + 1, state.setsPerLift)}/${state.setsPerLift}`}</LcdText>
         </View>
       </View>
       <View style={styles.footer} pointerEvents="none">

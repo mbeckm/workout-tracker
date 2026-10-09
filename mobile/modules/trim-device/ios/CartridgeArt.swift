@@ -53,7 +53,45 @@ struct InsertFinish {
   }
 }
 
-/// Colours shared by every finish (`deviceColors`, `lcd` in theme.ts).
+/// The display of the machine being loaded (`screenColors[palette.screen]` in theme.ts, sent
+/// from JS as `#RRGGBB`), so the insert's display matches the device it hands over to. Without
+/// the prop (an older JS bundle) or with a value it can't read, it's the amber screen.
+struct InsertScreen: Equatable, Sendable {
+  var lcd: UInt32 = 0x121211
+  var ink: UInt32 = 0xFF6A1A
+  var dim: UInt32 = 0xB05A20
+  var off: UInt32 = 0x3A2214
+  /// The boot flicker's two lit grounds (prototype `@keyframes boot`): `amberOff`, `amberPress`.
+  var flash1: UInt32 = 0x3A2214
+  var flash2: UInt32 = 0x2A1A10
+
+  init() {}
+
+  init(_ values: [String: String]?) {
+    func read(_ key: String, _ fallback: UInt32) -> UInt32 {
+      guard let raw = values?[key], raw.count == 7, raw.hasPrefix("#"),
+        let value = UInt32(raw.dropFirst(), radix: 16)
+      else { return fallback }
+      return value
+    }
+    lcd = read("lcd", lcd)
+    ink = read("ink", ink)
+    dim = read("dim", dim)
+    off = read("off", off)
+    flash1 = read("flash1", flash1)
+    flash2 = read("flash2", flash2)
+  }
+
+  var lcdColor: UIColor { UIColor(hex: lcd) }
+  var inkColor: UIColor { UIColor(hex: ink) }
+  var dimColor: UIColor { UIColor(hex: dim) }
+  var offColor: UIColor { UIColor(hex: off) }
+  var flash1Color: UIColor { UIColor(hex: flash1) }
+  var flash2Color: UIColor { UIColor(hex: flash2) }
+}
+
+/// Colours shared by every finish (`deviceColors`, `lcd` in theme.ts). The cartridge's label
+/// and the slot glow keep Trim's amber whatever the machine; the display uses `InsertScreen`.
 enum InsertInk {
   static let key1 = UIColor(hex: 0xF4F3EF)
   static let key2 = UIColor(hex: 0xDEDBD4)
@@ -63,10 +101,6 @@ enum InsertInk {
   static let lcd = UIColor(hex: 0x121211)
   static let amber = UIColor(hex: 0xFF6A1A)
   static let amberDim = UIColor(hex: 0x7A3E1C)
-  static let amberOff = UIColor(hex: 0x3A2214)
-  /// The boot flicker's two lit grounds (prototype `@keyframes boot`).
-  static let bootFlash1 = UIColor(hex: 0x3A2214)
-  static let bootFlash2 = UIColor(hex: 0x2A1A10)
   static let disabledHi = UIColor(hex: 0x9E9E9E)
   static let disabledLo = UIColor(hex: 0x717171)
   static let disabledLip = UIColor(hex: 0x515151)
@@ -317,7 +351,7 @@ enum DeviceFaceArt {
   /// The body face with its keys, the display panel, the well and the disabled Start key, as
   /// the device looks while loading (prototype `activate()`: menu key, week rocker with unlit
   /// lamps, no right key, wheel stowed, Start greyed).
-  static func face(layout: InsertLayout, finish: InsertFinish, lampCount: Int, scale: CGFloat) -> UIImage {
+  static func face(layout: InsertLayout, finish: InsertFinish, screen: InsertScreen, lampCount: Int, scale: CGFloat) -> UIImage {
     let size = layout.size
     return Art.image(size, scale: scale, opaque: true) { ctx in
       let bounds = CGRect(origin: .zero, size: size)
@@ -359,7 +393,7 @@ enum DeviceFaceArt {
       let panel = Art.roundedPath(layout.display, radius: 28)
       var down = CGAffineTransform(translationX: 0, y: 1)
       if let catchPath = panel.copy(using: &down) { Art.fill(ctx, catchPath, UIColor(white: 1, alpha: 0.5)) }
-      Art.fill(ctx, panel, InsertInk.lcd)
+      Art.fill(ctx, panel, screen.lcdColor)
       Art.innerShadow(ctx, panel, dy: 3, blur: 10, color: UIColor(white: 0, alpha: 0.8))
 
       // Well (`.well`).
@@ -464,34 +498,34 @@ enum DisplayArt {
   private static let pad: CGFloat = 22
 
   /// `SLOT  EMPTY` header (`.hd.dim`).
-  static func slotHeader(size: CGSize, scale: CGFloat) -> UIImage {
+  static func slotHeader(size: CGSize, screen: InsertScreen, scale: CGFloat) -> UIImage {
     Art.image(size, scale: scale) { _ in
-      header(left: "SLOT", right: "EMPTY", width: size.width)
+      header(left: "SLOT", right: "EMPTY", width: size.width, screen: screen)
     }
   }
 
   /// `INSERT PLAN` at top 150, Doto 40/44 (it blinks).
-  static func insertPlan(size: CGSize, scale: CGFloat) -> UIImage {
+  static func insertPlan(size: CGSize, screen: InsertScreen, scale: CGFloat) -> UIImage {
     Art.image(size, scale: scale) { _ in
       let font = Art.lcdFont(40)
-      Art.drawLine("INSERT", font: font, color: InsertInk.amber, x: pad, width: size.width - 2 * pad, top: 150, lineHeight: 44)
-      Art.drawLine("PLAN", font: font, color: InsertInk.amber, x: pad, width: size.width - 2 * pad, top: 194, lineHeight: 44)
+      Art.drawLine("INSERT", font: font, color: screen.inkColor, x: pad, width: size.width - 2 * pad, top: 150, lineHeight: 44)
+      Art.drawLine("PLAN", font: font, color: screen.inkColor, x: pad, width: size.width - 2 * pad, top: 194, lineHeight: 44)
     }
   }
 
   /// `LOADED 0/n`, the plan name and the empty load bar (prototype, at the click).
-  static func loaded(size: CGSize, planName: String, dayCount: Int, scale: CGFloat) -> UIImage {
+  static func loaded(size: CGSize, screen: InsertScreen, planName: String, dayCount: Int, scale: CGFloat) -> UIImage {
     Art.image(size, scale: scale) { ctx in
-      header(left: "LOADED", right: "0/\(dayCount)", width: size.width)
+      header(left: "LOADED", right: "0/\(dayCount)", width: size.width, screen: screen)
       let font = Art.lcdFont(40)
       let lines = Art.wrap(planName.uppercased(), font: font, width: size.width - 2 * pad, maxLines: 2)
       for (i, line) in lines.enumerated() {
-        Art.drawLine(line, font: font, color: InsertInk.amber, x: pad, width: size.width - 2 * pad, top: 54 + CGFloat(i) * 44, lineHeight: 44)
+        Art.drawLine(line, font: font, color: screen.inkColor, x: pad, width: size.width - 2 * pad, top: 54 + CGFloat(i) * 44, lineHeight: 44)
       }
       // `.ldbar`: 10 cells, gap 4, 16 tall, 22 from the bottom.
       let barW = size.width - 2 * pad
       let cell = (barW - 9 * 4) / 10
-      ctx.setFillColor(InsertInk.amberOff.cgColor)
+      ctx.setFillColor(screen.offColor.cgColor)
       for i in 0..<10 {
         ctx.fill(CGRect(x: pad + CGFloat(i) * (cell + 4), y: size.height - 22 - 16, width: cell, height: 16))
       }
@@ -505,10 +539,10 @@ enum DisplayArt {
     }
   }
 
-  private static func header(left: String, right: String, width: CGFloat) {
+  private static func header(left: String, right: String, width: CGFloat, screen: InsertScreen) {
     let font = Art.lcdFont(15)
-    Art.drawLine(left, font: font, color: InsertInk.amberDim, x: pad, width: width - 2 * pad, top: 20, lineHeight: 18)
-    Art.drawLine(right, font: font, color: InsertInk.amberDim, x: pad, width: width - 2 * pad, top: 20, lineHeight: 18, align: .right)
+    Art.drawLine(left, font: font, color: screen.dimColor, x: pad, width: width - 2 * pad, top: 20, lineHeight: 18)
+    Art.drawLine(right, font: font, color: screen.dimColor, x: pad, width: width - 2 * pad, top: 20, lineHeight: 18, align: .right)
   }
 }
 
@@ -716,6 +750,7 @@ struct InsertArtSet: @unchecked Sendable {
   struct Inputs: Sendable {
     let layout: InsertLayout
     let finish: String
+    let screen: InsertScreen
     let planName: String
     let days: [String]
     let scale: CGFloat
@@ -745,12 +780,12 @@ struct InsertArtSet: @unchecked Sendable {
       grid: GlowArt.grid(width: floorW, height: floorHeight + 44, originX: 0, scale: 2),
       pulse: GlowArt.pulse(scale: 2),
       deviceShadow: GlowArt.deviceShadow(scale: 2),
-      face: DeviceFaceArt.face(layout: lay, finish: finish, lampCount: inputs.days.count, scale: scale),
+      face: DeviceFaceArt.face(layout: lay, finish: finish, screen: inputs.screen, lampCount: inputs.days.count, scale: scale),
       side: DeviceFaceArt.side(finish: finish),
       panelMask: DisplayArt.panelMask(size: dispSize, scale: 1),
-      slotHeader: DisplayArt.slotHeader(size: dispSize, scale: scale),
-      insertPlan: DisplayArt.insertPlan(size: dispSize, scale: scale),
-      loaded: DisplayArt.loaded(size: dispSize, planName: inputs.planName, dayCount: inputs.days.count, scale: scale),
+      slotHeader: DisplayArt.slotHeader(size: dispSize, screen: inputs.screen, scale: scale),
+      insertPlan: DisplayArt.insertPlan(size: dispSize, screen: inputs.screen, scale: scale),
+      loaded: DisplayArt.loaded(size: dispSize, screen: inputs.screen, planName: inputs.planName, dayCount: inputs.days.count, scale: scale),
       lamp: GlowArt.lamp(scale: scale),
       slotGlow: slotGlow,
       cartridge: CartridgeArt.front(planName: inputs.planName, days: inputs.days, scale: scale),

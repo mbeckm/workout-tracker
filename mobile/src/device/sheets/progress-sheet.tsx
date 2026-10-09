@@ -166,7 +166,7 @@ export function ProgressSheet({ params }: { params: SheetParams }) {
   );
 }
 
-/** A goal card (prototype `.goal`): the ring, `Bench press 100`, `at 92`. */
+/** A goal card (prototype `.goal`): the ring, `Bench press` (may truncate), the target `100` on its own line, `at 92`. */
 function GoalCard({
   card,
   onPress,
@@ -192,7 +192,13 @@ function GoalCard({
         numberOfLines={2}
         maxFontSizeMultiplier={fontScaleCap.title}
         style={[progressType.goalTitle, styles.goalTitle]}>
-        {card.title}
+        {card.name}
+      </Text>
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={fontScaleCap.title}
+        style={[progressType.goalTitle, styles.center, styles.tabular]}>
+        {card.target}
       </Text>
       {card.sub ? (
         <Text

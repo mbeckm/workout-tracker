@@ -3,47 +3,58 @@ import { useCallback, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions, type AccessibilityActionEvent } from 'react-native';
 
 import { confirmAction } from '@/components/confirm-action';
-import { fontScaleCap, gadgetType, receiptColors, receiptGeometry as g, sheetGeometry, signal } from '@/constants/theme';
+import {
+  fontScaleCap,
+  gadgetRadius,
+  gadgetType,
+  receiptColors,
+  receiptGeometry as g,
+  sheetColors,
+  sheetGeometry,
+  signal,
+  space,
+} from '@/constants/theme';
 import { useDevice } from '@/device/device-context';
 import type { SheetParams } from '@/device/device-state';
-import { DashedRule, Paper, SlipPaper } from '@/device/receipt/paper';
-import { historyWall, type MiniReceipt, type WallItem } from '@/device/receipt-model';
+import { Paper, SlipPaper } from '@/device/receipt/paper';
+import { dotoSet, historyLog, type HistoryItem, type LogRow, type LogSlip } from '@/device/receipt-model';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { SheetHeader } from './primitives';
 import { useSheetChrome } from './sheet-context';
 import { SheetList } from './sheet-list';
 
-/** Where the wall was scrolled when a receipt opened from it, so ‹ comes back to the same place. */
+/** Where History was scrolled when a workout opened from it, so ‹ comes back to the same place. */
 let wallOffset = 0;
 
+type Entry = LogRow | LogSlip;
+
 /**
- * The History wall (SPEC §6 History wall, HR1, screen 02; D9). Training weeks newest first, each
- * a Doto header with that week's lamps (done of planned) over a 3-column grid of tilted mini
- * receipts. Tap prints the full receipt; long-press asks, then deletes (`deleteWorkout`).
- * Virtualized (FlashList: a week header or one row of three per item), so years of workouts
- * scroll smoothly. Workouts from deleted plans keep their own title.
+ * History (decision 90, H2; D9). Training weeks newest first, each a Doto header with that
+ * week's lamps, then its workouts: clean rows in one card, and a workout that printed (a record,
+ * a goal, a milestone) as its paper slip in the list where it happened. Tap opens the workout's
+ * finish screen with ‹ back to History; long-press asks, then deletes (`deleteWorkout`).
+ * Virtualized (FlashList: a week header, a row or a slip per item), so years of workouts scroll
+ * smoothly. Workouts from deleted plans keep their own title.
  */
 export function HistorySheet({ params }: { params: SheetParams }) {
   const { close } = useSheetChrome();
   const { swapSheet } = useDevice();
-  const { workoutHistory, activePlan, units, deleteWorkout } = useWorkoutStore();
-  const listRef = useRef<FlashListRef<WallItem>>(null);
+  const { workoutHistory, activePlan, units, goals, milestoneFor, deleteWorkout } = useWorkoutStore();
+  const listRef = useRef<FlashListRef<HistoryItem>>(null);
   const restore = params.back === '1';
   const { width } = useWindowDimensions();
-  // Three columns in the sheet's padding and the grid's inset, 10 apart (`.rgrid`).
-  const miniWidth =
-    (width - 2 * sheetGeometry.sidePad - 2 * g.miniGridInset - (g.miniColumns - 1) * g.miniGap) / g.miniColumns;
+  const slipWidth = width - 2 * sheetGeometry.sidePad - 2 * g.slipInsetX;
 
   const items = useMemo(
-    () => historyWall({ history: workoutHistory, plan: activePlan, units, columns: g.miniColumns }),
-    [activePlan, units, workoutHistory],
+    () => historyLog({ history: workoutHistory, plan: activePlan, units, goals, milestoneFor }),
+    [activePlan, goals, milestoneFor, units, workoutHistory],
   );
 
-  const openReceipt = useCallback(
-    (mini: MiniReceipt) =>
+  const open = useCallback(
+    (entry: Entry) =>
       swapSheet('receipt', {
-        workoutId: mini.workoutId,
+        workoutId: entry.workoutId,
         from: 'history',
         ...(params.from ? { wallFrom: params.from } : {}),
       }),
@@ -51,10 +62,10 @@ export function HistorySheet({ params }: { params: SheetParams }) {
   );
 
   const askDelete = useCallback(
-    (mini: MiniReceipt) =>
+    (entry: Entry) =>
       confirmAction(
-        { title: mini.deletePrompt, confirmLabel: 'Delete', cancelLabel: 'Cancel', destructive: true, presentation: 'sheet' },
-        () => deleteWorkout(mini.workoutId),
+        { title: entry.deletePrompt, confirmLabel: 'Delete', cancelLabel: 'Cancel', destructive: true, presentation: 'sheet' },
+        () => deleteWorkout(entry.workoutId),
       ),
     [deleteWorkout],
   );
@@ -86,24 +97,10 @@ export function HistorySheet({ params }: { params: SheetParams }) {
       renderItem={({ item }) =>
         item.type === 'week' ? (
           <WeekHeader label={item.label} lamps={item.lamps} accessibilityLabel={item.accessibilityLabel} />
+        ) : item.type === 'row' ? (
+          <LogRowItem row={item} onPress={open} onDelete={askDelete} />
         ) : (
-          <View style={[styles.row, !item.lastInWeek && styles.rowGap]}>
-            {Array.from({ length: g.miniColumns }, (_, column) => {
-              const mini = item.minis[column];
-              return mini ? (
-                <MiniReceiptCard
-                  key={mini.workoutId}
-                  mini={mini}
-                  width={miniWidth}
-                  tilt={g.miniTilts[(item.firstIndex + column) % g.miniTilts.length]}
-                  onPress={openReceipt}
-                  onDelete={askDelete}
-                />
-              ) : (
-                <View key={column} style={styles.cell} />
-              );
-            })}
-          </View>
+          <SlipItem slip={item} width={slipWidth} onPress={open} onDelete={askDelete} />
         )
       }
     />
@@ -128,63 +125,115 @@ function WeekHeader({ label, lamps, accessibilityLabel }: { label: string; lamps
 
 const DELETE_ACTIONS = [{ name: 'activate' }, { name: 'delete', label: 'Delete' }];
 
+function useEntryActions(entry: Entry, onPress: (entry: Entry) => void, onDelete: (entry: Entry) => void) {
+  return {
+    onPress: () => onPress(entry),
+    onLongPress: () => onDelete(entry),
+    accessibilityRole: 'button' as const,
+    accessibilityLabel: entry.accessibilityLabel,
+    accessibilityActions: DELETE_ACTIONS,
+    onAccessibilityAction: (event: AccessibilityActionEvent) => {
+      if (event.nativeEvent.actionName === 'delete') onDelete(entry);
+      else onPress(entry);
+    },
+    testID: `history-${entry.workoutId}`,
+  };
+}
+
 /**
- * A mini receipt (`.mini`): day, date, a dashed rule, sets, volume and the PR (or minutes), Plex
- * Mono 9/13 on a torn slip, tilted by its place in the week. Pressed it settles to .96.
- * Thumbnails keep their size; VoiceOver reads the whole slip.
+ * A workout that didn't print: a row of the week's card (`Push 1` over `Thu 9 Oct, 52 min`,
+ * the volume on the right). Consecutive rows share one card; a rule separates them.
  */
-function MiniReceiptCard({
-  mini,
+function LogRowItem({ row, onPress, onDelete }: { row: LogRow; onPress: (entry: Entry) => void; onDelete: (entry: Entry) => void }) {
+  const actions = useEntryActions(row, onPress, onDelete);
+  return (
+    <Pressable
+      {...actions}
+      style={({ pressed }) => [
+        styles.logRow,
+        row.first && styles.logFirst,
+        row.last && styles.logLast,
+        !row.first && styles.logRule,
+        pressed && styles.logPressed,
+      ]}>
+      <View style={styles.logText}>
+        <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.text} style={gadgetType.rowTitle}>
+          {row.title}
+        </Text>
+        <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowSub, styles.logSub]}>
+          {row.sub}
+        </Text>
+      </View>
+      <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowTitle, styles.logTrailing]}>
+        {row.trailing}
+      </Text>
+    </Pressable>
+  );
+}
+
+/**
+ * A workout that printed: its slip, tilted by its place in History. The heading in record ink,
+ * the day and its volume under it on the left; what it printed big on the right (each record, the goal's
+ * target, the workout count; several records one line each, the lift with its set in the lane). Pressed it settles to .96.
+ */
+function SlipItem({
+  slip,
   width,
-  tilt,
   onPress,
   onDelete,
 }: {
-  mini: MiniReceipt;
+  slip: LogSlip;
   width: number;
-  tilt: number;
-  onPress: (mini: MiniReceipt) => void;
-  onDelete: (mini: MiniReceipt) => void;
+  onPress: (entry: Entry) => void;
+  onDelete: (entry: Entry) => void;
 }) {
-  const onAction = (event: AccessibilityActionEvent) => {
-    if (event.nativeEvent.actionName === 'delete') onDelete(mini);
-    else onPress(mini);
-  };
+  const actions = useEntryActions(slip, onPress, onDelete);
+  const tilt = g.slipTilts[slip.index % g.slipTilts.length];
   return (
     <Pressable
-      onPress={() => onPress(mini)}
-      onLongPress={() => onDelete(mini)}
-      accessibilityRole="button"
-      accessibilityLabel={mini.accessibilityLabel}
-      accessibilityActions={DELETE_ACTIONS}
-      onAccessibilityAction={onAction}
-      testID={`mini-${mini.workoutId}`}
+      {...actions}
       style={({ pressed }) => [
-        styles.cell,
+        styles.slip,
         { transform: [{ rotate: `${tilt}deg` }, { scale: pressed ? g.miniPressScale : 1 }] },
       ]}>
-      <SlipPaper width={width} contentStyle={styles.miniContent}>
-        <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptMiniTitle}>
-          {mini.title}
-        </Text>
-        <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptMini}>
-          {mini.date}
-        </Text>
-        <DashedRule gap={g.miniRuleGap} />
-        <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptMini}>
-          {mini.sets}
-        </Text>
-        {mini.volume ? (
-          <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptMini}>
-            {mini.volume}
+      <SlipPaper width={width} contentStyle={styles.slipContent}>
+        <View style={styles.slipLeft}>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1} style={[gadgetType.receiptSlip, styles.pr]}>
+            {slip.heading}
           </Text>
-        ) : null}
-        <Text
-          numberOfLines={1}
-          maxFontSizeMultiplier={1}
-          style={mini.last.pr ? gadgetType.receiptMiniPr : gadgetType.receiptMini}>
-          {mini.last.text}
-        </Text>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptSlip}>
+            {slip.title}
+          </Text>
+          {slip.meta.map((line) => (
+            <Text key={line} numberOfLines={1} maxFontSizeMultiplier={1} style={[gadgetType.receiptSlip, styles.muted]}>
+              {line}
+            </Text>
+          ))}
+        </View>
+        {slip.highlights.length === 1 ? (
+          <View style={styles.slipRight}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptSlipBig}>
+              {dotoSet(slip.highlights[0].value)}
+            </Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptSlip}>
+              {slip.highlights[0].label}
+            </Text>
+          </View>
+        ) : (
+          // Several: one line each, the lift with its set in the lane.
+          <View style={styles.slipLines}>
+            {slip.highlights.map((highlight, index) => (
+              <View key={index} style={styles.slipLine}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={1} style={[gadgetType.receiptSlip, styles.shrink]}>
+                  {highlight.label}
+                </Text>
+                <Text numberOfLines={1} maxFontSizeMultiplier={1} style={gadgetType.receiptSlipMid}>
+                  {dotoSet(highlight.value)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </SlipPaper>
     </Pressable>
   );
@@ -220,15 +269,38 @@ const styles = StyleSheet.create({
     backgroundColor: receiptColors.wallLampOff,
   },
   lampDone: { backgroundColor: signal.done },
-  row: {
+  logRow: {
     flexDirection: 'row',
-    gap: g.miniGap,
-    marginHorizontal: g.miniGridInset,
+    alignItems: 'center',
+    gap: space.related,
+    minHeight: g.logRowHeight,
+    paddingHorizontal: sheetGeometry.itemPadX,
+    paddingVertical: space.related,
+    backgroundColor: sheetColors.card,
   },
-  rowGap: { paddingBottom: g.miniGap },
-  cell: { flex: 1, minWidth: 0 },
-  // The teeth take the last 6 of the prototype's 16 bottom padding.
-  miniContent: { paddingTop: g.miniPadTop, paddingHorizontal: g.miniPadX, paddingBottom: g.miniPadBottom - g.miniToothDepth },
+  logFirst: { borderTopLeftRadius: gadgetRadius.card, borderTopRightRadius: gadgetRadius.card },
+  logLast: { borderBottomLeftRadius: gadgetRadius.card, borderBottomRightRadius: gadgetRadius.card },
+  logRule: { borderTopWidth: 1, borderTopColor: sheetColors.rule },
+  logPressed: { backgroundColor: sheetColors.cardRaised },
+  logText: { flex: 1, minWidth: 0 },
+  logSub: { marginTop: space.pair },
+  logTrailing: { flexShrink: 0 },
+  slip: { marginHorizontal: g.slipInsetX, marginVertical: g.slipGap / 2 },
+  slipContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: g.slipColumnGap,
+    paddingTop: g.slipPadTop,
+    paddingHorizontal: g.slipPadX,
+    paddingBottom: g.slipPadBottom - g.miniToothDepth,
+  },
+  slipLeft: { flex: 1, minWidth: 0 },
+  slipRight: { alignItems: 'flex-end', flexShrink: 0, maxWidth: '60%' },
+  slipLines: { flex: 1.4, minWidth: 0, gap: space.pair },
+  slipLine: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
+  shrink: { flexShrink: 1 },
+  pr: { color: receiptColors.pr },
+  muted: { color: receiptColors.muted },
   empty: { alignItems: 'center', paddingTop: g.emptyTop },
   emptyPaper: { width: g.emptyWidth, transform: [{ rotate: `${g.miniTilts[1]}deg` }] },
   emptyContent: {

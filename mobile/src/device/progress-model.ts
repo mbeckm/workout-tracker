@@ -124,6 +124,10 @@ export type GoalCardModel = {
   goal: Goal;
   /** `Bench press 100`. */
   title: string;
+  /** `Bench press`: the lift, which may truncate. */
+  name: string;
+  /** `100`: the target, always shown on its own line. */
+  target: string;
   /** `at 92`, `Reached 2 Oct`, or null before any set. */
   sub: string | null;
   /** 0…1, full when reached. */
@@ -292,6 +296,8 @@ function goalCard(goal: Goal, current: number | null, units: Units, now: Date): 
   return {
     goal,
     title: `${goal.exerciseName} ${target}`,
+    name: goal.exerciseName,
+    target,
     sub,
     progress,
     percent: `${Math.round(progress * 100)}%`,
