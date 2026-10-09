@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { offlineCatalogExercises, searchLocalExercises } from '@/catalog/service';
 import { liftKey, type PlanMatch } from '@/catalog/plan-import-match';
@@ -141,7 +142,7 @@ export function FixView({
                 {item.alternatives.map((exercise) => (
                   <Choice key={exercise.id} title={exercise.name} meta={exercisePickerMeta(exercise)} onPress={() => answer(item.key, exercise)} />
                 ))}
-                <Choice title="Search all lifts" glyph="⌕" quiet onPress={() => setMode('search')} testID="import-fix-search" />
+                <Choice title="Search all lifts" searchIcon quiet onPress={() => setMode('search')} testID="import-fix-search" />
                 <View style={styles.pair}>
                   <Choice title="Create custom" outline onPress={() => setMode('create')} style={styles.half} testID="import-fix-create" />
                   <Choice title="Leave it out" bare onPress={() => answer(item.key, null)} style={styles.half} testID="import-fix-leave" />
@@ -152,9 +153,7 @@ export function FixView({
             {open && mode === 'search' ? (
               <Animated.View entering={FadeIn.duration(DURATION.enter)} style={styles.body}>
                 <View style={styles.search}>
-                  <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choice} accessible={false}>
-                    ⌕
-                  </Text>
+                  <SearchIcon />
                   <TextInput
                     value={query}
                     onChangeText={(text) => {
@@ -202,10 +201,28 @@ export function FixView({
   );
 }
 
+/** The magnifier, drawn like Import plan's other icons (a 2-pt stroke on a 24 grid). */
+function SearchIcon() {
+  return (
+    <Svg
+      width={G.rowIcon - 4}
+      height={G.rowIcon - 4}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={sheetColors.muted}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      accessible={false}>
+      <Circle cx={11} cy={11} r={7} />
+      <Path d="M20 20l-3.5-3.5" />
+    </Svg>
+  );
+}
+
 function Choice({
   title,
   meta,
-  glyph,
+  searchIcon = false,
   quiet = false,
   outline = false,
   bare = false,
@@ -216,7 +233,7 @@ function Choice({
 }: {
   title: string;
   meta?: string;
-  glyph?: string;
+  searchIcon?: boolean;
   quiet?: boolean;
   outline?: boolean;
   bare?: boolean;
@@ -239,11 +256,7 @@ function Choice({
         pressed && styles.pressed,
         style,
       ]}>
-      {glyph ? (
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choice} accessible={false}>
-          {glyph}
-        </Text>
-      ) : null}
+      {searchIcon ? <SearchIcon /> : null}
       <Text
         numberOfLines={1}
         maxFontSizeMultiplier={fontScaleCap.text}
