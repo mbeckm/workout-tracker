@@ -120,6 +120,10 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
   const clock = useLoopClock(IMPORT.SOURCE_STEP * SOURCES.length, DURATION.change);
   const turn = clock == null ? SOURCES.length - 1 : Math.floor(clock / IMPORT.SOURCE_STEP);
   const push = usePress(clock == null ? -1 : turn);
+  // The display is as tall as the card leaves it: a line that would only half fit stays hidden
+  // rather than being cut by the display's edge.
+  const [room, setRoom] = useState(Infinity);
+  const [bottoms, setBottoms] = useState<Record<string, number>>({});
 
   return (
     <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
@@ -148,7 +152,7 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
             );
           })}
         </View>
-        <View style={styles.display}>
+        <View style={styles.display} onLayout={(event) => setRoom(event.nativeEvent.layout.height - G.displayPad)}>
           <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
             TRIM
           </Text>
@@ -156,7 +160,11 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
             <Animated.View
               key={`${source.name}-${clock == null ? 'still' : 'loop'}`}
               entering={clock == null ? undefined : FadeInUp.duration(DURATION.change)}
-              style={styles.landed}>
+              onLayout={(event) => {
+                const { y, height } = event.nativeEvent.layout;
+                setBottoms((current) => (current[source.name] === y + height ? current : { ...current, [source.name]: y + height }));
+              }}
+              style={[styles.landed, (bottoms[source.name] ?? 0) > room && styles.hidden]}>
               <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdSmall, styles.liftName]}>
                 {source.lift}
               </Text>
@@ -322,6 +330,7 @@ const styles = StyleSheet.create({
   },
   buildDisplay: { gap: space.tight },
   dim: { color: lcd.amberDim },
+  hidden: { opacity: 0 },
   row: { height: G.displayRow, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.related },
   liftName: { flexShrink: 1 },
   liftChip: { color: lcd.amber },
