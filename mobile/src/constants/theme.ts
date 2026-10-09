@@ -2347,10 +2347,13 @@ export const importColors = {
   deviceHi: '#3D3C39',
   deviceLo: '#1D1C1A',
   deviceSub: '#A9A69E',
-  keyHi: '#FF8443',
-  keyLo: '#D9480A',
-  keyLip: '#9A3004',
-  keyInk: '#FFFFFF',
+  /** The cards' round key: Trim's raised metal key, not the orange action (neither choice is preferred). */
+  keyHi: '#5E5D59',
+  keyLo: '#31302D',
+  keyLip: '#1D1C1A',
+  keyInk: '#EDEBE5',
+  /** The source on turn: a light ring, not orange. */
+  sourceRing: '#D9D6CF',
   sourceChip: '#262624',
   sourceNote: '#FBFAF7',
   sourceNoteInk: '#1C1B18',
@@ -2440,6 +2443,8 @@ export const importGeometry = {
   keyLip: 3,
   /** A built lift's row on the display. */
   displayRow: 22,
+  /** Onboarding's radios: the selected card's orange ring. */
+  selectedRing: 3,
   /** Got a plan?: the two cards' art. */
   noteWidth: 54,
   noteHeight: 76,

@@ -51,26 +51,40 @@ function usePress(pulse: number) {
  * New plan's two choices (decision 88) as small Trim machines: a metal face, an amber display and
  * Trim's own round key. Each card's display shows what the choice does, on a quiet loop.
  */
+/** What every card takes: its words (onboarding asks the question its own way) and, as a radio, `selected`. */
+export type DeviceCardProps = {
+  onPress: () => void;
+  title?: string;
+  sub?: string;
+  /** Onboarding's radios: the orange selection ring. Leave undefined for a button. */
+  selected?: boolean;
+  testID?: string;
+};
+
 function DeviceCard({
   title,
   sub,
   onPress,
+  selected,
   children,
   testID,
 }: {
   title: string;
   sub: string;
   onPress: () => void;
+  selected?: boolean;
   children: ReactNode;
   testID: string;
 }) {
+  const radio = selected !== undefined;
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={radio ? 'radio' : 'button'}
+      accessibilityState={radio ? { checked: selected } : undefined}
       accessibilityLabel={`${title}, ${sub}`}
       onPress={onPress}
       testID={testID}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+      style={({ pressed }) => [styles.card, selected && styles.selected, pressed && !selected && styles.pressed]}>
       {children}
       <View style={styles.titles}>
         <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.forkTitle}>
@@ -102,13 +116,13 @@ const SOURCES = [
  * one on turn is ringed, the arrow under it brightens and nudges down, and its lift lands on Trim's
  * display at the bottom.
  */
-export function ImportDeviceCard({ onPress }: { onPress: () => void }) {
+export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a note, an AI chat or another app', selected, testID = 'new-plan-import' }: DeviceCardProps) {
   const clock = useLoopClock(IMPORT.SOURCE_STEP * SOURCES.length, DURATION.change);
   const turn = clock == null ? SOURCES.length - 1 : Math.floor(clock / IMPORT.SOURCE_STEP);
   const push = usePress(clock == null ? -1 : turn);
 
   return (
-    <DeviceCard title="Import plan" sub="From a note, an AI chat or another app" onPress={onPress} testID="new-plan-import">
+    <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
       <View style={styles.importArt}>
         <View style={styles.sources}>
           {SOURCES.map((source, index) => {
@@ -167,7 +181,7 @@ const LIFTS = [
  * Build one: each press of the + key adds the next lift to Day 1, typed a letter at a time, its
  * sets × reps landing after it; `+ ADD LIFT` and its cursor move down a row each time.
  */
-export function BuildDeviceCard({ onPress }: { onPress: () => void }) {
+export function BuildDeviceCard({ onPress, title = 'Build one', sub = 'Add your lifts one by one', selected, testID = 'new-plan-build' }: DeviceCardProps) {
   // One extra step at the end holds the full day before it starts over.
   const clock = useLoopClock(IMPORT.LIFT_STEP * (LIFTS.length + 1), IMPORT.TYPE_CHAR);
   const added = clock == null ? LIFTS.length : Math.min(LIFTS.length, Math.floor(clock / IMPORT.LIFT_STEP));
@@ -184,7 +198,7 @@ export function BuildDeviceCard({ onPress }: { onPress: () => void }) {
   const cursorStyle = useAnimatedStyle(() => ({ opacity: cursor.get() }));
 
   return (
-    <DeviceCard title="Build one" sub="Add your lifts one by one" onPress={onPress} testID="new-plan-build">
+    <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
       <View style={[styles.display, styles.buildDisplay]}>
         <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
           DAY 1
@@ -224,6 +238,41 @@ function LiftRow({ name, chip }: { name: string; chip: string | null }) {
   );
 }
 
+const STARTERS = [
+  { name: 'UPPER LOWER', days: '4 DAYS' },
+  { name: 'PUSH PULL LEGS', days: '3 DAYS' },
+  { name: 'FULL BODY', days: '3 DAYS' },
+] as const;
+
+/**
+ * Onboarding's Pick one for me: Trim's starter plans on the display, the one under the cursor
+ * stepping down the list the way a dial would.
+ */
+export function StarterDeviceCard({ onPress, title = 'Pick one for me', sub = 'Starter plans', selected, testID = 'starter-plans' }: DeviceCardProps) {
+  const clock = useLoopClock(IMPORT.SOURCE_STEP * STARTERS.length, DURATION.change);
+  const on = clock == null ? 0 : Math.floor(clock / IMPORT.SOURCE_STEP);
+  return (
+    <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
+      <View style={styles.display}>
+        <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
+          STARTER PLANS
+        </Text>
+        {STARTERS.map((plan, index) => (
+          <View key={plan.name} style={styles.row}>
+            <Text numberOfLines={1} maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdSmall, styles.liftName, index !== on && styles.dim]}>
+              {index === on ? '▸ ' : '  '}
+              {plan.name}
+            </Text>
+            <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, index !== on && styles.dim]}>
+              {plan.days}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </DeviceCard>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     flex: 1,
@@ -234,6 +283,7 @@ const styles = StyleSheet.create({
     gap: space.related + space.tight,
   },
   pressed: { transform: [{ scale: PRESS_SCALE }] },
+  selected: { boxShadow: `inset 0 0 0 ${G.selectedRing}px ${signal.orange}` },
   titles: { gap: space.pair, paddingHorizontal: space.tight, paddingBottom: space.tight },
   sub: { color: C.deviceSub },
   importArt: { flex: 1, gap: space.tight },
@@ -250,7 +300,7 @@ const styles = StyleSheet.create({
     gap: space.tight,
     paddingHorizontal: space.tight,
   },
-  chipOn: { boxShadow: `inset 0 0 0 2px ${signal.orange}` },
+  chipOn: { boxShadow: `inset 0 0 0 2px ${C.sourceRing}` },
   landed: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
   tile: {
     width: G.sourceTile,

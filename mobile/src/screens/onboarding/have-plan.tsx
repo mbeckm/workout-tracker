@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { fontScaleCap, gadgetType, importGeometry, onboardingGeometry as G, sheetColors, signal, space } from '@/constants/theme';
-import { CartsArt, ForkCard, NotesArt } from '@/screens/plan-import/fork-cards';
+import { fontScaleCap, gadgetType, importGeometry, sheetColors, signal, space } from '@/constants/theme';
+import { ImportDeviceCard, StarterDeviceCard } from '@/screens/plan-import/new-plan-cards';
 import { PRESS_SCALE } from '@/motion';
 
 import { selectionTick } from './choice';
@@ -40,24 +40,18 @@ export function OnboardingHavePlan() {
       action={{ title: 'Continue', onPress: next }}
       testID="onboarding-have-plan">
       <View accessibilityRole="radiogroup" accessibilityLabel="Got a plan?" style={styles.stage}>
-        <ForkCard
-          title="I have one"
-          sub="Notes, ChatGPT, another app"
-          selected={answer === 'have'}
-          onPress={() => pick('have')}
-          style={styles.fill}
-          testID="onboarding-have-plan-yes">
-          <NotesArt />
-        </ForkCard>
-        <ForkCard
-          title="Pick one for me"
-          sub="Starter plans"
-          selected={answer === 'pick'}
-          onPress={() => pick('pick')}
-          style={styles.fill}
-          testID="onboarding-have-plan-pick">
-          <CartsArt labels={['UA', 'LA', 'UB']} hop={answer === 'pick'} />
-        </ForkCard>
+        <View style={styles.fill}>
+          <ImportDeviceCard
+            title="I have one"
+            sub="From a note, an AI chat or another app"
+            selected={answer === 'have'}
+            onPress={() => pick('have')}
+            testID="onboarding-have-plan-yes"
+          />
+        </View>
+        <View style={styles.fill}>
+          <StarterDeviceCard selected={answer === 'pick'} onPress={() => pick('pick')} testID="onboarding-have-plan-pick" />
+        </View>
         <Pressable
           accessibilityRole="radio"
           accessibilityState={{ checked: answer === 'own' }}
@@ -76,7 +70,7 @@ export function OnboardingHavePlan() {
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, gap: G.packGap, paddingTop: space.gutter, paddingBottom: space.related },
+  stage: { flex: 1, gap: space.gutter, paddingTop: space.gutter, paddingBottom: space.related },
   fill: { flex: 1 },
   pressed: { transform: [{ scale: PRESS_SCALE }] },
   own: {

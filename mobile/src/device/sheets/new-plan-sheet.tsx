@@ -42,6 +42,6 @@ export function NewPlanSheet({ params }: { params: SheetParams }) {
 }
 
 const styles = StyleSheet.create({
-  cards: { gap: space.related, paddingTop: space.related, paddingHorizontal: sheetGeometry.sidePad - space.tight },
+  cards: { gap: space.gutter, paddingTop: space.related, paddingHorizontal: sheetGeometry.sidePad - space.tight },
   card: { height: importGeometry.forkCardHeight },
 });

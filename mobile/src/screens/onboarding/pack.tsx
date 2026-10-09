@@ -143,7 +143,7 @@ const GRIP = Array.from(
   (_, index) => index,
 );
 
-export function EmptySlot() {
+function EmptySlot() {
   return (
     <View style={[styles.cartFrame, styles.blank]}>
       <Text maxFontSizeMultiplier={1} style={onboardingType.cartPlus}>
