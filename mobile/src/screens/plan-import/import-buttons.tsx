@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -9,6 +9,12 @@ import { PRESS_SCALE } from '@/motion';
 
 import { usePulseStyle } from './import-art';
 import type { ImportInput } from './session';
+
+/**
+ * Past this text size Apple's paste control draws a blank box, so Trim's own pill pastes instead
+ * (iOS then asks once to allow pasting).
+ */
+const PASTE_LABEL_MAX_SCALE = 1.3;
 
 /** Screenshots: a routine rarely spans more than a few. */
 const MAX_SCREENSHOTS = 10;
@@ -35,6 +41,7 @@ export function ImportButtons({
   pillHeight: number;
   onInput: (input: ImportInput) => void;
 }) {
+  const { fontScale } = useWindowDimensions();
   const pastePulse = usePulseStyle(t, 'paste');
   const shotsPulse = usePulseStyle(t, 'screenshots');
 
@@ -76,7 +83,7 @@ export function ImportButtons({
   return (
     <View style={styles.stack}>
       <Animated.View style={pastePulse}>
-        {Clipboard.isPasteButtonAvailable ? (
+        {Clipboard.isPasteButtonAvailable && fontScale <= PASTE_LABEL_MAX_SCALE ? (
           <Clipboard.ClipboardPasteButton
             onPress={pasted}
             acceptedContentTypes={['plain-text', 'image']}

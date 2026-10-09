@@ -2323,8 +2323,8 @@ export const tourGeometry = {
  */
 export const importColors = {
   /** The illustration's tile and its dots. */
-  tile: '#161615',
-  tileDot: '#2A2A27',
+  tile: '#1C1C1A',
+  tileDot: '#2E2E2B',
   /** The drawn phone: its outline, screen, list rows and the bars that stand for text. */
   phoneEdge: '#3A3936',
   phoneScreen: '#0E0E0D',

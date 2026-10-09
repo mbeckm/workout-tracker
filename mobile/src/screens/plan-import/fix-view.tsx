@@ -73,6 +73,8 @@ export function FixView({
   const [active, setActive] = useState<string | null>(() => items.find((item) => !fixes.has(item.key))?.key ?? null);
   const [mode, setMode] = useState<Mode>('menu');
   const [queries, setQueries] = useState<Record<string, string>>({});
+  // Their words start selected, so typing replaces them (selectTextOnFocus doesn't with autoFocus).
+  const [selectAll, setSelectAll] = useState(true);
 
   const answer = (key: string, exercise: ExercisePrescription | null) => {
     onFix(key, exercise);
@@ -116,6 +118,7 @@ export function FixView({
               onPress={() => {
                 setActive(open ? null : item.key);
                 setMode('menu');
+                setSelectAll(true);
               }}
               style={styles.head}>
               <View style={styles.headText}>
@@ -149,14 +152,18 @@ export function FixView({
             {open && mode === 'search' ? (
               <Animated.View entering={FadeIn.duration(DURATION.enter)} style={styles.body}>
                 <View style={styles.search}>
-                  <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choiceMeta} accessible={false}>
+                  <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choice} accessible={false}>
                     ⌕
                   </Text>
                   <TextInput
                     value={query}
-                    onChangeText={(text) => setQueries((current) => ({ ...current, [item.key]: text }))}
+                    onChangeText={(text) => {
+                      setSelectAll(false);
+                      setQueries((current) => ({ ...current, [item.key]: text }));
+                    }}
+                    onSelectionChange={() => setSelectAll(false)}
+                    selection={selectAll ? { start: 0, end: query.length } : undefined}
                     autoFocus
-                    selectTextOnFocus
                     autoCorrect={false}
                     placeholder="Search lifts"
                     placeholderTextColor={sheetColors.sectionLabel}
@@ -233,7 +240,7 @@ function Choice({
         style,
       ]}>
       {glyph ? (
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choiceMeta} accessible={false}>
+        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.choice} accessible={false}>
           {glyph}
         </Text>
       ) : null}
@@ -253,7 +260,7 @@ function Choice({
 }
 
 const styles = StyleSheet.create({
-  list: { gap: space.related },
+  list: { gap: space.related, paddingTop: space.gutter },
   card: {
     borderRadius: gadgetRadius.card,
     borderCurve: 'continuous',
