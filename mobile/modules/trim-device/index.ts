@@ -156,5 +156,6 @@ export {
   type CartridgeInsertLayout,
   type CartridgeInsertProps,
 } from './cartridge-insert';
+export { DeviceLaunch, isDeviceLaunchAvailable, type DeviceLaunchPose, type DeviceLaunchProps } from './device-launch';
 
 export { canRecognizeText, prepareImageForUpload, recognizeTextInImage } from './text';

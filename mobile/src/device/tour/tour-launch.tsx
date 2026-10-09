@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -15,6 +15,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { isDeviceLaunchAvailable } from '../../../modules/trim-device';
 import { finishColors, fontScaleCap, gadgetRadius, gadgetType, insertGeometry, lcd, sheetColors, sheetGeometry, space, tourColors, tourGeometry, tourType } from '@/constants/theme';
 import { EARNED_FINISH, FINISHES, FREE_FINISHES, finishLock, type Finish } from '@/domain/finish';
 import type { DevicePalette } from '@/device/finish';
@@ -104,6 +105,27 @@ export function useTourMotion(): TourMotion {
   }, [reduceMotion, ripple, wiggle]);
 
   return { phase, clock, settle, wiggle, k: height / TOUR_POSE_HEIGHT };
+}
+
+/**
+ * The launch on the cartridge insert's SceneKit body (`DeviceLaunch`), when the build has it: the
+ * same 44 pt deep slab the owner saw at the end of onboarding, rather than the 2D face, edge and
+ * back. `showing` once its first frame is up: the JS device, edge and back hide under it until
+ * the perch, where the JS device takes over face-on. Reduce Motion keeps the 2D fade.
+ */
+export function useTourLaunch3d() {
+  const { launch } = useTour();
+  const reduceMotion = useReducedMotion();
+  const playing = isDeviceLaunchAvailable && !reduceMotion && launch === 'launch';
+  const [ready, setReady] = useState(false);
+  // A new launch waits for its own first frame.
+  const [wasPlaying, setWasPlaying] = useState(playing);
+  if (wasPlaying !== playing) {
+    setWasPlaying(playing);
+    if (!playing) setReady(false);
+  }
+  const onSceneReady = useCallback(() => setReady(true), []);
+  return { playing, showing: playing && ready, onSceneReady };
 }
 
 /** The pose for the frame: in the air, perched (with the wiggle), or settling home. */
