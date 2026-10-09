@@ -63,7 +63,7 @@ const NAME_MAX = 40;
 type Renaming = { kind: 'plan' } | { kind: 'day'; dayId: string } | null;
 
 /** Day and plan actions: the system action sheet on iOS (trim-ui §9: alerts and action sheets stay system-styled). */
-function showActions(
+export function showActions(
   title: string,
   actions: readonly { label: string; destructive?: boolean; run: () => void }[],
 ) {

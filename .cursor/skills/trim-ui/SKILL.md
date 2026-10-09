@@ -107,7 +107,7 @@ Information lives on the lowest layer that serves the job:
 | Receipt | What I just did | The paper | `Done` (light pill) |
 | Menu | Go somewhere | The rows | none |
 | Today | Jump, reorder or change today's lifts | The current row | none |
-| Plans rack | Which plan is in, which others exist | The active shelf | `Import plan` / `Build one` in the New plan slot |
+| Plans rack | Which plan is in, which others exist | The active shelf | `+` (Import plan or Build one) |
 | Editor | What's in this plan | The plan name | `Use plan` when inactive |
 | Progress | Is each lift going up | GOALS, then LIFTS | none |
 | Lift detail | How strong I am on this lift | The big number | none |
@@ -757,7 +757,7 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Menu (N4) [10, 15]
 
-Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard workout` under it. The finish card: a mini device in the current finish, `Finish 212, Aluminium`, `Change finish`. Then Plans, Progress, History and Settings rows, each with a 56 object icon and one fact line (`Push Pull Legs, 4 days`, the top lift's estimated max, `9 workouts`). No rank line (D4).
+Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard workout` under it. The finish card: a mini device in the current finish, `Finish 212, Aluminium`, `Change finish`. Then Plans, Progress, History and Settings rows, each with a 56 object icon; Progress and History carry one fact line (lifts tracked, `9 workouts`), Plans and Settings none (the active plan is already on the device). No rank line (D4).
 
 ### Today (M3) [07]
 
@@ -783,7 +783,7 @@ Whenever a fresh receipt closes (Done, a swipe, the scrim), the moments queue ru
 
 ### Plans rack (PB3) [20, 24]
 
-Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. The `New plan` slot ends the rack (decision 88): an outlined shelf with `New plan` (muted) over two pills, `Import plan` (light) and `Build one` (dark); either asks for Pro on a second plan. Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
+Shelves 150 tall, r24, #1C1C1A; the active shelf outlined 3 px orange and listed first. Name, `Active` badge, `N days, M lifts`. Cartridges 48 × 64 along the bottom, label windows in Doto 9 (orange; green for days done this week, active plan only), the day title uppercase, no spaces, at most 6 characters. `+` in the header makes a plan (decision 88): on a second plan it asks for Pro first, then the system action sheet `New plan` offers `Import plan` and `Build one`. Going back from the editor to the rack after a change (or a new plan) files that plan's cartridges; Reduce Motion fades them in. ‹ to the menu when opened from it, else ✕. No plans: the fact `No plans yet`.
 
 ### Import plan, Reading, Fix (decision 88)
 
