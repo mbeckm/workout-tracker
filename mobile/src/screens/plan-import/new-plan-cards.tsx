@@ -120,9 +120,13 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
   const clock = useLoopClock(IMPORT.SOURCE_STEP * SOURCES.length, DURATION.change);
   const turn = clock == null ? SOURCES.length - 1 : Math.floor(clock / IMPORT.SOURCE_STEP);
   const push = usePress(clock == null ? -1 : turn);
-  // The display is as tall as the card leaves it. Lines are whole rows (G.displayRow), so it shows
-  // as many as fit, newest last; a line is never cut by the display's edge.
-  const [fit, setFit] = useState(0);
+  // The display is as tall as the card leaves it. It shows as many whole lift lines as fit, newest
+  // last; a line is never cut by the display's edge.
+  const [displayHeight, setDisplayHeight] = useState(0);
+  const [metaHeight, setMetaHeight] = useState(0);
+  const rowHeight = gadgetType.lcdSmall.lineHeight;
+  const available = displayHeight - 2 * G.displayPad - metaHeight - space.tight;
+  const fit = displayHeight === 0 ? 1 : Math.max(available >= rowHeight ? 1 : 0, Math.floor((available + space.tight) / (rowHeight + space.tight)));
   const landed = SOURCES.slice(0, turn + 1);
   const shown = fit > 0 ? landed.slice(-fit) : [];
 
@@ -153,11 +157,11 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
             );
           })}
         </View>
-        <View style={styles.display} onLayout={(event) => {
-            const free = event.nativeEvent.layout.height - 2 * G.displayPad - gadgetType.lcdMeta.lineHeight;
-            setFit(Math.max(0, Math.floor(free / (G.displayRow + space.tight))));
-          }}>
-          <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
+        <View style={styles.display} onLayout={(event) => setDisplayHeight(event.nativeEvent.layout.height)}>
+          <Text
+            onLayout={(event) => setMetaHeight(event.nativeEvent.layout.height)}
+            maxFontSizeMultiplier={fontScaleCap.display}
+            style={[gadgetType.lcdMeta, styles.dim]}>
             TRIM
           </Text>
           {shown.map((source) => (
@@ -309,7 +313,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.tight,
   },
   chipOn: { boxShadow: `inset 0 0 0 2px ${C.sourceRing}` },
-  landed: { height: G.displayRow, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
+  landed: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.related },
   tile: {
     width: G.sourceTile,
     height: G.sourceTile,
