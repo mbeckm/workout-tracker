@@ -29,7 +29,7 @@ export function sheetUsesKeyboard(kind: SheetKind): boolean {
 /** Titles of the sheets whose content comes in later phases. */
 const TITLES: Record<SheetKind, string> = {
   menu: 'Trim',
-  finishes: 'Finish',
+  finishes: 'Skin Library',
   settings: 'Settings',
   plans: 'Plans',
   editor: 'Plan',

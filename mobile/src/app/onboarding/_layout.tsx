@@ -26,7 +26,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="import-fix" options={{ title: 'Fix lifts' }} />
       <Stack.Screen name="days" options={{ title: 'Days a week' }} />
       <Stack.Screen name="plan" options={{ title: 'Pick a plan' }} />
-      <Stack.Screen name="finish" options={{ title: 'Pick your finish' }} />
+      <Stack.Screen name="finish" options={{ title: 'Pick your skin' }} />
     </Stack>
   );
 }

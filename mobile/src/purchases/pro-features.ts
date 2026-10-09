@@ -47,7 +47,7 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   },
   {
     id: 'finishes',
-    title: 'Every finish',
+    title: 'Every skin',
     detail: 'Pocket, Bunker, Field and Holo machines.',
     symbol: 'paintpalette',
     shipped: true,

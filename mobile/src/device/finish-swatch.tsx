@@ -92,7 +92,7 @@ export function FinishSwatch({
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
-      accessibilityLabel={`Finish ${id}, ${colors.name}${why === 'pro' ? ', Trim Pro' : why === 'tour' ? ', earned at the end of the tour' : tag ? `, ${tag.toLowerCase()}` : ''}`}
+      accessibilityLabel={`Skin ${id}, ${colors.name}${why === 'pro' ? ', Trim Pro' : why === 'tour' ? ', earned at the end of the tour' : tag ? `, ${tag.toLowerCase()}` : ''}`}
       testID={testID ?? `finish-${id}`}>
       {/* One bitmap with clear room around it, so the tilt draws smooth edges (swatchEdgePad). */}
       <Animated.View shouldRasterizeIOS style={[styles.frame, { width: width + PAD * 2 }, liftStyle]}>
