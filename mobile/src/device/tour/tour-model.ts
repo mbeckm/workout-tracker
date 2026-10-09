@@ -44,7 +44,7 @@ export const TOUR_SCRIPT: readonly TourBeat[] = [
   { say: 'Made a mistake? You can undo your previous set.', wait: 'undo' },
   { say: 'Undone. Nothing is lost.', wait: 'tap' },
   { say: 'Use the arrows to navigate between exercises.', wait: 'next' },
-  { say: 'Orange is your current exercise. Finished ones are green.', wait: 'tap' },
+  { say: 'The lit one is your current exercise. Finished ones are green.', wait: 'tap' },
   { say: 'Bench taken? Machine broken? Tap the name to swap.', wait: 'swap' },
   {
     say: 'Swapped for today. At the end of your workout, you can decide if you want to save it to your plan.',
