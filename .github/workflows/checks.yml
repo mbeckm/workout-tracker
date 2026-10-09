@@ -33,6 +33,8 @@ jobs:
         run: npx tsx scripts/check-receipt-logic.ts
       - name: Plans logic
         run: npx tsx scripts/check-plans-logic.ts
+      - name: Plan import logic
+        run: npx tsx scripts/check-import-logic.ts
       - name: Progress logic
         run: npx tsx scripts/check-progress-logic.ts
       - name: Upgrade from pre-gadget snapshot (PLAN §11)

@@ -28,14 +28,15 @@
       <a href="/privacy">Privacy</a>
     </nav>
     <h1>Privacy Policy</h1>
-    <p class="muted">Trim for iPhone. Last updated 26 September 2026.</p>
+    <p class="muted">Trim for iPhone. Last updated 9 October 2026.</p>
     <p>Operator: Marvin Beckmann · <a href="mailto:marvinbeckm@gmail.com">marvinbeckm@gmail.com</a></p>
 
     <h2>What stays on your iPhone</h2>
     <p>
       Your plans, workouts, history, body check-ins, custom exercises and settings
       are saved only on your iPhone. Trim has no account and no sign-in, and it does
-      not upload your workout data to any server, including ours.
+      not upload your workout data to any server, including ours. The one exception is
+      importing a plan, and only when you ask for it: see below.
     </p>
     <p>
       The exercise list is built into Trim. The app does not contact exercise
@@ -45,6 +46,38 @@
       Like any app's data, this may be included in your iPhone's own backups
       (iCloud or computer), which Apple controls under your Apple Account settings.
       Trim does not read those backups.
+    </p>
+
+    <h2>Importing a plan</h2>
+    <p>
+      You can import a plan you already have, in onboarding or from Plans → Import plan,
+      by pasting text (for example a ChatGPT answer or a note) or choosing screenshots of
+      another workout app. Only when you tap Paste or choose Screenshots on that screen,
+      Trim sends what you pasted or chose to be read:
+    </p>
+    <ul>
+      <li>the pasted text and/or the screenshots you picked (downscaled JPEG images), over an encrypted HTTPS connection</li>
+      <li>to Trim's own server function, hosted by <a href="https://vercel.com/legal/privacy-policy">Vercel</a> in the EU (Frankfurt), which passes it to <a href="https://www.anthropic.com/legal/privacy">Anthropic</a>'s Claude API to read the plan</li>
+      <li>and gets back only the plan's structure: day names, exercise names, sets and reps</li>
+    </ul>
+    <p>
+      No account, name, device ID or other identifier is sent with it, and nothing else from
+      your iPhone: not your history, other plans, body check-ins or photo library. Trim only
+      sees the screenshots you pick. Trim's server does not store or log the text or images.
+      Like any web server, Vercel sees your IP address, which is used to limit how often
+      imports can be requested and appears in its standard request logs.
+    </p>
+    <p>
+      Anthropic processes the content for us under its commercial terms and does not use it to
+      train its models. Anthropic automatically deletes API inputs and outputs within 30 days,
+      or keeps them for up to 2 years if its automated safety systems flag them as violating
+      its Usage Policy
+      (<a href="https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data">Anthropic's retention policy</a>).
+    </p>
+    <p>
+      If you're offline or the server can't be reached, Trim reads the plan on your iPhone
+      with Apple's text recognition and sends nothing. The imported plan is then saved only
+      on your iPhone, like any other plan. Nothing is sent unless you start an import.
     </p>
 
     <h2>Trim Pro purchases</h2>
@@ -72,6 +105,7 @@
       <li>a random ID that Trim creates on your iPhone (not your name, email or Apple Account)</li>
       <li>which screens you open, and counts such as "a workout was finished with 4 exercises and 16 sets" or "a set was logged"</li>
       <li>when the Trim Pro screen was shown and whether a purchase or restore succeeded</li>
+      <li>when a plan was imported: whether it came from text or screenshots, and how many days and exercises were read</li>
       <li>device model, iOS and app version, and language</li>
     </ul>
     <p>
@@ -91,7 +125,7 @@
     <ul>
       <li>No account or cloud sign-in</li>
       <li>No advertising or tracking. Trim does not track you across other companies' apps or websites.</li>
-      <li>No HealthKit, location, contacts, camera or photos</li>
+      <li>No HealthKit, location, contacts or camera, and no access to your photo library: Trim only receives the screenshots you pick for an import</li>
       <li>No exercise databases, image servers or other third-party content services</li>
     </ul>
 
@@ -111,11 +145,14 @@
     <h2>Legal basis (GDPR)</h2>
     <p>
       Workout data is processed on your device to provide the app (performance of a contract).
+      Text and screenshots you import are processed through Vercel and Anthropic to read your
+      plan, at your request (performance of a contract).
       Purchase data is processed through Apple and RevenueCat to sell and unlock Trim Pro
       (performance of a contract), and paywall views to understand whether the Trim Pro
       screen works (legitimate interest). Anonymous usage events are processed through PostHog
-      to improve the app (legitimate interest). RevenueCat, Inc. (United States) and PostHog Inc.
-      (data stored in the EU) process this data on our behalf.
+      to improve the app (legitimate interest). RevenueCat, Inc. (United States), PostHog Inc.
+      (data stored in the EU), Vercel Inc. (United States; Trim's server runs in Frankfurt) and
+      Anthropic, PBC (United States) process this data on our behalf.
     </p>
 
     <h2>Children</h2>

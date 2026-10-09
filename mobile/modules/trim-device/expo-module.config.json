@@ -5,7 +5,8 @@
   "apple": {
     "modules": [
       "TrimDeviceModule",
-      "CartridgeInsertModule"
+      "CartridgeInsertModule",
+      "TrimTextModule"
     ]
   }
 }

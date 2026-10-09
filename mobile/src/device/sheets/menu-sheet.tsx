@@ -60,7 +60,7 @@ export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | nu
   const { swapSheet: swapTo } = useDevice();
   // The tour's menu (decision 85): each row says what's inside and only closes the menu.
   const swapSheet: typeof swapTo = tour ? () => close() : swapTo;
-  const { activePlan, workoutHistory } = useWorkoutStore();
+  const { workoutHistory } = useWorkoutStore();
 
   // The lifts Progress lists (weighted sets); no rank line (D4).
   const trackedLifts = useMemo(() => trackedLiftCount(workoutHistory), [workoutHistory]);
@@ -85,13 +85,7 @@ export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | nu
         <SheetRow
           icon={<ObjectIcon kind="knob" />}
           title="Plans"
-          sub={
-            tour
-              ? 'Days, lifts, sets and reps'
-              : activePlan
-                ? `${activePlan.name}, ${plural(activePlan.days.length, 'day', 'days')}`
-                : undefined
-          }
+          sub={tour ? 'Days, lifts, sets and reps' : undefined}
           onPress={() => swapSheet('plans', from)}
           testID="menu-plans"
         />

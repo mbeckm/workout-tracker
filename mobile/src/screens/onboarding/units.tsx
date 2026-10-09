@@ -12,7 +12,7 @@ const UNITS = [
   { value: 'lbs', label: 'lbs', spoken: 'Pounds' },
 ] as const;
 
-/** Step 3: the unit every set is logged in. Preset from the locale; saved on tap. */
+/** Step 3: the unit every set is logged in. Preset from the locale; saved on tap. Next: Got a plan? */
 export function OnboardingUnits() {
   const router = useRouter();
   const { units, setUnits } = useWorkoutStore();
@@ -20,7 +20,7 @@ export function OnboardingUnits() {
   return (
     <OnboardingFrame
       title="Units"
-      action={{ title: 'Continue', onPress: () => router.push('/onboarding/days') }}
+      action={{ title: 'Continue', onPress: () => router.push('/onboarding/have-plan') }}
       testID="onboarding-units">
       <View accessibilityRole="radiogroup" accessibilityLabel="Units" style={styles.row}>
         {UNITS.map((option) => (

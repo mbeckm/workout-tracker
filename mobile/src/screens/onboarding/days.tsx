@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -51,6 +51,8 @@ const band = (raw: number) => {
  */
 export function OnboardingDays() {
   const router = useRouter();
+  // Build my own (decision 88) skips the starter plans: its days go straight to the finish.
+  const own = useLocalSearchParams<{ own?: string }>().own === '1';
   const [days, setDays] = useState<StarterDayCount>(3);
 
   return (
@@ -59,7 +61,10 @@ export function OnboardingDays() {
       scroll={false}
       action={{
         title: 'Continue',
-        onPress: () => router.push({ pathname: '/onboarding/plan', params: { days: String(days) } }),
+        onPress: () =>
+          own
+            ? router.push({ pathname: '/onboarding/finish', params: { days: String(days), own: '1' } })
+            : router.push({ pathname: '/onboarding/plan', params: { days: String(days) } }),
       }}
       testID="onboarding-days">
       <DaysWheel value={days} onChange={setDays} />

@@ -33,7 +33,7 @@ import type { CustomExerciseDefinition, ExercisePrescription } from '@/domain/ty
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** How a custom exercise is tracked; the meta says what its plan row will read (EP-2). */
-const CUSTOM_KINDS = [
+export const CUSTOM_KINDS = [
   { key: 'weight', title: 'Weight × reps', meta: '3 × 12 reps, load in the gym', exerciseType: 'strength', trackingMode: 'weightAndReps' },
   { key: 'reps', title: 'Reps only', meta: '3 × 12 reps, body weight', exerciseType: 'strength', trackingMode: 'reps' },
   { key: 'time', title: 'Time', meta: '3 × 30s holds', exerciseType: 'stability', trackingMode: 'duration' },
@@ -46,7 +46,7 @@ const CUSTOM_KINDS = [
   trackingMode: CustomExerciseDefinition['trackingMode'];
 }[];
 
-type CustomKind = (typeof CUSTOM_KINDS)[number];
+export type CustomKind = (typeof CUSTOM_KINDS)[number];
 
 /** Remote search waits for a pause in typing (off in production, `CATALOG.remote`). */
 const REMOTE_DEBOUNCE_MS = 300;
