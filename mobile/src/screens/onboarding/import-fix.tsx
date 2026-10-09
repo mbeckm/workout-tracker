@@ -2,6 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 
 import { allFixed, FixView, unknownLifts } from '@/screens/plan-import/fix-view';
 import { updateImportSession, useImportSession } from '@/screens/plan-import/session';
+import { useKeyboardVisible } from '@/screens/plan-import/use-keyboard-visible';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { OnboardingFrame } from './frame';
@@ -21,6 +22,7 @@ export function OnboardingImportFix() {
   const router = useRouter();
   const session = useImportSession();
   const { customExercises, saveCustomExercise } = useWorkoutStore();
+  const typing = useKeyboardVisible();
   if (!session.match) {
     return <Redirect href="/onboarding/import" />;
   }
@@ -31,7 +33,7 @@ export function OnboardingImportFix() {
     <OnboardingFrame
       title={fixTitle(left)}
       sub={FIX_SUB}
-      action={{
+      action={typing ? undefined : {
         title: 'Continue',
         disabled: !allFixed(match, session.fixes),
         onPress: () => router.push({ pathname: '/onboarding/finish', params: { imported: '1' } }),

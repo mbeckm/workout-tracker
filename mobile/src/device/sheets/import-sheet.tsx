@@ -14,6 +14,7 @@ import { ImportArt, useArtClock } from '@/screens/plan-import/import-art';
 import { ImportButtons, importButtonReach } from '@/screens/plan-import/import-buttons';
 import { useImportReader } from '@/screens/plan-import/reader';
 import { ReadingView } from '@/screens/plan-import/reading-view';
+import { useKeyboardVisible } from '@/screens/plan-import/use-keyboard-visible';
 import { clearImport, getImportSession, startImport, updateImportSession, useImportSession, type ImportInput } from '@/screens/plan-import/session';
 import { useWorkoutStore } from '@/store/workout-store';
 
@@ -35,6 +36,7 @@ export function ImportSheet({ params }: { params: SheetParams }) {
   const [step, setStep] = useState<Step>('start');
   const [attempt, setAttempt] = useState(0);
   const t = useArtClock();
+  const typing = useKeyboardVisible();
   const via: SheetParams = params.via ? { via: params.via } : {};
 
   const onRead = (match: PlanMatch | null) => {
@@ -125,6 +127,7 @@ export function ImportSheet({ params }: { params: SheetParams }) {
     <SheetScroll
       header={<SheetHeader title="Import plan" left={{ kind: 'back', onPress: () => setStep('read') }} />}
       actionBar={
+        typing ? undefined : (
         <StickyActionBar>
           <PillButton
             title="Continue"
@@ -133,6 +136,7 @@ export function ImportSheet({ params }: { params: SheetParams }) {
             testID="import-fix-continue"
           />
         </StickyActionBar>
+        )
       }>
       <View style={styles.page}>
         <Text accessibilityRole="header" maxFontSizeMultiplier={fontScaleCap.title} style={gadgetType.sheetHero}>
