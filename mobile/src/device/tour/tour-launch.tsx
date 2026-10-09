@@ -231,7 +231,7 @@ export function TourRoom({ motion }: { motion: TourMotion }) {
     room.set(withTiming(launch && launch !== 'landing' ? 1 : 0, { duration: DEVICE.TOUR_ROOM }));
   }, [launch, room]);
 
-  // The landing's ring, then one per pick, each with its pulse.
+  // The landing's ring with its pulse, then a silent one per pick (the pick has its own `reskin`).
   useEffect(() => {
     if (launch !== 'launch' || reduceMotion) return;
     ring.set(0);
@@ -244,11 +244,10 @@ export function TourRoom({ motion }: { motion: TourMotion }) {
   }, [launch, reduceMotion, ring, ringOpacity, sound]);
   useEffect(() => {
     if (ripple === 0 || reduceMotion) return;
-    sound('pulse');
     ring.set(0);
     ring.set(withTiming(1, { duration: DEVICE.TOUR_RIPPLE, easing: EASE_DISPLAY_FN }));
     ringOpacity.set(withSequence(withTiming(1, { duration: DEVICE.SNAP }), withTiming(0, { duration: DEVICE.TOUR_RIPPLE })));
-  }, [reduceMotion, ring, ringOpacity, ripple, sound]);
+  }, [reduceMotion, ring, ringOpacity, ripple]);
 
   const roomStyle = useAnimatedStyle(() => ({ opacity: room.get() }));
   const ringProps = useAnimatedProps(() => ({

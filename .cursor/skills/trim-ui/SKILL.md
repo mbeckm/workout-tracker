@@ -458,7 +458,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `bang` | a heavy low thud, a sharp metal hit and a short ring | First open: the Start key slams home |
 | `boot` | two tiny electronic blips | First open: the display boots |
 | `spin` | a flick, then a whoosh on every half turn (denser and higher as it speeds up, gone in the hang), falling air, a landing thud and bounce; drawn from `TOUR_POSE` | The tour's launch, started by the 3D body's first frame |
-| `pulse` | a soft sonar pulse that opens up | The tour's ring of lit dots: at the landing and on each pick |
+| `pulse` | one short, low 808-style pulse with a soft tick (0.3 s) | The tour's ring of lit dots at the landing (a pick's ring is silent: the pick plays `reskin`) |
 
 No other sounds.
 

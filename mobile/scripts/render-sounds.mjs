@@ -407,14 +407,12 @@ SOUNDS.spin = () => {
   return voice;
 };
 
-// The tour's ring of lit dots ripples out from the device: a soft sonar pulse that opens up.
+// The tour's ring of lit dots ripples out as the device lands: one short, low 808-style pulse
+// with a soft tick on top. Short and dry, like `reskin`, not a held tone.
 SOUNDS.pulse = () => {
-  const voice = makeVoice(1.4, 28);
-  const env = (p) => (p < 0.02 ? p / 0.02 : Math.pow(1 - p, 2.2));
-  glide(voice, 0, 1.3, 330, 495, 0.5, env);
-  glide(voice, 0, 1.3, 660, 990, 0.18, env);
-  glide(voice, 0.01, 1.0, 1320, 1980, 0.06, env);
-  sweep(voice, 0, 1.2, 500, 3000, 0.8, 0.12, (p) => Math.sin(Math.PI * Math.min(1, p * 1.6)) * (1 - p));
+  const voice = makeVoice(0.32, 28);
+  thump(voice, 0, 120, 52, 1.0, 0.28);
+  hit(voice, 0, 1800, 1.4, 0.25, 0.012);
   return voice;
 };
 
