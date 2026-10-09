@@ -77,7 +77,6 @@ import {
   leaveFinish,
   logModeOf,
   patchStage,
-  planExercisesFrom,
   relogSet,
   removeDraft,
   removeLoggedSet,
@@ -85,11 +84,13 @@ import {
   restoreDraft,
   restPhase,
   selectExercise,
+  sessionOrder,
   sessionSwaps,
   stageOf,
   swapInDrafts,
   swappedPrescription,
   updateSet,
+  withSessionOrder,
   type CompleteResult,
   type LogState,
   type RemovedLift,
@@ -103,8 +104,18 @@ import { useLiveActivitySync } from './use-live-activity-sync';
 /** Set changes settle before they are written; set logs land within this too. */
 const SESSION_WRITE_DEBOUNCE_MS = 400;
 
-/** The swaps of the workout just finished, until the receipt answers Keep in plan or Just today. */
-export type PlanSwaps = { workoutId: string; planId: string; dayId: string; dayTitle: string; swaps: SessionSwap[] };
+/**
+ * The swaps and the new order (slot ids, `sessionOrder`) of the workout just finished, until the
+ * receipt answers Keep in plan or Just today for each.
+ */
+export type PlanSwaps = {
+  workoutId: string;
+  planId: string;
+  dayId: string;
+  dayTitle: string;
+  swaps: SessionSwap[];
+  order: string[] | null;
+};
 
 export type LogLink = { planId: string; dayId: string; exerciseId?: string; start?: boolean };
 
@@ -206,7 +217,7 @@ export type LogSessionValue = {
   /** Takes a lift out of today's session only; pass the result to `restoreLift` for Undo. */
   removeLiftFromSession: (exerciseId: string) => RemovedLift | null;
   restoreLift: (removed: RemovedLift) => void;
-  /** Drag in Today: reorders the session and writes the plan (`persistOrder`). */
+  /** Drag in Today: reorders today's session only (the plan is asked on the receipt). */
   reorder: (from: number, to: number) => void;
   /** The menu's End workout: finish mode. */
   endWorkout: () => void;
@@ -216,10 +227,12 @@ export type LogSessionValue = {
   unlockTargets: () => Promise<boolean>;
   /** Saves the workout and closes the log. The new workout's id, or null when nothing was logged. */
   finish: () => string | null;
-  /** Today's swaps, held for the fresh receipt of `workoutId`. */
+  /** Today's swaps and order, held for the fresh receipt of `workoutId`. */
   planSwaps: PlanSwaps | null;
   /** The receipt's answer for one swap: Keep in plan writes the plan's slot; Just today drops it. */
   answerSwap: (slotId: string, keep: boolean) => void;
+  /** The receipt's answer for today's order: Keep in plan writes it to the day; Just today drops it. */
+  answerOrder: (keep: boolean) => void;
   /** Asks first ("Discard workout?"), then closes the log without saving. Resolves true when discarded. */
   discard: () => Promise<boolean>;
 };
@@ -668,9 +681,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         if (!current || !planAndDay()) {
           return;
         }
-        const log = reorderDrafts(current.log, from, to);
-        commit({ open: current.open, log });
-        writeDay((day) => ({ ...day, exercises: planExercisesFrom(log.drafts) }));
+        commit({ open: current.open, log: reorderDrafts(current.log, from, to) });
       },
       endWorkout: () => {
         const current = sessionRef.current;
@@ -724,9 +735,17 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         });
         clearLogSession({ planId: found.plan.id, dayId: found.day.id });
         const swaps = sessionSwaps(current.log.drafts);
+        const order = sessionOrder(current.log.drafts, found.day.exercises);
         planSwapsRef.current =
-          swaps.length > 0
-            ? { workoutId: workout.id, planId: found.plan.id, dayId: found.day.id, dayTitle: found.day.title, swaps }
+          swaps.length > 0 || order
+            ? {
+                workoutId: workout.id,
+                planId: found.plan.id,
+                dayId: found.day.id,
+                dayTitle: found.day.title,
+                swaps,
+                order,
+              }
             : null;
         setPlanSwaps(planSwapsRef.current);
         track('workout_completed', {
@@ -758,7 +777,23 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
           );
         }
         const swaps = pending.swaps.filter((item) => item.slotId !== slotId);
-        const next = swaps.length > 0 ? { ...pending, swaps } : null;
+        const next = swaps.length > 0 || pending.order ? { ...pending, swaps } : null;
+        planSwapsRef.current = next;
+        setPlanSwaps(next);
+      },
+      answerOrder: (keep: boolean) => {
+        const pending = planSwapsRef.current;
+        const order = pending?.order;
+        if (!pending || !order) {
+          return;
+        }
+        const plan = keep ? storeRef.current.plans.find((item) => item.id === pending.planId) : undefined;
+        if (plan) {
+          storeRef.current.updatePlan(
+            withDay(plan, pending.dayId, (day) => ({ ...day, exercises: withSessionOrder(day.exercises, order) })),
+          );
+        }
+        const next = pending.swaps.length > 0 ? { ...pending, order: null } : null;
         planSwapsRef.current = next;
         setPlanSwaps(next);
       },

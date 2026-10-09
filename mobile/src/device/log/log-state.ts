@@ -9,7 +9,8 @@
  * - A finished lift shows a pending `EXTRA SET`; Log appends it as `extra: true`.
  * - Finish mode (`finishing`) is entered by the workout's last set or End workout.
  * - Lifts can be added to (plan and session) or removed from today's session (Undo-able).
- * - Swaps are today-only; the receipt asks whether the plan keeps them (`sessionSwaps`).
+ * - Swaps and reorders are today-only; the receipt asks whether the plan keeps them
+ *   (`sessionSwaps`, `sessionOrder`).
  */
 import { clonePrescription, emptyLoggedSet, usesWeight } from '@/domain/helpers';
 import {
@@ -604,7 +605,7 @@ export function restFraction(rest: RestWindow | null, nowMs: number): number {
 // ---------------------------------------------------------------------------
 // The day's lifts (Today, M3)
 
-/** Drag in Today: the new order, keeping the display on the same lift. The plan write is the caller's. */
+/** Drag in Today: the new order, keeping the display on the same lift. Today only (`sessionOrder`). */
 export function reorderDrafts(state: LogState, from: number, to: number): LogState {
   const currentId = state.drafts[state.exerciseIndex]?.prescription.id;
   const drafts = moveItem(state.drafts, from, to);
@@ -612,10 +613,35 @@ export function reorderDrafts(state: LogState, from: number, to: number): LogSta
   return { ...state, drafts, exerciseIndex: index >= 0 ? index : state.exerciseIndex };
 }
 
-/** The plan day's lifts in session order. Orphans (left the plan, kept for their logged sets) never go back into it. */
-export function planExercisesFrom(drafts: readonly DraftExercise[]): ExercisePrescription[] {
-  // A lift swapped today goes back as the plan's own lift (Keep in plan is the receipt's).
-  return drafts.filter((item) => !item.orphan).map((item) => item.swappedFrom ?? item.prescription);
+/**
+ * A drag in Today is today only, like a swap: the plan's slots (prescription ids) in this
+ * session's order when it differs from the plan's, for the receipt's Keep in plan; null when it
+ * doesn't, so dragging back asks nothing. Only lifts in both count: orphans, and lifts removed
+ * today or from the plan since, don't.
+ */
+export function sessionOrder(
+  drafts: readonly DraftExercise[],
+  planExercises: readonly ExercisePrescription[],
+): string[] | null {
+  const inPlan = new Set(planExercises.map((item) => item.id));
+  const session = drafts
+    .filter((item) => !item.orphan && inPlan.has(item.prescription.id))
+    .map((item) => item.prescription.id);
+  const inSession = new Set(session);
+  const plan = planExercises.filter((item) => inSession.has(item.id)).map((item) => item.id);
+  return session.some((slotId, index) => slotId !== plan[index]) ? session : null;
+}
+
+/** Keep in plan for an order: the slots in `order` take it in the places they hold; every other lift stays put. */
+export function withSessionOrder(
+  exercises: readonly ExercisePrescription[],
+  order: readonly string[],
+): ExercisePrescription[] {
+  const byId = new Map(exercises.map((item) => [item.id, item]));
+  const queue = order.filter((slotId) => byId.has(slotId));
+  const moving = new Set(queue);
+  let next = 0;
+  return exercises.map((item) => (moving.has(item.id) ? (byId.get(queue[next++] ?? '') ?? item) : item));
 }
 
 /** `next` in place of `targetId`'s lift: same id, slot, sets and reps. */
