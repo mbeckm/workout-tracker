@@ -127,6 +127,7 @@ export function nextIncompleteIndex(
  * - New in the plan since: fresh drafts from history.
  * - Gone from the plan but with logged sets: kept at the end as an orphan, so a
  *   plan edit never silently deletes work. Gone with nothing logged: dropped.
+ * - The session's own order (a drag in Today) survives; the plan's order isn't written by it.
  */
 export function restoreDrafts(
   session: Pick<LogSession, 'drafts'>,
@@ -161,7 +162,17 @@ export function restoreDrafts(
     }
   }
 
-  return [...restored, ...orphans];
+  // A drag in Today is today only (D92): the saved lifts keep the session's order in the places they hold.
+  const position = new Map(
+    session.drafts.filter((draft) => !draft.orphan).map((draft, index) => [draft.prescription.id, index]),
+  );
+  const inOrder = restored
+    .filter((draft) => position.has(draft.prescription.id))
+    .sort((left, right) => (position.get(left.prescription.id) ?? 0) - (position.get(right.prescription.id) ?? 0));
+  let next = 0;
+  const ordered = restored.map((draft) => (position.has(draft.prescription.id) ? (inOrder[next++] ?? draft) : draft));
+
+  return [...ordered, ...orphans];
 }
 
 function sameExercise(left: ExercisePrescription, right: ExercisePrescription): boolean {
