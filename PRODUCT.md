@@ -88,6 +88,7 @@ One lift, one set at a time, on the device:
 - The top-right key is Undo last set: immediate, with an Undo toast.
 - After a set, rest runs as a ring on the display: the keys and the wheel add or take 15 s, the big key is Skip. At 0:00 the display blinks `GO` with a haptic and returns to the same next set; nothing else happens.
 - A swap is for today only. If the new lift got a set, the receipt asks whether the plan keeps it (Keep in plan / Just today).
+- Reordering in Today is for today only too. If the day ends in a different order from the plan's, the receipt asks whether the plan keeps it (Keep in plan / Just today); dragging back to the plan's order asks nothing, and a discarded workout leaves the plan as it was.
 - After the last set, or End workout from the menu, the device is in finish mode: hold the big key until the ring closes. The receipt prints out of the device; Done returns to Home with the day stamped.
 - A session in progress survives leaving or killing the app, and shows as a Live Activity.
 
