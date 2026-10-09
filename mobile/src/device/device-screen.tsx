@@ -216,15 +216,16 @@ function DeviceSurface() {
         return { label: 'Done', accessibilityLabel: 'Done', variant: 'metal' as const, onPress: edit?.back };
       case 'tour':
         switch (tour.state.screen) {
+          // Like every untaught control, the big key is dimmed and inert until its line: before
+          // that, the screen is what to tap.
           case 'intro':
-            // Metal until Trim's line asks for it: before that, the screen is what to tap.
-            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('metal' as const), onPress: () => tour.dispatch({ type: 'show' }) };
+            return { label: 'Show me', accessibilityLabel: 'Show me', variant: tour.lit === 'show' ? ('primary' as const) : ('disabled' as const), onPress: () => tour.dispatch({ type: 'show' }) };
           case 'rest':
             return { label: 'Skip', accessibilityLabel: 'Skip rest', variant: 'metal' as const, onPress: () => tour.dispatch({ type: 'skipRest' }) };
           case 'ready':
-            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('metal' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
+            return { label: 'Start', accessibilityLabel: 'Start', variant: tour.lit === 'start' ? ('primary' as const) : ('disabled' as const), onPress: tour.lit === 'start' ? tour.start : undefined };
           default:
-            return { label: 'Log', accessibilityLabel: 'Log set', variant: 'primary' as const, onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
+            return { label: 'Log', accessibilityLabel: 'Log set', variant: tour.taught('log') ? ('primary' as const) : ('disabled' as const), onPress: () => tour.dispatch({ type: 'log', now: Date.now() }) };
         }
       default:
         return {

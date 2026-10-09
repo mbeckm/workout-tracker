@@ -83,7 +83,7 @@ Information lives on the lowest layer that serves the job:
 | **finish** | Menu | lamps per lift on the recessed plate (green when done) | Undo last set | `Back` | stowed | `Finish`, held 1.1 s (primary); `Discard` with nothing logged |
 | **edit** | `‹` back to the editor | `‹` `›` move between the day's lifts; the middle returns to the editor | Remove lift (`✕`) | `+` / `−` sets | reps (or seconds, minutes) | `Done` (metal) |
 | **loading** | inert | lamps off, then flicking on | hidden | none | stowed | inert |
-| **tour** | Menu (from its line on; opens the tour's menu) | lamps off, then `‹` `›` between the practice lifts as in log; all green at the end | `Skip` on the first screen, then Undo | `+` / `−` reps, `+15` / `−15` in rest | weight, then time in rest; stowed on the first and last screens | `Show me`, `Log`, `Skip` (metal), `Start`; metal until the line names it |
+| **tour** | Menu (from its line on; opens the tour's menu) | lamps off, then `‹` `›` between the practice lifts as in log (a lift is green only once its sets are logged) | `Skip` on the first screen, then Undo | `+` / `−` reps, `+15` / `−15` in rest | weight, then time in rest; stowed on the first and last screens | `Show me`, `Log`, `Skip` (metal), `Start`; dimmed and inert until the line names it (`Log` until it's taught) |
 
 ### Sheets and their top edges (SPEC §6)
 
