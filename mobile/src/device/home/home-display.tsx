@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,6 +8,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   LinearTransition,
@@ -37,7 +38,8 @@ const LINES_IN = FadeIn.duration(DEVICE.DISPLAY);
 /**
  * Home on the display (W1, screens 01 and 14): the plan's days as rows, stacked from the top 8
  * apart, scrolling under a fade when they don't fit (small phones, long plans). Tap a row to
- * pick it. With no plans, the empty slot.
+ * pick it, or flick up for the next day and down for the previous one, round and round; the
+ * list follows the selection. With no plans, the empty slot.
  */
 export function HomeDisplay({
   model,
@@ -87,6 +89,27 @@ function DayRows({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDayId, viewport, content]);
 
+  // Flick the display to step through the days, wrapping at the ends.
+  const flick = useMemo(() => {
+    const step = (by: number) => {
+      const count = model.rows.length;
+      if (count < 2) return;
+      const next = model.rows[(model.selectedIndex + by + count) % count];
+      haptics.displayTap();
+      onPick(next.dayId);
+    };
+    return Gesture.Exclusive(
+      Gesture.Fling()
+        .direction(Directions.UP)
+        .runOnJS(true)
+        .onEnd(() => step(1)),
+      Gesture.Fling()
+        .direction(Directions.DOWN)
+        .runOnJS(true)
+        .onEnd(() => step(-1)),
+    );
+  }, [haptics, model, onPick]);
+
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setOffset(event.nativeEvent.contentOffset.y);
   };
@@ -96,38 +119,40 @@ function DayRows({
 
   return (
     <View style={styles.fill}>
-      <View style={styles.fill}>
-        <ScrollView
-          ref={scrollRef}
-          style={styles.fill}
-          contentContainerStyle={styles.rows}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={overflows}
-          alwaysBounceVertical={false}
-          scrollEventThrottle={16}
-          onScroll={onScroll}
-          onLayout={(event) => setViewport(event.nativeEvent.layout.height)}
-          onContentSizeChange={(_, height) => setContent(height)}>
-          {model.rows.map((row) => (
-            <DayRow
-              key={row.dayId}
-              row={row}
-              celebrate={row.dayId === celebrateDayId}
-              onLayout={(event) => {
-                const { y, height } = event.nativeEvent.layout;
-                rowFrames.current.set(row.dayId, { y, height });
-              }}
-              onPress={() => {
-                if (row.selected) return;
-                haptics.displayTap();
-                onPick(row.dayId);
-              }}
-            />
-          ))}
-        </ScrollView>
-        {fadeTop ? <View pointerEvents="none" style={[styles.fade, styles.fadeTop]} /> : null}
-        {fadeBottom ? <View pointerEvents="none" style={[styles.fade, styles.fadeBottom]} /> : null}
-      </View>
+      <GestureDetector gesture={flick}>
+        <View style={styles.fill} collapsable={false}>
+          <ScrollView
+            ref={scrollRef}
+            style={styles.fill}
+            contentContainerStyle={styles.rows}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
+            alwaysBounceVertical={false}
+            scrollEventThrottle={16}
+            onScroll={onScroll}
+            onLayout={(event) => setViewport(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_, height) => setContent(height)}>
+            {model.rows.map((row) => (
+              <DayRow
+                key={row.dayId}
+                row={row}
+                celebrate={row.dayId === celebrateDayId}
+                onLayout={(event) => {
+                  const { y, height } = event.nativeEvent.layout;
+                  rowFrames.current.set(row.dayId, { y, height });
+                }}
+                onPress={() => {
+                  if (row.selected) return;
+                  haptics.displayTap();
+                  onPick(row.dayId);
+                }}
+              />
+            ))}
+          </ScrollView>
+          {fadeTop ? <View pointerEvents="none" style={[styles.fade, styles.fadeTop]} /> : null}
+          {fadeBottom ? <View pointerEvents="none" style={[styles.fade, styles.fadeBottom]} /> : null}
+        </View>
+      </GestureDetector>
       {model.week.done ? (
         <View style={styles.footer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           <LcdText style={gadgetType.lcdSmall}>
