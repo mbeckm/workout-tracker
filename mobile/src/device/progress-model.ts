@@ -3,13 +3,15 @@
  * the numbers the progress, lift and body sheets show, from the store's data. Pure TS, no
  * `react-native`, so it can be checked with `tsx` against the old screens' numbers.
  *
- * Rounding follows the old app: a lift's estimated max and its change are whole numbers
- * (`formatValue(…, 0)`, `ProgressDelta decimals 0`), body values one decimal.
+ * Rounding: a lift's estimated max is whole (`roundOneRM`, PRODUCT-DECISIONS 93) before anything
+ * is drawn or subtracted, so the value, its change, the chart and the goal ring agree; body values
+ * one decimal.
  */
 import { bodyGoalFor, bodyGoalForDisplay, bodyGoalProgress, bodyGoalRemaining, latestBodyValue, type BodyGoal } from '@/domain/body-goals';
 import { BODY_METRICS, PROGRESS_INDEX_BODY_METRICS, type BodyCheckIn, type BodyMetricKey } from '@/domain/check-in';
 import { monthShort, weekdayShort } from '@/domain/dates';
 import { currentOneRM, goalProgress, pinnedGoals, type Goal } from '@/domain/goals';
+import { roundOneRM } from '@/domain/helpers';
 import { nextTrainableIndex } from '@/domain/plan-loop';
 import {
   bodyMetricSeries,
@@ -220,7 +222,7 @@ function liftRow(
     };
   }
 
-  const spark = inWindow.map((point) => point.oneRM);
+  const spark = inWindow.map((point) => roundOneRM(point.oneRM));
   const change = spark.length >= 2 ? spark[spark.length - 1] - spark[0] : null;
   // A record: the latest session beat every one before it, and it's on this sparkline.
   const record =
@@ -228,7 +230,7 @@ function liftRow(
     inWindow.length > 0 &&
     inWindow[inWindow.length - 1].workoutId === latest.workoutId &&
     isSessionPR(lift.name, latest.oneRM, history, latest.workoutId);
-  const value = formatProgressNumber(lift.latestOneRM, 0);
+  const value = String(roundOneRM(lift.latestOneRM));
   return {
     key: normalizedStatsKey(lift.name),
     name: lift.name,
@@ -280,6 +282,7 @@ function bodyRow(metric: BodyMetricKey, checkIns: BodyCheckIn[], units: Units, s
   };
 }
 
+/** `current` is `currentOneRM`, already whole: the ring, `at 96` and the percentage agree. */
 function goalCard(goal: Goal, current: number | null, units: Units, now: Date): GoalCardModel {
   const reached = goal.reachedAt != null;
   const progress = goalProgress(goal, current);
@@ -373,7 +376,7 @@ export function liftDetailModel(
   now = new Date(),
 ): DetailModel {
   const series: LiftSessionPoint[] = liftSeriesFromHistory(name, history);
-  const all = series.map((point) => ({ date: point.date, value: point.oneRM }));
+  const all = series.map((point) => ({ date: point.date, value: roundOneRM(point.oneRM) }));
   const points = filterPointsByWindow(all, window, now);
   const latest = series.length > 0 ? series[series.length - 1] : null;
   const sessions = [...series]
@@ -384,7 +387,7 @@ export function liftDetailModel(
       const record = isSessionPR(name, point.oneRM, history, point.workoutId);
       const title = formatSessionDate(point.date, now);
       const sub = formatSessionSets(point.sets);
-      const value = formatProgressNumber(point.oneRM, 0);
+      const value = String(roundOneRM(point.oneRM));
       return {
         id: point.workoutId,
         date: point.date,
@@ -400,7 +403,7 @@ export function liftDetailModel(
   return {
     series: all,
     points,
-    latest: latest?.oneRM ?? null,
+    latest: latest ? roundOneRM(latest.oneRM) : null,
     sessions,
     record: latest != null && isSessionPR(name, latest.oneRM, history, latest.workoutId),
     decimals: 0,

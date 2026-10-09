@@ -12,7 +12,7 @@
  */
 import { planWeekNumber, stampName } from '@/device/home-model';
 import { goalsReachedIn, type Goal } from '@/domain/goals';
-import { estimatedOneRM, workoutVolume } from '@/domain/helpers';
+import { estimatedOneRM, roundOneRM, workoutVolume } from '@/domain/helpers';
 import { startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
 import { compressSetLines, loggedSetTotal, workoutPersonalBests } from '@/domain/set-lines';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
@@ -137,7 +137,7 @@ export function setDetail(sets: LoggedSet[]): string {
     .toUpperCase();
 }
 
-/** The best estimated 1RM among a lift's sets, rounded to 0.5 (prototype `E1RM`). */
+/** The best estimated 1RM among a lift's sets, whole like everywhere else (`roundOneRM`, D93). */
 export function exerciseOneRM(exercise: Pick<LoggedExercise, 'sets'>): number | null {
   let best: number | null = null;
   for (const set of exercise.sets) {
@@ -146,7 +146,7 @@ export function exerciseOneRM(exercise: Pick<LoggedExercise, 'sets'>): number | 
       best = value;
     }
   }
-  return best == null ? null : Math.round(best * 2) / 2;
+  return best == null ? null : roundOneRM(best);
 }
 
 /** `9,108 KG` */
@@ -221,7 +221,7 @@ export function receiptModel(input: ReceiptInput): Receipt {
     const oneRM = exerciseOneRM(exercise);
     if (oneRM != null) {
       const word = stampName(exercise.exerciseName);
-      rows.push({ kind: 'pair', left: `${word} E1RM`, right: receiptLoad(oneRM), tone: 'pr' });
+      rows.push({ kind: 'pair', left: `${word} EST. MAX`, right: receiptLoad(oneRM), tone: 'pr' });
       spoken.push(`${exercise.exerciseName} estimated max ${receiptLoad(oneRM)}`);
       break;
     }

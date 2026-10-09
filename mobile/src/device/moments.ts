@@ -105,7 +105,7 @@ export type WeekReport = {
   records: number;
   /** `38.9 T`, `9,108 KG`, `20,080 LBS` */
   volume: string;
-  /** `SQUAT 127.5`: the week's best estimated max, or null with no weighted sets. */
+  /** `SQUAT 128`: the week's best estimated max, or null with no weighted sets. */
   best: string | null;
   text: string;
   accessibilityLabel: string;

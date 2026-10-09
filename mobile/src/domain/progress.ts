@@ -4,7 +4,7 @@ import {
   type BodyCheckIn,
   type WeightUnits,
 } from '@/domain/check-in';
-import { estimatedOneRM, formatLoggedSetLine } from '@/domain/helpers';
+import { estimatedOneRM, formatLoggedSetLine, roundOneRM } from '@/domain/helpers';
 import type { LoggedExercise, LoggedSet, LoggedWorkout, WorkoutPlan } from '@/domain/types';
 import { normalizedStatsKey } from '@/domain/types';
 import { formatMonthDay } from '@/domain/dates';
@@ -279,9 +279,9 @@ export function formatProgressWeight(value: number, units: 'kg' | 'lbs'): string
   return `${text} ${units}`;
 }
 
-/** Paper Progress shows whole-kg e1RM (94 kg), not one-decimal Epley. */
+/** `94 kg`: an estimated 1RM, whole (`roundOneRM`, PRODUCT-DECISIONS 93). */
 export function formatProgressOneRM(value: number, units: 'kg' | 'lbs'): string {
-  return `${Math.round(value)} ${units}`;
+  return `${roundOneRM(value)} ${units}`;
 }
 
 export function formatProgressDelta(percent: number | null): string {

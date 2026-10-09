@@ -27,8 +27,8 @@ export function viaMenu(params: SheetParams): string | undefined {
 
 /**
  * Progress (QA1, screen 18 without the gauge; SPEC §6; PRODUCT-DECISIONS 62, 63). GOALS: the
- * pinned goals as green rings. `LIFTS, 30 DAYS`: name, sparkline, estimated max and the change
- * over the window. BODY: the measurements with a check-in. Tap a row for its detail; long-press
+ * pinned goals as green rings. `EST. MAX, 30 DAYS` (D93; named because the bare number isn't
+ * self-evident): name, sparkline, whole estimated max and the change over the window. BODY: the measurements with a check-in. Tap a row for its detail; long-press
  * a lift or body row to set a goal, a goal to edit, unpin or remove it.
  */
 export function ProgressSheet({ params }: { params: SheetParams }) {
@@ -125,7 +125,7 @@ export function ProgressSheet({ params }: { params: SheetParams }) {
           </>
         ) : null}
 
-        <SectionLabel>{`LIFTS, ${PROGRESS_SPARKLINE_DAYS} DAYS`}</SectionLabel>
+        <SectionLabel>{`EST. MAX, ${PROGRESS_SPARKLINE_DAYS} DAYS`}</SectionLabel>
         <SheetCard>
           {model.empty ? <PlainRow key="empty" title="No lifts yet" /> : null}
           {model.empty

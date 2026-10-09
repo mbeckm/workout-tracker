@@ -2,7 +2,7 @@
  * Plain TS checks for the receipt, the History wall and the after-Done moments (PLAN Phase 5),
  * run with `tsx` by `npm run check` and CI. No test runner: each `check` throws on a mismatch.
  *
- * Covers the receipt's lines (compressed set lines, differing weights, totals, E1RM, PR and goal
+ * Covers the receipt's lines (compressed set lines, differing weights, totals, EST. MAX, PR and goal
  * lines, name and milestone), PR parity with the old History detail (`workoutPersonalBests` /
  * `personalBestCount`) on the dev fixtures, the wall's weeks and rows, the moments queue and the
  * week report.
@@ -145,7 +145,7 @@ check('receipt: target 03 (Legs 1) prints as on the screen', () => {
     '---',
     'SETS|9|bold',
     'VOLUME|9,108 KG|bold',
-    'SQUAT E1RM|129|pr',
+    'SQUAT EST. MAX|129|pr',
     'SQUAT PR|★|pr',
   ]);
   assert.ok(receipt.text.split('\n').every((line) => line.length <= 32));
@@ -176,7 +176,7 @@ check('receipt: the name (D20), the milestone and goals (D7), the first lift wit
   const receipt = receiptModel({ workout: push, history: [push], units: 'kg', userName: 'Marvin', milestone: '10th workout', goals: [goal] });
   const lines = texts(receipt.rows);
   assert.deepEqual(lines.slice(0, 5), ['TRIM', 'MARVIN', '10TH WORKOUT', 'PUSH 1', 'THU 1 OCT 44 MIN']);
-  assert.ok(lines.includes('BENCH E1RM|117|pr'));
+  assert.ok(lines.includes('BENCH EST. MAX|117|pr'));
   assert.ok(lines.includes('GOAL BENCH 100|✓|bold'));
   // The first log of a lift is never a record.
   assert.ok(!lines.some((line) => line.endsWith('PR|★|pr')));
@@ -334,7 +334,7 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   assert.deepEqual(inLbs, inKg.map((line) => line.replace(' KG|', ' LBS|')));
   assert.ok(inLbs.includes('  60×8, 60×8, 65×6'));
   assert.ok(inLbs.includes('VOLUME|1,350 LBS|bold'));
-  assert.ok(inLbs.includes('BENCH E1RM|78|pr'));
+  assert.ok(inLbs.includes('BENCH EST. MAX|78|pr'));
   // The old app's own formatters, on the same switch: the number is relabelled too.
   assert.equal(formatWorkoutVolume(1350, 'lbs').toUpperCase(), '1,350 LBS');
   assert.equal(formatLoggedSetLine({ weight: 60, reps: 8 }, { unit: 'lbs' }), '60 lbs × 8');
@@ -344,6 +344,16 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   assert.equal(report.best, 'BENCH 78');
   // Metric tonnes only for kg: 12,000 logged reads 12,000 LBS after the switch, never 12.0 T.
   assert.equal(weekVolume(12000, 'lbs'), '12,000 LBS');
+});
+
+check('estimated max: the nearest whole number on the receipt and the week report (D93)', () => {
+  // 82.5 × 5 = 96.25 (was 96.5), 80 × 7 = 98.67 (was 98.5).
+  const bench = workout('Push 1', at(9, 2), [{ name: 'Bench Press', sets: sets([[82.5, 5]]) }]);
+  const squat = workout('Legs 1', at(9, 3), [{ name: 'Squat', sets: sets([[80, 7]]) }]);
+  const history = newestFirst([bench, squat]);
+  assert.ok(texts(receiptModel({ workout: bench, history, units: 'kg' }).rows).includes('BENCH EST. MAX|96|pr'));
+  assert.ok(texts(receiptModel({ workout: squat, history, units: 'kg' }).rows).includes('SQUAT EST. MAX|99|pr'));
+  assert.equal(weekReport({ history, plan: null, units: 'kg', weekOf: at(9, 2) }).best, 'SQUAT 99');
 });
 
 if (failures > 0) {
