@@ -133,7 +133,7 @@ check('stats: volume, minutes and the estimated max against the last time this d
     [
       ['volume', 9108, 'kg', '↑ 7,408', 'up', false],
       ['minutes', 55, 'min', '↑ 11', 'quiet', false],
-      ['oneRM', 129, 'Squat e1RM', '★ +9', 'record', true],
+      ['oneRM', 129, 'Squat est. max', '★ +9', 'record', true],
     ],
   );
   assert.deepEqual(
@@ -382,7 +382,7 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   assert.deepEqual(inLbs?.records.map((record) => record.now), ['65 × 6']);
   assert.equal(inLbs?.footer.amount, '1,350 LBS');
   const stats = finishStats({ workout: kg, history, units: 'lbs' }).stats;
-  assert.deepEqual(stats.map((stat) => `${stat.value} ${stat.label}`), ['1350 lbs', '44 min', '78 Bench e1RM']);
+  assert.deepEqual(stats.map((stat) => `${stat.value} ${stat.label}`), ['1350 lbs', '44 min', '78 Bench est. max']);
   // The old app's own formatters, on the same switch: the number is relabelled too.
   assert.equal(formatWorkoutVolume(1350, 'lbs').toUpperCase(), '1,350 LBS');
   assert.equal(formatLoggedSetLine({ weight: 60, reps: 8 }, { unit: 'lbs' }), '60 lbs × 8');
@@ -391,6 +391,19 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   assert.equal(report.best, 'BENCH 78');
   // Metric tonnes only for kg: 12,000 logged reads 12,000 LBS after the switch, never 12.0 T.
   assert.equal(weekVolume(12000, 'lbs'), '12,000 LBS');
+});
+
+check('estimated max: the nearest whole number on the finish stats and the week report (D93)', () => {
+  // 82.5 × 5 = 96.25 (was 96.5), 80 × 7 = 98.67 (was 98.5); the change is whole too.
+  const bench = workout('Push 1', at(9, 2), [{ name: 'Bench Press', sets: sets([[82.5, 5]]) }]);
+  const squatBefore = workout('Legs 1', at(8, 26), [{ name: 'Squat', sets: sets([[82.5, 5]]) }]);
+  const squat = workout('Legs 1', at(9, 3), [{ name: 'Squat', sets: sets([[80, 7]]) }]);
+  const history = newestFirst([squatBefore, bench, squat]);
+  const benchStat = finishStats({ workout: bench, history, units: 'kg' }).stats.find((stat) => stat.key === 'oneRM');
+  assert.deepEqual([benchStat?.value, benchStat?.label], [96, 'Bench est. max']);
+  const squatStat = finishStats({ workout: squat, history, units: 'kg' }).stats.find((stat) => stat.key === 'oneRM');
+  assert.deepEqual([squatStat?.value, squatStat?.delta?.text], [99, '★ +3']);
+  assert.equal(weekReport({ history, plan: null, units: 'kg', weekOf: at(9, 2) }).best, 'SQUAT 99');
 });
 
 if (failures > 0) {

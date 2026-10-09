@@ -120,7 +120,7 @@ function LiftGoalSheet({ params }: { params: SheetParams }) {
   };
 
   const facts = [
-    current != null ? `Now ${formatProgressNumber(current, 0)} ${units}` : null,
+    current != null ? `Now ${current} ${units}` : null,
     existing?.reachedAt
       ? `${formatProgressNumber(existing.target, 1)} ${units} reached ${formatShortDay(existing.reachedAt)}`
       : null,

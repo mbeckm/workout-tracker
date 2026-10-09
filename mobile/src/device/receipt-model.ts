@@ -13,7 +13,7 @@
  */
 import { planWeekNumber, stampName } from '@/device/home-model';
 import { goalsReachedIn, type Goal } from '@/domain/goals';
-import { bestTenRMSetId, estimatedOneRM, tenRMForSet, workoutMilestone, workoutVolume } from '@/domain/helpers';
+import { bestTenRMSetId, estimatedOneRM, roundOneRM, tenRMForSet, workoutMilestone, workoutVolume } from '@/domain/helpers';
 import { startOfLocalWeek, trainableDays } from '@/domain/plan-loop';
 import { loggedSetTotal, workoutPersonalBests } from '@/domain/set-lines';
 import { normalizedStatsKey, type LoggedExercise, type LoggedSet, type LoggedWorkout, type WorkoutPlan } from '@/domain/types';
@@ -102,7 +102,7 @@ function loadOf(set: LoggedSet): number | null {
   return set.weight ?? set.counterweight ?? null;
 }
 
-/** The best estimated 1RM among a lift's sets, rounded to 0.5 (prototype `E1RM`). */
+/** The best estimated 1RM among a lift's sets, whole like everywhere else (`roundOneRM`, D93). */
 export function exerciseOneRM(exercise: Pick<LoggedExercise, 'sets'>): number | null {
   let best: number | null = null;
   for (const set of exercise.sets) {
@@ -111,7 +111,7 @@ export function exerciseOneRM(exercise: Pick<LoggedExercise, 'sets'>): number | 
       best = value;
     }
   }
-  return best == null ? null : Math.round(best * 2) / 2;
+  return best == null ? null : roundOneRM(best);
 }
 
 /** `9,108 KG` */
@@ -335,13 +335,13 @@ export function finishStats(input: Pick<ReceiptInput, 'workout' | 'history' | 'u
       : lastSets
         ? exerciseOneRM({ sets: lastSets })
         : null;
-    const counted = countDelta(topOneRM, before, true, 1);
+    const counted = countDelta(topOneRM, before, true);
     const delta: Delta | null =
       record && counted ? { text: `★ ${counted.text.replace('↑ ', '+')}`, tone: 'record' } : counted;
     stats.push({
       key: 'oneRM',
       value: topOneRM,
-      label: `${stampWord(top.exerciseName)} e1RM`,
+      label: `${stampWord(top.exerciseName)} est. max`,
       delta,
       record,
       accessibilityLabel: `${top.exerciseName} estimated max ${receiptLoad(topOneRM)}${spokenDelta(delta)}`,

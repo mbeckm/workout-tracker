@@ -6,6 +6,13 @@ import type { ExercisePrescription, LoggedWorkout, WorkoutDay, WorkoutPlan } fro
 /** Seconds of work per strength set, before rest. */
 const WORK_SECONDS_PER_SET = 40;
 
+/**
+ * Sets × (work + rest) leaves out warm-ups, changing plates and waiting for kit, so a
+ * prescription estimate is stretched by this much (PRODUCT-DECISIONS 93). Timed history is
+ * real and isn't stretched.
+ */
+export const TIME_BUFFER = 1.3;
+
 /** Completed sessions of this plan day, newest first. */
 function sessionsForDay(
   planId: string,
@@ -46,7 +53,7 @@ function exerciseSeconds(exercise: ExercisePrescription): number {
 
 /**
  * Minutes this day usually takes: the median of the last three sessions when there are any,
- * otherwise sets × (work + rest) from the prescription. Null for an empty day.
+ * otherwise sets × (work + rest) from the prescription, × `TIME_BUFFER`. Null for an empty day.
  */
 export function estimateDayMinutes(
   plan: WorkoutPlan,
@@ -64,7 +71,7 @@ export function estimateDayMinutes(
   if (recent.length > 0) {
     return Math.max(1, Math.round(recent[Math.floor(recent.length / 2)]));
   }
-  const seconds = day.exercises.reduce((sum, exercise) => sum + exerciseSeconds(exercise), 0);
+  const seconds = day.exercises.reduce((sum, exercise) => sum + exerciseSeconds(exercise), 0) * TIME_BUFFER;
   // Round to 5 so the estimate doesn't pretend to be precise.
   return Math.max(5, Math.round(seconds / 60 / 5) * 5);
 }

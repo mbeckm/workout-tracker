@@ -198,6 +198,14 @@ export function estimatedOneRM(
   return weight * (1 + reps / 30);
 }
 
+/**
+ * An estimated 1RM as Trim shows it, everywhere (receipt, Progress, goals, the exercise sheet):
+ * the nearest whole kg or lb (PRODUCT-DECISIONS 93). Stored values stay unrounded.
+ */
+export function roundOneRM(value: number): number {
+  return Math.round(value);
+}
+
 /** Epley 1RM, then convert to 10RM: 1RM = weight × (1 + reps/30), 10RM = 1RM / (1 + 10/30). */
 export function estimatedTenRM(
   weight: number | null | undefined,

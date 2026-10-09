@@ -482,7 +482,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 | Name | `Push 1`, `Bench Press`, `Push Pull Legs` |
 | Number with unit | `60 kg × 8`, `3 × 8`, `1:32`, `52 min`, `~45 min` |
 | Fact | `4 days, 18 lifts`, `Now, set 2/3`, `Best today`, `Last time` |
-| Section label (Doto, uppercase) | `GOALS`, `LIFTS, 30 DAYS`, `BODY`, `HOW TO`, `YOU`, `SESSIONS` |
+| Section label (Doto, uppercase) | `GOALS`, `EST. MAX, 30 DAYS`, `BODY`, `HOW TO`, `YOU`, `SESSIONS` |
 | Action | `Start`, `Use plan`, `Add lift`, `Add 3 lifts`, `Share` |
 | Empty-state fact | `No lifts yet`, `NO WORKOUTS YET` (on the blank receipt) |
 | Error: what happened, and what to do, in one line | `Couldn't load prices. Try again.` |
@@ -504,7 +504,7 @@ Before adding a label, check whether a mark already says it: a ✓ on a stamped 
 
 ### The eyebrow test
 
-Keep a section label only if it carries a fact or a grouping the layout doesn't already show: `LIFTS, 30 DAYS` names the window, `HOW TO` names what the numbered steps are. Drop it if it only names the layout or repeats the sheet title.
+Keep a section label only if it carries a fact or a grouping the layout doesn't already show: `EST. MAX, 30 DAYS` names what the bare numbers are and the window, `HOW TO` names what the numbered steps are. Drop it if it only names the layout or repeats the sheet title.
 
 ### Separating facts (no middle dots)
 
@@ -526,7 +526,7 @@ Banned everywhere, money screens included:
 
 - **Sentence case** in sheets, including titles. The product name is `Trim Pro`.
 - **Buttons are verbs:** one or two words, three at most (`Use plan`, `Add 3 lifts`, `Delete plan`, never `OK`).
-- **Numbers:** a unit on every load in sheets (`60 kg × 8`). `×` joins load and reps or sets and reps. `−` (minus sign) in steppers and keys. Times are `1:32` and `52 min`; estimates `~45 min`.
+- **Numbers:** a unit on every load in sheets (`60 kg × 8`). `×` joins load and reps or sets and reps. `−` (minus sign) in steppers and keys. Times are `1:32` and `52 min`; estimates `~45 min` (`estimateDayMinutes`: the median of the day's last three sessions, else the prescription's work and rest × `TIME_BUFFER` 1.3, to the nearest 5; D93). An estimated max is always whole (`roundOneRM`) and called `Estimated max` (`Bench est. max` as a short label, `EST. MAX` in uppercase); never `E1RM`.
 - **Dates:** `Today`, `Yesterday`, `Thu 2 Oct`. No year unless it isn't this year.
 - **Alerts and action sheets** are system-styled and only for actions that can't be undone (§10 Forgiveness). The title names the action and the object (`Delete Push 1 from Thu 2 Oct?`, `Discard workout?` with `N sets logged will not be saved.`). Buttons are `Cancel` + the verb.
 - **Toasts** confirm a result that isn't on screen yet, or offer Undo: `Bench Press set 2 undone` + `Undo`, `Plan deleted` + `Undo`, `Push Pull Legs is your plan`, `Add a lift first`, `Finish your workout first`, `Add lifts to this day first`, `Copy your plan first` (Paste on Import plan with an empty clipboard). Never errors, never things already visible.
@@ -627,7 +627,7 @@ A chart answers one question: is this going up?
 8. **The line draws in** over 1 s on open; under Reduce Motion it's simply there.
 9. **Sparklines** in Progress rows: 70 × 24, no dots; yellow if the last point is a record, muted if flat, otherwise ink. A fixed 30-day window (`PROGRESS_SPARKLINE_DAYS`).
 10. **One session** shows a dot, not a line, and no sentence explaining why.
-11. **VoiceOver** gets a summary label (`Estimated max, 95 kg on 3 Jun to 102.5 kg on 14 Sep`).
+11. **VoiceOver** gets a summary label (`Estimated max, 95 kg on 3 Jun to 103 kg on 14 Sep`).
 
 ---
 
@@ -781,7 +781,7 @@ Training weeks (Monday start), newest first: a Doto week header with that week's
 
 ### Receipt: the finish screen (decision 90, F3a) [13, 03]
 
-The stats lead, in the sheet's own cards. One card holds three stats (26 / 30 heavy, tabular, over a 12 / 16 label and a delta line): volume (`5,908` / `kg`; sets without any load), minutes, and the estimated max of the first lift that has one (`Bench e1RM`; lifts without loads: the count of lifts), each against the last time this plan day was done (by day id, else by title): `↑ 312`, `↓ 6`, `Same`; green (`signal.done`) only when more is better and it went up, else muted; a record's max is gold (`signal.record`) with `★ +3`. Then a card with a row per lift (50 tall): the name, and its line against its own last session (by name, any workout): `★ +2.5 kg` (gold, a record), `+2.5 kg` / `+1 rep` (green), `Same`, `−2 reps`, `First time` (muted); a lift without a load reads its set count.
+The stats lead, in the sheet's own cards. One card holds three stats (26 / 30 heavy, tabular, over a 12 / 16 label and a delta line): volume (`5,908` / `kg`; sets without any load), minutes, and the estimated max of the first lift that has one (`Bench est. max`, whole, `roundOneRM`, D93; lifts without loads: the count of lifts), each against the last time this plan day was done (by day id, else by title): `↑ 312`, `↓ 6`, `Same`; green (`signal.done`) only when more is better and it went up, else muted; a record's max is gold (`signal.record`) with `★ +3`. Then a card with a row per lift (50 tall): the name, and its line against its own last session (by name, any workout): `★ +2.5 kg` (gold, a record), `+2.5 kg` / `+1 rep` (green), `Same`, `−2 reps`, `First time` (muted); a lift without a load reads its set count.
 
 The receipt only prints for a moment: one or more records (`workoutPersonalBests`; every one prints), a goal reached (D7) or a milestone. A workout without one prints nothing. It rises out of a black slot (12 tall, inset 50) above the actions, after the stats: 244 wide, thermal lines, torn at the top (teeth 10 wide, 6 deep), its shadow cast upward. Content (Plex Mono 11 / 16): `TRIM` (Doto 18) with `No. 047` (the workout's number in all of history) in its lane, the owner's name (bold 13, no label) when set (D20), a double rule, then `★ <MILESTONE>`, `GOAL REACHED ✓` with the target in Doto 28 and the lift per goal, `★ NEW RECORD` with the old record struck through (and its date in the lane) over the new one in Doto 46 (`90×8`, joined as on the display) and the lift, or `★ 3 NEW RECORDS` with a row per lift (old struck left, new in Doto 28 right), all in #C2410C for the headings; a dashed rule, the day's name with its volume (or `52 MIN`) in the lane, the date under it, a barcode. A rubber stamp, a 62 ring in record ink tilted −12°, slams on bottom right over the barcode once the paper is out: `★ BEST EVER` (one record), `★ 3 IN A DAY` (several), `GOAL ✓`, `★ 10TH`. On a fresh screen, one card per lift swapped today that got a set (D81), under the lifts: `Cable Lateral Raise in Push 1?` (row title), `Instead of Lateral Raises` (row sub), and two pills, `Keep in plan` (light; writes the plan's slot with its own sets and reps, toast `Push 1 updated`) and `Just today` (dark). After them, when the day was done in a different order from the plan's (a drag in Today, D92; dragged back asks nothing), one more card in the same form: `This order in Push 1?` (row title), the lifts in the new order (`Squat, Bench Press, Row`, row sub), `Keep in plan` (writes the day's order, toast `Push 1 updated`) and `Just today`. Answered cards go; unanswered ones leave the plan as it was. Actions: `Share` (dark pill, only with a receipt; the receipt as text) and `Done` (light pill) on a fresh screen. The fresh header states the week (`Week 12, 3 of 4 done`) and has no ✕ (Done is the way out); from History the header is the day's name with ‹, and nothing animates. The fresh screen claims its milestone (`claimMilestone`).
 
@@ -809,7 +809,7 @@ Search field (r23, 46 tall, on `card`), muscle chips scrolling sideways (catalog
 
 ### Progress (QA1, without the gauge) [18]
 
-No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinned goals (up to 3, fixed thirds), each a 64 green ring filling over 1 s with the percentage in it, the lift's name and target, `at 92`; a reached goal shows a full ring with ✓ and a green `Reached 2 Oct`. `LIFTS, 30 DAYS`: every tracked lift, a pinned goal's lift included (screen 18), as name, a 70 × 24 sparkline, the value (estimated max, whole like the old app) and the change since the window's first point (`↑ 6`, `↓ 2`, `±0`; a record is `★ +6`, value and change in yellow). Body measurements with a check-in get their own `BODY` card, same rows, one decimal. Tap a row for its detail; long-press a lift or body row for its goal sheet; long-press a goal for the system action sheet (Edit goal, Unpin from Progress, Remove goal with Undo). Empty: `No lifts yet` over the next day's lifts, dim. A `Check in` row (orange, `+`) ends LIFTS when there's no body data (D11). From the menu the header has ‹; opened directly, ✕.
+No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinned goals (up to 3, fixed thirds), each a 64 green ring filling over 1 s with the percentage in it, the lift's name and target, `at 92`; a reached goal shows a full ring with ✓ and a green `Reached 2 Oct`. `EST. MAX, 30 DAYS` (D93): every tracked lift, a pinned goal's lift included (screen 18), as name, a 70 × 24 sparkline, the value (estimated max, whole; the sparkline and change use the whole values too) and the change since the window's first point (`↑ 6`, `↓ 2`, `±0`; a record is `★ +6`, value and change in yellow). Body measurements with a check-in get their own `BODY` card, same rows, one decimal. Tap a row for its detail; long-press a lift or body row for its goal sheet; long-press a goal for the system action sheet (Edit goal, Unpin from Progress, Remove goal with Undo). Empty: `No lifts yet` over the next day's lifts, dim. A `Check in` row (orange, `+`) ends LIFTS when there's no body data (D11). From the menu the header has ‹; opened directly, ✕.
 
 ### Lift detail (QA2) [19]
 
@@ -833,7 +833,7 @@ A full-screen modal above any sheet, on the dark grid with a warm glow at the to
 
 ### Week moment (D15)
 
-After the receipt's Done, once per full week (`weekMomentsShown` keeps the ISO week key; `week_completed` is tracked): a full-screen moment above the device and sheets on the dark grid ground (#0E0E0D, 1 pt lines of white .04 every 28). The headline `Week 12 done` (30/34, 800) and `8 weeks in a row` under it once the streak counts; the spike with two blank slips, and the report (Plex Mono 12/18, 230 wide, a punched hole) dropping onto it: `WEEK 12` with the week's lamps, `29 SEP TO 5 OCT`, `LIFTS UP`, `RECORDS ★ n` (#A8780A), `VOLUME` (`38.9 T` from 10 t; pounds in full), `BEST SQUAT 127.5` (the week's best estimated max). `Share week` (dark) and `Done` (light). It replaces the flame celebration. Development: `/?moment=week`.
+After the receipt's Done, once per full week (`weekMomentsShown` keeps the ISO week key; `week_completed` is tracked): a full-screen moment above the device and sheets on the dark grid ground (#0E0E0D, 1 pt lines of white .04 every 28). The headline `Week 12 done` (30/34, 800) and `8 weeks in a row` under it once the streak counts; the spike with two blank slips, and the report (Plex Mono 12/18, 230 wide, a punched hole) dropping onto it: `WEEK 12` with the week's lamps, `29 SEP TO 5 OCT`, `LIFTS UP`, `RECORDS ★ n` (#A8780A), `VOLUME` (`38.9 T` from 10 t; pounds in full), `BEST SQUAT 128` (the week's best estimated max, whole). `Share week` (dark) and `Done` (light). It replaces the flame celebration. Development: `/?moment=week`.
 
 ### Keypad (D19)
 

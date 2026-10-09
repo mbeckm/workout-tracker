@@ -19,7 +19,7 @@ import {
   signal,
   space,
 } from '@/constants/theme';
-import { groupThousands, receiptLoad, type DeltaTone, type FinishStat, type FinishStats } from '@/device/receipt-model';
+import { groupThousands, type DeltaTone, type FinishStat, type FinishStats } from '@/device/receipt-model';
 import { SheetCard } from '@/device/sheets/primitives';
 import { DEVICE, EASE_OUT_FN } from '@/motion';
 
@@ -68,8 +68,8 @@ function useCountUp(value: number, play: boolean): number {
 
 function StatCell({ stat, play }: { stat: FinishStat; play: boolean }) {
   const shown = useCountUp(stat.value, play);
-  // An estimated max keeps its half (114.5); everything else is whole.
-  const text = stat.key === 'oneRM' && shown === stat.value ? receiptLoad(stat.value) : groupThousands(shown);
+  // Every stat is whole, the estimated max included (`roundOneRM`, D93).
+  const text = groupThousands(shown);
   return (
     <View style={styles.cell} accessible accessibilityLabel={stat.accessibilityLabel}>
       <Text
