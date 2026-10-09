@@ -43,13 +43,14 @@ export function ImportButtons({
   const shotsPulse = usePulseStyle(t, 'screenshots');
 
   const paste = async () => {
-    const text = await Clipboard.getStringAsync();
+    // A read that fails (or is refused) counts as nothing to paste.
+    const text = await Clipboard.getStringAsync().catch(() => '');
     if (text.trim()) {
       onInput({ kind: 'text', text });
       return;
     }
-    if (await Clipboard.hasImageAsync()) {
-      const image = await Clipboard.getImageAsync({ format: 'jpeg', jpegQuality: 0.9 });
+    if (await Clipboard.hasImageAsync().catch(() => false)) {
+      const image = await Clipboard.getImageAsync({ format: 'jpeg', jpegQuality: 0.9 }).catch(() => null);
       if (image) {
         onInput({ kind: 'images', uris: [image.data] });
         return;

@@ -68,6 +68,13 @@ function hideToast(id: number) {
   }
 }
 
+/**
+ * Screen hosts (the paywall's, onboarding's), newest last. While one is mounted the newest draws
+ * the toast and the root host stays empty, so a toast never shows twice or under a screen.
+ */
+let screenHosts: number[] = [];
+let nextHostId = 1;
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -104,12 +111,31 @@ const EXIT_TOP = exitTowards(-1);
 const EXIT_BOTTOM = exitTowards(1);
 
 /**
- * Mount once at the root, after the navigator: it draws above the device and SheetHost. A
- * full-screen modal that needs toasts (the paywall) mounts its own with `bottom`, because the
- * root one is drawn underneath it.
+ * Mount one `root` host at the root, after the navigator: it draws above the device and
+ * SheetHost. Native-stack screens pushed over the device (onboarding) and full-screen modals (the
+ * paywall, with `bottom`) are drawn above it, so they mount their own host, which takes over
+ * from the root one while it's mounted.
  */
-export function ToastHost({ bottom }: { bottom?: number } = {}) {
-  const toast = useSyncExternalStore(subscribe, () => current, () => null);
+export function ToastHost({ bottom, root = false }: { bottom?: number; root?: boolean } = {}) {
+  const [hostId] = useState(() => nextHostId++);
+  useEffect(() => {
+    if (root) {
+      return;
+    }
+    screenHosts = [...screenHosts, hostId];
+    emit();
+    return () => {
+      screenHosts = screenHosts.filter((id) => id !== hostId);
+      emit();
+    };
+  }, [hostId, root]);
+  const drawsHere = useSyncExternalStore(
+    subscribe,
+    () => (root ? screenHosts.length === 0 : screenHosts[screenHosts.length - 1] === hostId),
+    () => root,
+  );
+  const shown = useSyncExternalStore(subscribe, () => current, () => null);
+  const toast = drawsHere ? shown : null;
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const atTop = bottom == null;

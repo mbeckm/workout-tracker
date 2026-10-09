@@ -15,6 +15,7 @@ import {
   sheetGeometry,
   space,
 } from '@/constants/theme';
+import { ToastHost } from '@/components/toast';
 import { GridGround } from '@/device/moment/grid-ground';
 import { KeyboardStickyView } from '@/keyboard';
 import { PRESS_SCALE } from '@/motion';
@@ -108,6 +109,8 @@ export function OnboardingFrame({
           </Animated.View>
         </KeyboardStickyView>
       ) : null}
+      {/* Onboarding's screens are drawn above the root toast (Import plan's `Copy your plan first`). */}
+      <ToastHost />
     </View>
   );
 }

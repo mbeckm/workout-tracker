@@ -84,8 +84,8 @@ function DeviceApp() {
           </NavigationThemeProvider>
         </TourProvider>
         <ScreenTracker />
-        {/* Above SheetHost (which lives in the device screen); the paywall modal mounts its own. */}
-        <ToastHost />
+        {/* Above SheetHost (which lives in the device screen); onboarding and the paywall mount their own. */}
+        <ToastHost root />
       </DeviceProvider>
     </FinishProvider>
   );
