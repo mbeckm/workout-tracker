@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { showToast } from '@/components/toast';
 import { fontScaleCap, gadgetType, importGeometry, importType, sheetColors, space } from '@/constants/theme';
 import { PRESS_SCALE } from '@/motion';
 
@@ -23,7 +24,8 @@ export function importButtonReach(pillHeight: number, gapAbove: number) {
 
 /**
  * Import plan's two ways in (decision 88), as two matching Trim pills. Paste reads the clipboard
- * (text, else an image); iOS asks the owner to allow it, which a paste they just tapped expects.
+ * (text, else an image; with neither, a `Copy your plan first` toast); iOS asks the owner to allow
+ * it, which a paste they just tapped expects.
  * Apple's own paste control skips that prompt but draws in the system font and breaks at large
  * text sizes, so it was dropped in visual QA. Screenshots opens the photo picker (no library
  * access needed) for up to ten, in the order picked.
@@ -41,15 +43,21 @@ export function ImportButtons({
   const shotsPulse = usePulseStyle(t, 'screenshots');
 
   const paste = async () => {
-    const text = await Clipboard.getStringAsync();
+    // A read that fails (or is refused) counts as nothing to paste.
+    const text = await Clipboard.getStringAsync().catch(() => '');
     if (text.trim()) {
       onInput({ kind: 'text', text });
       return;
     }
-    if (await Clipboard.hasImageAsync()) {
-      const image = await Clipboard.getImageAsync({ format: 'jpeg', jpegQuality: 0.9 });
-      if (image) onInput({ kind: 'images', uris: [image.data] });
+    if (await Clipboard.hasImageAsync().catch(() => false)) {
+      const image = await Clipboard.getImageAsync({ format: 'jpeg', jpegQuality: 0.9 }).catch(() => null);
+      if (image) {
+        onInput({ kind: 'images', uris: [image.data] });
+        return;
+      }
     }
+    // An empty clipboard still gets an answer (Principle 7), like the device's other guards.
+    showToast({ title: 'Copy your plan first' });
   };
 
   const pickScreenshots = async () => {

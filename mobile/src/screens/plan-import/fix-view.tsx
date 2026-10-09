@@ -28,7 +28,7 @@ type Mode = 'menu' | 'search' | 'create';
 
 type Item = { key: string; name: string; meta: string; alternatives: ExercisePrescription[] };
 
-/** The lifts Trim couldn't recognize, in plan order, with where they sit. */
+/** The lifts Trim couldn't recognize or only guessed (decision 91), in plan order, with where they sit. */
 export function unknownLifts(match: PlanMatch): Item[] {
   const items: Item[] = [];
   match.days.forEach((day, dayIndex) => {

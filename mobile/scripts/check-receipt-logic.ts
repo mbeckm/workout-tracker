@@ -1,22 +1,15 @@
 /**
- * Plain TS checks for the receipt, the History wall and the after-Done moments (PLAN Phase 5),
- * run with `tsx` by `npm run check` and CI. No test runner: each `check` throws on a mismatch.
+ * Plain TS checks for the finish screen, its receipt, History and the after-Done moments
+ * (decision 90, D7, D15), run with `tsx` by `npm run check` and CI. No test runner: each `check`
+ * throws on a mismatch.
  *
- * Covers the receipt's lines (compressed set lines, differing weights, totals, EST. MAX, PR and goal
- * lines, name and milestone), PR parity with the old History detail (`workoutPersonalBests` /
- * `personalBestCount`) on the dev fixtures, the wall's weeks and rows, the moments queue and the
- * week report.
+ * Covers the stats against last time (volume, minutes, the estimated max, each lift's line),
+ * when the receipt prints (records, every one; goals; milestones) and what it says, PR parity
+ * with the old History detail (`workoutPersonalBests` / `personalBestCount`) on the dev
+ * fixtures, History's weeks, rows and slips, the moments queue and the week report.
  */
 import { afterDoneSteps, isoWeekKey, weekReport, weekVolume, workoutFilledWeek } from '@/device/moments';
-import {
-  freshReceiptTitle,
-  historyWall,
-  miniReceipt,
-  receiptModel,
-  receiptRecords,
-  setDetail,
-  type ReceiptRow,
-} from '@/device/receipt-model';
+import { finishStats, freshReceiptTitle, historyLog, receiptRecords, receiptStub, type HistoryItem } from '@/device/receipt-model';
 import type { Goal } from '@/domain/goals';
 import { formatLoggedSetLine, formatWorkoutVolume, personalBestCount } from '@/domain/helpers';
 import { workoutPersonalBests } from '@/domain/set-lines';
@@ -110,15 +103,19 @@ function workout(
 }
 
 const newestFirst = (items: LoggedWorkout[]) => [...items].sort((a, b) => b.completedAt.localeCompare(a.completedAt));
-const texts = (rows: ReceiptRow[]) =>
-  rows.map((row) =>
-    row.kind === 'pair' ? `${row.left}|${row.right}|${row.tone}` : row.kind === 'rule' ? '---' : row.kind === 'detail' ? `  ${row.text}` : row.text,
+const shape = (items: HistoryItem[]) =>
+  items.map((item) =>
+    item.type === 'week'
+      ? `${item.label} ${item.lamps.map((lit) => (lit ? 'x' : 'o')).join('')}`
+      : item.type === 'row'
+        ? `row${item.first ? '<' : ''}${item.last ? '>' : ''}`
+        : `slip ${item.heading}`,
   );
 
 // ---------------------------------------------------------------------------------------------
-// The receipt
+// The finish screen's stats (decision 90)
 
-check('receipt: target 03 (Legs 1) prints as on the screen', () => {
+check('stats: volume, minutes and the estimated max against the last time this day was done', () => {
   const older = workout('Legs 1', at(8, 23), [{ name: 'Squat', sets: sets([[100, 6], [100, 6], [100, 5]]) }]);
   const legs = workout(
     'Legs 1',
@@ -130,42 +127,94 @@ check('receipt: target 03 (Legs 1) prints as on the screen', () => {
     ],
     { minutes: 55 },
   );
-  const receipt = receiptModel({ workout: legs, history: newestFirst([older, legs]), units: 'kg' });
-  assert.deepEqual(texts(receipt.rows), [
-    'TRIM',
-    'LEGS 1',
-    'WED 30 SEP 55 MIN',
-    '---',
-    'SQUAT|3|plain',
-    '  107.5 × 6, 6, 5',
-    'LEG PRESS|3|plain',
-    '  160 × 10, 10, 9',
-    'CALF RAISE|3|plain',
-    '  60 × 15, 15, 14',
-    '---',
-    'SETS|9|bold',
-    'VOLUME|9,108 KG|bold',
-    'SQUAT EST. MAX|129|pr',
-    'SQUAT PR|★|pr',
-  ]);
-  assert.ok(receipt.text.split('\n').every((line) => line.length <= 32));
+  const { stats, lifts } = finishStats({ workout: legs, history: newestFirst([older, legs]), units: 'kg' });
+  assert.deepEqual(
+    stats.map((stat) => [stat.key, stat.value, stat.label, stat.delta?.text ?? null, stat.delta?.tone ?? null, stat.record]),
+    [
+      ['volume', 9108, 'kg', '↑ 7,408', 'up', false],
+      ['minutes', 55, 'min', '↑ 11', 'quiet', false],
+      ['oneRM', 129, 'Squat est. max', '★ +9', 'record', true],
+    ],
+  );
+  assert.deepEqual(
+    lifts.map((item) => `${item.name}|${item.delta.text}|${item.delta.tone}`),
+    ['Squat|★ +7.5 kg|record', 'Leg Press|First time|quiet', 'Calf Raise|First time|quiet'],
+  );
+  // Not yet in history (the store adds it a render later): the same numbers.
+  assert.deepEqual(finishStats({ workout: legs, history: [older], units: 'kg' }), { stats, lifts });
 });
 
-check('receipt: differing weights print w×r per set; bodyweight and timed sets read plainly', () => {
-  assert.equal(setDetail(sets([[85, 8], [85, 8], [90, 6]])), '85×8, 85×8, 90×6');
-  assert.equal(setDetail(sets([[null, 12], [null, 10]])), '12, 10 REPS');
-  assert.equal(
-    setDetail([{ id: 'a', index: 0, durationSeconds: 45 }, { id: 'b', index: 1, durationSeconds: 45 }]),
-    '45S × 2',
+check('stats: a lift reads +kg, +reps, Same or −reps against its own last session', () => {
+  const best = workout('Push 1', at(8, 1), [{ name: 'Bench', sets: sets([[100, 5]]) }]);
+  const last = workout('Push 1', at(8, 8), [{ name: 'Bench', sets: sets([[80, 8]]) }, { name: 'Dip', sets: sets([[20, 10]]) }]);
+  const now = workout('Push 1', at(8, 15), [{ name: 'Bench', sets: sets([[82.5, 8]]) }, { name: 'Dip', sets: sets([[20, 8]]) }]);
+  const lines = finishStats({ workout: now, history: newestFirst([best, last, now]), units: 'lbs' }).lifts;
+  assert.deepEqual(
+    lines.map((item) => `${item.delta.text}|${item.delta.tone}`),
+    ['+2.5 lbs|up', '−2 reps|quiet'],
+  );
+  const same = workout('Push 1', at(8, 22), [{ name: 'Bench', sets: sets([[82.5, 8]]) }, { name: 'Dip', sets: sets([[20, 9]]) }]);
+  assert.deepEqual(
+    finishStats({ workout: same, history: newestFirst([best, last, now, same]), units: 'kg' }).lifts.map((item) => item.delta.text),
+    ['Same', '+1 rep'],
   );
 });
 
-check('receipt: the name (D20), the milestone and goals (D7), the first lift with an estimate', () => {
-  const push = workout('Push 1', at(9, 1), [
-    { name: 'Plank', sets: [{ id: id('set'), index: 0, durationSeconds: 60 }] },
-    { name: 'Flat Barbell Bench Press', sets: sets([[90, 9]]) },
+check('stats: without loads, sets and lifts stand in', () => {
+  const plank = workout('Core', at(9, 1), [{ name: 'Plank', sets: [{ id: id('set'), index: 0, durationSeconds: 60 }] }]);
+  const { stats, lifts } = finishStats({ workout: plank, history: [], units: 'kg' });
+  assert.deepEqual(stats.map((stat) => stat.key), ['sets', 'minutes', 'lifts']);
+  assert.equal(lifts[0].delta.text, '1 set');
+});
+
+// ---------------------------------------------------------------------------------------------
+// The receipt: only a moment prints
+
+check('receipt: a workout without a moment prints nothing', () => {
+  const first = workout('Push 1', at(8, 1), [{ name: 'Bench', sets: sets([[80, 8]]) }]);
+  const second = workout('Push 1', at(8, 8), [{ name: 'Bench', sets: sets([[75, 8]]) }]);
+  assert.equal(receiptStub({ workout: second, history: newestFirst([first, second]), units: 'kg' }), null);
+});
+
+check('receipt: one record prints big, with the record it beat and when', () => {
+  const older = workout('Push 1', at(9, 2), [{ name: 'Bench Press', sets: sets([[87.5, 8]]) }]);
+  const push = workout('Push 1', at(9, 9), [{ name: 'Bench Press', sets: sets([[90, 8], [90, 7]]) }, { name: 'Dip', sets: sets([[10, 8]]) }]);
+  const stub = receiptStub({ workout: push, history: newestFirst([older, push]), units: 'kg', userName: ' Marvin ' });
+  assert.ok(stub);
+  assert.equal(stub?.number, 'No. 002');
+  assert.equal(stub?.name, 'MARVIN');
+  assert.equal(stub?.recordsHeading, '★ NEW RECORD');
+  assert.deepEqual(stub?.records, [{ lift: 'BENCH PRESS', now: '90 × 8', was: '87.5 × 8', wasDate: '2 OCT' }]);
+  assert.deepEqual(stub?.stamp, ['★', 'BEST', 'EVER']);
+  assert.deepEqual(stub?.footer, { title: 'PUSH 1', amount: '1,430 KG', date: 'FRI 9 OCT' });
+  assert.ok(stub?.text.startsWith('TRIM\nNo. 002\nMARVIN\n★ NEW RECORD\nBENCH PRESS 90 × 8 (WAS 87.5 × 8)'));
+});
+
+check('receipt: several records all print, in workout order', () => {
+  const older = workout('Push 1', at(9, 2), [
+    { name: 'Bench Press', sets: sets([[87.5, 8]]) },
+    { name: 'Overhead Press', sets: sets([[52.5, 6]]) },
+    { name: 'Triceps Pushdown', sets: sets([[37.5, 10]]) },
   ]);
-  const goal: Goal = {
+  const push = workout('Push 1', at(9, 9), [
+    { name: 'Bench Press', sets: sets([[90, 8]]) },
+    { name: 'Overhead Press', sets: sets([[55, 6]]) },
+    { name: 'Triceps Pushdown', sets: sets([[40, 10]]) },
+  ]);
+  const stub = receiptStub({ workout: push, history: newestFirst([older, push]), units: 'kg' });
+  assert.equal(stub?.recordsHeading, '★ 3 NEW RECORDS');
+  assert.deepEqual(stub?.records.map((record) => `${record.lift} ${record.was} → ${record.now}`), [
+    'BENCH PRESS 87.5 × 8 → 90 × 8',
+    'OVERHEAD PRESS 52.5 × 6 → 55 × 6',
+    'TRICEPS PUSHDOWN 37.5 × 10 → 40 × 10',
+  ]);
+  assert.deepEqual(stub?.stamp, ['★', '3 IN', 'A DAY']);
+  assert.equal(stub?.name, null);
+});
+
+check('receipt: a goal reached or a milestone prints too (D7)', () => {
+  const push = workout('Push 1', at(9, 1), [{ name: 'Flat Barbell Bench Press', sets: sets([[100, 3]]) }]);
+  const goal = {
     id: 'g1',
     exerciseName: 'Flat Barbell Bench Press',
     target: 100,
@@ -173,20 +222,14 @@ check('receipt: the name (D20), the milestone and goals (D7), the first lift wit
     createdAt: at(6, 1).toISOString(),
     reachedAt: push.completedAt,
   } as Goal;
-  const receipt = receiptModel({ workout: push, history: [push], units: 'kg', userName: 'Marvin', milestone: '10th workout', goals: [goal] });
-  const lines = texts(receipt.rows);
-  assert.deepEqual(lines.slice(0, 5), ['TRIM', 'MARVIN', '10TH WORKOUT', 'PUSH 1', 'THU 1 OCT 44 MIN']);
-  assert.ok(lines.includes('BENCH EST. MAX|117|pr'));
-  assert.ok(lines.includes('GOAL BENCH 100|✓|bold'));
+  const withGoal = receiptStub({ workout: push, history: [push], units: 'kg', goals: [goal] });
+  assert.deepEqual(withGoal?.goals, [{ lift: 'FLAT BARBELL BENCH PRESS', target: '100 KG' }]);
+  assert.deepEqual(withGoal?.stamp, ['GOAL', '✓']);
+  const milestone = receiptStub({ workout: push, history: [push], units: 'kg', milestone: '10th workout' });
+  assert.equal(milestone?.milestone, '10TH WORKOUT');
+  assert.deepEqual(milestone?.stamp, ['★', '10TH']);
   // The first log of a lift is never a record.
-  assert.ok(!lines.some((line) => line.endsWith('PR|★|pr')));
-});
-
-check('receipt: nothing logged', () => {
-  const empty = workout('Push 1', at(9, 1), []);
-  const lines = texts(receiptModel({ workout: empty, history: [], units: 'lbs' }).rows);
-  assert.ok(lines.includes('NO SETS LOGGED||plain'));
-  assert.ok(!lines.some((line) => line.startsWith('VOLUME')));
+  assert.equal(milestone?.records.length, 0);
 });
 
 check('receipt: the fresh header states the week (Week n, x of y done)', () => {
@@ -213,12 +256,8 @@ for (const mode of FIXTURES) {
       const old = workoutPersonalBests(item, history);
       const expected = item.exercises.filter((exercise) => old.exerciseIds.has(exercise.id)).map((exercise) => exercise.id);
       assert.deepEqual(receiptRecords(item, history).map((exercise) => exercise.id), expected);
-      const printed = receiptModel({ workout: item, history, units: 'kg' }).rows.filter(
-        (row) => row.kind === 'pair' && row.left.endsWith(' PR'),
-      ).length;
+      const printed = receiptStub({ workout: item, history, units: 'kg' })?.records.length ?? 0;
       assert.equal(printed, personalBestCount(item, history));
-      const mini = miniReceipt(item, history, 'kg');
-      assert.equal(mini.last.pr, expected.length > 0);
       records += printed;
     }
     if (mode !== 'pro') assert.ok(records > 0);
@@ -226,38 +265,46 @@ for (const mode of FIXTURES) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The wall
+// History (H2)
 
-check('wall: weeks start on Monday, newest first, rows of three, lamps done of planned', () => {
+check('history: weeks start on Monday, newest first, lamps done of planned; rows share a card', () => {
   const days = [day('A', [lift('Row')]), day('B', [lift('Squat')]), day('C', [lift('Bench')]), day('D', [lift('Deadlift')])];
   const plan = makePlan(days, at(8, 21));
-  const w = (when: Date) => workout('A', when, [{ name: 'Row', sets: sets([[60, 8]]) }], { plan, dayId: days[0].id });
-  // Sun 27 Sep belongs to the week of Mon 21 Sep; Mon 28 Sep starts the next.
-  const history = newestFirst([w(at(8, 21)), w(at(8, 22)), w(at(8, 23)), w(at(8, 25)), w(at(8, 27, 23)), w(at(8, 28, 0))]);
-  const items = historyWall({ history, plan, units: 'kg' });
-  assert.deepEqual(
-    items.map((item) => (item.type === 'week' ? `${item.label} ${item.lamps.map((on) => (on ? 'x' : 'o')).join('')}` : item.minis.length)),
-    ['WEEK 2 xooo', 1, 'WEEK 1 xxxx', 3, 2],
-  );
-  const lastRow = items[4];
-  assert.ok(lastRow.type === 'row' && lastRow.firstIndex === 3);
+  const w = (when: Date, weight = 60) => workout('A', when, [{ name: 'Row', sets: sets([[weight, 8]]) }], { plan, dayId: days[0].id });
+  // Sun 27 Sep belongs to the week of Mon 21 Sep; Mon 28 Sep starts the next. The 25 Sep Row is a record.
+  const history = newestFirst([w(at(8, 21)), w(at(8, 22)), w(at(8, 23)), w(at(8, 25), 65), w(at(8, 27, 23)), w(at(8, 28, 0))]);
+  const items = historyLog({ history, plan, units: 'kg', milestoneFor: () => null });
+  assert.deepEqual(shape(items), ['WEEK 2 xooo', 'row<>', 'WEEK 1 xxxx', 'row<>', 'slip ★ RECORD', 'row<', 'row', 'row>']);
+  const slip = items[4];
+  assert.ok(slip.type === 'slip' && slip.title === 'A');
+  assert.deepEqual(slip.type === 'slip' && slip.meta, ['FRI 25 SEP', '520 KG']);
+  assert.deepEqual(slip.type === 'slip' && slip.highlights, [{ value: '65 × 8', label: 'ROW' }]);
+  const row = items[1];
+  assert.ok(row.type === 'row' && row.sub === 'Mon 28 Sep, 44 min' && row.trailing === '480 kg');
 });
 
-check('wall: weeks before the plan read by date; a deleted plan’s workout keeps its title', () => {
+check('history: weeks before the plan read by date; a deleted plan’s workout keeps its title', () => {
   const plan = makePlan([day('A', [lift('Row')])], at(8, 28));
   const old = workout('Full Body', at(8, 2), [{ name: 'Row', sets: sets([[60, 8]]) }], { dayId: 'gone' });
-  const items = historyWall({ history: [old], plan, units: 'kg' });
+  const items = historyLog({ history: [old], plan, units: 'kg', milestoneFor: () => null });
   assert.equal(items[0].type === 'week' && items[0].label, 'WEEK OF 31 AUG');
-  assert.equal(items[1].type === 'row' && items[1].minis[0].title, 'FULL BODY');
-  assert.equal(items[1].type === 'row' && items[1].minis[0].deletePrompt, 'Delete Full Body from Wed 2 Sep?');
+  assert.equal(items[1].type === 'row' && items[1].title, 'Full Body');
+  assert.equal(items[1].type === 'row' && items[1].deletePrompt, 'Delete Full Body from Wed 2 Sep?');
 });
 
-check('wall: 100+ workouts from the history fixture', () => {
+check('history: the first workout is a milestone slip by default', () => {
+  const only = workout('Push 1', at(9, 1), [{ name: 'Bench', sets: sets([[60, 8]]) }]);
+  const items = historyLog({ history: [only], plan: null, units: 'kg' });
+  assert.deepEqual(shape(items), ['WEEK OF 28 SEP ', 'slip FIRST WORKOUT']);
+  assert.deepEqual(items[1].type === 'slip' && items[1].highlights, [{ value: '1', label: 'WORKOUT' }]);
+});
+
+check('history: 100+ workouts from the history fixture, each a row or a slip', () => {
   const snapshot = homeDemoSnapshot(defaultSnapshot, 'gadget-history');
   assert.ok(snapshot.workoutHistory.length >= 100);
-  const items = historyWall({ history: snapshot.workoutHistory, plan: snapshot.plans[0] ?? null, units: 'kg' });
-  const minis = items.reduce((sum, item) => sum + (item.type === 'row' ? item.minis.length : 0), 0);
-  assert.equal(minis, snapshot.workoutHistory.length);
+  const items = historyLog({ history: snapshot.workoutHistory, plan: snapshot.plans[0] ?? null, units: 'kg' });
+  assert.equal(items.filter((item) => item.type !== 'week').length, snapshot.workoutHistory.length);
+  assert.ok(items.some((item) => item.type === 'slip'));
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -328,17 +375,17 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   const kg = workout('Push 1', at(9, 1), [{ name: 'Bench Press', sets: sets([[60, 8], [60, 8], [65, 6]]) }]);
   const older = workout('Push 1', at(8, 24), [{ name: 'Bench Press', sets: sets([[55, 8]]) }]);
   const history = newestFirst([older, kg]);
-  const inKg = texts(receiptModel({ workout: kg, history, units: 'kg' }).rows);
-  const inLbs = texts(receiptModel({ workout: kg, history, units: 'lbs' }).rows);
+  const inKg = receiptStub({ workout: kg, history, units: 'kg' });
+  const inLbs = receiptStub({ workout: kg, history, units: 'lbs' });
   // Only the unit word changes; every number stays as logged.
-  assert.deepEqual(inLbs, inKg.map((line) => line.replace(' KG|', ' LBS|')));
-  assert.ok(inLbs.includes('  60×8, 60×8, 65×6'));
-  assert.ok(inLbs.includes('VOLUME|1,350 LBS|bold'));
-  assert.ok(inLbs.includes('BENCH EST. MAX|78|pr'));
+  assert.equal(inLbs?.text, inKg?.text.replace(' KG', ' LBS'));
+  assert.deepEqual(inLbs?.records.map((record) => record.now), ['65 × 6']);
+  assert.equal(inLbs?.footer.amount, '1,350 LBS');
+  const stats = finishStats({ workout: kg, history, units: 'lbs' }).stats;
+  assert.deepEqual(stats.map((stat) => `${stat.value} ${stat.label}`), ['1350 lbs', '44 min', '78 Bench est. max']);
   // The old app's own formatters, on the same switch: the number is relabelled too.
   assert.equal(formatWorkoutVolume(1350, 'lbs').toUpperCase(), '1,350 LBS');
   assert.equal(formatLoggedSetLine({ weight: 60, reps: 8 }, { unit: 'lbs' }), '60 lbs × 8');
-  assert.equal(miniReceipt(kg, history, 'lbs').volume, '1,350 LBS');
   const report = weekReport({ history, plan: null, units: 'lbs', weekOf: at(9, 1) });
   assert.equal(report.volume, '1,350 LBS');
   assert.equal(report.best, 'BENCH 78');
@@ -346,13 +393,16 @@ check('units: a kg workout read in lbs keeps its numbers, as the old History det
   assert.equal(weekVolume(12000, 'lbs'), '12,000 LBS');
 });
 
-check('estimated max: the nearest whole number on the receipt and the week report (D93)', () => {
-  // 82.5 × 5 = 96.25 (was 96.5), 80 × 7 = 98.67 (was 98.5).
+check('estimated max: the nearest whole number on the finish stats and the week report (D93)', () => {
+  // 82.5 × 5 = 96.25 (was 96.5), 80 × 7 = 98.67 (was 98.5); the change is whole too.
   const bench = workout('Push 1', at(9, 2), [{ name: 'Bench Press', sets: sets([[82.5, 5]]) }]);
+  const squatBefore = workout('Legs 1', at(8, 26), [{ name: 'Squat', sets: sets([[82.5, 5]]) }]);
   const squat = workout('Legs 1', at(9, 3), [{ name: 'Squat', sets: sets([[80, 7]]) }]);
-  const history = newestFirst([bench, squat]);
-  assert.ok(texts(receiptModel({ workout: bench, history, units: 'kg' }).rows).includes('BENCH EST. MAX|96|pr'));
-  assert.ok(texts(receiptModel({ workout: squat, history, units: 'kg' }).rows).includes('SQUAT EST. MAX|99|pr'));
+  const history = newestFirst([squatBefore, bench, squat]);
+  const benchStat = finishStats({ workout: bench, history, units: 'kg' }).stats.find((stat) => stat.key === 'oneRM');
+  assert.deepEqual([benchStat?.value, benchStat?.label], [96, 'Bench est. max']);
+  const squatStat = finishStats({ workout: squat, history, units: 'kg' }).stats.find((stat) => stat.key === 'oneRM');
+  assert.deepEqual([squatStat?.value, squatStat?.delta?.text], [99, '★ +3']);
   assert.equal(weekReport({ history, plan: null, units: 'kg', weekOf: at(9, 2) }).best, 'SQUAT 99');
 });
 

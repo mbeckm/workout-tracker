@@ -19,26 +19,16 @@ import {
   signal,
   space,
 } from '@/constants/theme';
+import { cartLabel } from '@/device/plans-model';
 import { DEVICE, EASE_FILE_FN, EASE_KEY_FN, PRESS_SCALE } from '@/motion';
 
 /** A selected pack's cartridges hop once, one after another (a small cousin of the rack's filing). */
 const HOP = 6;
 const HOP_STAGGER = DEVICE.FILE_STAGGER / 3;
 
-/**
- * A cartridge's label (the rack's rule, trim-ui §13 Plans rack): the day title uppercase when it
- * fits the window, otherwise its initials (`Upper A` → `UA`, `Full Body B` → `FBB`).
- */
+/** A cartridge's label: the rack's rule (`cartLabel`) in the pack's narrower window. */
 export function cartridgeLabel(title: string): string {
-  const upper = title.trim().toUpperCase();
-  if (upper.length <= onboardingGeometry.cartLabelChars) {
-    return upper;
-  }
-  const initials = upper
-    .split(/\s+/)
-    .map((word) => word[0] ?? '')
-    .join('');
-  return initials.slice(0, onboardingGeometry.cartLabelChars);
+  return cartLabel(title, onboardingGeometry.cartLabelChars);
 }
 
 /**

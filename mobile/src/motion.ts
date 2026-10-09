@@ -162,6 +162,22 @@ export const DEVICE = {
   /** Receipt feed: 18 steps. */
   FEED: 1800,
   FEED_STEPS: 18,
+  /**
+   * The finish screen (decision 90, F3a): the stats rise in (RISE, each row STAGGER after the
+   * last), their numbers count up over COUNT; on a moment the receipt then prints up (FEED, the
+   * print haptic's 18 steps) after STUB_DELAY, and its stamp slams on STUB_STAMP_GAP after the
+   * feed, the paper jolting under it.
+   */
+  FINISH_RISE: 420,
+  FINISH_STAGGER: 80,
+  FINISH_COUNT: 850,
+  FINISH_COUNT_DELAY: 150,
+  STUB_DELAY: 800,
+  STUB_STAMP: 380,
+  STUB_STAMP_GAP: 100,
+  /** bezier(.3,1.4,.5,1) first reaches its end value at ~40% of STUB_STAMP: the thud plays there. */
+  STUB_STAMP_LAND: 150,
+  STUB_JOLT: 260,
   /** Stamp: scale 2.4 → 1, rotate −12° → 7°, after a delay; the row fills over STAMP. */
   STAMP: 500,
   STAMP_DELAY: 450,

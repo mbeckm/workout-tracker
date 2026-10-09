@@ -155,6 +155,7 @@ export {
   isCartridgeInsertAvailable,
   type CartridgeInsertLayout,
   type CartridgeInsertProps,
+  type CartridgeInsertScreen,
 } from './cartridge-insert';
 
 export { canRecognizeText, prepareImageForUpload, recognizeTextInImage } from './text';

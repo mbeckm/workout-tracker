@@ -54,7 +54,7 @@ Plan
 - **Exercise (prescription):** catalog name and metadata (equipment, muscles, type), tracking mode (strength = sets × reps; cardio = minutes; holds and stretches = seconds), sets and one reps value for every set. Plans store **no weight**; weight is entered while logging.
 - **Logged workout:** a completed day with timestamp, duration, and per exercise the sets actually done (weight, reps and/or duration). Strength sets store an estimated 10RM (Epley: `1RM = weight × (1 + reps/30)`, `10RM = 1RM / (1 + 10/30)`); each logged exercise keeps `bestTenRM` for PRs and progression.
 - **Goal:** a target estimated 1RM for one lift (`exerciseName`, `target`, `pinned`, `createdAt`, `reachedAt`). Any number of lifts can have one; up to 3 are pinned to Progress. A goal is reached when the shown (whole) estimate reaches the target.
-- **Estimated max (estimated 1RM):** stored unrounded; shown everywhere (receipt, Progress, goals, the exercise sheet, the week report) as the nearest whole kg or lb (`roundOneRM`, decision 93), and named `Estimated max` / `EST. MAX`, never `E1RM`.
+- **Estimated max (estimated 1RM):** stored unrounded; shown everywhere (the finish screen, Progress, goals, the exercise sheet, the week report) as the nearest whole kg or lb (`roundOneRM`, decision 93), and named `Estimated max` (`est. max` in a short label, `EST. MAX` in uppercase), never `E1RM`.
 - **Body check-in:** bodyweight (stored in kg, shown in the user's unit) plus optional circumferences in cm.
 - **Body goal:** a target for one body measurement (`metric`, `target`, `start`, `createdAt`, `reachedAt`), stored like check-ins. The direction follows from `start`: a target under it aims down. One per measurement.
 
