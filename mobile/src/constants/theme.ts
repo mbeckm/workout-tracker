@@ -85,6 +85,8 @@ export const iconSize = {
   row: 17,
   /** Standalone tap targets: back, clear, drag handle, header glyphs. */
   control: 22,
+  /** Glyph that carries a 56pt round key alone: Undo last set. */
+  key: 30,
 } as const;
 
 /**

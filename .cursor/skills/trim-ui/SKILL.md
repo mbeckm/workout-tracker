@@ -327,7 +327,7 @@ A glyph earns its place when the eye finds it faster than the word, it carries a
 | --- | --- |
 | Menu | two slider lines |
 | History | a clock |
-| Undo last set | ↶ |
+| Undo last set | ↶ (30, `iconSize.key`) |
 | Remove lift (edit) | ✕ |
 | Rocker ends | ‹ › (24) |
 | Reps and sets | + − |

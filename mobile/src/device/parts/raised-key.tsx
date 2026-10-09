@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { device, fontScaleCap, gadgetRadius, gadgetType } from '@/constants/theme';
+import { device, fontScaleCap, gadgetRadius, gadgetType, iconSize } from '@/constants/theme';
 import { useFinish } from '@/device/finish';
 import { useHaptics } from '@/device/haptics';
 import { DEVICE } from '@/motion';
@@ -17,7 +17,7 @@ import { usePressDepth } from './press';
 const DRAWN: Record<string, (color: string) => ReactNode> = {
   '+': (color) => <PlusGlyph color={color} />,
   '−': (color) => <MinusGlyph color={color} />,
-  '↶': (color) => <UndoGlyph color={color} />,
+  '↶': (color) => <UndoGlyph color={color} size={iconSize.key} />,
 };
 
 /** Which `gadgetType` key role the text label uses. */
