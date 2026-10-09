@@ -568,7 +568,7 @@ Use these. Don't rebuild them per screen.
 | `Chip` | A small rounded value: muscle chips (primary muscle orange), the editor's sets × reps chip (Doto 15 orange on `lcd`, opens device edit), `Active` (orange, dark ink). |
 | `Segmented` | On `card`, the selected segment orange with dark ink; a locked segment carries `PRO`. |
 | `ObjectIcon` | 56 3D objects: knob, gauge, receipt, toggles, cartridge (§7). |
-| `Toast` | A dark pill above sheets (mounted above `SheetHost`), one at a time. Onboarding and the paywall are drawn above the root host, so they mount their own, which takes over while mounted. Confirm ~2 s; Undo ~5 s with a bold `Undo`. |
+| `Toast` | A dark pill above sheets (mounted above `SheetHost`), one at a time. One host at the root; on iOS it draws in a `FullWindowOverlay`, above every native-stack screen and modal (onboarding, the paywall). The paywall moves it above its footer (`useToastBottom`). Confirm ~2 s; Undo ~5 s with a bold `Undo`. |
 
 ### Forgiveness: Undo over "Are you sure?"
 

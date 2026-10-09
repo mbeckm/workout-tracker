@@ -1,6 +1,6 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
-import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
   FadeInUp,
@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FullWindowOverlay } from 'react-native-screens';
 
 import {
   PRESSED_OPACITY,
@@ -46,7 +47,6 @@ const UNDO_VISIBLE_SCREEN_READER_MS = 10000;
 /** A drag back towards its edge past this, or a flick, dismisses. */
 const DISMISS_DISTANCE = 24;
 const DISMISS_VELOCITY = 500;
-const TOAST_Z_INDEX = 1000;
 
 let current: ToastState | null = null;
 let nextId = 1;
@@ -69,12 +69,8 @@ function hideToast(id: number) {
   }
 }
 
-/**
- * Screen hosts (the paywall's, onboarding's), newest last. While one is mounted the newest draws
- * the toast and the root host stays empty, so a toast never shows twice or under a screen.
- */
-let screenHosts: number[] = [];
-let nextHostId = 1;
+/** How far above the window's bottom edge the toast sits while a screen asks (the paywall); null: the top. */
+let bottomOffset: number | null = null;
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -112,31 +108,28 @@ const EXIT_TOP = exitTowards(-1);
 const EXIT_BOTTOM = exitTowards(1);
 
 /**
- * Mount one `root` host at the root, after the navigator: it draws above the device and
- * SheetHost. Native-stack screens pushed over the device (onboarding) and full-screen modals (the
- * paywall, with `bottom`) are drawn above it, so they mount their own host, which takes over
- * from the root one while it's mounted.
+ * A screen whose top is busy (the paywall, a full-screen modal) moves the toast to `bottom`
+ * points above the window's bottom edge while it's mounted.
  */
-export function ToastHost({ bottom, root = false }: { bottom?: number; root?: boolean } = {}) {
-  const [hostId] = useState(() => nextHostId++);
+export function useToastBottom(bottom: number) {
   useEffect(() => {
-    if (root) {
-      return;
-    }
-    screenHosts = [...screenHosts, hostId];
+    bottomOffset = bottom;
     emit();
     return () => {
-      screenHosts = screenHosts.filter((id) => id !== hostId);
+      bottomOffset = null;
       emit();
     };
-  }, [hostId, root]);
-  const drawsHere = useSyncExternalStore(
-    subscribe,
-    () => (root ? screenHosts.length === 0 : screenHosts[screenHosts.length - 1] === hostId),
-    () => root,
-  );
-  const shown = useSyncExternalStore(subscribe, () => current, () => null);
-  const toast = drawsHere ? shown : null;
+  }, [bottom]);
+}
+
+/**
+ * Mount once at the root, after the navigator. On iOS it draws in a `FullWindowOverlay`, above
+ * every native-stack screen and modal (the device and its sheets, onboarding, the paywall): a
+ * plain sibling of the navigator is painted under pushed screens.
+ */
+export function ToastHost() {
+  const toast = useSyncExternalStore(subscribe, () => current, () => null);
+  const bottom = useSyncExternalStore(subscribe, () => bottomOffset, () => null);
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
   const atTop = bottom == null;
@@ -166,30 +159,46 @@ export function ToastHost({ bottom, root = false }: { bottom?: number; root?: bo
   }, [toast]);
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
-        // Above anything a screen draws (a host inside a screen is a sibling of its content).
-        zIndex: TOAST_Z_INDEX,
-        minHeight: TOUCH_TARGET,
-        // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
-        paddingHorizontal: space.gutter,
-        alignItems: 'center',
-      }}>
-      {toast ? (
-        <Animated.View
-          key={toast.id}
-          style={{ maxWidth: '100%' }}
-          entering={reduceMotion ? FadeIn.duration(DURATION.fade) : atTop ? ENTER_TOP : ENTER_BOTTOM}
-          exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : atTop ? EXIT_TOP : EXIT_BOTTOM}>
-          <ToastPill toast={toast} direction={atTop ? -1 : 1} />
-        </Animated.View>
-      ) : null}
-    </View>
+    <ToastLayer>
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
+          // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
+          paddingHorizontal: space.gutter,
+          alignItems: 'center',
+        }}>
+        {toast ? (
+          <Animated.View
+            key={toast.id}
+            style={{ maxWidth: '100%' }}
+            entering={reduceMotion ? FadeIn.duration(DURATION.fade) : atTop ? ENTER_TOP : ENTER_BOTTOM}
+            exiting={reduceMotion ? FadeOut.duration(DURATION.fade) : atTop ? EXIT_TOP : EXIT_BOTTOM}>
+            <ToastPill toast={toast} direction={atTop ? -1 : 1} />
+          </Animated.View>
+        ) : null}
+      </View>
+    </ToastLayer>
+  );
+}
+
+/**
+ * iOS: a window-level overlay. Touches outside the pill pass through, it isn't a VoiceOver modal,
+ * and it sits outside the app's gesture root, so it brings its own for the swipe to dismiss.
+ */
+function ToastLayer({ children }: { children: ReactNode }) {
+  if (Platform.OS !== 'ios') {
+    return children;
+  }
+  return (
+    <FullWindowOverlay unstable_accessibilityContainerViewIsModal={false}>
+      <GestureHandlerRootView style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {children}
+      </GestureHandlerRootView>
+    </FullWindowOverlay>
   );
 }
 

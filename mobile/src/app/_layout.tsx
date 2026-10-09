@@ -84,8 +84,8 @@ function DeviceApp() {
           </NavigationThemeProvider>
         </TourProvider>
         <ScreenTracker />
-        {/* Above SheetHost (which lives in the device screen); onboarding and the paywall mount their own. */}
-        <ToastHost root />
+        {/* Above every screen and sheet (a window overlay on iOS); the paywall moves it to the bottom. */}
+        <ToastHost />
       </DeviceProvider>
     </FinishProvider>
   );

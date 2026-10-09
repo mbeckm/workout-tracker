@@ -10,7 +10,7 @@ import { FeatureRow } from '@/components/paywall/feature-row';
 import { KnobHero } from '@/components/paywall/knob';
 import { PlanOption, PlanOptionPlaceholder } from '@/components/paywall/plan-option';
 import { TrialTimeline } from '@/components/paywall/trial-timeline';
-import { ToastHost } from '@/components/toast';
+import { useToastBottom } from '@/components/toast';
 import {
   device,
   fontScaleCap,
@@ -64,6 +64,8 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
   const insets = useSafeAreaInsets();
   const reduceMotion = Boolean(useReducedMotion());
   const [footerHeight, setFooterHeight] = useState(0);
+  // The top is the knob's: `No purchases to restore` lands above the footer instead.
+  useToastBottom(footerHeight + space.related);
   // 1 once the knob reaches PRO; the feature lamps light from it.
   const turned = useSharedValue(reduceMotion ? 1 : 0);
 
@@ -224,9 +226,6 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
           <FooterLink title="Privacy" accessibilityLabel="Privacy Policy" onPress={paywall.openPrivacy} />
         </View>
       </View>
-
-      {/* The root toast sits under this full-screen modal; `No purchases to restore` lands here. */}
-      <ToastHost bottom={footerHeight + space.related} />
     </View>
   );
 }
