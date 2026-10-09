@@ -10,7 +10,8 @@ import catalogNames from '../catalog-names.json' with { type: 'json' };
  * this fails. Rate limiting is a Vercel Firewall rule on this path.
  *
  * POST { text?: string, images?: string[] }  (images: base64 JPEG, no data: prefix)
- * 200  { name, days: [{ title, lifts: [{ name, qualifier, sets, reps, seconds }] }] }
+ * 200  { name, days: [{ title, lifts: [{ asWritten, name, qualifier, sets, reps, seconds }] }] }
+ *      (`asWritten` is the source's words, `name` Claude's catalog pick; the app decides confidence)
  */
 
 const MODEL = 'claude-haiku-5-5';
@@ -20,6 +21,9 @@ const MAX_IMAGES = 6;
 const MAX_IMAGE_B64 = 1_500_000;
 
 const Lift = z.object({
+  asWritten: z
+    .string()
+    .describe('The exercise exactly as the source names it, every word kept (e.g. "Weighted chin-ups"), without numbering, markdown, the part in parentheses or sets/reps.'),
   name: z.string().describe("The exercise. Trim's catalog name when it is clearly the same exercise, otherwise the source's words."),
   qualifier: z.string().nullable().describe('Equipment or variant the source gives in parentheses, e.g. "Barbell". Null if none.'),
   sets: z.number().int().nullable().describe('Working sets (not warm-ups). Null if the source gives none.'),
@@ -46,7 +50,7 @@ Rules:
 - Screenshots of set tables: count the working sets (rows numbered 1, 2, 3...; skip warm-up rows marked W) and take the reps column.
 - Never invent exercises, sets or reps that aren't in the input. Use null when something isn't given.
 - Ignore app interface text (buttons, timers, tab bars, the clock).
-- Exercise names: when an exercise is clearly the same as one in Trim's catalog below (including shorthand like RDL or OHP), use the catalog name exactly. When you're unsure, keep the source's words; the app asks the user about those.
+- Exercise names: asWritten is always the source's own words, unchanged. In name, when an exercise is clearly the same as one in Trim's catalog below (including shorthand like RDL or OHP), use the catalog name exactly. When you're unsure, keep the source's words. The app compares the two and asks the user whenever the catalog name adds or drops anything (equipment, "weighted", "paused"…).
 
 Trim's catalog:
 ${(catalogNames as string[]).join('\n')}`;

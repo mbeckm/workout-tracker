@@ -20,6 +20,11 @@ export type ImportedLift = {
   reps: number | null;
   /** Holds: "3 x 30s", "60 sec plank". */
   seconds: number | null;
+  /**
+   * Claude's pick from the catalog (cloud reading only). Only a guess to try first: whether the
+   * lift is recognized is still decided on the phone, against `name` (decision 91).
+   */
+  suggestion?: string | null;
 };
 
 export type ImportedDay = { title: string | null; lifts: ImportedLift[] };
