@@ -88,7 +88,14 @@ export async function POST(request: Request): Promise<Response> {
     if (response.stop_reason === 'refusal' || !response.parsed_output) {
       return bad(422, 'unreadable');
     }
-    return Response.json(response.parsed_output, { headers: { 'Cache-Control': 'no-store' } });
+    // Token counts only (never contents), so cost per import can be checked.
+    return Response.json(response.parsed_output, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Tokens-In': String(response.usage.input_tokens),
+        'X-Tokens-Out': String(response.usage.output_tokens),
+      },
+    });
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) return bad(429, 'busy');
     if (error instanceof Anthropic.APIError) return bad(502, 'upstream');
