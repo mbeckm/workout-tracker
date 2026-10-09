@@ -46,6 +46,7 @@ const UNDO_VISIBLE_SCREEN_READER_MS = 10000;
 /** A drag back towards its edge past this, or a flick, dismisses. */
 const DISMISS_DISTANCE = 24;
 const DISMISS_VELOCITY = 500;
+const TOAST_Z_INDEX = 1000;
 
 let current: ToastState | null = null;
 let nextId = 1;
@@ -172,6 +173,9 @@ export function ToastHost({ bottom, root = false }: { bottom?: number; root?: bo
         left: 0,
         right: 0,
         ...(atTop ? { top: fromReferenceTop(sheetGeometry.toastTop, insets.top) } : { bottom }),
+        // Above anything a screen draws (a host inside a screen is a sibling of its content).
+        zIndex: TOAST_Z_INDEX,
+        minHeight: TOUCH_TARGET,
         // The screen margin: at large Dynamic Type the pill wraps instead of touching the edges.
         paddingHorizontal: space.gutter,
         alignItems: 'center',
