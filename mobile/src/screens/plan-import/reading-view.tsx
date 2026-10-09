@@ -79,6 +79,7 @@ export function ReadingView({
           placeholderTextColor={sheetColors.sectionLabel}
           accessibilityLabel="Plan name"
           returnKeyType="done"
+          keyboardAppearance="dark"
           maxFontSizeMultiplier={fontScaleCap.title}
           selectionColor={signal.orange}
           style={[importType.name, styles.name, align]}
