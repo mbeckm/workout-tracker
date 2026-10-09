@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CartridgeInsert } from '../../modules/trim-device';
+import { CartridgeInsert, type CartridgeInsertScreen } from '../../modules/trim-device';
 
 import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
 import { track } from '@/analytics/analytics';
@@ -92,7 +92,19 @@ export function DeviceScreen() {
  */
 function DeviceSurface() {
   const fontsReady = useAppFonts();
-  const { finish, palette } = useFinish();
+  const { finish, palette, screen } = useFinish();
+  // The native insert draws its display in this machine's screen, as the JS device that takes over does.
+  const insertScreen = useMemo<CartridgeInsertScreen>(
+    () => ({
+      lcd: screen.lcd,
+      ink: screen.amber,
+      dim: screen.amberDim,
+      off: screen.amberOff,
+      flash1: screen.amberOff,
+      flash2: screen.amberPress,
+    }),
+    [screen],
+  );
   const { soundsOn } = useWorkoutStore();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -650,6 +662,7 @@ function DeviceSurface() {
         <CartridgeInsert
           style={StyleSheet.absoluteFill}
           finish={finish}
+          screen={insertScreen}
           planName={insert.planName}
           days={insert.days.map((day) => day.title)}
           playing

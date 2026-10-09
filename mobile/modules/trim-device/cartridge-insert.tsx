@@ -13,9 +13,25 @@ export type CartridgeInsertLayout = {
   wellY?: number;
 };
 
+/** The display's colours: its ground, ink, dim ink, unlit bar cells and the boot flicker's two grounds. */
+export type CartridgeInsertScreen = {
+  lcd: string;
+  ink: string;
+  dim: string;
+  off: string;
+  flash1: string;
+  flash2: string;
+};
+
 export type CartridgeInsertProps = {
   /** The device's finish (body colours). */
   finish: FinishId;
+  /**
+   * The machine's screen for the display (`screenColors` in src/constants/theme.ts, `#RRGGBB`),
+   * so the insert's display matches the device that takes over. Builds before it, or a missing
+   * prop, draw the amber screen.
+   */
+  screen?: CartridgeInsertScreen;
   /** Printed on the cartridge label and on the display once loaded. */
   planName: string;
   /** Day titles: the label's list, the lamp count and `0/n`. */

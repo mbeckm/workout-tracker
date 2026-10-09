@@ -21,6 +21,8 @@ final class CartridgeInsertView: ExpoView {
   // MARK: Props
 
   var finish = "212" { didSet { if finish != oldValue { artDirty = true } } }
+  /// The machine's screen colours for the display (amber until JS sends them).
+  var screen = InsertScreen() { didSet { if screen != oldValue { artDirty = true } } }
   var planName = "" { didSet { if planName != oldValue { artDirty = true } } }
   var days: [String] = [] { didSet { if days != oldValue { artDirty = true } } }
   var playing = false
@@ -96,6 +98,8 @@ final class CartridgeInsertView: ExpoView {
   private var lampNodes: [SCNNode] = []
 
   private var layoutSpec = InsertLayout.make(size: CGSize(width: 390, height: 844), safeTop: 47, safeBottom: 34)
+  /// The screen the installed art was drawn in (the boot flicker's grounds).
+  private var screenSpec = InsertScreen()
 
   // MARK: Life
 
@@ -310,7 +314,7 @@ final class CartridgeInsertView: ExpoView {
       topRowY: layoutOverride.topRowY, displayY: layoutOverride.displayY,
       displayHeight: layoutOverride.displayHeight, wellY: layoutOverride.wellY)
     let inputs = InsertArtSet.Inputs(
-      layout: layout, finish: finish, planName: planName, days: days,
+      layout: layout, finish: finish, screen: screen, planName: planName, days: days,
       scale: max(traitCollection.displayScale, 2))
     // Core Graphics off the main thread (~100–200 ms of drawing); nodes go in on main.
     DispatchQueue.global(qos: .userInteractive).async { [weak self] in
@@ -332,6 +336,7 @@ final class CartridgeInsertView: ExpoView {
     let lay = art.inputs.layout
     let size = lay.size
     layoutSpec = lay
+    screenSpec = art.inputs.screen
 
     // Scene layers.
     benchLayer.frame = CGRect(origin: .zero, size: size)
@@ -398,7 +403,7 @@ final class CartridgeInsertView: ExpoView {
     flickerNode = InsertGeometry.overlay(size: dispSize, image: nil, order: 10)
     if let m = flickerNode.geometry?.firstMaterial {
       m.transparent.contents = art.panelMask
-      m.diffuse.contents = InsertInk.bootFlash1
+      m.diffuse.contents = screenSpec.flash1Color
     }
     flickerNode.position = local(dispCentre, z: 0.3)
     deviceNode.addChildNode(flickerNode)
@@ -595,10 +600,10 @@ final class CartridgeInsertView: ExpoView {
       switch step {
       case 1:
         flickerNode.isHidden = false
-        flickerNode.geometry?.firstMaterial?.diffuse.contents = InsertInk.bootFlash1
+        flickerNode.geometry?.firstMaterial?.diffuse.contents = screenSpec.flash1Color
       case 3:
         flickerNode.isHidden = false
-        flickerNode.geometry?.firstMaterial?.diffuse.contents = InsertInk.bootFlash2
+        flickerNode.geometry?.firstMaterial?.diffuse.contents = screenSpec.flash2Color
       default:
         flickerNode.isHidden = true
       }
