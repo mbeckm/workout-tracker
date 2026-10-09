@@ -73,7 +73,7 @@ export function useFinishOnboarding() {
         await playPlanReady(plan.id, 'onboarding');
         // The tour's reward saved the finish the owner left it on; only a Pro finish previewed
         // in onboarding and then bought replaces it.
-        await runTour();
+        await runTour(plan);
         if (isPro) {
           if (lockedFinish) keepFinish(lockedFinish);
           return;
@@ -107,7 +107,7 @@ export function useFinishOnboarding() {
       router.replace('/');
       void (async () => {
         await playPlanReady(plan.id, 'onboarding');
-        await runTour();
+        await runTour(plan);
         openSheet('editor', { planId: plan.id, new: '1' });
       })();
     },
