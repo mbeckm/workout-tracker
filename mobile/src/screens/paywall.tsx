@@ -41,7 +41,7 @@ const REASON_HEADLINE: Record<ProReason, string> = {
   switch_plan: 'Switch plans with Pro.',
   progress_history: 'See all of your progress.',
   targets: 'Get a target for every set.',
-  finishes: 'Every finish, with Pro.',
+  finishes: 'Every skin, with Pro.',
   settings: 'Trim Pro',
 };
 

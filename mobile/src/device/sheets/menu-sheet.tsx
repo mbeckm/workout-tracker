@@ -129,7 +129,7 @@ export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | nu
   );
 }
 
-/** The finish card: a mini device in the current finish on a warm glow, its name, Change finish. */
+/** The Skin Library card: a mini device in the current skin on a warm glow, Skin Library and the skin it wears. */
 function FinishCard({ onPress }: { onPress: () => void }) {
   const { finish } = useFinish();
   const name = finishColors[finish].name;
@@ -137,16 +137,16 @@ function FinishCard({ onPress }: { onPress: () => void }) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Finish ${finish}, ${name}. Change finish`}
+      accessibilityLabel={`Skin Library, skin ${finish}, ${name}`}
       testID="menu-finish"
       style={({ pressed }) => [styles.finishCard, pressed && styles.pressed]}>
       <MiniDevice />
       <View style={styles.finishText}>
         <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.itemTitle, styles.center]}>
-          {`Finish ${finish}, ${name}`}
+          Skin Library
         </Text>
         <Text maxFontSizeMultiplier={fontScaleCap.text} style={[gadgetType.rowSub, styles.center]}>
-          Change finish
+          {`Skin ${finish}, ${name}`}
         </Text>
       </View>
     </Pressable>

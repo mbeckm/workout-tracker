@@ -106,14 +106,14 @@ export function FinishesSheet() {
   };
 
   return (
-    <SheetScroll header={<SheetHeader title={`Finish ${finish}, ${finishColors[finish].name}`} />}>
+    <SheetScroll header={<SheetHeader title={`Skin ${finish}, ${finishColors[finish].name}`} />}>
       <ScrollView
         ref={row}
         horizontal
         showsHorizontalScrollIndicator={false}
         onLayout={onRowLayout}
         accessibilityRole="radiogroup"
-        accessibilityLabel="Finish"
+        accessibilityLabel="Skin"
         style={styles.row}
         contentContainerStyle={styles.rowContent}>
         {FINISHES.map((id) => (

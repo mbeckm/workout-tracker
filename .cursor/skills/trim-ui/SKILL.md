@@ -216,6 +216,8 @@ Color is by layer. Tokens only: no hex literals outside `theme.ts`.
 
 ### Device: six machines (`finish` is a user setting; PRODUCT-DECISIONS 80)
 
+**Say "skin", never "finish" (PRODUCT-DECISIONS 89).** Everything the owner reads or hears calls a machine a skin: `Pick your skin`, `Skin 212, Aluminium`, `Every skin`, `NEW SKIN UNLOCKED`, and the menu card and its sheet are the **Skin Library**. "Finish" on screen means ending a workout only. The code keeps `finish` (`Finish`, `finishColors`, `useFinish`, the `finishes` sheet, `finish_selected`), and the persisted setting stays `finish`, so nothing saved changes.
+
 A finish is a whole machine: a body, its keys and wheel, its markings and the screen that comes with it. Body and screen never mix and match. Tokens: `finishColors` (body, label, keys, wheel, plate, lamps, big key, bezel, marks, `screen`) over the shared `deviceColors`, merged by `devicePalette()`; the screen's colours are `screenColors[palette.screen]` (`useScreen()`).
 
 | | 212 Aluminium | 101 Graphite | 707 Field | 089 Pocket | 077 Bunker | 777 Holo |
@@ -479,7 +481,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 | Number with unit | `60 kg × 8`, `3 × 8`, `1:32`, `52 min`, `~45 min` |
 | Fact | `4 days, 18 lifts`, `Now, set 2/3`, `Best today`, `Last time` |
 | Section label (Doto, uppercase) | `GOALS`, `LIFTS, 30 DAYS`, `BODY`, `HOW TO`, `YOU`, `SESSIONS` |
-| Action | `Start`, `Use plan`, `Add lift`, `Add 3 lifts`, `Change finish`, `Share` |
+| Action | `Start`, `Use plan`, `Add lift`, `Add 3 lifts`, `Share` |
 | Empty-state fact | `No lifts yet`, `NO WORKOUTS YET` (on the blank receipt) |
 | Error: what happened, and what to do, in one line | `Couldn't load prices. Try again.` |
 | Legal | Auto-renewal terms on the paywall |
@@ -671,7 +673,7 @@ Rules for every moment:
 
 6. **Right after value.** Only at the moments in `PRODUCT.md` → Trim Pro: the end of onboarding on the template path, once after the first completed workout (on the receipt's Done), a Pro-locked tap, and Settings → Trim Pro. Never during a workout (locked finishes there preview only), never on launch, never twice for the same moment. The post-workout paywall counts only once prices have rendered.
 7. **Their context, not ours.** The headline speaks to why they're here: their plan after onboarding, the feature they tapped at a gate. One headline, no subheading, no superlatives, no exclamation marks.
-8. **Outcomes, not features.** One row per Pro feature (including "Every finish", D3), a short title and one line of 45 characters or fewer written as what they get. At most four rows. No checkmark-bullet lists.
+8. **Outcomes, not features.** One row per Pro feature (including "Every skin", D3), a short title and one line of 45 characters or fewer written as what they get. At most four rows. No checkmark-bullet lists.
 9. **Two choices, one clear default.** Annual and monthly as pill cards, annual preselected. Its saving is a real fact computed from the two StoreKit prices (`Save 52%`), never an invented reference price.
 10. **Prices are the truth.** Every price comes from StoreKit through RevenueCat, in full with its period (`$39.99 a year`). A monthly equivalent may sit beside the annual price, never instead of it. No per-week or per-day framing, no strikethrough prices that were never charged.
 11. **The trial is a timeline, not a promise.** Today → the charge day with its date and amount. The CTA says what happens: `Start free trial` or `Subscribe`.
@@ -757,7 +759,7 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Menu (N4) [10, 15]
 
-Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard workout` under it. The finish card: a mini device in the current finish, `Finish 212, Aluminium`, `Change finish`. Then Plans, Progress, History and Settings rows, each with a 56 object icon and one fact line (`Push Pull Legs, 4 days`, the top lift's estimated max, `9 workouts`). No rank line (D4).
+Title `Trim`, ✕ close. `End workout` (only during a workout), with `Discard workout` under it. The Skin Library card: a mini device in the current skin, `Skin Library`, `Skin 212, Aluminium` (PRODUCT-DECISIONS 89). Then Plans, Progress, History and Settings rows, each with a 56 object icon and one fact line (`Push Pull Legs, 4 days`, the top lift's estimated max, `9 workouts`). No rank line (D4).
 
 ### Today (M3) [07]
 
@@ -801,9 +803,9 @@ No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinne
 
 `Estimated max` (the scrubbed session's date while scrubbing), the big number (`bigNumber` with a 22 unit) and the change line (`↑ 6 in 3 months`, `No change in a month`, `since 1 Mar` for All and while scrubbing), then the lcd chart (§11) with the goal line, the range `Segmented` (default 1M, carried between lifts), and `SESSIONS` rows: `Thu 2 Oct` over `87.5 × 8, 8, 7`, the session's estimated max trailing, `★` and yellow on a record. `Goal` in the header opens the goal sheet (set, replace on Progress, unpin, remove with Undo; a reached goal opens on the next round number). Body detail is the same without lift-only parts: its caption is the latest check-in's date, `+` in the header opens the check-in, a `Goal` row under the range opens the body goal, and the list is `CHECK-INS`. The goal sheet: a `Now 96 kg` fact, the target as a 54 field over − / +, `Pin to Progress` (or `Replace on Progress` and which), `Remove goal`, the light `Set goal` pill. The check-in: every measurement as a row with the last value as placeholder, `Save` in the header, Next / Done on the keyboard. Every ‹ goes back where it came from (goal and check-in to their lift, body or Progress).
 
-### Finishes (N7) [16, 17]
+### Skin Library (N7) [16, 17]
 
-Top edge 430. A sticky title `Finish 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap (101 once the guided tour has given it; until then it carries `EARN` and previews only); for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed finish saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
+Top edge 430. A sticky title `Skin 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap (101 once the guided tour has given it; until then it carries `EARN` and previews only); for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed skin saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
 
 ### Settings (D1)
 

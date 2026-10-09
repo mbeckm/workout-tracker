@@ -314,7 +314,7 @@ export function TourReward() {
   if (!showing) return null;
   const name = finishColors[pick].name;
   const title = `${pick} ${name}`;
-  const label = isNew ? 'NEW FINISH UNLOCKED' : lock === 'pro' ? 'TRIM PRO FINISH' : 'YOUR FINISH';
+  const label = isNew ? 'NEW SKIN UNLOCKED' : lock === 'pro' ? 'TRIM PRO SKIN' : 'YOUR SKIN';
   const sub = isNew ? 'Yours for finishing the tour.' : lock === 'pro' ? 'Locked. Comes with Trim Pro.' : 'The one you have now.';
 
   return (
@@ -340,7 +340,7 @@ export function TourReward() {
           horizontal
           showsHorizontalScrollIndicator={false}
           accessibilityRole="radiogroup"
-          accessibilityLabel="Finish"
+          accessibilityLabel="Skin"
           style={styles.swatchRow}
           contentContainerStyle={styles.swatches}>
           {finishes.map((id) => (

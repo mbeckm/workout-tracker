@@ -105,7 +105,7 @@ function PickFinish({
 
   return (
     <OnboardingFrame
-      title="Pick your finish"
+      title="Pick your skin"
       scroll={false}
       action={{ title: planName ? `Load ${planName}` : 'Continue', onPress: next, testID: 'onboarding-load' }}
       testID="onboarding-finish">
@@ -116,11 +116,11 @@ function PickFinish({
             displayKey="empty"
             display={<EmptySlot />}
             lamps={offLamps(days)}
-            accessibilityLabel={`Trim in finish ${finish}, ${finishColors[finish].name}`}
+            accessibilityLabel={`Trim in skin ${finish}, ${finishColors[finish].name}`}
           />
         ) : null}
       </View>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Finish" style={styles.grid}>
+      <View accessibilityRole="radiogroup" accessibilityLabel="Skin" style={styles.grid}>
         {FINISHES.map((id) => (
           <FinishSwatch
             key={id}

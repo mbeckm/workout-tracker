@@ -586,10 +586,10 @@ function Parts({
           styles.parts,
           { paddingTop: insets.top + space.inset, paddingBottom: insets.bottom + space.pause },
         ]}>
-        <Section title={`Finish ${finish} ${finishColors[finish].name}`}>
+        <Section title={`Skin ${finish} ${finishColors[finish].name}`}>
           <View style={styles.wrapRow}>
             {FINISHES.map((id) => (
-              <RoundKey key={id} accessibilityLabel={`Finish ${id}`} label={id} text="wordSmall" onPress={() => onFinish(id)} />
+              <RoundKey key={id} accessibilityLabel={`Skin ${id}`} label={id} text="wordSmall" onPress={() => onFinish(id)} />
             ))}
           </View>
         </Section>
