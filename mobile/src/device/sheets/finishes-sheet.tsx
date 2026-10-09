@@ -78,7 +78,7 @@ export function FinishesSheet() {
     if (id === finish) {
       return;
     }
-    haptics.swatch();
+    haptics.reskin();
     // The picked swatch scrolls fully into view, with its neighbour peeking on the left.
     row.current?.scrollTo({ x: rowOffset(id), animated: !reduceMotion });
     if (locked(id)) {

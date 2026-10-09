@@ -5,9 +5,9 @@ import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CartridgeInsert, type CartridgeInsertScreen } from '../../modules/trim-device';
+import { CartridgeInsert, DeviceLaunch, type CartridgeInsertScreen } from '../../modules/trim-device';
 
-import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
+import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, tourGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
 import { track } from '@/analytics/analytics';
 import { useDevice } from '@/device/device-context';
 import { commandFromParams, deviceMode } from '@/device/device-state';
@@ -52,8 +52,9 @@ import { SheetHost } from '@/device/sheets';
 import { FocusRing } from '@/device/tour/focus-ring';
 import { useTour } from '@/device/tour/tour-context';
 import { TourDisplay } from '@/device/tour/tour-display';
-import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourMotion } from '@/device/tour/tour-launch';
+import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourLaunch3d, useTourMotion } from '@/device/tour/tour-launch';
 import { loggedOn, tourLiftDone, tourLiftLamps } from '@/device/tour/tour-model';
+import { DEVICE, EASE_DISPLAY_CURVE, TOUR_POSE, TOUR_POSE_CURVES, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
@@ -119,6 +120,7 @@ function DeviceSurface() {
   const tour = useTour();
   const tourMotion = useTourMotion();
   const tourStyle = useTourDeviceStyle(tourMotion);
+  const launch3d = useTourLaunch3d();
   const { log } = work;
   /**
    * What the big key meant when the finger landed. The release runs that, even if the mode
@@ -290,367 +292,390 @@ function DeviceSurface() {
         that held for over a second, then changed during a JS stall, comes back on the next commit
         (trim-ui §8 Rules), and the whole device would stay invisible after a plan activation.
       */}
-      <Animated.View
-        aria-hidden={sheetUp}
-        accessibilityElementsHidden={sheetUp}
-        importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
-        pointerEvents={tour.launch ? 'none' : 'auto'}
-        style={[StyleSheet.absoluteFill, tour.launch ? tourStyle : deviceMotion, hidden && styles.hidden]}>
-        {jsClock && insert ? (
-          <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
-        ) : null}
-        {jsClock && insert ? (
-          <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="front" />
-        ) : null}
-        <DeviceBody
-          rim={jsClock != null}
-          rimRadius={insertGeometry.bodyRadius}
-          style={jsClock ? styles.bodyObject : undefined}>
-          {jsClock ? null : <BodyMarks screwTop={topRowY + device.keySize + device.labelGap} />}
-          {/*
-            VoiceOver groups every view's children and reads siblings top-left first, so the
-            top-right key sits outside this column (drawn over its top-right slot): the order is
-            menu, the rocker, the display, the bottom row, then History or Undo (PLAN Phase 3).
-          */}
-          <View style={[styles.column, { paddingTop: topRowY, paddingBottom: bottomPad }]}>
-            <View style={[styles.topRow, { paddingHorizontal: edge }]}>
-              {view === 'edit' && edit ? (
-                <RoundKey label="‹" accessibilityLabel="Back to the plan" onPress={edit.back} />
-              ) : view === 'tour' ? (
-                <FocusRing active={lit === 'menu'} radius={gadgetRadius.key}>
-                  <RoundKey
-                    accessibilityLabel="Menu"
-                    onPress={() => {
-                      if (tour.taught('menu')) openSheet('menu', { tour: '1' });
-                    }}>
-                    <MenuGlyph />
-                  </RoundKey>
-                </FocusRing>
-              ) : (
-                <RoundKey accessibilityLabel="Menu" onPress={() => openSheet('menu')}>
-                  <MenuGlyph />
-                </RoundKey>
-              )}
-              {view === 'edit' && edit ? (
-                <Rocker
-                  variant="lifts"
-                  lamps={edit.day.exercises.map((_, index) => (index === edit.index ? 'on' : 'off'))}
-                  prevDisabled={edit.index <= 0}
-                  nextDisabled={edit.index >= edit.count - 1}
-                  onPrev={() => {
-                    showRoll(edit.index);
-                    edit.prev();
-                  }}
-                  onNext={() => {
-                    showRoll(edit.index);
-                    edit.next();
-                  }}
-                  onMiddle={edit.back}
-                  middleLabel="Back to the plan"
-                  style={styles.rocker}
-                />
-              ) : view === 'tour' ? (
-                tourWorking ? (
-                  <FocusRing active={lit === 'next'} radius={gadgetRadius.key} style={styles.rocker}>
-                    <Rocker
-                      variant="lifts"
-                      lamps={tourLiftLamps(tour.state)}
-                      prevDisabled={!tour.taught('next') || tour.state.lift <= 0}
-                      nextDisabled={!tour.taught('next') || tour.state.lift >= tour.state.lifts.length - 1}
-                      onPrev={() => {
-                        showRoll(tour.state.lift);
-                        tour.dispatch({ type: 'lift', direction: -1 });
-                      }}
-                      onNext={() => {
-                        showRoll(tour.state.lift);
-                        tour.dispatch({ type: 'lift', direction: 1 });
-                      }}
-                      onMiddle={() => undefined}
-                      middleLabel="Lifts"
-                    />
+      {/* The tour's launch throws the device on the insert's SceneKit body; idle, a plain container. */}
+      <DeviceLaunch
+        style={StyleSheet.absoluteFill}
+        finish={finish}
+        soundsOn={soundsOn}
+        prepare={launch3d.prepare}
+        phase={launch3d.phase}
+        duration={DEVICE.TOUR_LAUNCH}
+        swapAt={DEVICE.TOUR_SWAP}
+        pose={TOUR_POSE}
+        curves={TOUR_POSE_CURVES}
+        poseHeight={TOUR_POSE_HEIGHT}
+        depth={tourGeometry.depth}
+        bodyRadius={insertGeometry.bodyRadius}
+        perchTilt={PERCH_TILT}
+        perchTiltDuration={DEVICE.TOUR_PICKER}
+        wiggle={launch3d.ripple}
+        wiggleTilts={tourGeometry.wiggleTilts}
+        wiggleDuration={DEVICE.TOUR_WIGGLE}
+        settleDuration={DEVICE.TOUR_SETTLE}
+        displayCurve={EASE_DISPLAY_CURVE}
+        onSceneReady={launch3d.onSceneReady}>
+        <Animated.View
+          aria-hidden={sheetUp}
+          accessibilityElementsHidden={sheetUp}
+          importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
+          pointerEvents={tour.launch ? 'none' : 'auto'}
+          style={[StyleSheet.absoluteFill, tour.launch ? tourStyle : deviceMotion, (hidden || launch3d.showing) && styles.hidden]}>
+          {jsClock && insert ? (
+            <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
+          ) : null}
+          {jsClock && insert ? (
+            <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="front" />
+          ) : null}
+          <DeviceBody
+            rim={jsClock != null}
+            rimRadius={insertGeometry.bodyRadius}
+            style={jsClock ? styles.bodyObject : undefined}>
+            {jsClock ? null : <BodyMarks screwTop={topRowY + device.keySize + device.labelGap} />}
+            {/*
+              VoiceOver groups every view's children and reads siblings top-left first, so the
+              top-right key sits outside this column (drawn over its top-right slot): the order is
+              menu, the rocker, the display, the bottom row, then History or Undo (PLAN Phase 3).
+            */}
+            <View style={[styles.column, { paddingTop: topRowY, paddingBottom: bottomPad }]}>
+              <View style={[styles.topRow, { paddingHorizontal: edge }]}>
+                {view === 'edit' && edit ? (
+                  <RoundKey label="‹" accessibilityLabel="Back to the plan" onPress={edit.back} />
+                ) : view === 'tour' ? (
+                  <FocusRing active={lit === 'menu'} radius={gadgetRadius.key}>
+                    <RoundKey
+                      accessibilityLabel="Menu"
+                      onPress={() => {
+                        if (tour.taught('menu')) openSheet('menu', { tour: '1' });
+                      }}>
+                      <MenuGlyph />
+                    </RoundKey>
                   </FocusRing>
                 ) : (
+                  <RoundKey accessibilityLabel="Menu" onPress={() => openSheet('menu')}>
+                    <MenuGlyph />
+                  </RoundKey>
+                )}
+                {view === 'edit' && edit ? (
+                  <Rocker
+                    variant="lifts"
+                    lamps={edit.day.exercises.map((_, index) => (index === edit.index ? 'on' : 'off'))}
+                    prevDisabled={edit.index <= 0}
+                    nextDisabled={edit.index >= edit.count - 1}
+                    onPrev={() => {
+                      showRoll(edit.index);
+                      edit.prev();
+                    }}
+                    onNext={() => {
+                      showRoll(edit.index);
+                      edit.next();
+                    }}
+                    onMiddle={edit.back}
+                    middleLabel="Back to the plan"
+                    style={styles.rocker}
+                  />
+                ) : view === 'tour' ? (
+                  tourWorking ? (
+                    <FocusRing active={lit === 'next'} radius={gadgetRadius.key} style={styles.rocker}>
+                      <Rocker
+                        variant="lifts"
+                        lamps={tourLiftLamps(tour.state)}
+                        prevDisabled={!tour.taught('next') || tour.state.lift <= 0}
+                        nextDisabled={!tour.taught('next') || tour.state.lift >= tour.state.lifts.length - 1}
+                        onPrev={() => {
+                          showRoll(tour.state.lift);
+                          tour.dispatch({ type: 'lift', direction: -1 });
+                        }}
+                        onNext={() => {
+                          showRoll(tour.state.lift);
+                          tour.dispatch({ type: 'lift', direction: 1 });
+                        }}
+                        onMiddle={() => undefined}
+                        middleLabel="Lifts"
+                      />
+                    </FocusRing>
+                  ) : (
+                    <View style={styles.rocker}>
+                      <Rocker
+                        variant="week"
+                        lamps={tour.state.lifts.map((_, index) => (tourLiftDone(tour.state, index) ? 'done' : 'off'))}
+                        accessibilityLabel=""
+                      />
+                    </View>
+                  )
+                ) : view === 'loading' && insert ? (
                   <View style={styles.rocker}>
-                    <Rocker
-                      variant="week"
-                      lamps={tour.state.lifts.map((_, index) => (tourLiftDone(tour.state, index) ? 'done' : 'off'))}
-                      accessibilityLabel=""
+                    <Rocker variant="week" lamps={insert.lamps} accessibilityLabel="" />
+                  </View>
+                ) : view === 'home' ? (
+                  <WeekRocker model={home.model} />
+                ) : view === 'finish' ? (
+                  <View style={[styles.rocker, styles.plateSlot]}>
+                    <LampPlate
+                      lamps={log.lamps.map((lamp) => (lamp === 'done' ? 'done' : 'off'))}
+                      accessibilityLabel={`${log.lamps.filter((lamp) => lamp === 'done').length} of ${log.lamps.length} lifts done`}
                     />
                   </View>
-                )
-              ) : view === 'loading' && insert ? (
-                <View style={styles.rocker}>
-                  <Rocker variant="week" lamps={insert.lamps} accessibilityLabel="" />
-                </View>
-              ) : view === 'home' ? (
-                <WeekRocker model={home.model} />
-              ) : view === 'finish' ? (
-                <View style={[styles.rocker, styles.plateSlot]}>
-                  <LampPlate
-                    lamps={log.lamps.map((lamp) => (lamp === 'done' ? 'done' : 'off'))}
-                    accessibilityLabel={`${log.lamps.filter((lamp) => lamp === 'done').length} of ${log.lamps.length} lifts done`}
+                ) : (
+                  <Rocker
+                    variant="lifts"
+                    lamps={log.lamps}
+                    prevDisabled={log.exerciseIndex <= 0}
+                    nextDisabled={log.exerciseIndex >= log.drafts.length - 1}
+                    onPrev={() => {
+                      endHandoff();
+                      showRoll(log.exerciseIndex);
+                      log.stepExercise(-1);
+                    }}
+                    onNext={() => {
+                      endHandoff();
+                      showRoll(log.exerciseIndex);
+                      log.stepExercise(1);
+                    }}
+                    onMiddle={() => openSheet('today')}
                   />
-                </View>
-              ) : (
-                <Rocker
-                  variant="lifts"
-                  lamps={log.lamps}
-                  prevDisabled={log.exerciseIndex <= 0}
-                  nextDisabled={log.exerciseIndex >= log.drafts.length - 1}
-                  onPrev={() => {
-                    endHandoff();
-                    showRoll(log.exerciseIndex);
-                    log.stepExercise(-1);
-                  }}
-                  onNext={() => {
-                    endHandoff();
-                    showRoll(log.exerciseIndex);
-                    log.stepExercise(1);
-                  }}
-                  onMiddle={() => openSheet('today')}
-                />
-              )}
-              <View style={styles.keySlot} />
-            </View>
-
-            <Display
-              contentKey={contentKey}
-              overlay={rollCall ?? nextCard}
-              accessibilityLabel={working ? work.display.summary : view === 'edit' ? edit?.summary : undefined}
-              accessibilityActions={working ? work.display.actions : undefined}
-              onAccessibilityAction={working ? work.display.onAction : undefined}
-              style={[
-                styles.display,
-                { marginHorizontal: edge, minHeight: height >= TALL_SCREEN ? DISPLAY_MIN : undefined },
-              ]}>
-              {view === 'tour' ? (
-                <TourDisplay
-                  onName={() => {
-                    if (tour.taught('swap')) openSheet('exercise', { tour: '1' });
-                  }}
-                />
-              ) : view === 'loading' && insert ? (
-                <LoadingDisplay insert={insert} />
-              ) : view === 'edit' && edit ? (
-                <EditDisplay edit={edit} />
-              ) : view === 'log' ? (
-                <LogDisplay
-                  nudge={work.nudge}
-                  flash={work.flash}
-                  onName={work.openExercise}
-                  onKeypad={work.openKeypad}
-                  onStep={work.cycleLoadStep}
-                />
-              ) : view === 'rest' ? (
-                <RestDisplay onName={work.openExercise} />
-              ) : view === 'finish' ? (
-                <FinishDisplay />
-              ) : (
-                <HomeDisplay model={home.model} celebrateDayId={home.celebrateDayId} onPick={home.pickDay} />
-              )}
-            </Display>
-
-            <View style={styles.bottomRow} onTouchStart={dismissOverlays}>
-              {view === 'log' && log.controls?.keys ? (
-                <>
-                  <TallKey
-                    label="+"
-                    accessibilityLabel={KEY_NAMES[log.controls.keys].more}
-                    onPress={() => work.keys.step(1)}
-                    onLongPress={() => work.keys.repeat(1)}
-                    onPressOut={work.keys.stopRepeat}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
-                  />
-                  <TallKey
-                    label="−"
-                    accessibilityLabel={KEY_NAMES[log.controls.keys].fewer}
-                    onPress={() => work.keys.step(-1)}
-                    onLongPress={() => work.keys.repeat(-1)}
-                    onPressOut={work.keys.stopRepeat}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
-                  />
-                </>
-              ) : null}
-              {view === 'rest' ? (
-                <>
-                  <TallKey
-                    label="+15"
-                    text="word"
-                    accessibilityLabel="Add 15 seconds"
-                    onPress={() => work.keys.nudgeRest(1)}
-                    onLongPress={() => work.keys.repeatRest(1)}
-                    onPressOut={work.keys.stopRepeat}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
-                  />
-                  <TallKey
-                    label="−15"
-                    text="word"
-                    accessibilityLabel="Take off 15 seconds"
-                    onPress={() => work.keys.nudgeRest(-1)}
-                    onLongPress={() => work.keys.repeatRest(-1)}
-                    onPressOut={work.keys.stopRepeat}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
-                  />
-                </>
-              ) : null}
-              {view === 'edit' && edit ? (
-                <>
-                  <TallKey
-                    label="+"
-                    accessibilityLabel="More sets"
-                    onPress={() => edit.stepSets(1)}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
-                  />
-                  <TallKey
-                    label="−"
-                    accessibilityLabel="Fewer sets"
-                    onPress={() => edit.stepSets(-1)}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
-                  />
-                  <EngravedLabel style={[styles.tallKeyLabel, { left: leftX, top: editGeometry.setsLabelY }]}>
-                    SETS
-                  </EngravedLabel>
-                </>
-              ) : null}
-              {view === 'tour' && tour.state.screen === 'log' ? (
-                <>
-                  <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}>
-                    <TallKey label="+" accessibilityLabel="More reps" onPress={() => tour.dispatch({ type: 'reps', direction: 1 })} />
-                  </FocusRing>
-                  <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}>
-                    <TallKey label="−" accessibilityLabel="Fewer reps" onPress={() => tour.dispatch({ type: 'reps', direction: -1 })} />
-                  </FocusRing>
-                </>
-              ) : null}
-              {view === 'tour' && tour.state.screen === 'rest' ? (
-                <>
-                  <TallKey
-                    label="+15"
-                    text="word"
-                    accessibilityLabel="Add 15 seconds"
-                    onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: 15, now: Date.now() })}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
-                  />
-                  <TallKey
-                    label="−15"
-                    text="word"
-                    accessibilityLabel="Take off 15 seconds"
-                    onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: -15, now: Date.now() })}
-                    style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
-                  />
-                </>
-              ) : null}
-              {view === 'finish' ? (
-                <TallKey
-                  label="Back"
-                  text="wordSmall"
-                  accessibilityLabel="Back to the workout"
-                  onPress={log.leaveFinish}
-                  style={[styles.tallKey, { left: leftX, top: logGeometry.backKeyTop }]}
-                />
-              ) : null}
-              <View style={[styles.centered, { top: WELL_Y }]}>
-                <Well />
+                )}
+                <View style={styles.keySlot} />
               </View>
-              {view === 'finish' ? (
-                <View style={[styles.centered, { top: WELL_Y }]} pointerEvents="none">
-                  <HoldRing progress={work.hold.progress} />
+
+              <Display
+                contentKey={contentKey}
+                overlay={rollCall ?? nextCard}
+                accessibilityLabel={working ? work.display.summary : view === 'edit' ? edit?.summary : undefined}
+                accessibilityActions={working ? work.display.actions : undefined}
+                onAccessibilityAction={working ? work.display.onAction : undefined}
+                style={[
+                  styles.display,
+                  { marginHorizontal: edge, minHeight: height >= TALL_SCREEN ? DISPLAY_MIN : undefined },
+                ]}>
+                {view === 'tour' ? (
+                  <TourDisplay
+                    onName={() => {
+                      if (tour.taught('swap')) openSheet('exercise', { tour: '1' });
+                    }}
+                  />
+                ) : view === 'loading' && insert ? (
+                  <LoadingDisplay insert={insert} />
+                ) : view === 'edit' && edit ? (
+                  <EditDisplay edit={edit} />
+                ) : view === 'log' ? (
+                  <LogDisplay
+                    nudge={work.nudge}
+                    flash={work.flash}
+                    onName={work.openExercise}
+                    onKeypad={work.openKeypad}
+                    onStep={work.cycleLoadStep}
+                  />
+                ) : view === 'rest' ? (
+                  <RestDisplay onName={work.openExercise} />
+                ) : view === 'finish' ? (
+                  <FinishDisplay />
+                ) : (
+                  <HomeDisplay model={home.model} celebrateDayId={home.celebrateDayId} onPick={home.pickDay} />
+                )}
+              </Display>
+
+              <View style={styles.bottomRow} onTouchStart={dismissOverlays}>
+                {view === 'log' && log.controls?.keys ? (
+                  <>
+                    <TallKey
+                      label="+"
+                      accessibilityLabel={KEY_NAMES[log.controls.keys].more}
+                      onPress={() => work.keys.step(1)}
+                      onLongPress={() => work.keys.repeat(1)}
+                      onPressOut={work.keys.stopRepeat}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
+                    />
+                    <TallKey
+                      label="−"
+                      accessibilityLabel={KEY_NAMES[log.controls.keys].fewer}
+                      onPress={() => work.keys.step(-1)}
+                      onLongPress={() => work.keys.repeat(-1)}
+                      onPressOut={work.keys.stopRepeat}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
+                    />
+                  </>
+                ) : null}
+                {view === 'rest' ? (
+                  <>
+                    <TallKey
+                      label="+15"
+                      text="word"
+                      accessibilityLabel="Add 15 seconds"
+                      onPress={() => work.keys.nudgeRest(1)}
+                      onLongPress={() => work.keys.repeatRest(1)}
+                      onPressOut={work.keys.stopRepeat}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
+                    />
+                    <TallKey
+                      label="−15"
+                      text="word"
+                      accessibilityLabel="Take off 15 seconds"
+                      onPress={() => work.keys.nudgeRest(-1)}
+                      onLongPress={() => work.keys.repeatRest(-1)}
+                      onPressOut={work.keys.stopRepeat}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
+                    />
+                  </>
+                ) : null}
+                {view === 'edit' && edit ? (
+                  <>
+                    <TallKey
+                      label="+"
+                      accessibilityLabel="More sets"
+                      onPress={() => edit.stepSets(1)}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
+                    />
+                    <TallKey
+                      label="−"
+                      accessibilityLabel="Fewer sets"
+                      onPress={() => edit.stepSets(-1)}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
+                    />
+                    <EngravedLabel style={[styles.tallKeyLabel, { left: leftX, top: editGeometry.setsLabelY }]}>
+                      SETS
+                    </EngravedLabel>
+                  </>
+                ) : null}
+                {view === 'tour' && tour.state.screen === 'log' ? (
+                  <>
+                    <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}>
+                      <TallKey label="+" accessibilityLabel="More reps" onPress={() => tour.dispatch({ type: 'reps', direction: 1 })} />
+                    </FocusRing>
+                    <FocusRing active={lit === 'reps'} radius={gadgetRadius.tallKey} style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}>
+                      <TallKey label="−" accessibilityLabel="Fewer reps" onPress={() => tour.dispatch({ type: 'reps', direction: -1 })} />
+                    </FocusRing>
+                  </>
+                ) : null}
+                {view === 'tour' && tour.state.screen === 'rest' ? (
+                  <>
+                    <TallKey
+                      label="+15"
+                      text="word"
+                      accessibilityLabel="Add 15 seconds"
+                      onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: 15, now: Date.now() })}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyTop }]}
+                    />
+                    <TallKey
+                      label="−15"
+                      text="word"
+                      accessibilityLabel="Take off 15 seconds"
+                      onPress={() => tour.dispatch({ type: 'nudgeRest', seconds: -15, now: Date.now() })}
+                      style={[styles.tallKey, { left: leftX, top: logGeometry.tallKeyBottom }]}
+                    />
+                  </>
+                ) : null}
+                {view === 'finish' ? (
+                  <TallKey
+                    label="Back"
+                    text="wordSmall"
+                    accessibilityLabel="Back to the workout"
+                    onPress={log.leaveFinish}
+                    style={[styles.tallKey, { left: leftX, top: logGeometry.backKeyTop }]}
+                  />
+                ) : null}
+                <View style={[styles.centered, { top: WELL_Y }]}>
+                  <Well />
                 </View>
-              ) : null}
-              <View style={[styles.centered, { top: BIG_KEY_Y }]}>
-                <FocusRing active={lit === 'show' || lit === 'log' || lit === 'start'} radius={device.bigKeySize / 2}>
-                <BigKey
-                  label={bigKey.label}
-                  variant={bigKey.variant}
-                  accessibilityLabel={bigKey.accessibilityLabel}
-                  onPressIn={() => {
-                    pressed.current = bigKey;
-                    bigKey.onPressIn?.();
-                  }}
-                  onPressOut={() => pressed.current?.onPressOut?.()}
-                  onPress={() => pressed.current?.onPress?.()}
+                {view === 'finish' ? (
+                  <View style={[styles.centered, { top: WELL_Y }]} pointerEvents="none">
+                    <HoldRing progress={work.hold.progress} />
+                  </View>
+                ) : null}
+                <View style={[styles.centered, { top: BIG_KEY_Y }]}>
+                  <FocusRing active={lit === 'show' || lit === 'log' || lit === 'start'} radius={device.bigKeySize / 2}>
+                  <BigKey
+                    label={bigKey.label}
+                    variant={bigKey.variant}
+                    accessibilityLabel={bigKey.accessibilityLabel}
+                    onPressIn={() => {
+                      pressed.current = bigKey;
+                      bigKey.onPressIn?.();
+                    }}
+                    onPressOut={() => pressed.current?.onPressOut?.()}
+                    onPress={() => pressed.current?.onPress?.()}
+                  />
+                  </FocusRing>
+                </View>
+                <FocusRing
+                  active={lit === 'wheel'}
+                  radius={gadgetRadius.wheel}
+                  style={[styles.wheel, { right: edge + KEY_INSET, width: device.wheelWidth, height: device.wheelHeight }]}>
+                <Wheel
+                  stowed={view === 'home' || view === 'finish' || view === 'loading' || (view === 'tour' && !tourWorking)}
+                  accessibilityLabel={
+                    working ? work.wheel.accessibilityLabel : view === 'edit' && edit ? (edit.face.kind === 'reps' ? 'Reps' : 'Time') : 'Weight'
+                  }
+                  accessibilityValue={
+                    working ? work.wheel.accessibilityValue : view === 'edit' && edit ? edit.face.spokenValue : undefined
+                  }
+                  onNotch={
+                    view === 'tour'
+                      ? (direction) => {
+                          if (!tour.taught('wheel')) return false;
+                          tour.dispatch({ type: 'wheel', direction, step: tour.loadStep });
+                          return true;
+                        }
+                      : view === 'log' || view === 'rest'
+                        ? work.onWheelNotch
+                      : view === 'edit' && edit
+                        ? (direction) => edit.stepValue(direction)
+                        : NO_LIFT
+                  }
                 />
                 </FocusRing>
               </View>
-              <FocusRing
-                active={lit === 'wheel'}
-                radius={gadgetRadius.wheel}
-                style={[styles.wheel, { right: edge + KEY_INSET, width: device.wheelWidth, height: device.wheelHeight }]}>
-              <Wheel
-                stowed={view === 'home' || view === 'finish' || view === 'loading' || (view === 'tour' && !tourWorking)}
-                accessibilityLabel={
-                  working ? work.wheel.accessibilityLabel : view === 'edit' && edit ? (edit.face.kind === 'reps' ? 'Reps' : 'Time') : 'Weight'
-                }
-                accessibilityValue={
-                  working ? work.wheel.accessibilityValue : view === 'edit' && edit ? edit.face.spokenValue : undefined
-                }
-                onNotch={
-                  view === 'tour'
-                    ? (direction) => {
-                        if (!tour.taught('wheel')) return false;
-                        tour.dispatch({ type: 'wheel', direction, step: tour.loadStep });
-                        return true;
-                      }
-                    : view === 'log' || view === 'rest'
-                      ? work.onWheelNotch
-                    : view === 'edit' && edit
-                      ? (direction) => edit.stepValue(direction)
-                      : NO_LIFT
-                }
-              />
-              </FocusRing>
             </View>
-          </View>
-          {view === 'edit' && edit ? (
-            <RoundKey
-              label="✕"
-              accessibilityLabel="Remove lift"
-              onPress={edit.remove}
-              style={[styles.historyKey, { top: topRowY, right: edge }]}
-            />
-          ) : view === 'tour' ? (
-            tour.state.screen === 'intro' ? (
+            {view === 'edit' && edit ? (
               <RoundKey
-                label="Skip"
-                text="wordSmall"
-                accessibilityLabel="Skip the tour"
-                onPress={() => {
-                  track('tour_skipped', {});
-                  tour.dispatch({ type: 'skip' });
-                }}
+                label="✕"
+                accessibilityLabel="Remove lift"
+                onPress={edit.remove}
+                style={[styles.historyKey, { top: topRowY, right: edge }]}
+              />
+            ) : view === 'tour' ? (
+              tour.state.screen === 'intro' ? (
+                <RoundKey
+                  label="Skip"
+                  text="wordSmall"
+                  accessibilityLabel="Skip the tour"
+                  onPress={() => {
+                    track('tour_skipped', {});
+                    tour.dispatch({ type: 'skip' });
+                  }}
+                  style={[styles.historyKey, { top: topRowY, right: edge }]}
+                />
+              ) : (
+                <FocusRing active={lit === 'undo'} radius={gadgetRadius.key} style={[styles.historyKey, { top: topRowY, right: edge }]}>
+                  <RoundKey
+                    label="↶"
+                    accessibilityLabel="Undo last set"
+                    disabled={!tourWorking || loggedOn(tour.state) === 0}
+                    onPress={() => tour.dispatch({ type: 'undo' })}
+                  />
+                </FocusRing>
+              )
+            ) : view === 'loading' ? null : working ? (
+              <RoundKey
+                label="↶"
+                accessibilityLabel={work.editing ? 'Cancel edit' : 'Undo last set'}
+                disabled={!work.editing && !log.canUndo}
+                onPress={work.onUndo}
                 style={[styles.historyKey, { top: topRowY, right: edge }]}
               />
             ) : (
-              <FocusRing active={lit === 'undo'} radius={gadgetRadius.key} style={[styles.historyKey, { top: topRowY, right: edge }]}>
-                <RoundKey
-                  label="↶"
-                  accessibilityLabel="Undo last set"
-                  disabled={!tourWorking || loggedOn(tour.state) === 0}
-                  onPress={() => tour.dispatch({ type: 'undo' })}
-                />
-              </FocusRing>
-            )
-          ) : view === 'loading' ? null : working ? (
-            <RoundKey
-              label="↶"
-              accessibilityLabel={work.editing ? 'Cancel edit' : 'Undo last set'}
-              disabled={!work.editing && !log.canUndo}
-              onPress={work.onUndo}
-              style={[styles.historyKey, { top: topRowY, right: edge }]}
-            />
-          ) : (
-            <RoundKey
-              accessibilityLabel="History"
-              onPress={() => openSheet('history')}
-              style={[styles.historyKey, { top: topRowY, right: edge }]}>
-              <HistoryGlyph />
-            </RoundKey>
-          )}
-        </DeviceBody>
-        {jsClock ? <SlotGlow clock={jsClock} width={width} /> : null}
-        {tour.launch ? <TourBack motion={tourMotion} palette={palette} /> : null}
-      </Animated.View>
-      {tour.launch ? <TourEdge motion={tourMotion} palette={palette} /> : null}
+              <RoundKey
+                accessibilityLabel="History"
+                onPress={() => openSheet('history')}
+                style={[styles.historyKey, { top: topRowY, right: edge }]}>
+                <HistoryGlyph />
+              </RoundKey>
+            )}
+          </DeviceBody>
+          {jsClock ? <SlotGlow clock={jsClock} width={width} /> : null}
+          {tour.launch && !launch3d.playing ? <TourBack motion={tourMotion} palette={palette} /> : null}
+        </Animated.View>
+      </DeviceLaunch>
+      {tour.launch && !launch3d.showing ? <TourEdge motion={tourMotion} palette={palette} /> : null}
       <TourReward />
       <SheetHost />
       <MomentHost />
@@ -690,6 +715,8 @@ function DeviceSurface() {
     </View>
   );
 }
+
+const PERCH_TILT = [tourGeometry.perchTiltX, tourGeometry.perchTiltY];
 
 type DeviceView = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading' | 'tour';
 

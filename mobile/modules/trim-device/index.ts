@@ -45,6 +45,9 @@ export type DeviceSound =
   | 'charge'
   | 'bang'
   | 'boot'
+  | 'spin'
+  | 'pulse'
+  | 'reskin'
   | SnapSound;
 
 type TrimDeviceNative = {
@@ -157,5 +160,6 @@ export {
   type CartridgeInsertProps,
   type CartridgeInsertScreen,
 } from './cartridge-insert';
+export { DeviceLaunch, isDeviceLaunchAvailable, type DeviceLaunchPose, type DeviceLaunchProps } from './device-launch';
 
 export { canRecognizeText, prepareImageForUpload, recognizeTextInImage } from './text';

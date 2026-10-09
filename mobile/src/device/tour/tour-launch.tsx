@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -15,6 +15,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { isDeviceLaunchAvailable } from '../../../modules/trim-device';
 import { finishColors, fontScaleCap, gadgetRadius, gadgetType, insertGeometry, lcd, sheetColors, sheetGeometry, space, tourColors, tourGeometry, tourType } from '@/constants/theme';
 import { EARNED_FINISH, FINISHES, FREE_FINISHES, finishLock, type Finish } from '@/domain/finish';
 import type { DevicePalette } from '@/device/finish';
@@ -23,6 +24,8 @@ import { swatchWidth } from '@/device/sheets/finishes-sheet';
 import { PillButton } from '@/device/sheets/primitives';
 import { DEVICE, EASE_DISPLAY_FN, EASE_STAMP_FN, TOUR_POSE, TOUR_POSE_EASE, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
+
+import { useSounds } from '@/device/haptics';
 
 import { useTour, type TourLaunchPhase } from './tour-context';
 
@@ -104,6 +107,32 @@ export function useTourMotion(): TourMotion {
   }, [reduceMotion, ripple, wiggle]);
 
   return { phase, clock, settle, wiggle, k: height / TOUR_POSE_HEIGHT };
+}
+
+/**
+ * The launch on the cartridge insert's SceneKit body (`DeviceLaunch`), when the build has it: the
+ * same 44 pt deep slab the owner saw at the end of onboarding, from the throw through the perch
+ * and the picks to the landing, rather than the 2D face, edge and back and a flat perched device.
+ * `showing` once its first frame is up: the JS device, edge and back hide under it until the
+ * landing is done. Reduce Motion keeps the 2D fade.
+ */
+export function useTourLaunch3d() {
+  const { active, launch, ripple, dressEarly } = useTour();
+  const reduceMotion = useReducedMotion();
+  const enabled = isDeviceLaunchAvailable && !reduceMotion;
+  const playing = enabled && launch != null;
+  const [ready, setReady] = useState(false);
+  // A new launch waits for its own first frame.
+  const [wasPlaying, setWasPlaying] = useState(playing);
+  if (wasPlaying !== playing) {
+    setWasPlaying(playing);
+    if (!playing) setReady(false);
+  }
+  const onSceneReady = useCallback(() => {
+    setReady(true);
+    dressEarly();
+  }, [dressEarly]);
+  return { phase: playing && launch ? launch : ('idle' as const), prepare: enabled && active, playing, showing: playing && ready, ripple, onSceneReady };
 }
 
 /** The pose for the frame: in the air, perched (with the wiggle), or settling home. */
@@ -190,6 +219,7 @@ export function TourEdge({ motion, palette }: { motion: TourMotion; palette: Dev
  */
 export function TourRoom({ motion }: { motion: TourMotion }) {
   const { launch, ripple } = useTour();
+  const sound = useSounds();
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const room = useSharedValue(0);
@@ -201,15 +231,17 @@ export function TourRoom({ motion }: { motion: TourMotion }) {
     room.set(withTiming(launch && launch !== 'landing' ? 1 : 0, { duration: DEVICE.TOUR_ROOM }));
   }, [launch, room]);
 
-  // The landing's ring, then one per pick.
+  // The landing's ring with its pulse, then a silent one per pick (the pick has its own `reskin`).
   useEffect(() => {
     if (launch !== 'launch' || reduceMotion) return;
     ring.set(0);
     ringOpacity.set(0);
     const land = DEVICE.TOUR_LAUNCH - DEVICE.TOUR_PICKER;
+    const pulse = setTimeout(() => sound('pulse'), land);
     ring.set(withDelay(land, withTiming(1, { duration: DEVICE.TOUR_LAND_RIPPLE, easing: EASE_DISPLAY_FN })));
     ringOpacity.set(withDelay(land, withSequence(withTiming(1, { duration: DEVICE.SNAP }), withTiming(0, { duration: DEVICE.TOUR_LAND_RIPPLE }))));
-  }, [launch, reduceMotion, ring, ringOpacity]);
+    return () => clearTimeout(pulse);
+  }, [launch, reduceMotion, ring, ringOpacity, sound]);
   useEffect(() => {
     if (ripple === 0 || reduceMotion) return;
     ring.set(0);
@@ -372,6 +404,9 @@ export function launching(phase: TourLaunchPhase | null): boolean {
   return phase != null;
 }
 
+/** The picker's text and its first swatch share one column, as a sheet's section labels do. */
+const PICKER_X = sheetGeometry.sidePad + sheetGeometry.sectionX;
+
 const styles = StyleSheet.create({
   room: { backgroundColor: tourColors.roomGround },
   back: { alignItems: 'center', justifyContent: 'center', borderRadius: insertGeometry.bodyRadius, borderCurve: 'continuous' },
@@ -410,13 +445,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: gadgetRadius.sheet,
     borderCurve: 'continuous',
     paddingTop: sheetGeometry.sectionX,
-    paddingHorizontal: sheetGeometry.sidePad,
+    paddingHorizontal: PICKER_X,
   },
   pickerLabel: { color: lcd.amber },
   pickerSub: { marginTop: space.pair },
-  swatchRow: { marginHorizontal: -sheetGeometry.sidePad },
+  swatchRow: { marginHorizontal: -PICKER_X },
   swatches: {
-    paddingHorizontal: sheetGeometry.sidePad,
+    paddingHorizontal: PICKER_X,
     flexDirection: 'row',
     gap: sheetGeometry.swatchGap,
     paddingTop: space.related + sheetGeometry.swatchLift,
