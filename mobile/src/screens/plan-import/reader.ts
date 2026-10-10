@@ -60,7 +60,8 @@ const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`;
 
 /**
  * Reads an import (decision 88): Claude reads the text or screenshots through Trim's endpoint; when
- * that fails (offline, slow, refused) the phone reads it (text recognition, then the local parser).
+ * that fails (offline, slow, refused), or the owner chose `Read on iPhone` (decision 98), the phone
+ * reads it (text recognition, then the local parser) and nothing leaves it.
  * Either way the days and lifts are matched to the catalog on the phone. Found lifts then land one after another, so
  * the work shows, while the bar fills. Calls `onRead` once with the
  * match (null when nothing was found).
@@ -139,7 +140,7 @@ export function useImportReader(
     };
 
     const run = async () => {
-      const cloud = await readInCloud();
+      const cloud = input.onPhone ? null : await readInCloud();
       if (cancelled) return;
       const parsed = cloud ?? (await readOnPhone());
       if (cancelled) return;

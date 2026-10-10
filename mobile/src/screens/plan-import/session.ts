@@ -3,8 +3,13 @@ import { useSyncExternalStore } from 'react';
 import type { PlanMatch } from '@/catalog/plan-import-match';
 import type { ExercisePrescription } from '@/domain/types';
 
-/** What the owner handed Trim: pasted text, or screenshots (file or data URIs). */
-export type ImportInput = { kind: 'text'; text: string } | { kind: 'images'; uris: string[] };
+/**
+ * What the owner handed Trim: pasted text, or screenshots (file or data URIs). `onPhone` when they
+ * chose `Read on iPhone` at the consent prompt (decision 98): nothing is sent.
+ */
+export type ImportInput = ({ kind: 'text'; text: string } | { kind: 'images'; uris: string[] }) & {
+  onPhone?: boolean;
+};
 
 /**
  * One import in progress (decision 88), shared by its screens: onboarding's routes and the Plans
