@@ -92,7 +92,7 @@ Information lives on the lowest layer that serves the job:
 | 96 (the device's top row stays visible) | menu, plans rack, history wall, settings, and other short sheets |
 | 60 (tall) | progress, lift detail, exercise, editor, add lifts, receipt |
 | 200 | Today |
-| bottom-anchored, 372 tall | finishes (as tall as its content, so the device behind stays visible on every phone height; a fixed top edge made it grow on tall phones) |
+| bottom-anchored, as tall as its content | finishes (the host measures the content, so the device behind stays visible on every phone height and Done always ends at the standard bottom inset; it glides taller when `Get Trim Pro` appears and back when it goes, with no motion under Reduce Motion) |
 | 430 | keypad (short, so the drum stays in view) |
 
 ### Jobs

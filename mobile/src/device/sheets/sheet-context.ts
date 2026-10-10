@@ -14,6 +14,8 @@ export type SheetChrome = {
   close: () => void;
   /** The sheet lifts its content above the keyboard (name fields, search). */
   keyboard: boolean;
+  /** Bottom-anchored sheets only: the content's full height, so the sheet fits it. */
+  fit?: (height: number) => void;
 };
 
 export const SheetChromeContext = createContext<SheetChrome | null>(null);

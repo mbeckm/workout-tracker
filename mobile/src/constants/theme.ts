@@ -1092,8 +1092,13 @@ export const sheetGeometry = {
   toastPadY: 10,
   /** Sheet top edges: most, tall, Today, finishes. */
   tops: { default: 96, tall: 60, today: 200, finishes: 430 },
-  /** The finishes sheet is as tall as its content (header, swatches, Get Trim Pro, Done), anchored to the bottom, so a taller phone shows more device, not more empty sheet. */
-  swatchesHeight: 372,
+  /**
+   * The finishes sheet is as tall as its content, anchored to the bottom, so a taller phone shows
+   * more device, not more empty sheet. The host measures the content and glides to fit when
+   * `Get Trim Pro` comes and goes; this is its height before the first measure (header, swatches,
+   * Done), without the bottom inset.
+   */
+  swatchesHeight: 248,
 } as const;
 
 /** The receipt, mini receipts and the week report (SPEC §6 Receipt, History wall; prototype `.paper`, `.mini`; QC2). */

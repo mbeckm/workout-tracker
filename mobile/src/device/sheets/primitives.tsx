@@ -48,7 +48,7 @@ export function SheetScroll({
   scrollRef?: Ref<Animated.ScrollView>;
   children: ReactNode;
 }) {
-  const { scrollY, scrollGesture, keyboard } = useSheetChrome();
+  const { scrollY, scrollGesture, keyboard, fit } = useSheetChrome();
   const insets = useSafeAreaInsets();
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.set(event.contentOffset.y);
@@ -61,6 +61,7 @@ export function SheetScroll({
           ref={scrollRef}
           onScroll={onScroll}
           scrollEventThrottle={16}
+          onContentSizeChange={fit ? (_, contentHeight) => fit(contentHeight) : undefined}
           // At the top a pull moves the sheet, not the content.
           bounces={false}
           keyboardShouldPersistTaps="handled"
