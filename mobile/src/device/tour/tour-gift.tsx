@@ -17,6 +17,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import {
   bodyFinish,
+  device,
   deviceObject,
   finishColors,
   fontScaleCap,
@@ -55,10 +56,20 @@ import { READY_BEAT } from './tour-model';
 
 const OBJECT_W = deviceObject.width;
 const OBJECT_H = DEVICE_OBJECT_HEIGHT;
+/** The pivot each machine hangs on: a 2-pt square, never zero (iOS mis-centres a 0 × 0 view's scale). */
+const PIVOT = 2;
 
-/** The machines in the row: the finish the owner had, Graphite (new), then Trim Pro's. */
+/**
+ * All six machines in the row: the finish the owner had, Graphite (new), then the rest, free
+ * before Trim Pro's. An owner already on Graphite (a replayed tour) still sees Aluminium.
+ */
 function rowOf(before: Finish): Finish[] {
-  const order = [before, EARNED_FINISH, ...FINISHES.filter((id) => !FREE_FINISHES.includes(id))];
+  const order = [
+    before,
+    EARNED_FINISH,
+    ...FINISHES.filter((id) => FREE_FINISHES.includes(id)),
+    ...FINISHES.filter((id) => !FREE_FINISHES.includes(id)),
+  ];
   return order.filter((id, index) => order.indexOf(id) === index && FINISHES.includes(id));
 }
 
@@ -132,7 +143,7 @@ type Frame = {
   s1: number;
   cy0: number;
   cy1: number;
-  /** The card's left edge for the middle slot, and the distance between slots. */
+  /** The middle slot's centre, and the distance between slots. */
   cx: number;
   step: number;
 };
@@ -182,13 +193,14 @@ const Gift = memo(function Gift({ launch, before, pick, choose, keep, reveal }: 
       s1,
       cy0: height / 2,
       cy1: (top + bottom) / 2,
-      cx: width / 2 - OBJECT_W / 2,
+      cx: width / 2,
       step: OBJECT_W * s1 + tourGeometry.cardGap,
     };
   }, [footTop, height, insets.bottom, insets.top, width]);
 
   // `z`: 0 the middle machine at full size, 1 stepped back into the row. `pos`: the row's middle, in machines.
-  const z = useSharedValue(0);
+  // A row that mounts mid-gift (a remount) starts stepped back, where `picking` has it.
+  const z = useSharedValue(launch === 'picking' ? 1 : 0);
   const pos = useSharedValue(earned);
   const start = useSharedValue(earned);
   const fade = useSharedValue(1);
@@ -227,54 +239,73 @@ const Gift = memo(function Gift({ launch, before, pick, choose, keep, reveal }: 
   );
 
   /** Bring machine `target` to the middle: a spring, or under Reduce Motion a crossfade. */
-  const goTo = (target: number, velocity: number) => {
-    'worklet';
-    if (reduceMotion) {
-      fade.set(
-        withTiming(0, { duration: DEVICE.TOUR_FADE / 2 }, (finished) => {
-          if (!finished) return;
-          pos.set(target);
-          fade.set(withTiming(1, { duration: DEVICE.TOUR_FADE / 2 }));
-        }),
-      );
-      return;
-    }
-    pos.set(withSpring(target, { ...SPRING.fling, velocity }));
-  };
+  const goTo = useMemo(
+    () => (target: number, velocity: number) => {
+      'worklet';
+      if (reduceMotion) {
+        fade.set(
+          withTiming(0, { duration: DEVICE.TOUR_FADE / 2 }, (finished) => {
+            if (!finished) return;
+            pos.set(target);
+            fade.set(withTiming(1, { duration: DEVICE.TOUR_FADE / 2 }));
+          }),
+        );
+        return;
+      }
+      pos.set(withSpring(target, { ...SPRING.fling, velocity }));
+    },
+    [fade, pos, reduceMotion],
+  );
 
-  const band = (raw: number) => {
-    'worklet';
-    const give = (excess: number) => tourGeometry.swipeBandMax * (1 - 1 / (1 + (excess * tourGeometry.swipeBand) / tourGeometry.swipeBandMax));
-    if (raw > last) return last + give(raw - last);
-    if (raw < 0) return -give(-raw);
-    return raw;
-  };
-
+  // Made once per layout, not per render: a pick re-renders the foot mid-swipe, and a new gesture
+  // object there would drop the finger's pan before it settles.
   const { step } = frame;
-  const pan = Gesture.Pan()
-    .enabled(picking)
-    .activeOffsetX([-space.related, space.related])
-    // From activation, not touch-down: a tap (a neighbour) must not stop a row that's still settling.
-    .onStart(() => {
-      cancelAnimation(pos);
-      start.set(pos.get());
-    })
-    .onUpdate((event) => {
-      pos.set(band(start.get() - event.translationX / step));
-    })
-    .onEnd((event) => {
-      const velocity = -event.velocityX / step;
-      const target = Math.min(last, Math.max(0, Math.round(pos.get() + velocity * tourGeometry.swipeThrow)));
-      goTo(target, velocity);
-    });
-  const tap = Gesture.Tap()
-    .enabled(picking)
-    .onEnd((event) => {
-      const offset = Math.round((event.x - width / 2) / step);
-      if (offset === 0) return;
-      goTo(Math.min(last, Math.max(0, Math.round(pos.get()) + offset)), 0);
-    });
-  const gesture = Gesture.Race(pan, tap);
+  const dragging = useSharedValue(0);
+  const gesture = useMemo(() => {
+    const band = (raw: number) => {
+      'worklet';
+      const give = (excess: number) =>
+        tourGeometry.swipeBandMax * (1 - 1 / (1 + (excess * tourGeometry.swipeBand) / tourGeometry.swipeBandMax));
+      if (raw > last) return last + give(raw - last);
+      if (raw < 0) return -give(-raw);
+      return raw;
+    };
+    const clampIndex = (value: number) => {
+      'worklet';
+      return Math.min(last, Math.max(0, Math.round(value)));
+    };
+    const pan = Gesture.Pan()
+      .enabled(picking)
+      .activeOffsetX([-space.related, space.related])
+      // From activation, not touch-down: a tap (a neighbour) must not stop a row that's still settling.
+      .onStart(() => {
+        cancelAnimation(pos);
+        start.set(pos.get());
+        dragging.set(1);
+      })
+      .onUpdate((event) => {
+        pos.set(band(start.get() - event.translationX / step));
+      })
+      .onEnd((event) => {
+        dragging.set(0);
+        const velocity = -event.velocityX / step;
+        goTo(clampIndex(pos.get() + velocity * tourGeometry.swipeThrow), velocity);
+      })
+      // A pan that ends any other way (cancelled, interrupted) still clicks into a machine.
+      .onFinalize(() => {
+        if (dragging.get() === 0) return;
+        dragging.set(0);
+        goTo(clampIndex(pos.get()), 0);
+      });
+    const tap = Gesture.Tap()
+      .enabled(picking)
+      .onEnd((event) => {
+        const offset = Math.round((event.x - width / 2) / step);
+        if (offset === 0) return;
+        goTo(clampIndex(Math.round(pos.get()) + offset), 0);
+      });
+    return Gesture.Race(pan, tap);
+  }, [dragging, goTo, last, picking, pos, start, step, width]);
 
   const index = Math.max(0, row.indexOf(pick));
   const jump = (target: number) => goTo(target, 0);
@@ -292,7 +323,7 @@ const Gift = memo(function Gift({ launch, before, pick, choose, keep, reveal }: 
   const lock = finishLock(pick, { isPro, tourDone: true });
   const isNew = pick === EARNED_FINISH && pick !== before;
   const name = finishColors[pick].name;
-  const label = isNew ? 'NEW SKIN UNLOCKED' : lock === 'pro' ? 'TRIM PRO SKIN' : 'YOUR SKIN';
+  const label = isNew ? 'NEW SKIN UNLOCKED' : lock === 'pro' ? 'TRIM PRO SKIN' : pick === before ? 'YOUR SKIN' : 'FREE SKIN';
   const hidden = !picking;
 
   return (
@@ -329,11 +360,10 @@ const Gift = memo(function Gift({ launch, before, pick, choose, keep, reveal }: 
           ))}
         </View>
         <PillButton
-          title={lock === 'pro' ? 'Comes with Trim Pro' : isNew ? `Use ${name}` : `Keep ${name}`}
+          title={lock === 'pro' ? 'Comes with Trim Pro' : pick === before ? `Keep ${name}` : `Use ${name}`}
           variant={lock === 'pro' ? 'dark' : 'light'}
           disabled={lock === 'pro'}
           onPress={keep}
-          style={styles.pill}
           testID="tour-keep"
         />
       </Animated.View>
@@ -356,8 +386,12 @@ const Gift = memo(function Gift({ launch, before, pick, choose, keep, reveal }: 
 
 /**
  * One machine in the row, drawn once in its own skin and never re-rendered by a pick: where it
- * sits, its size and how dim it is all come from `z` and `pos` on the UI thread. One bitmap
- * (`shouldRasterizeIOS`), so moving it composites instead of redrawing.
+ * sits, its size and how dim it is all come from `z` and `pos` on the UI thread.
+ *
+ * The moving view is a 2-pt pivot at the machine's centre, the machine hung around it, so where
+ * the scale is centred can be off by a point at most. A full-size view sometimes scaled about its
+ * top-left on iOS (the last machine sat (1 − scale) / 2 of its width off centre), and a 0 × 0
+ * pivot shifted every machine (iOS doesn't scale a zero-size view about its own point).
  */
 const GiftCard = memo(function GiftCard({
   id,
@@ -385,22 +419,24 @@ const GiftCard = memo(function GiftCard({
       opacity: drawn * (1 - near * (1 - tourGeometry.sideOpacity * t)),
       transform: [
         { translateX: frame.cx + d * (OBJECT_W * s + tourGeometry.cardGap) },
-        { translateY: cy - OBJECT_H / 2 },
+        { translateY: cy },
         { scale: s * (1 - (1 - tourGeometry.sideScale) * near) },
       ],
     };
   });
   return (
-    <Animated.View shouldRasterizeIOS style={[styles.card, style]}>
-      <FinishProvider override={id}>
-        <DeviceObject
-          scale={1}
-          displayKey={id}
-          display={<SkinScreen id={id} />}
-          lamps={lamps}
-          accessibilityLabel={`Skin ${id}, ${finishColors[id].name}`}
-        />
-      </FinishProvider>
+    <Animated.View style={[styles.pivot, style]}>
+      <View style={styles.card}>
+        <FinishProvider override={id}>
+          <DeviceObject
+            scale={1}
+            displayKey={id}
+            display={<SkinScreen id={id} />}
+            lamps={lamps}
+            accessibilityLabel={`Skin ${id}, ${finishColors[id].name}`}
+          />
+        </FinishProvider>
+      </View>
     </Animated.View>
   );
 });
@@ -410,7 +446,7 @@ function SkinScreen({ id }: { id: Finish }) {
   const s = useScreenStyles(screenStyles);
   return (
     <View style={s.fill}>
-      <LcdText lines={1} style={[gadgetType.lcdSmall, s.dim]}>
+      <LcdText lines={1} style={[gadgetType.lcdSmall, s.dim, s.header]}>
         {`SKIN ${id}`}
       </LcdText>
       <View style={s.center}>
@@ -454,7 +490,14 @@ const RING = tourGeometry.dotSize + (tourGeometry.dotRing + tourGeometry.dotRing
 const styles = StyleSheet.create({
   // Clipped: the row's far machines sit off screen.
   room: { backgroundColor: tourColors.roomGround, overflow: 'hidden' },
-  card: { position: 'absolute', left: 0, top: 0, width: OBJECT_W, height: OBJECT_H },
+  pivot: { position: 'absolute', left: -PIVOT / 2, top: -PIVOT / 2, width: PIVOT, height: PIVOT },
+  card: {
+    position: 'absolute',
+    left: (PIVOT - OBJECT_W) / 2,
+    top: (PIVOT - OBJECT_H) / 2,
+    width: OBJECT_W,
+    height: OBJECT_H,
+  },
   swipe: { position: 'absolute', left: 0, right: 0 },
   foot: {
     position: 'absolute',
@@ -478,12 +521,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringOn: { borderColor: sheetColors.ring },
-  pill: { alignSelf: 'stretch' },
   dot: { width: tourGeometry.dotSize, height: tourGeometry.dotSize, borderRadius: tourGeometry.dotSize / 2 },
 });
 
 const screenStyles = StyleSheet.create({
   fill: { flex: 1 },
   dim: { color: lcd.amberDim },
+  // As Home's header: inset from the display's edges, clear of its corners.
+  header: { position: 'absolute', left: device.displayPad, right: device.displayPad, top: device.displayHeaderY },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
