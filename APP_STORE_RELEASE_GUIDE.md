@@ -25,6 +25,23 @@ npx eas-cli build --platform ios --profile production --auto-submit
 - Apple processes the build in 10–30 minutes. It is then available to the internal group "Team (Expo)". Internal testing needs no review.
 - Production env on EAS: `EXPO_PUBLIC_REVENUECAT_API_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`; `eas.json` pins the exercise media/search flags off.
 
+### Or: build locally and upload with Transporter
+
+No EAS build minutes or queue. First used for 1.0.0 (15) on 9 October 2026.
+
+1. **Worktree.** `git worktree add --detach <scratch>/release origin/main`, then `npm ci` in its `mobile/`. Keeps the shared `mobile/ios` untouched.
+2. **Env.** `npx eas-cli env:pull --environment production --path .env.local`, then add the `eas.json` production `env` lines (`EXPO_PUBLIC_EXERCISE_MEDIA=off`, `EXPO_PUBLIC_EXERCISE_REMOTE_SEARCH=off`, `EXPO_PUBLIC_PROGRESS_DEMO=0`). The pulled file has no trailing newline, so check that the first added line didn't join the last key. Delete `.env.local` after the build.
+3. **Prebuild.** CocoaPods on `PATH` and `LANG`/`LC_ALL=en_US.UTF-8`, then `npx expo prebuild --platform ios`.
+4. **Build number and channel** (EAS normally sets both). Use the next number after `npx eas-cli build:version:get -p ios -e production`:
+   - `CFBundleVersion` in `ios/Trim/Info.plist` and `ios/ExpoWidgetsTarget/Info.plist`, and `CURRENT_PROJECT_VERSION` in `project.pbxproj`.
+   - In `ios/Trim/Supporting/Expo.plist`, add `EXUpdatesRequestHeaders` → `expo-channel-name` = `gadget` (tester builds) or `production` (App Store).
+5. **Archive.** `xcodebuild -workspace Trim.xcworkspace -scheme Trim -configuration Release -destination 'generic/platform=iOS' -archivePath <out>.xcarchive -allowProvisioningUpdates DEVELOPMENT_TEAM=494ATHBZ74 CODE_SIGN_STYLE=Automatic archive`.
+6. **Export.** `xcodebuild -exportArchive` with an ExportOptions.plist (`method` `app-store-connect`, `destination` `export`, `signingStyle` `automatic`, team `494ATHBZ74`). Signing uses Xcode's Apple ID account and a cloud-managed distribution certificate, so no certificate is needed in the keychain.
+7. **Check the app** in the archive: `Expo.plist` has the channel, `EXUpdates.bundle/fingerprint` matches the runtime of the latest EAS build (or else old OTA updates won't apply), and `ITSAppUsesNonExemptEncryption` is `false`.
+8. **Upload.** `open -a Transporter Trim.ipa`, then Deliver.
+9. **Sync EAS.** Set the EAS remote build number to the number you used, or the next EAS build collides. `build:version:set` only takes interactive input; `expect` can type it.
+10. **App Store Connect → TestFlight → build.** Fill in *Was soll getestet werden?*, then Gruppe ＋ → Beta testers → Zur Prüfung übermitteln. Later 1.0.0 builds were approved for external testing right away.
+
 Store listing text lives in `mobile/store.config.json`. `npx eas-cli metadata:lint` validates it; `npx eas-cli metadata:push` uploads it to App Store Connect. Only push deliberately.
 
 ## Status
@@ -37,6 +54,7 @@ Store listing text lives in `mobile/store.config.json`. `npx eas-cli metadata:li
 - [x] Age rating 9+ (Health or Wellness Topics: Yes).
 - [x] App icon and splash ("Trim" mark).
 - [x] TestFlight build 1.0.0 (2) processed and available internally.
+- [x] 1.0.0 (15), built locally and uploaded with Transporter (9 October 2026), is in TestFlight for Team (Expo) and Beta testers (8 testers). Channel `gadget`.
 
 **Before submitting 1.0 for review**
 - [ ] Review screenshot for each subscription (the paywall with real prices).
