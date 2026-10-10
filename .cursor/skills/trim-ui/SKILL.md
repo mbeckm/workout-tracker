@@ -697,7 +697,7 @@ Rules for every moment:
 
 ### Pro gates
 
-20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) are machines in the skin row with a padlock on their dot; in the middle, the pill is `Try Trim Pro`, the only way to the paywall from there (decision 97).
+20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) are machines in the skin row with a padlock on their dot, for Trim Free only: with Trim Pro nothing is locked, so no padlock and no `Try Trim Pro` (`finishLock` returns null); in the middle, the pill is `Try Trim Pro`, the only way to the paywall from there (decision 97).
 21. **Free stays whole.** Logging, history and the current plan are never gated, interrupted or nagged.
 
 ### Changing a money screen
