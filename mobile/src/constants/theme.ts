@@ -2323,24 +2323,13 @@ export const tourType = {
   lcdChatLarge: lcdRole(24, 30),
   /** `READY` over the last lines. */
   lcdReady: lcdRole(56, 60),
-  /** `UNLOCKED` / `LOCKED`, stamped over the device. */
-  stamp: lcdRole(34, 40),
 } as const;
 
 export const tourColors = {
   /** The focus ring's glow (the brand orange at ~50%). */
   focusGlow: 'rgba(255,106,26,0.5)',
-  /** The dot-matrix room: unlit dots, lit dots, the dark ground and its vignette. */
-  roomDotOff: '#3A2214',
-  roomDotOn: '#FF6A1A',
+  /** The ground the gift's machines stand on (decision 95). */
   roomGround: '#0A0A09',
-  vignette: '#000000',
-  vignetteOpacity: 0.8,
-  /** The device's cast shadow on the room. */
-  shadow: '#000000',
-  /** A locked pick's stamp. */
-  stampLocked: '#8C8A84',
-  stampGround: 'rgba(18,18,17,0.6)',
 } as const;
 
 export const tourGeometry = {
@@ -2354,33 +2343,32 @@ export const tourGeometry = {
   focusStroke: 3,
   focusOffset: 5,
   focusGlowRadius: 24,
-  /** The launch: the device lands perched this far up, at this scale, before the picker (clear of the Dynamic Island, centred over the picker). */
-  perchY: -130,
-  perchScale: 0.5,
-  /** The body's depth while it spins (the insert's 44 pt). */
-  depth: 44,
-  /** The 3D body's lean once perched (CSS rotateX, rotateY degrees), so it reads as an object, not a picture. */
-  perchTiltX: -10,
-  perchTiltY: -20,
-  /** The dot-matrix room: one dot every 12, radius 1.6; the ripple ring's width. */
-  dotPitch: 12,
-  dotRadius: 1.6,
-  rippleWidth: 44,
-  rippleStart: -40,
-  rippleEnd: 460,
-  /** The shadow under the perched device. */
-  shadowWidth: 210,
-  shadowHeight: 30,
-  /** The stamp's tilt and box. */
-  stampTilt: -8,
-  stampWidth: 236,
-  stampBorder: 4,
-  stampRadius: 10,
-  stampY: 446,
-  /** The wiggle on a pick: lift, scale and tilts (degrees). */
-  wiggleLift: -9,
-  wiggleScale: 0.53,
-  wiggleTilts: [-4, 3, -1.6, 0.6] as readonly number[],
+  /**
+   * The gift (decision 95). The old skin falls: down this many screen heights, tilting this far
+   * about a pivot this far across its top edge.
+   */
+  dropFall: 1.1,
+  dropTilt: 9,
+  dropPivotX: 0.3,
+  /** The row of six machines: each card this share of the screen's width, this far apart. */
+  cardWidth: 0.6,
+  cardGap: 18,
+  /** A neighbour sits smaller and dimmer; cards further than this from the middle aren't drawn. */
+  sideScale: 0.9,
+  sideOpacity: 0.5,
+  cardsDrawn: 2,
+  /** A flick carries on this long (s) before it clicks into a machine; past either end it gives like a rubber band. */
+  swipeThrow: 0.1,
+  swipeBand: 0.35,
+  swipeBandMax: 0.4,
+  /** The skin dots under the row: their size, the gap and ring round the picked one, and the 44 hit area. */
+  dotSize: 26,
+  dotGap: 6,
+  dotRing: 2,
+  dotRingGap: 3,
+  dotHit: 44,
+  /** The foot (label, dots, Use) fades in over the last part of the step back. */
+  footFrom: 0.5,
 } as const;
 
 /**

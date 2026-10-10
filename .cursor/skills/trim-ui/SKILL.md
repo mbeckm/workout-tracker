@@ -386,6 +386,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Needle (progress gauge) | −70° to its value over 1.4 s, bezier(.2,.8,.3,1) | Not shipped while there's no rank data (D4) |
 | First open (D74) | One clock, 0 → 6500 ms (`ASSEMBLY`, `motion.ts`). 0–1600 the body approaches out of space (scale .06 → 1, tilted 48°, turned −28°, bezier(.2,.9,.25,1.04)) under a deep haptic swell; it lands with a thump and its outline flashes amber. Parts land at 2000 (display, from above), 2420 (menu, left), 2760 (history, right), 3040 (rocker, above), 3260 (+), 3440 (−), 3590 (wheel, right), each flying 200 ms, bezier(.55,0,1,.6), with a spark, a click a step higher, and a 4.5 % recoil of the stage. 3660–4900 the Start key hovers at 2.7× and trembles harder and harder (±1.5° → ±5.5°) while a glow and a stuttering rumble build and the camera pushes in to 1.08×; it slams in the last 20 % (bezier(.8,0,1,.5)). **At 4900, the bang:** the push snaps back, a double shockwave, a long shake, an amber burst, and the grid floor lights over space. 5000 a scan line, 5060 the display boots, 5600 the words, 6300 Continue | A tap anywhere skips to the end. Reduce Motion: the device fades in whole; the bang's haptic and sound stay |
 | Days wheel (onboarding, D74) | A tall wheel and a drum of numbers ride the finger 1:1, one day per 46 pt; a flick carries on (velocity × 0.09 s) and settles with `SPRING.fling`; past 2 or 6 it gives like a rubber band (30 % of the finger at first, never more than half a day) | Each day passed clicks, while dragging and while settling |
+| The tour's gift (decision 95) | Start: the device's old skin lets go and the whole machine falls past the bottom edge in 520 ms (`TOUR_DROP`, bezier(.55,0,1,.45)), down 1.1 screen heights and tilting 9° about a point 30 % across its top; Graphite stands behind it at full size. From 380 ms it steps back over 420 ms (`EASE_DISPLAY`) into a row of six machines, each 60 % of the screen wide, 18 apart, neighbours at .9 scale and half opacity; the foot fades in over the last half. A swipe rides the finger 1:1, a flick carries on (velocity × 0.1 s) and settles with `SPRING.fling`, past either end it gives like a rubber band; a tap on a neighbour or a dot springs there. Use: the machine steps forward over 380 ms, then the device fades in over it in 200 ms, Home in that skin | No spin. A tap during the fall skips it. Reduce Motion: the device fades out over the row, a pick crossfades, and on Use the device fades back in |
 
 ### Plan activation (the insert, SPEC §7)
 
@@ -451,7 +452,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `rocker` | a short tick with a little body | The rocker tilts |
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
 | `swatch` | a metal tile set down | A choice card or a paywall plan picked |
-| `reskin` | a tight closed-hat tick and a short blip on one note (D7), 90 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
+| `reskin` | a low thock (150 → 80 Hz, a short 260 Hz knock) with an air tick above 8 kHz, nothing in the middle so it sits under music (decision 95), 110 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin), the old skin letting go and each machine passing the middle of the tour's row |
 | `blip` | a soft electronic blip | A tap on the display (a day row, the drum); a Got a plan? card or Build my own picked |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
@@ -460,10 +461,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
 | `bang` | a heavy low thud, a sharp metal hit and a short ring | First open: the Start key slams home |
 | `boot` | two tiny electronic blips | First open: the display boots |
-| `spin` | a flick, then a whoosh on every half turn (denser and higher as it speeds up, gone in the hang), falling air, a landing thud and bounce; drawn from `TOUR_POSE` | The tour's launch, started by the 3D body's first frame |
-| `pulse` | one short, low 808-style pulse with a soft tick (0.3 s) | The tour's ring of lit dots at the landing (a pick's ring is silent: the pick plays `reskin`) |
 
-No other sounds.
+No other sounds. (`spin` and `pulse`, the 3D launch's, are still rendered and bundled but no longer played, decision 95.)
 
 ---
 
@@ -598,6 +597,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | Remove a lift in the editor | Swipe the row + the device's Remove key in edit |
 | Delete a workout | Long-press a History row or slip → action sheet (D9) |
 | Day actions | The `…` on the day header |
+| Pick a machine in the tour's gift | Swipe the row + tap a neighbour + the dots under it; VoiceOver increment / decrement on the row |
 
 No other custom gestures (double-tap, two-finger, shake).
 
@@ -654,13 +654,13 @@ We study the highest-converting apps and use their principles, never their dark 
 | **Goals and milestones** | The receipt prints: the milestone, `GOAL REACHED ✓` with the target per goal (D7). No badges, no trophy screen. A workout without a record, goal or milestone prints nothing. |
 | **Week complete** | After the receipt's Done, the finished-week report prints onto the spike (D15): lifts up, records, volume, best. Once per week. |
 | **A plan saved** | The cartridges file onto the shelf. |
-| **The guided tour's reward** (decision 85) | Start throws the device up into a spin over Trim's dot-matrix room, on the same SceneKit body as the cartridge insert (44 pt deep, its face the device as it was a moment ago), and it stays that object through the perch, the picks and the landing: perched, it leans (`perchTiltX` / `perchTiltY`) so its rounded corners and side show, never a flat scaled-down screen. The JS device takes over only once it has landed face-on at full size. The 2D face, edge and back only where the native view is missing or under Reduce Motion; it slows to face the owner in the new finish, hangs, drops, squashes and settles perched. A ring of lit dots ripples out from it, `UNLOCKED` stamps on with the stamp's thud, and the finish picker rises. Each pick re-dresses the device with the ripple and a wiggle. About 5 s to the picker (once, like first open). |
+| **The guided tour's reward** (decisions 85, 95) | Start lets the old skin go: the machine falls away like a case and Graphite stands behind it, then steps back into a row of all six machines on the dark ground (the owner's, Graphite, then Trim Pro's). Swipe the row, tap a neighbour or a dot under it; the machine in the middle is the pick, and each one that passes the middle clicks (`reskin`). The foot says what it is (`NEW SKIN UNLOCKED`, `TRIM PRO SKIN`, `YOUR SKIN`) over the dots and `Use Graphite` / `Keep Aluminium` (`Comes with Trim Pro`, disabled, on a Pro machine). Use steps it forward and the device fades in, home, in that skin. No spin, no 3D, no stamp, no ripple: about 0.8 s to the row. Each machine in the row is the flat `DeviceObject` in its own skin, drawn once under the device while the tour's last lines type (`TourGift`, `device/tour/tour-gift.tsx`), so Start only starts animations and a pick never re-renders a device. |
 | **First Pro purchase** | The thing they wanted happens within 100 ms of Apple's confirmation (the finish applies, the range switches), a toast confirms `Trim Pro is on`, with a success haptic. |
 
 Rules for every moment:
 - **Once** where it's a first or a milestone (a persisted flag; `weekMomentsShown` for the week).
 - **After the action lands, never in its way.** Input is live throughout; a tap skips to the end.
-- **Short.** Under 4 s, the insert included. First open and the tour's reward are the two once-only exceptions, and a tap still skips the first.
+- **Short.** Under 4 s, the insert and the tour's gift included. First open is the one once-only exception, and a tap still skips it.
 - **One at a time.** Queue them: the Home stamp, then the week moment, then the post-workout paywall. Never two modal moments at once.
 - **Built from Trim's own parts:** the device, cartridges, receipts, stamps, lamps, the spike, the knob. No confetti, emoji, stickers, mascots or fireworks. Sounds only from §8.
 - **Words stay facts.** No `Congrats!`, no `You crushed it`.

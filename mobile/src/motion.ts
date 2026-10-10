@@ -142,6 +142,8 @@ export const EASE_KNOB_FN = Easing.bezierFn(0.45, 0, 0.2, 1);
 export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
 /** Plan insert slide-in: bezier(.55,0,.8,.35). */
 export const EASE_INSERT_SLIDE_FN = Easing.bezierFn(0.55, 0, 0.8, 0.35);
+/** The tour's gift (decision 95): the old skin lets go and falls, gathering speed, bezier(.55,0,1,.45). */
+export const EASE_FALL_FN = Easing.bezierFn(0.55, 0, 1, 0.45);
 /** CSS `ease-out` (the insert's click settle and slot glow). */
 export const EASE_CSS_OUT_FN = Easing.bezierFn(0, 0, 0.58, 1);
 /** Key press (CSS `transition: transform .08s` uses `ease`). */
@@ -302,20 +304,18 @@ export const DEVICE = {
   /** The tour (decision 85): one character typed every TOUR_TYPE ms; a beat's next line waits TOUR_BEAT. */
   TOUR_TYPE: 28,
   TOUR_BEAT: 180,
-  /** The launch: 4800 ms from the crouch to the landing; the finish changes edge-on at TOUR_SWAP. */
-  TOUR_LAUNCH: 4800,
-  TOUR_SWAP: 2009,
-  /** The room fades in with the launch; the ripple on landing and on each pick. */
-  TOUR_ROOM: 700,
-  TOUR_RIPPLE: 1700,
-  TOUR_LAND_RIPPLE: 1900,
-  /** The stamp slams in after the landing; the picker rises after it. */
-  TOUR_STAMP_DELAY: 4560,
-  TOUR_PICKER_DELAY: 5250,
-  TOUR_PICKER: 650,
-  /** The spring-back wiggle on a pick, and the settle to full size after Use. */
-  TOUR_WIGGLE: 700,
-  TOUR_SETTLE: 1000,
+  /**
+   * The gift (decision 95): Start lets the old skin go. It falls away over TOUR_DROP (its thock
+   * TOUR_RELEASE in) and Graphite stands behind it; from TOUR_STEP_BACK_DELAY the machine steps
+   * back over TOUR_STEP_BACK into the row of six. Use steps it forward again over TOUR_SETTLE, then
+   * the device fades in over it in TOUR_FADE (Reduce Motion: the fall and the steps are this fade).
+   */
+  TOUR_DROP: 520,
+  TOUR_RELEASE: 60,
+  TOUR_STEP_BACK_DELAY: 380,
+  TOUR_STEP_BACK: 420,
+  TOUR_SETTLE: 380,
+  TOUR_FADE: 200,
 } as const;
 
 /**
@@ -370,42 +370,6 @@ export const ASSEMBLY = {
 
 /** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */
 export const REST_GO_MS = 2000;
-
-
-/**
- * The tour's launch (decision 85), keyframes over `DEVICE.TOUR_LAUNCH` on an 844-tall reference:
- * the crouch, the throw (already spinning), seven turns at the top, the slow-down to face-on and a
- * hang, the drop, the squash and the settle at the perch. `turn` is degrees about the vertical axis;
- * the device draws it as a slab (the insert's SceneKit body, or face, edge and back in 2D), so the new finish can swap in edge-on.
- */
-export const TOUR_POSE = [
-  { at: 0, y: 0, sx: 1, sy: 1, turn: 0 },
-  { at: 0.094, y: 46, sx: 1.03, sy: 0.88, turn: 0 },
-  { at: 0.26, y: -205, sx: 0.34, sy: 0.34, turn: 720 },
-  { at: 0.54, y: -212, sx: 0.34, sy: 0.34, turn: 2160 },
-  { at: 0.69, y: -196, sx: 0.38, sy: 0.38, turn: 2520 },
-  { at: 0.77, y: -204, sx: 0.38, sy: 0.38, turn: 2520 },
-  { at: 0.9375, y: -115, sx: 0.53, sy: 0.45, turn: 2520 },
-  { at: 0.969, y: -143, sx: 0.48, sy: 0.53, turn: 2520 },
-  { at: 1, y: -130, sx: 0.5, sy: 0.5, turn: 2520 },
-] as const;
-
-/** Each segment's easing (the prototype's): anticipation, throw, a steady spin, the slow-down, the hang, the fall, the bounce, the settle. As data, so the native 3D launch plays the same curves. */
-export const TOUR_POSE_CURVES = [
-  [0.3, 0, 0.6, 1],
-  [0.25, 0.6, 0.6, 1],
-  [0, 0, 1, 1],
-  [0.15, 0.6, 0.3, 1],
-  [0.42, 0, 0.58, 1],
-  [0.55, 0, 0.9, 0.4],
-  [0, 0, 0.58, 1],
-  [0.42, 0, 0.58, 1],
-] as const;
-
-export const TOUR_POSE_EASE = TOUR_POSE_CURVES.map(([x1, y1, x2, y2]) => Easing.bezierFn(x1, y1, x2, y2));
-
-/** The reference height the pose's `y` is measured on. */
-export const TOUR_POSE_HEIGHT = 844;
 
 /**
  * Import plan (decision 88). The illustration is one loop: the first half copies a plan out of a
