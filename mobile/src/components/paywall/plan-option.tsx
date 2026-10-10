@@ -26,8 +26,8 @@ export function planOptionSub(offer: ProOffer): string | null {
 }
 
 /**
- * One plan as a pill card (N9 `.plan`, D13): the billed price with its period, the facts under
- * it. A radio: the selected card wears a 3pt orange ring, the other a quiet 2pt ring.
+ * One plan as a pill card (N9 `.plan`, D13): the period it renews on (`Yearly`, from the store's
+ * package, App Review 3.1.2), the billed price with its period, the facts under it. A radio: the selected card wears a 3pt orange ring, the other a quiet 2pt ring.
  */
 export function PlanOption({
   offer,
@@ -53,6 +53,9 @@ export function PlanOption({
       onPress={onSelect}
       style={({ pressed }) => [styles.card, selected ? styles.on : styles.off, pressed && !selected && styles.pressed]}>
       <View style={styles.text}>
+        <Text maxFontSizeMultiplier={fontScaleCap.text} style={onboardingType.planLabel}>
+          {offer.label}
+        </Text>
         <Text maxFontSizeMultiplier={fontScaleCap.text} style={[onboardingType.planPrice, styles.tabular]}>
           {billed}
         </Text>
