@@ -60,9 +60,9 @@ npx eas-cli build --platform ios --profile production --auto-submit
 - [x] `metadata:push` (10 October; needs `"version": "1.0"` in store.config.json), checked description, keywords, promo text, review notes, age rating.
 - [x] Screenshots uploaded (the 6.3" set is the required size; App Store Connect scales it to the other iPhones). Header and search asset uploaded too.
 - [x] Each subscription: review screenshot and review notes saved.
-- [ ] Attach both subscriptions to version 1.0 (In-App Purchases and Subscriptions on the version page).
-- [ ] Select the production build on the 1.0 version page; content rights: no third-party content.
-- [ ] Submit for review (manual release).
+- [x] Both subscriptions and the Trim Pro group added to the same review submission as the version (each item's "Add for Review" → the existing draft).
+- [x] Build 1.0.0 (17), `production` profile from main @ 14b5251, selected; content rights: no third-party content.
+- [x] Submitted for review on 10 October 2026, 20:35 (4 items: app 1.0, yearly, monthly, group). Manual release.
 
 **After approval**
 - [ ] Release the version (Marvin).
