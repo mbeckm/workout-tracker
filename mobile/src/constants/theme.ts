@@ -1093,15 +1093,8 @@ export const sheetGeometry = {
   toastTop: 60,
   toastPadX: 16,
   toastPadY: 10,
-  /** Sheet top edges: most, tall, Today, finishes. */
+  /** Sheet top edges: most, tall (the Skin Library too), Today, short (the keypad). */
   tops: { default: 96, tall: 60, today: 200, finishes: 430 },
-  /**
-   * The finishes sheet is as tall as its content, anchored to the bottom, so a taller phone shows
-   * more device, not more empty sheet. The host measures the content and glides to fit when
-   * `Get Trim Pro` comes and goes; this is its height before the first measure (header, swatches,
-   * Done), without the bottom inset.
-   */
-  swatchesHeight: 248,
 } as const;
 
 /** The receipt, mini receipts and the week report (SPEC §6 Receipt, History wall; prototype `.paper`, `.mini`; QC2). */
@@ -2357,6 +2350,9 @@ export const tourColors = {
   focusGlow: 'rgba(255,106,26,0.5)',
   /** The ground the gift's machines stand on (decision 95). */
   roomGround: '#0A0A09',
+  /** Graphite unlocked: the sparkles, the display's white and the brand amber (decision 97). */
+  sparkleLight: '#F6F6F3',
+  sparkleWarm: '#FF6A1A',
 } as const;
 
 export const tourGeometry = {
@@ -2396,6 +2392,13 @@ export const tourGeometry = {
   dotHit: 44,
   /** The foot (label, dots, Use) fades in over the last part of the step back. */
   footFrom: 0.5,
+  /** A locked skin's dot (decision 97): a small padlock badge on its lower right. */
+  lockBadge: 14,
+  lockGlyph: 8,
+  /** Graphite unlocked (decision 97): pixel sparkles round the machine, this long and this thick, this far outside it. */
+  sparkleArm: 13,
+  sparklePixel: 3,
+  sparkleOut: 14,
 } as const;
 
 /**

@@ -322,6 +322,12 @@ export const DEVICE = {
   TOUR_STEP_BACK: 420,
   TOUR_SETTLE: 380,
   TOUR_FADE: 200,
+  /**
+   * Graphite unlocked (decision 97): as the row settles, eight pixel sparkles twinkle round the new
+   * machine once, each for TOUR_SPARKLE_EACH, the last one done TOUR_SPARKLE after the first.
+   */
+  TOUR_SPARKLE: 1000,
+  TOUR_SPARKLE_EACH: 420,
 } as const;
 
 /**

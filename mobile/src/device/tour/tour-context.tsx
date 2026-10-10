@@ -81,7 +81,8 @@ type TourContextValue = {
   /** The old skin is gone (or a tap skipped its fall): the row takes touches. */
   reveal: () => void;
   choose: (finish: Finish) => void;
-  keep: () => void;
+  /** Use or Keep the machine in the middle; `unlocked` once a Trim Pro purchase has just opened it. */
+  keep: (unlocked?: boolean) => void;
 };
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -268,12 +269,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
     [later, reduceMotion, setPreview, setUiMode, store],
   );
 
-  const keep = useCallback(() => {
-    if (launch !== 'picking') return;
-    // Pro finishes only preview: the owner keeps the earned one or the one they had.
-    if (finishLock(pick, { isPro: store.isPro, tourDone: true }) === 'pro') return;
-    finishTour(pick);
-  }, [finishTour, launch, pick, store.isPro]);
+  const keep = useCallback(
+    (unlocked = false) => {
+      if (launch !== 'picking') return;
+      // A Pro finish keeps only once bought (Try Trim Pro, decision 97); the store's `isPro` may
+      // not have caught up with the purchase yet, so the gift says so.
+      if (!unlocked && finishLock(pick, { isPro: store.isPro, tourDone: true }) === 'pro') return;
+      finishTour(pick);
+    },
+    [finishTour, launch, pick, store.isPro],
+  );
 
   const state = tour ?? initialTourState([]);
   const currentLift = state.lifts[state.lift];

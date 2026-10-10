@@ -67,17 +67,7 @@ export function SheetHost() {
   }
   const kind = open?.kind ?? shown?.kind ?? null;
   const topKind = kind ? sheetTop(kind) : null;
-  // A bottom-anchored sheet fits its measured content (finishes: Get Trim Pro comes and goes).
-  const [fit, setFit] = useState<{ key: number; height: number } | null>(null);
-  const fitHeight =
-    fit && fit.key === shown?.key
-      ? fit.height
-      : sheetGeometry.swatchesHeight + Math.max(insets.bottom, sheetGeometry.bottomPad);
-  const top = !topKind
-    ? 0
-    : topKind === 'swatches'
-      ? windowHeight - fitHeight
-      : fromReferenceTop(sheetGeometry.tops[topKind], insets.top);
+  const top = !topKind ? 0 : fromReferenceTop(sheetGeometry.tops[topKind], insets.top);
   const sheetHeight = Math.max(1, windowHeight - top);
 
   /** 0 hidden, 1 up. */
@@ -227,18 +217,8 @@ export function SheetHost() {
       focusKey: shown?.key ?? 0,
       close: closeSheet,
       keyboard: usesKeyboard,
-      // Only while open: the content settling as the sheet slides away mustn't move its top.
-      fit:
-        open && topKind === 'swatches'
-          ? (contentHeight: number) =>
-              setFit((last) =>
-                last?.key === open.key && last.height === contentHeight
-                  ? last
-                  : { key: open.key, height: contentHeight },
-              )
-          : undefined,
     }),
-    [closeSheet, open, scrollGesture, scrollY, shown?.key, topKind, usesKeyboard],
+    [closeSheet, scrollGesture, scrollY, shown?.key, usesKeyboard],
   );
 
   if (!shown) {
