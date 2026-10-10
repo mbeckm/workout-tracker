@@ -28,7 +28,8 @@
         "EXPO_PUBLIC_PROGRESS_DEMO": "0"
       },
       "ios": {
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "image": "macos-tahoe-26.5-xcode-26.6"
       },
       "channel": "production"
     },
