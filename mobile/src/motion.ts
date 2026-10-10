@@ -1,10 +1,15 @@
+import type { ViewStyle } from 'react-native';
 import {
+  cubicBezier,
   Easing,
   FadeIn,
   FadeInUp,
   FadeOut,
+  type CSSStyle,
   type EntryOrExitLayoutType,
 } from 'react-native-reanimated';
+
+import { PRESSED_OPACITY } from '@/constants/theme';
 
 /** Strong ease-out for UI enter/exit and press. */
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -60,6 +65,41 @@ export const ENTER_OFFSET = 8;
 
 export const PRESS_MS = DURATION.press;
 export const PRESS_SCALE = 0.97;
+
+/** EASE_OUT for Reanimated CSS transitions. */
+const EASE_OUT_TRANSITION = cubicBezier(0.23, 1, 0.32, 1);
+
+/**
+ * A soft press for a big choice (onboarding's cards): it eases down to PRESS_SCALE over `press`
+ * and back over `enter`, never a snap and never an overshoot. A Reanimated CSS transition, so React
+ * holds both resting states (trim-ui §8 Rules). Reduce Motion: it dims instead of shrinking.
+ */
+export function softPress(pressed: boolean, reduceMotion: boolean): CSSStyle<ViewStyle> {
+  if (reduceMotion) {
+    return {
+      opacity: pressed ? PRESSED_OPACITY : 1,
+      transitionProperty: 'opacity',
+      transitionDuration: pressed ? DURATION.press : DURATION.fade,
+      transitionTimingFunction: EASE_OUT_TRANSITION,
+    };
+  }
+  return {
+    transform: [{ scale: pressed ? PRESS_SCALE : 1 }],
+    transitionProperty: 'transform',
+    transitionDuration: pressed ? DURATION.press : DURATION.enter,
+    transitionTimingFunction: EASE_OUT_TRANSITION,
+  };
+}
+
+/** A selection mark (a ring, a fill) fading in over `enter` and out over `exit`. Same under Reduce Motion: it's a fade. */
+export function softSelect(selected: boolean): CSSStyle<ViewStyle> {
+  return {
+    opacity: selected ? 1 : 0,
+    transitionProperty: 'opacity',
+    transitionDuration: selected ? DURATION.enter : DURATION.exit,
+    transitionTimingFunction: EASE_OUT_TRANSITION,
+  };
+}
 
 const ENTER_UP = FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
   opacity: 0,

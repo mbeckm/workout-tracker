@@ -364,6 +364,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Motion | Duration / curve | Notes |
 | --- | --- | --- |
 | Key press | translateY 3 (round keys), 6 (big key); 80 ms; the lip shadow collapses | On press-in, not release |
+| Choice card press (onboarding) | `softPress` (`motion.ts`): scale .97 over 120 ms in, back over 200 ms, ease-out, no overshoot; the selection ring or fill fades in over 200 ms, out over 150 (`softSelect`) | Reanimated CSS transitions, so React holds both resting states. Reduce Motion: it dims instead of shrinking |
 | Display content change | fade and rise 8, 220 ms, bezier(.2,.8,.3,1) | Every mode change |
 | Weight drum step | translateY ±24, then back, 160 ms, bezier(.2,.8,.3,1) | Per wheel notch |
 | Wheel | Ridges follow the finger 1:1. One notch = 16 pt of travel | Weight: one step per notch. Rest: ±15 s per 2 notches. Reps while editing: 1 per notch. |
@@ -411,7 +412,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | --- | --- | --- |
 | Wheel notch (weight, time, reps) | transient, intensity .7, sharpness .9; every 5th notch or whole 10 kg: intensity 1.0; with the `notch` click | `selectionAsync` |
 | Key press (any key) | transient .85 / .6, with the `key` click | `impactAsync(Light)` |
-| A tap on the display (a day row, the drum) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
+| A tap on the display (a day row, the drum); a Got a plan? card picked (the cards are little Trims) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
 | A plan has loaded (the days have ticked in, Home takes over) | transients .55, .7 and 1.0, 90 ms apart, then .5 / .2 for 120 ms; with the `ready` chime | `notificationAsync(Success)` |
 | Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
 | Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
@@ -451,7 +452,7 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
 | `swatch` | a metal tile set down | A choice card or a paywall plan picked |
 | `reskin` | a tight closed-hat tick and a short blip on one note (D7), 90 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
-| `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
+| `blip` | a soft electronic blip | A tap on the display (a day row, the drum); a Got a plan? card or Build my own picked |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
 | `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
