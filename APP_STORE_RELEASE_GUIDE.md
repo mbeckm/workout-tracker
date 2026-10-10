@@ -54,12 +54,13 @@ npx eas-cli build --platform ios --profile production --auto-submit
 - [x] DSA: Marvin declares trader status with his own address.
 
 **In App Store Connect before Submit for Review**
-- [ ] App Privacy: add User Content → Photos or Videos and Other User Content (App Functionality, not linked, no tracking) for plan import; Anthropic keeps API inputs for up to 30 days, so it counts as collected.
-- [ ] Business → Compliance: DSA trader status, then App Information → Digital Services Act.
-- [ ] App Information → Regulated medical device: No.
-- [ ] `metadata:push`, then check description, keywords, promo text, review notes, age rating.
-- [ ] Upload screenshots (6.9" and 6.3").
-- [ ] Each subscription: review screenshot (`design/app-store/review/`), status Ready to Submit; attach both to version 1.0.
+- [x] App Privacy: User Content → Photos or Videos and Other User Content → Photos or Videos and Other User Content are declared (App Functionality, not linked, no tracking) for plan import.
+- [x] DSA: declared as trader for this app (App Information → Digital Services Act).
+- [x] App Information → Regulated medical device: No (10 October).
+- [x] `metadata:push` (10 October; needs `"version": "1.0"` in store.config.json), checked description, keywords, promo text, review notes, age rating.
+- [x] Screenshots uploaded (the 6.3" set is the required size; App Store Connect scales it to the other iPhones). Header and search asset uploaded too.
+- [x] Each subscription: review screenshot and review notes saved.
+- [ ] Attach both subscriptions to version 1.0 (In-App Purchases and Subscriptions on the version page).
 - [ ] Select the production build on the 1.0 version page; content rights: no third-party content.
 - [ ] Submit for review (manual release).
 
