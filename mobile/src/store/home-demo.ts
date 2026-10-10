@@ -363,6 +363,25 @@ const GADGET_DAYS: { title: string; lifts: GadgetLift[]; minutes: number }[] = [
   },
 ];
 
+/**
+ * Each lift's share of the bench load, so the fixture's numbers read like a real lifter's
+ * (App Store screenshots): a 100 kg squat next to a 40 kg curl, not every lift at the same load.
+ */
+const DEMO_LOAD_SCALE: Record<string, number> = {
+  Squat: 1.25,
+  'Romanian Deadlift': 1.1,
+  'Barbell Row': 0.85,
+  'Lat Pulldown': 0.75,
+  'Overhead Press': 0.6,
+  'Leg Curl': 0.5,
+  'Barbell Curl': 0.4,
+  'Cable Fly': 0.2,
+};
+
+function demoLoad(name: string, load: number): number {
+  return Math.round(((DEMO_LOAD_SCALE[name] ?? 1) * load) / 2.5) * 2.5;
+}
+
 /** `weekday` days after this week's Monday at 18:00, or a few minutes ago if that's still ahead. */
 function thisWeekAt(weekday: number, order = 0): string {
   const now = new Date();
@@ -424,7 +443,7 @@ function gadgetDemoSnapshot(base: WorkoutSnapshot, mode: GadgetDemoMode): Workou
     const exercises = day.exercises.map((exercise) => ({
       id: newId(),
       exerciseName: exercise.name,
-      sets: loggedSets(Array(exercise.sets).fill([load, exercise.reps])),
+      sets: loggedSets(Array(exercise.sets).fill([demoLoad(exercise.name, load), exercise.reps])),
     }));
     const kept = onlySets ? exercises.slice(0, 1).map((item) => ({ ...item, sets: item.sets.slice(0, onlySets) })) : exercises;
     workouts.push({
@@ -447,7 +466,7 @@ function gadgetDemoSnapshot(base: WorkoutSnapshot, mode: GadgetDemoMode): Workou
   log(0, thisWeekAt(0, 3), 80);
   log(1, thisWeekAt(1, 2), 80);
   const legs = workouts[workouts.length - 1];
-  legs.exercises[0].sets.forEach((set) => (set.weight = 85));
+  legs.exercises[0].sets.forEach((set) => (set.weight = demoLoad('Squat', 85)));
   if (mode === 'gadget-stamped') {
     // Push 1 just now: one set, a bench record.
     log(2, thisWeekAt(6, 0), 85, 1);
