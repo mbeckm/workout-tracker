@@ -10,6 +10,7 @@ import { deviceReducer, initialDeviceState } from '@/device/device-state';
 import {
   READY_BEAT,
   TEACH,
+  TOUR_REST_SECONDS,
   TOUR_SCRIPT,
   TOUR_SETS,
   initialTourState,
@@ -534,8 +535,15 @@ check('tour: the whole script, each control answering its own line', () => {
   state = tourStep(state, { type: 'log', now: 1000 });
   assert.equal(state.screen, 'rest');
   assert.deepEqual(state.sets, [1, 0, 0]);
+  assert.equal(state.restEndsAt, 1000 + TOUR_REST_SECONDS * 1000);
+  // Decision 96: a tap doesn't skip the practice rest; it runs to GO and hands over to set 2.
   state = tourTap(state);
+  assert.equal(state.beat, TEACH.undo - 1);
+  assert.equal(state.screen, 'rest');
+  state = tourStep(state, { type: 'restOver' });
   assert.equal(state.beat, TEACH.undo);
+  assert.equal(state.screen, 'log');
+  assert.equal(state.restEndsAt, 0);
   state = tourStep(state, { type: 'undo' });
   assert.deepEqual(state.sets, [0, 0, 0]);
   assert.equal(state.screen, 'log');
@@ -560,6 +568,19 @@ check('tour: the whole script, each control answering its own line', () => {
   assert.equal(lineOf(state.beat, TOUR_FACTS), "That's the tour, Sam.");
   state = tourTap(state);
   assert.equal(state.beat, TOUR_SCRIPT.length - 1);
+});
+
+check('tour: Skip during the practice rest answers its line too, and restOver after it does nothing', () => {
+  let state = initialTourState(TOUR_LIFTS);
+  state = { ...state, beat: TEACH.log, screen: 'log', typed: lineOf(TEACH.log, TOUR_FACTS).length };
+  state = tourStep(state, { type: 'log', now: 0 });
+  assert.equal(state.beat, TEACH.log + 1);
+  state = tourStep(state, { type: 'skipRest' });
+  assert.equal(state.beat, TEACH.undo);
+  assert.equal(state.screen, 'log');
+  const late = tourStep(state, { type: 'restOver' });
+  assert.equal(late.beat, TEACH.undo);
+  assert.equal(late.screen, 'log');
 });
 
 check('tour: Skip on the first screen goes to the end', () => {

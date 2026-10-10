@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
 
 import { device, gadgetType, lcd, logGeometry, tourGeometry, tourType } from '@/constants/theme';
-import { useScreen } from '@/device/finish';
 import { useHaptics } from '@/device/haptics';
 import { Drum, drumLayout, useDisplayHeight, type DrumNudge } from '@/device/parts';
 import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
 import { DEVICE } from '@/motion';
+
+import { RestCharge } from '@/device/log/rest-charge';
 
 import { useTour } from './tour-context';
 import { loggedOn, tourSetLamps } from './tour-model';
@@ -16,6 +16,9 @@ import { loggedOn, tourSetLamps } from './tour-model';
 /** The log header: the lift name, then the set lamps (as the log display, decision 84). */
 const HEADER_BOTTOM =
   device.displayHeaderY + gadgetType.lcdRow.lineHeight + logGeometry.nameSetGap + gadgetType.lcdSmall.lineHeight;
+
+/** The rest header (`REST` / `NEXT 20.0×8`) is one `lcdSmall` line. */
+const REST_HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
 
 function weightText(value: number): string {
   return value.toFixed(1);
@@ -150,52 +153,28 @@ function TourLog({ height, onName }: { height: number; onName: () => void }) {
   );
 }
 
-/** The practice rest: `REST`, the ring and the clock, counting down for real. */
+/**
+ * The practice rest, as the log's (decision 96): `REST` / `NEXT 20.0×8`, then `SET 2 IN` over the
+ * clock and the battery charging toward set 2, counting down for real; full, `SET 2` / `GO`.
+ */
 function TourRest({ height }: { height: number }) {
   const styles = useScreenStyles(baseStyles);
-  const screen = useScreen();
   const tour = useTour();
+  const { state } = tour;
   const left = tour.restLeft;
-  const fraction = Math.min(1, left / Math.max(1, tour.state.restLongest));
-  const box = Math.min(logGeometry.restRingBox, Math.max(0, height - HEADER_BOTTOM - logGeometry.restRingClear));
-  const scale = box / logGeometry.restRingBox;
-  const r = device.restRingRadius * scale;
-  const stroke = device.restRingStroke * scale;
-  const circumference = 2 * Math.PI * r;
-  const center = box / 2;
+  const fraction = tour.restGo ? 0 : Math.min(1, left / Math.max(1, state.restLongest));
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  const up = `SET ${Math.min(loggedOn(state) + 1, state.setsPerLift)}`;
 
   return (
     <View style={StyleSheet.absoluteFill}>
       <View style={styles.restHeader}>
         <LcdText style={[gadgetType.lcdSmall, styles.dim]}>REST</LcdText>
         <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
-          {`NEXT ${weightText(tour.state.weight)}×${tour.state.reps}`}
+          {`NEXT ${weightText(state.weight)}×${state.reps}`}
         </LcdText>
       </View>
-      {box > 0 ? (
-        <View style={[styles.ring, { top: HEADER_BOTTOM, height: box }]}>
-          <Svg width={box} height={box} viewBox={`0 0 ${box} ${box}`}>
-            <Circle cx={center} cy={center} r={r} fill="none" stroke={screen.amberOff} strokeWidth={stroke} strokeDasharray={logGeometry.restRingDash} />
-            <Circle
-              cx={center}
-              cy={center}
-              r={r}
-              fill="none"
-              stroke={screen.amber}
-              strokeWidth={stroke}
-              strokeDasharray={`${circumference} ${circumference}`}
-              strokeDashoffset={circumference * (1 - fraction)}
-              transform={`rotate(-90 ${center} ${center})`}
-            />
-          </Svg>
-          <View style={[StyleSheet.absoluteFill, styles.centered]}>
-            <LcdText style={[gadgetType.lcdBig, scale < 1 && { fontSize: Math.round(gadgetType.lcdBig.fontSize * scale), lineHeight: Math.round(gadgetType.lcdBig.lineHeight * scale) }]}>
-              {clock}
-            </LcdText>
-          </View>
-        </View>
-      ) : null}
+      <RestCharge up={up} clock={clock} fraction={fraction} go={tour.restGo} room={height - REST_HEADER_BOTTOM} style={[styles.restMiddle, { height: Math.max(0, height - REST_HEADER_BOTTOM) }]} />
     </View>
   );
 }
@@ -306,6 +285,5 @@ const baseStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  ring: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  centered: { alignItems: 'center', justifyContent: 'center' },
+  restMiddle: { position: 'absolute', left: 0, right: 0, top: REST_HEADER_BOTTOM },
 });

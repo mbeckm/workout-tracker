@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useReducedMotion } from 'react-native-reanimated';
 
 import { track } from '@/analytics/analytics';
 import { BUNDLED_EXERCISES } from '@/catalog/bundled';
@@ -12,7 +13,7 @@ import { EARNED_FINISH, finishLock, type Finish } from '@/domain/finish';
 import { defaultLoadStep } from '@/domain/load-step';
 import { trainableDays } from '@/domain/plan-loop';
 import type { ExercisePrescription, WorkoutPlan } from '@/domain/types';
-import { DEVICE } from '@/motion';
+import { DEVICE, REST_GO_MS } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { tourDone, tourHandoffPending, setTourHandoff, whenTourDone } from './tour-done';
@@ -23,6 +24,7 @@ import {
   swapTarget,
   taught,
   tourReducer,
+  tourRestLeft,
   type TourAction,
   type TourControl,
   type TourLift,
@@ -30,8 +32,12 @@ import {
   type TourWait,
 } from './tour-model';
 
-/** The launch after Start: in the air, perched over the picker, then settling to full size. */
-export type TourLaunchPhase = 'launch' | 'perched' | 'landing';
+/**
+ * The gift after Start (decision 95): the old skin falls away (`drop`), the six machines stand in a
+ * row to swipe through (`picking`), the picked one steps forward again (`landing`, Home already
+ * underneath), and the device fades in over it (`landed`).
+ */
+export type TourLaunchPhase = 'drop' | 'picking' | 'landing' | 'landed';
 
 /** The practice lifts when the plan has none yet (Build my own): a push day's first three. */
 const FALLBACK_LIFTS = ['Flat Barbell Bench Press', 'Incline Dumbbell Press', 'Overhead Press'];
@@ -52,6 +58,8 @@ type TourContextValue = {
   loadStep: number;
   /** Seconds left in the practice rest. */
   restLeft: number;
+  /** The practice rest reached 0:00: the battery is full and GO shows until `restOver`. */
+  restGo: boolean;
   /** The practice lift's prescription (the exercise sheet shows it). */
   current: ExercisePrescription | null;
   alternatives: readonly ExercisePrescription[];
@@ -63,21 +71,18 @@ type TourContextValue = {
    * active plan.
    */
   run: (plan?: WorkoutPlan) => Promise<void>;
-  /** The launch and the reward picker. */
+  /** The gift and its row of machines. */
   launch: TourLaunchPhase | null;
+  /** The machine in the middle of the row. */
   pick: Finish;
-  ripple: number;
-  /** The finish the owner had before the reward (the picker's first swatch). */
+  /** The finish the owner had before the reward (the row's first machine). */
   before: Finish;
   start: () => void;
-  /**
-   * The 3D launch has the device photographed and hidden: dress it in the new finish now, during
-   * the crouch, so the re-skin's work lands while the body barely moves. The 3D body shows it
-   * edge-on at `DEVICE.TOUR_SWAP`, as the 2D slab does.
-   */
-  dressEarly: () => void;
+  /** The old skin is gone (or a tap skipped its fall): the row takes touches. */
+  reveal: () => void;
   choose: (finish: Finish) => void;
-  keep: () => void;
+  /** Use or Keep the machine in the middle; `unlocked` once a Trim Pro purchase has just opened it. */
+  keep: (unlocked?: boolean) => void;
 };
 
 const TourContext = createContext<TourContextValue | null>(null);
@@ -103,12 +108,12 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const store = useWorkoutStore();
   const { setPreview } = useFinish();
   const haptics = useHaptics();
+  const reduceMotion = useReducedMotion();
   const facts = useMemo(() => ({ name: store.userName }), [store.userName]);
   const [tour, setTour] = useState<TourState | null>(null);
   const [practice, setPractice] = useState<ExercisePrescription[]>([]);
   const [launch, setLaunch] = useState<TourLaunchPhase | null>(null);
   const [pick, setPick] = useState<Finish>(EARNED_FINISH);
-  const [ripple, setRipple] = useState(0);
   const [before, setBefore] = useState<Finish>(store.finish);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const factsRef = useRef(facts);
@@ -147,7 +152,6 @@ export function TourProvider({ children }: { children: ReactNode }) {
       setLaunch(null);
       setBefore(latest.current.finish);
       setPick(EARNED_FINISH);
-      setRipple(0);
       closeSheet();
       setUiMode('tour');
       track('tour_started', {});
@@ -166,19 +170,32 @@ export function TourProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [dispatch, tour?.typed, tour?.beat, typing]);
 
-  // The practice rest counts down for real.
-  const [restLeft, setRestLeft] = useState(0);
+  // The practice rest counts down for real, then hands over as the log's does (decision 96): GO
+  // with the rest haptic at 0:00, and set 2 after REST_GO_MS.
+  const [now, setNow] = useState(() => Date.now());
+  const [goFor, setGoFor] = useState(0);
   const restEndsAt = active && tour?.screen === 'rest' ? tour.restEndsAt : 0;
   useEffect(() => {
     if (restEndsAt <= 0) return;
-    const read = () => setRestLeft(Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000)));
+    const read = () => setNow(Date.now());
     const first = setTimeout(read, 0);
     const timer = setInterval(read, DEVICE.REST_TICK);
+    const wait = Math.max(0, restEndsAt - Date.now());
+    const go = setTimeout(() => {
+      setGoFor(restEndsAt);
+      haptics.restGo();
+    }, wait);
+    const over = setTimeout(() => dispatch({ type: 'restOver' }), wait + REST_GO_MS);
     return () => {
       clearTimeout(first);
       clearInterval(timer);
+      clearTimeout(go);
+      clearTimeout(over);
     };
-  }, [restEndsAt]);
+  }, [dispatch, haptics, restEndsAt]);
+  const restGo = restEndsAt > 0 && goFor === restEndsAt;
+  // Until the first tick the clock may be stale: it never reads more than the rest's length.
+  const restLeft = tour && restEndsAt > 0 ? (restGo ? 0 : Math.min(tour.restLongest, tourRestLeft(tour, now))) : 0;
 
   // The menu beat ends when the menu the tour opened closes.
   const menuWasOpen = useRef(false);
@@ -207,35 +224,30 @@ export function TourProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [device.uiMode, run, store.activeSession, store.hasCompletedOnboarding, store.isHydrated, store.tourDone]);
 
+  const reveal = useCallback(() => setLaunch((phase) => (phase === 'drop' ? 'picking' : phase)), []);
+
+  // Start lets the old skin go (decision 95). Nothing heavy happens here: the row of machines is
+  // already drawn under the device (`TourGift`), so the tap only starts the fall.
   const start = useCallback(() => {
     if (launch != null) return;
     closeSheet();
     haptics.bigKeyPress();
-    setLaunch('launch');
-    // The new finish swaps in while the device is edge-on, mid-spin.
-    later(() => {
-      setPick(EARNED_FINISH);
-      setPreview(EARNED_FINISH);
-    }, DEVICE.TOUR_SWAP);
-    later(() => {
-      setLaunch('perched');
-      haptics.stamp();
-    }, DEVICE.TOUR_LAUNCH);
-  }, [closeSheet, haptics, later, launch, setPreview]);
+    setPick(EARNED_FINISH);
+    setLaunch('drop');
+    later(() => haptics.reskin(), DEVICE.TOUR_RELEASE);
+    // The fall's own end reveals the row (`useTourDropStyle`); this is the backstop.
+    later(reveal, reduceMotion ? DEVICE.TOUR_FADE : DEVICE.TOUR_DROP + DEVICE.TOUR_FADE);
+  }, [closeSheet, haptics, later, launch, reduceMotion, reveal]);
 
-  const dressEarly = useCallback(() => {
-    if (launch === 'launch') setPreview(EARNED_FINISH);
-  }, [launch, setPreview]);
-
+  // A machine in the middle of the row. Nothing is previewed on the device: it stays hidden
+  // under the row until Use, so a pick re-renders only the row's foot.
   const choose = useCallback(
     (finish: Finish) => {
-      if (finish === pick || launch === 'landing') return;
+      if (finish === pick || launch !== 'picking') return;
       haptics.reskin();
       setPick(finish);
-      setPreview(finish === store.finish ? null : finish);
-      setRipple((n) => n + 1);
     },
-    [haptics, launch, pick, setPreview, store.finish],
+    [haptics, launch, pick],
   );
 
   const finishTour = useCallback(
@@ -244,22 +256,29 @@ export function TourProvider({ children }: { children: ReactNode }) {
       store.completeTour(keepFinish);
       setPreview(null);
       track('tour_completed', { finish: keepFinish });
+      // Home renders now, hidden under the row while the machine steps forward; then it fades in.
+      setTour(null);
+      setUiMode(null);
+      const settle = reduceMotion ? 0 : DEVICE.TOUR_SETTLE;
+      later(() => setLaunch('landed'), settle);
       later(() => {
         setLaunch(null);
-        setTour(null);
-        setUiMode(null);
         tourDone();
-      }, DEVICE.TOUR_SETTLE);
+      }, settle + DEVICE.TOUR_FADE);
     },
-    [later, setPreview, setUiMode, store],
+    [later, reduceMotion, setPreview, setUiMode, store],
   );
 
-  const keep = useCallback(() => {
-    if (launch !== 'perched') return;
-    // Pro finishes only preview: the owner keeps the earned one or the one they had.
-    if (finishLock(pick, { isPro: store.isPro, tourDone: true }) === 'pro') return;
-    finishTour(pick);
-  }, [finishTour, launch, pick, store.isPro]);
+  const keep = useCallback(
+    (unlocked = false) => {
+      if (launch !== 'picking') return;
+      // A Pro finish keeps only once bought (Try Trim Pro, decision 97); the store's `isPro` may
+      // not have caught up with the purchase yet, so the gift says so.
+      if (!unlocked && finishLock(pick, { isPro: store.isPro, tourDone: true }) === 'pro') return;
+      finishTour(pick);
+    },
+    [finishTour, launch, pick, store.isPro],
+  );
 
   const state = tour ?? initialTourState([]);
   const currentLift = state.lifts[state.lift];
@@ -288,21 +307,22 @@ export function TourProvider({ children }: { children: ReactNode }) {
       taught: (control: TourControl) => taught(state, control),
       dispatch,
       restLeft,
+      restGo,
       loadStep,
       current,
       alternatives,
       target,
       run,
-      launch: active ? launch : null,
+      // Not gated on `active`: the gift outlives the tour by its last steps (`landing`, `landed`).
+      launch,
       pick,
-      ripple,
       before,
       start,
-      dressEarly,
+      reveal,
       choose,
       keep,
     }),
-    [active, alternatives, before, choose, current, dispatch, dressEarly, facts, keep, launch, line, loadStep, pick, restLeft, ripple, run, start, state, target],
+    [active, alternatives, before, choose, current, dispatch, facts, keep, launch, line, loadStep, pick, restGo, restLeft, reveal, run, start, state, target],
   );
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;

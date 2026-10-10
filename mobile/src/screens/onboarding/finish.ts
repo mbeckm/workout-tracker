@@ -10,7 +10,6 @@ import { useDevice } from '@/device/device-context';
 import { useTour } from '@/device/tour/tour-context';
 import { setTourHandoff } from '@/device/tour/tour-done';
 import { useFinish } from '@/device/finish';
-import { openPaywall } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 import { track } from '@/analytics/analytics';
 
@@ -20,16 +19,17 @@ import { track } from '@/analytics/analytics';
  *    leaves a plan without completed onboarding, or the reverse);
  * 2. replaces the onboarding stack with the device, so Back can never re-enter it;
  * 3. plays "Plan ready" (the cartridge insert on the device, D12) and, once it has ended (played,
- *    skipped, Reduce Motion or backgrounded), the guided tour (decision 85: a practice set, the
- *    launch and Graphite); once that's kept, what comes next: the soft paywall, or the editor
- *    sheet. Never two moments at once.
+ *    skipped, Reduce Motion or backgrounded), the guided tour (decision 85: a practice set, then
+ *    the gift of Graphite); once that's kept: Home (template and import paths), or the editor sheet
+ *    (Build my own). No paywall at the end of onboarding any more (decision 97): the gift's
+ *    Try Trim Pro, the first completed workout and the Pro gates sell Trim Pro instead. Never two
+ *    moments at once.
  *
  * The finish (D3): a free finish was saved when it was picked. A locked one is only previewed;
- * it stays if the paywall ends with Trim Pro, otherwise the device falls back to the free finish
- * saved last (212 unless they picked 101).
+ * it stays for an owner who is already Pro, otherwise the gift's pick (saved by the tour) stands.
  *
  * The root layout's redirect effect does not act on a completion that happens during
- * this launch, so it never replaces the paywall or editor opened here.
+ * this launch, so it never replaces the editor opened here.
  */
 export function useFinishOnboarding() {
   const router = useRouter();
@@ -51,8 +51,8 @@ export function useFinishOnboarding() {
   );
 
   /**
-   * Template and import paths: the plan loads into the device ("Plan ready"), then the
-   * `onboarding` paywall. An imported plan is a real plan like a template's (decision 88).
+   * Template and import paths: the plan loads into the device ("Plan ready"), then the tour, then
+   * Home. An imported plan is a real plan like a template's (decision 88).
    */
   const finishWithPlan = useCallback(
     (plan: WorkoutPlan, lockedFinish: Finish | null, path: 'template' | 'import' = 'template') => {
@@ -74,13 +74,7 @@ export function useFinishOnboarding() {
         // The tour's reward saved the finish the owner left it on; only a Pro finish previewed
         // in onboarding and then bought replaces it.
         await runTour(plan);
-        if (isPro) {
-          if (lockedFinish) keepFinish(lockedFinish);
-          return;
-        }
-        const outcome = await openPaywall('onboarding');
-        const bought = outcome === 'purchased' || outcome === 'restored';
-        if (lockedFinish && bought) keepFinish(lockedFinish);
+        if (isPro && lockedFinish) keepFinish(lockedFinish);
       })();
     },
     [completeOnboarding, isPro, keepFinish, playPlanReady, router, runTour, savePlan, userName],

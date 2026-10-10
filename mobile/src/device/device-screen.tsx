@@ -5,9 +5,9 @@ import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CartridgeInsert, DeviceLaunch, type CartridgeInsertScreen } from '../../modules/trim-device';
+import { CartridgeInsert, type CartridgeInsertScreen } from '../../modules/trim-device';
 
-import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, tourGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
+import { device, editGeometry, finishColors, gadgetRadius, insertGeometry, gadgetType, logGeometry, momentColors, signal, space } from '@/constants/theme';
 import { track } from '@/analytics/analytics';
 import { useDevice } from '@/device/device-context';
 import { commandFromParams, deviceMode } from '@/device/device-state';
@@ -52,9 +52,8 @@ import { SheetHost } from '@/device/sheets';
 import { FocusRing } from '@/device/tour/focus-ring';
 import { useTour } from '@/device/tour/tour-context';
 import { TourDisplay } from '@/device/tour/tour-display';
-import { TourBack, TourEdge, TourReward, TourRoom, useTourDeviceStyle, useTourLaunch3d, useTourMotion } from '@/device/tour/tour-launch';
+import { TourGift, useTourDeviceFade, useTourDropStyle } from '@/device/tour/tour-gift';
 import { loggedOn, tourLiftDone, tourLiftLamps } from '@/device/tour/tour-model';
-import { DEVICE, EASE_DISPLAY_CURVE, TOUR_POSE, TOUR_POSE_CURVES, TOUR_POSE_HEIGHT } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
 /** The gap between the top row and the display, and between the display and the bottom row (SPEC §4: 140 − 112, 588 − 560). */
@@ -118,9 +117,8 @@ function DeviceSurface() {
   const deviceMotion = useInsertDeviceStyle(jsClock);
   const hidden = insert?.engine === 'native' && insert.phase === 'scene' && insert.nativeShowing;
   const tour = useTour();
-  const tourMotion = useTourMotion();
-  const tourStyle = useTourDeviceStyle(tourMotion);
-  const launch3d = useTourLaunch3d();
+  const tourDrop = useTourDropStyle();
+  const tourFade = useTourDeviceFade();
   const { log } = work;
   /**
    * What the big key meant when the finger landed. The release runs that, even if the mode
@@ -282,9 +280,10 @@ function DeviceSurface() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style={onScene ? 'light' : finishColors[finish].statusBar} />
+      <StatusBar style={onScene || tour.launch === 'picking' || tour.launch === 'landing' ? 'light' : finishColors[finish].statusBar} />
       {jsClock ? <InsertBackdrop clock={jsClock} width={width} height={height} /> : null}
-      {tour.launch ? <TourRoom motion={tourMotion} /> : null}
+      {/* The tour's gift (decision 95): the row of machines, drawn under the device before Start. */}
+      <TourGift />
       {/*
         The sheet's own `accessibilityViewIsModal` only hides its siblings inside SheetHost, so
         the device hides itself from VoiceOver while a sheet is up (trim-ui §10 SheetHost).
@@ -292,34 +291,19 @@ function DeviceSurface() {
         that held for over a second, then changed during a JS stall, comes back on the next commit
         (trim-ui §8 Rules), and the whole device would stay invisible after a plan activation.
       */}
-      {/* The tour's launch throws the device on the insert's SceneKit body; idle, a plain container. */}
-      <DeviceLaunch
-        style={StyleSheet.absoluteFill}
-        finish={finish}
-        soundsOn={soundsOn}
-        prepare={launch3d.prepare}
-        phase={launch3d.phase}
-        duration={DEVICE.TOUR_LAUNCH}
-        swapAt={DEVICE.TOUR_SWAP}
-        pose={TOUR_POSE}
-        curves={TOUR_POSE_CURVES}
-        poseHeight={TOUR_POSE_HEIGHT}
-        depth={tourGeometry.depth}
-        bodyRadius={insertGeometry.bodyRadius}
-        perchTilt={PERCH_TILT}
-        perchTiltDuration={DEVICE.TOUR_PICKER}
-        wiggle={launch3d.ripple}
-        wiggleTilts={tourGeometry.wiggleTilts}
-        wiggleDuration={DEVICE.TOUR_WIGGLE}
-        settleDuration={DEVICE.TOUR_SETTLE}
-        displayCurve={EASE_DISPLAY_CURVE}
-        onSceneReady={launch3d.onSceneReady}>
+      {/*
+        The gift fades the device out and back in around the row (a CSS transition on its own
+        view, so the insert's instant `hidden` below stays instant). `DeviceLaunch`, the SceneKit
+        launch of decision 85, is no longer used here (decision 95); the native view stays in
+        modules/trim-device.
+      */}
+      <Animated.View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.clip, tourFade]}>
         <Animated.View
           aria-hidden={sheetUp}
           accessibilityElementsHidden={sheetUp}
           importantForAccessibility={sheetUp ? 'no-hide-descendants' : 'auto'}
           pointerEvents={tour.launch ? 'none' : 'auto'}
-          style={[StyleSheet.absoluteFill, tour.launch ? tourStyle : deviceMotion, (hidden || launch3d.showing) && styles.hidden]}>
+          style={[StyleSheet.absoluteFill, tour.launch ? tourDrop : deviceMotion, hidden && styles.hidden]}>
           {jsClock && insert ? (
             <InsertBody clock={jsClock} palette={palette} width={width} planName={insert.planName} days={insert.days} part="back" />
           ) : null}
@@ -672,11 +656,8 @@ function DeviceSurface() {
             )}
           </DeviceBody>
           {jsClock ? <SlotGlow clock={jsClock} width={width} /> : null}
-          {tour.launch && !launch3d.playing ? <TourBack motion={tourMotion} palette={palette} /> : null}
         </Animated.View>
-      </DeviceLaunch>
-      {tour.launch && !launch3d.showing ? <TourEdge motion={tourMotion} palette={palette} /> : null}
-      <TourReward />
+      </Animated.View>
       <SheetHost />
       <MomentHost />
       {/* Onboarding's "Plan ready": the dark of the finish step holds until the insert scene is in, so Home never flashes. */}
@@ -716,7 +697,6 @@ function DeviceSurface() {
   );
 }
 
-const PERCH_TILT = [tourGeometry.perchTiltX, tourGeometry.perchTiltY];
 
 type DeviceView = 'home' | 'log' | 'rest' | 'finish' | 'edit' | 'loading' | 'tour';
 
@@ -833,6 +813,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   curtain: { backgroundColor: momentColors.ground },
   hidden: { opacity: 0 },
+  // The gift's fall leaves the screen; nothing of the device draws outside it.
+  clip: { overflow: 'hidden' },
   column: { flex: 1 },
   topRow: {
     height: device.keySize,

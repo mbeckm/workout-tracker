@@ -54,6 +54,7 @@ const NativeLaunch: ComponentType<DeviceLaunchProps> | null = isDeviceLaunchAvai
   ? requireNativeView<DeviceLaunchProps>('TrimDeviceLaunch')
   : null;
 
+// No longer used: decision 95 replaced the tour's 3D launch with the shell-swap gift (src/device/tour/tour-gift.tsx).
 /**
  * The tour's launch (decision 85) on the cartridge insert's SceneKit body. It wraps the JS device:
  * idle, a plain container; from `launch` until `idle`, the device photographed onto a 44 pt deep

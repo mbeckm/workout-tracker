@@ -47,11 +47,12 @@ export function isSheetKind(value: unknown): value is SheetKind {
 export type SheetParams = Readonly<Record<string, string | undefined>>;
 
 /** Where a sheet's top edge sits (SPEC §6 Top edge); the host maps it to points. */
-export type SheetTop = 'default' | 'tall' | 'today' | 'finishes' | 'swatches';
+export type SheetTop = 'default' | 'tall' | 'today' | 'finishes';
 
 const TOPS: Record<SheetKind, SheetTop> = {
   menu: 'default',
-  finishes: 'swatches',
+  // The Skin Library's row of machines (decision 97).
+  finishes: 'tall',
   settings: 'default',
   plans: 'default',
   editor: 'tall',

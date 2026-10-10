@@ -25,6 +25,8 @@ import {
   lampText,
   liftLamps,
   logFooter,
+  restCharge,
+  restUpText,
   setLabel,
   setLampLayout,
   setLamps,
@@ -277,6 +279,29 @@ check('set label: SET n/m counts prescribed sets; EDIT SET n while editing', () 
   const setId = logged.drafts[0]?.sets[0]?.id ?? '';
   const editing = beginEdit(logged, logged.drafts[0]?.prescription.id ?? '', setId);
   assert.equal(setLabel(stageOf(editing)!), 'EDIT SET 1');
+});
+
+check('rest (decision 96): SET n IN names the set that is up next, SET 1 of the next lift after a last set', () => {
+  const state = stateFor([lift('Bench press', 2), lift('Row', 2)]);
+  const afterOne = log(state);
+  assert.ok(afterOne.rest != null);
+  assert.equal(restUpText(stageOf(afterOne)!), 'SET 2');
+  const afterLift = log(afterOne);
+  assert.ok(afterLift.rest != null);
+  assert.equal(afterLift.drafts[afterLift.exerciseIndex]?.prescription.name, 'Row');
+  assert.equal(restUpText(stageOf(afterLift)!), 'SET 1');
+});
+
+check('rest battery: cells light as rest runs out, the last waits for GO', () => {
+  assert.deepEqual(restCharge(1, false, 8), { lit: 0, charging: 0 });
+  assert.deepEqual(restCharge(0.5, false, 8), { lit: 4, charging: 4 });
+  assert.deepEqual(restCharge(0, false, 8), { lit: 7, charging: 7 });
+  assert.deepEqual(restCharge(0, true, 8), { lit: 8, charging: null });
+  // −15 at 0:45 of 1:30 lights cells (30 / 90); +15 instead takes them back (60 / 105 against the longer rest).
+  assert.equal(restCharge(30 / 90, false, 8).lit, 5);
+  assert.equal(restCharge(60 / 105, false, 8).lit, 3);
+  assert.equal(restCharge(45 / 90, false, 8).lit, 4);
+  assert.deepEqual(restCharge(Number.NaN, false, 8), { lit: 0, charging: 0 });
 });
 
 // ---------------------------------------------------------------------------------------------

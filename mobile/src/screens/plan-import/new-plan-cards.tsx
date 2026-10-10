@@ -21,7 +21,7 @@ import {
   signal,
   space,
 } from '@/constants/theme';
-import { DURATION, IMPORT, PRESS_SCALE } from '@/motion';
+import { DURATION, IMPORT, softPress, softSelect } from '@/motion';
 
 /** A clock for a looping demo: ms since it started, ticking every `tick`. Still under Reduce Motion. */
 function useLoopClock(period: number, tick: number): number | null {
@@ -77,23 +77,31 @@ function DeviceCard({
   testID: string;
 }) {
   const radio = selected !== undefined;
+  const reduceMotion = useReducedMotion();
+  const [pressed, setPressed] = useState(false);
   return (
     <Pressable
       accessibilityRole={radio ? 'radio' : 'button'}
       accessibilityState={radio ? { checked: selected } : undefined}
       accessibilityLabel={`${title}, ${sub}`}
       onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       testID={testID}
-      style={({ pressed }) => [styles.card, selected && styles.selected, pressed && !selected && styles.pressed]}>
-      {children}
-      <View style={styles.titles}>
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.forkTitle}>
-          {title}
-        </Text>
-        <Text maxFontSizeMultiplier={fontScaleCap.title} style={[importType.forkSub, styles.sub]}>
-          {sub}
-        </Text>
-      </View>
+      style={styles.hit}>
+      {/* The press eases in and out, and the ring fades, so a pick never jolts (softPress, softSelect). */}
+      <Animated.View style={[styles.card, softPress(pressed && !selected, reduceMotion)]}>
+        {children}
+        <View style={styles.titles}>
+          <Text maxFontSizeMultiplier={fontScaleCap.title} style={importType.forkTitle}>
+            {title}
+          </Text>
+          <Text maxFontSizeMultiplier={fontScaleCap.title} style={[importType.forkSub, styles.sub]}>
+            {sub}
+          </Text>
+        </View>
+        {radio ? <Animated.View pointerEvents="none" style={[styles.ring, softSelect(selected)]} /> : null}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -286,6 +294,7 @@ export function StarterDeviceCard({ onPress, title = 'Pick one for me', sub = 'S
 }
 
 const styles = StyleSheet.create({
+  hit: { flex: 1 },
   card: {
     flex: 1,
     borderRadius: G.deviceRadius,
@@ -294,8 +303,12 @@ const styles = StyleSheet.create({
     padding: G.devicePad,
     gap: space.related + space.tight,
   },
-  pressed: { transform: [{ scale: PRESS_SCALE }] },
-  selected: { boxShadow: `inset 0 0 0 ${G.selectedRing}px ${signal.orange}` },
+  ring: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: G.deviceRadius,
+    borderCurve: 'continuous',
+    boxShadow: `inset 0 0 0 ${G.selectedRing}px ${signal.orange}`,
+  },
   titles: { gap: space.pair, paddingHorizontal: space.tight, paddingBottom: space.tight },
   sub: { color: C.deviceSub },
   importArt: { flex: 1, gap: space.tight },

@@ -1,158 +1,118 @@
-import { useEffect, useRef } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
-import Animated, { LinearTransition, useReducedMotion } from 'react-native-reanimated';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { finishColors, sheetGeometry, space } from '@/constants/theme';
 import { FINISHES, finishLock, type Finish } from '@/domain/finish';
 import { track } from '@/analytics/analytics';
-import { useDevice } from '@/device/device-context';
 import { useFinish } from '@/device/finish';
-import { FinishSwatch, isProFinish } from '@/device/finish-swatch';
+import { isProFinish } from '@/device/finish-swatch';
 import { useHaptics } from '@/device/haptics';
 import { useLogSession } from '@/device/log';
-import { enterUp, exitFade, SPRING } from '@/motion';
+import { SkinRow, type SkinRowPill } from '@/device/skin-row';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore } from '@/store/workout-store';
 
-import { PillButton, SheetHeader, SheetScroll } from './primitives';
+import { SheetHeader } from './primitives';
 import { useSheetChrome } from './sheet-context';
 
-/** Swatches shrink below 112 so three and a half always show: the fourth peeks, so the row reads as scrolling. */
-const VISIBLE_SWATCHES = 3.5;
-const SWATCH_MIN = 92;
-
-export function swatchWidth(windowWidth: number): number {
-  const gaps = (Math.ceil(VISIBLE_SWATCHES) - 1) * sheetGeometry.swatchGap;
-  const fit = (windowWidth - sheetGeometry.sectionX - gaps) / VISIBLE_SWATCHES;
-  return Math.round(Math.max(SWATCH_MIN, Math.min(sheetGeometry.swatchW, fit)));
-}
-
-const MOVE = LinearTransition.springify().duration(SPRING.settle.duration).dampingRatio(SPRING.settle.dampingRatio);
-
 /**
- * Finishes (SPEC §6 Finishes, D3): a short sheet so the device stays in view and changes live.
- * Six machines (decision 80). 212 and 101 are free and save on tap; 707, 089, 077 and 777 are
- * Trim Pro for free users: a tap previews the machine on the device and shows a light
- * `Get Trim Pro` pill, the one way to the paywall from here. Closing the sheet reverts the preview silently. During a workout locked finishes preview
- * only (never a paywall mid-workout, trim-ui §12 rule 6).
+ * The Skin Library (decision 97): the tour's row of machines in a tall sheet. Every skin as the
+ * whole machine; swipe the row (or tap a neighbour or a dot) and the one in the middle is the
+ * pick, each passing with the `reskin` thock. The pill acts on it: `Keep <skin>` for the one the
+ * device wears, `Use <skin>` saves another free one, and on a Trim Pro skin `Try Trim Pro` opens
+ * the paywall (after a purchase the skin applies at once, trim-ui §12 rule 17). Either way the
+ * sheet closes onto the device in its skin. During a workout a locked skin is `Comes with Trim
+ * Pro`, disabled: never a paywall mid-workout (trim-ui §12 rule 6). Nothing previews on the
+ * device: the machine in the row is the preview.
  */
 export function FinishesSheet() {
   const { close } = useSheetChrome();
-  const { state } = useDevice();
-  const { finish, savedFinish, preview, setPreview } = useFinish();
+  const { savedFinish, setPreview } = useFinish();
   const { setFinish, isPro, tourDone } = useWorkoutStore();
   const log = useLogSession();
   const haptics = useHaptics();
-  const reduceMotion = Boolean(useReducedMotion());
-  const { width: windowWidth } = useWindowDimensions();
-  const width = swatchWidth(windowWidth);
-  const row = useRef<ScrollView>(null);
-  /** Where the row scrolls to show a swatch, one swatch of room before it (the end clamps). */
-  const rowOffset = (id: Finish) => Math.max(0, (FINISHES.indexOf(id) - 1) * (width + sheetGeometry.swatchGap));
-
-  const isOpen = state.sheet?.kind === 'finishes';
+  const insets = useSafeAreaInsets();
   const inWorkout = log.openDay != null;
-  // Pro finishes and, until the tour gives it, Graphite only preview (decision 85).
-  const lockOf = (id: Finish) => finishLock(id, { isPro, tourDone });
-  const locked = (id: Finish) => lockOf(id) != null;
-  const previewingLocked = preview != null && lockOf(preview) === 'pro';
 
-  // Closing (✕, Done, a swipe, the scrim, or a swap away) puts the saved finish back at once,
-  // while the sheet slides down; unmounting covers anything else.
+  const [pick, setPick] = useState<Finish>(savedFinish);
+  const pos = useSharedValue(Math.max(0, FINISHES.indexOf(savedFinish)));
+  const z = useSharedValue(1);
+
+  // Nothing is previewed on the device from here; clear one left by an older path.
   useEffect(() => {
-    if (!isOpen) {
-      setPreview(null);
-    }
-  }, [isOpen, setPreview]);
-  useEffect(() => () => setPreview(null), [setPreview]);
+    setPreview(null);
+  }, [setPreview]);
+
+  // Pro finishes and, until the tour gives it, Graphite only preview (decision 85).
+  const lockOf = useCallback((id: Finish) => finishLock(id, { isPro, tourDone }), [isPro, tourDone]);
+
+  const onPass = useCallback(
+    (id: Finish) => {
+      haptics.reskin();
+      setPick(id);
+      if (finishLock(id, { isPro, tourDone })) track('finish_previewed', { finish: id, locked: true });
+    },
+    [haptics, isPro, tourDone],
+  );
 
   const save = (id: Finish) => {
-    setPreview(null);
     if (id !== savedFinish) {
       setFinish(id);
       track('finish_selected', { finish: id, from: savedFinish, source: 'sheet', pro: isProFinish(id) });
     }
+    close();
   };
 
-  const pick = (id: Finish) => {
-    if (id === finish) {
-      return;
-    }
-    haptics.reskin();
-    // The picked swatch scrolls fully into view, with its neighbour peeking on the left.
-    row.current?.scrollTo({ x: rowOffset(id), animated: !reduceMotion });
-    if (locked(id)) {
-      track('finish_previewed', { finish: id, locked: true });
-      setPreview(id);
-      return;
-    }
-    save(id);
+  const tryPro = async () => {
+    const wanted = pick;
+    // After a purchase or restore the skin applies at once (trim-ui §12 rule 17).
+    if (await requirePro('finishes')) save(wanted);
   };
 
-  const getPro = async () => {
-    const wanted = preview;
-    if (!wanted) {
-      return;
-    }
-    // After a purchase or restore the finish applies at once (trim-ui §12 rule 17).
-    if (await requirePro('finishes')) {
-      save(wanted);
-    }
-  };
-
-  // The selected swatch starts in view.
-  const onRowLayout = () => {
-    row.current?.scrollTo({ x: rowOffset(finish), animated: false });
-  };
+  const lock = lockOf(pick);
+  const name = finishColors[pick].name;
+  const label =
+    lock === 'pro' ? 'TRIM PRO SKIN' : lock === 'tour' ? 'TOUR REWARD' : pick === savedFinish ? 'YOUR SKIN' : 'FREE SKIN';
+  const pill: SkinRowPill =
+    lock === 'pro' && !inWorkout
+      ? { title: 'Try Trim Pro', variant: 'light', onPress: () => void tryPro(), testID: 'finishes-try-pro' }
+      : lock != null
+        ? {
+            title: lock === 'tour' ? 'Earned in the tour' : 'Comes with Trim Pro',
+            variant: 'dark',
+            disabled: true,
+            onPress: () => undefined,
+            testID: 'finishes-locked',
+          }
+        : {
+            title: pick === savedFinish ? `Keep ${name}` : `Use ${name}`,
+            variant: 'light',
+            onPress: () => save(pick),
+            testID: 'finishes-use',
+          };
 
   return (
-    <SheetScroll header={<SheetHeader title={`Skin ${finish}, ${finishColors[finish].name}`} />}>
-      <ScrollView
-        ref={row}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        onLayout={onRowLayout}
-        accessibilityRole="radiogroup"
-        accessibilityLabel="Skin"
-        style={styles.row}
-        contentContainerStyle={styles.rowContent}>
-        {FINISHES.map((id) => (
-          <FinishSwatch
-            key={id}
-            id={id}
-            width={width}
-            selected={id === finish}
-            lock={lockOf(id)}
-            onPress={() => pick(id)}
-          />
-        ))}
-      </ScrollView>
-      {previewingLocked && !inWorkout ? (
-        <Animated.View entering={enterUp(reduceMotion)} exiting={exitFade(reduceMotion)}>
-          <PillButton title="Get Trim Pro" onPress={() => void getPro()} testID="finishes-get-pro" />
-        </Animated.View>
-      ) : null}
-      <Animated.View layout={reduceMotion ? undefined : MOVE}>
-        <PillButton
-          title="Done"
-          variant="dark"
-          onPress={close}
-          style={previewingLocked && !inWorkout ? styles.doneUnder : styles.done}
-          testID="finishes-done"
-        />
-      </Animated.View>
-    </SheetScroll>
+    <View style={styles.fill}>
+      <SheetHeader title="Skin Library" right={{ kind: 'close', onPress: close }} />
+      <SkinRow
+        row={FINISHES}
+        pick={pick}
+        pos={pos}
+        z={z}
+        enabled
+        onPass={onPass}
+        lockOf={lockOf}
+        label={label}
+        pill={pill}
+        top={space.related}
+        bottom={Math.max(insets.bottom, sheetGeometry.bottomPad)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { marginHorizontal: -sheetGeometry.sidePad },
-  rowContent: {
-    gap: sheetGeometry.swatchGap,
-    paddingHorizontal: sheetGeometry.sectionX,
-    paddingTop: space.related,
-    paddingBottom: space.inset,
-  },
-  done: { marginTop: space.related },
-  doneUnder: { marginTop: sheetGeometry.cardGap },
+  fill: { flex: 1 },
 });

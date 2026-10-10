@@ -25,8 +25,8 @@ const GRID_GAP = space.inline;
  * Step 6 (N10, D3, D12, decision 80): the device large on the grid, in the finish being picked,
  * over the six machines in two rows. 212 and 101 save on tap; for free users the other four
  * preview only (a locked
- * finish stays if the paywall after "Plan ready" ends with Trim Pro). Continue loads the plan:
- * a template plays "Plan ready" then the paywall, Build my own opens the editor.
+ * finish stays only for an owner who is already Pro: decision 97 took the paywall out of
+ * onboarding). Continue loads the plan: "Plan ready", the tour, then Home, or the editor on Build my own.
  */
 export function OnboardingPickFinish() {
   const params = useLocalSearchParams<{ days?: string; template?: string; own?: string; imported?: string }>();
@@ -79,7 +79,7 @@ function PickFinish({
   const [stage, setStage] = useState<{ width: number; height: number } | null>(null);
   const handedOff = useRef(false);
 
-  // Back drops a preview; Continue hands it to "Plan ready" and the paywall.
+  // Back drops a preview; Continue hands it on (it stays only for an owner who is already Pro).
   useEffect(
     () => () => {
       if (!handedOff.current) {

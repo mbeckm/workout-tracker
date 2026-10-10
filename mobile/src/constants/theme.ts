@@ -661,6 +661,9 @@ export const bodyFinish = {
   /** The glass over every screen: a white glare fading out by 36%. */
   glass: 'rgba(255,255,255,0.09)',
   glassClear: 'rgba(255,255,255,0)',
+  /** The light that sweeps once across the rest battery when it's full (decision 96). */
+  restSweep: 'rgba(255,255,255,0.5)',
+  restSweepClear: 'rgba(255,255,255,0)',
   /** Screen textures, in points. */
   dotPitch: 5,
   dotRadius: 1.1,
@@ -1090,10 +1093,8 @@ export const sheetGeometry = {
   toastTop: 60,
   toastPadX: 16,
   toastPadY: 10,
-  /** Sheet top edges: most, tall, Today, finishes. */
+  /** Sheet top edges: most, tall (the Skin Library too), Today, short (the keypad). */
   tops: { default: 96, tall: 60, today: 200, finishes: 430 },
-  /** The finishes sheet is as tall as its content (header, swatches, Get Trim Pro, Done), anchored to the bottom, so a taller phone shows more device, not more empty sheet. */
-  swatchesHeight: 372,
 } as const;
 
 /** The receipt, mini receipts and the week report (SPEC §6 Receipt, History wall; prototype `.paper`, `.mini`; QC2). */
@@ -1372,7 +1373,7 @@ export const device = {
   gridColumns: 9,
   gridLamp: 10,
   gridGap: 8,
-  /** Rest ring. */
+  /** Screen 08's rest ring, drawn now only by the dev gallery (rest is a battery since decision 96). */
   restRingRadius: 95,
   restRingStroke: 12,
   /** Bottom clearance above the home indicator at the reference; 16 on iPhone SE. */
@@ -1449,13 +1450,32 @@ export const logGeometry = {
   setLampLabelGap: 12,
   /** From the reps number to `REPS`. */
   repsUnitGap: 8,
-  /** Rest: the ring's 230 box, centred between header and footer (r95, stroke 12; the track dashed 3 on, 7 off). */
-  restRingBox: 230,
-  restRingDash: '3 7',
   /** The rest footer sits 20 from the bottom. */
   restFooterY: 20,
-  /** Short displays (iPhone SE): the ring and its clock shrink to fit this far inside the header and footer. */
-  restRingClear: 8,
+  /**
+   * Rest (decision 96): `SET 2 IN`, the clock 12 under it, and 28 under that the battery that
+   * charges toward the next set, centred between header and footer. The battery is 248 × 64 with
+   * a 2 pt outline (r10), 5 inside it 8 cells 4 apart (r3), and a 6 × 26 nub on the right (r3).
+   */
+  restLabelGap: 12,
+  restBatteryGap: 28,
+  restBatteryWidth: 248,
+  restBatteryHeight: 64,
+  restBatteryStroke: 2,
+  restBatteryRadius: 10,
+  restBatteryPad: 5,
+  restCells: 8,
+  restCellGap: 4,
+  restCellRadius: 3,
+  restNubWidth: 6,
+  restNubHeight: 26,
+  restNubRadius: 3,
+  /** The one light sweep across the full battery: a band this wide. */
+  restSweepWidth: 96,
+  /** Where that doesn't fit (the tour's rest over its chat on iPhone SE): tighter, and a 40-tall battery. */
+  restLabelGapCompact: 4,
+  restBatteryGapCompact: 12,
+  restBatteryHeightCompact: 40,
   /** Finish: the title, the set grid (120 clear on the right) and the stats. */
   finishTitleY: 64,
   finishGridY: 150,
@@ -2323,24 +2343,16 @@ export const tourType = {
   lcdChatLarge: lcdRole(24, 30),
   /** `READY` over the last lines. */
   lcdReady: lcdRole(56, 60),
-  /** `UNLOCKED` / `LOCKED`, stamped over the device. */
-  stamp: lcdRole(34, 40),
 } as const;
 
 export const tourColors = {
   /** The focus ring's glow (the brand orange at ~50%). */
   focusGlow: 'rgba(255,106,26,0.5)',
-  /** The dot-matrix room: unlit dots, lit dots, the dark ground and its vignette. */
-  roomDotOff: '#3A2214',
-  roomDotOn: '#FF6A1A',
+  /** The ground the gift's machines stand on (decision 95). */
   roomGround: '#0A0A09',
-  vignette: '#000000',
-  vignetteOpacity: 0.8,
-  /** The device's cast shadow on the room. */
-  shadow: '#000000',
-  /** A locked pick's stamp. */
-  stampLocked: '#8C8A84',
-  stampGround: 'rgba(18,18,17,0.6)',
+  /** Graphite unlocked: the sparkles, the display's white and the brand amber (decision 97). */
+  sparkleLight: '#F6F6F3',
+  sparkleWarm: '#FF6A1A',
 } as const;
 
 export const tourGeometry = {
@@ -2354,33 +2366,39 @@ export const tourGeometry = {
   focusStroke: 3,
   focusOffset: 5,
   focusGlowRadius: 24,
-  /** The launch: the device lands perched this far up, at this scale, before the picker (clear of the Dynamic Island, centred over the picker). */
-  perchY: -130,
-  perchScale: 0.5,
-  /** The body's depth while it spins (the insert's 44 pt). */
-  depth: 44,
-  /** The 3D body's lean once perched (CSS rotateX, rotateY degrees), so it reads as an object, not a picture. */
-  perchTiltX: -10,
-  perchTiltY: -20,
-  /** The dot-matrix room: one dot every 12, radius 1.6; the ripple ring's width. */
-  dotPitch: 12,
-  dotRadius: 1.6,
-  rippleWidth: 44,
-  rippleStart: -40,
-  rippleEnd: 460,
-  /** The shadow under the perched device. */
-  shadowWidth: 210,
-  shadowHeight: 30,
-  /** The stamp's tilt and box. */
-  stampTilt: -8,
-  stampWidth: 236,
-  stampBorder: 4,
-  stampRadius: 10,
-  stampY: 446,
-  /** The wiggle on a pick: lift, scale and tilts (degrees). */
-  wiggleLift: -9,
-  wiggleScale: 0.53,
-  wiggleTilts: [-4, 3, -1.6, 0.6] as readonly number[],
+  /**
+   * The gift (decision 95). The old skin falls: down this many screen heights, tilting this far
+   * about a pivot this far across its top edge.
+   */
+  dropFall: 1.1,
+  dropTilt: 9,
+  dropPivotX: 0.3,
+  /** The row of six machines: each card this share of the screen's width, this far apart. */
+  cardWidth: 0.6,
+  cardGap: 18,
+  /** A neighbour sits smaller and dimmer; cards further than this from the middle aren't drawn. */
+  sideScale: 0.9,
+  sideOpacity: 0.5,
+  cardsDrawn: 2,
+  /** A flick carries on this long (s) before it clicks into a machine; past either end it gives like a rubber band. */
+  swipeThrow: 0.1,
+  swipeBand: 0.35,
+  swipeBandMax: 0.4,
+  /** The skin dots under the row: their size, the gap and ring round the picked one, and the 44 hit area. */
+  dotSize: 26,
+  dotGap: 6,
+  dotRing: 2,
+  dotRingGap: 3,
+  dotHit: 44,
+  /** The foot (label, dots, Use) fades in over the last part of the step back. */
+  footFrom: 0.5,
+  /** A locked skin's dot (decision 97): a small padlock badge on its lower right. */
+  lockBadge: 14,
+  lockGlyph: 8,
+  /** Graphite unlocked (decision 97): pixel sparkles round the machine, this long and this thick, this far outside it. */
+  sparkleArm: 13,
+  sparklePixel: 3,
+  sparkleOut: 14,
 } as const;
 
 /**

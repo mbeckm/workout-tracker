@@ -1,10 +1,15 @@
+import type { ViewStyle } from 'react-native';
 import {
+  cubicBezier,
   Easing,
   FadeIn,
   FadeInUp,
   FadeOut,
+  type CSSStyle,
   type EntryOrExitLayoutType,
 } from 'react-native-reanimated';
+
+import { PRESSED_OPACITY } from '@/constants/theme';
 
 /** Strong ease-out for UI enter/exit and press. */
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -61,6 +66,41 @@ export const ENTER_OFFSET = 8;
 export const PRESS_MS = DURATION.press;
 export const PRESS_SCALE = 0.97;
 
+/** EASE_OUT for Reanimated CSS transitions. */
+const EASE_OUT_TRANSITION = cubicBezier(0.23, 1, 0.32, 1);
+
+/**
+ * A soft press for a big choice (onboarding's cards): it eases down to PRESS_SCALE over `press`
+ * and back over `enter`, never a snap and never an overshoot. A Reanimated CSS transition, so React
+ * holds both resting states (trim-ui §8 Rules). Reduce Motion: it dims instead of shrinking.
+ */
+export function softPress(pressed: boolean, reduceMotion: boolean): CSSStyle<ViewStyle> {
+  if (reduceMotion) {
+    return {
+      opacity: pressed ? PRESSED_OPACITY : 1,
+      transitionProperty: 'opacity',
+      transitionDuration: pressed ? DURATION.press : DURATION.fade,
+      transitionTimingFunction: EASE_OUT_TRANSITION,
+    };
+  }
+  return {
+    transform: [{ scale: pressed ? PRESS_SCALE : 1 }],
+    transitionProperty: 'transform',
+    transitionDuration: pressed ? DURATION.press : DURATION.enter,
+    transitionTimingFunction: EASE_OUT_TRANSITION,
+  };
+}
+
+/** A selection mark (a ring, a fill) fading in over `enter` and out over `exit`. Same under Reduce Motion: it's a fade. */
+export function softSelect(selected: boolean): CSSStyle<ViewStyle> {
+  return {
+    opacity: selected ? 1 : 0,
+    transitionProperty: 'opacity',
+    transitionDuration: selected ? DURATION.enter : DURATION.exit,
+    transitionTimingFunction: EASE_OUT_TRANSITION,
+  };
+}
+
 const ENTER_UP = FadeInUp.duration(DURATION.enter).easing(EASE_OUT).withInitialValues({
   opacity: 0,
   transform: [{ translateY: ENTER_OFFSET }],
@@ -102,6 +142,8 @@ export const EASE_KNOB_FN = Easing.bezierFn(0.45, 0, 0.2, 1);
 export const EASE_INSERT_PULL_FN = Easing.bezierFn(0.6, 0, 0.25, 1);
 /** Plan insert slide-in: bezier(.55,0,.8,.35). */
 export const EASE_INSERT_SLIDE_FN = Easing.bezierFn(0.55, 0, 0.8, 0.35);
+/** The tour's gift (decision 95): the old skin lets go and falls, gathering speed, bezier(.55,0,1,.45). */
+export const EASE_FALL_FN = Easing.bezierFn(0.55, 0, 1, 0.45);
 /** CSS `ease-out` (the insert's click settle and slot glow). */
 export const EASE_CSS_OUT_FN = Easing.bezierFn(0, 0, 0.58, 1);
 /** Key press (CSS `transition: transform .08s` uses `ease`). */
@@ -109,6 +151,8 @@ export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
 /** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
 export const EASE_WEEK_DROP_FN = Easing.bezierFn(0.3, 1.3, 0.5, 1);
 export const LINEAR_FN = Easing.linear;
+/** The rest battery's charging cell: a slow, even in and out. */
+export const EASE_BREATHE_FN = Easing.bezierFn(0.45, 0, 0.55, 1);
 /** First open (D74): the body floats in and just overshoots; parts accelerate into their hit; the Start key slams. */
 export const EASE_ARRIVE_FN = Easing.bezierFn(0.2, 0.9, 0.25, 1.04);
 export const EASE_HIT_FN = Easing.bezierFn(0.55, 0, 1, 0.6);
@@ -127,8 +171,12 @@ export const DEVICE = {
   DRUM_FLASH: 120,
   /** Long-press repeat on the tall keys: a step every REPEAT once the long press lands. */
   REPEAT: 90,
-  /** The rest ring glides between the clock's ticks (`useRest` ticks every 250 ms). */
+  /** The tour's practice rest reads its clock this often (`useRest` ticks every 250 ms too). */
   REST_TICK: 250,
+  /** Rest's battery (decision 96): the charging cell brightens and fades once per REST_BREATHE. */
+  REST_BREATHE: 2000,
+  /** Full: one soft light sweep across the battery, as GO shows. */
+  REST_SWEEP: 900,
   /** Finish mode's `N MIN` refresh. */
   MINUTE_TICK: 15000,
   /** Sheet in/out. */
@@ -262,20 +310,24 @@ export const DEVICE = {
   /** The tour (decision 85): one character typed every TOUR_TYPE ms; a beat's next line waits TOUR_BEAT. */
   TOUR_TYPE: 28,
   TOUR_BEAT: 180,
-  /** The launch: 4800 ms from the crouch to the landing; the finish changes edge-on at TOUR_SWAP. */
-  TOUR_LAUNCH: 4800,
-  TOUR_SWAP: 2009,
-  /** The room fades in with the launch; the ripple on landing and on each pick. */
-  TOUR_ROOM: 700,
-  TOUR_RIPPLE: 1700,
-  TOUR_LAND_RIPPLE: 1900,
-  /** The stamp slams in after the landing; the picker rises after it. */
-  TOUR_STAMP_DELAY: 4560,
-  TOUR_PICKER_DELAY: 5250,
-  TOUR_PICKER: 650,
-  /** The spring-back wiggle on a pick, and the settle to full size after Use. */
-  TOUR_WIGGLE: 700,
-  TOUR_SETTLE: 1000,
+  /**
+   * The gift (decision 95): Start lets the old skin go. It falls away over TOUR_DROP (its thock
+   * TOUR_RELEASE in) and Graphite stands behind it; from TOUR_STEP_BACK_DELAY the machine steps
+   * back over TOUR_STEP_BACK into the row of six. Use steps it forward again over TOUR_SETTLE, then
+   * the device fades in over it in TOUR_FADE (Reduce Motion: the fall and the steps are this fade).
+   */
+  TOUR_DROP: 520,
+  TOUR_RELEASE: 60,
+  TOUR_STEP_BACK_DELAY: 380,
+  TOUR_STEP_BACK: 420,
+  TOUR_SETTLE: 380,
+  TOUR_FADE: 200,
+  /**
+   * Graphite unlocked (decision 97): as the row settles, eight pixel sparkles twinkle round the new
+   * machine once, each for TOUR_SPARKLE_EACH, the last one done TOUR_SPARKLE after the first.
+   */
+  TOUR_SPARKLE: 1000,
+  TOUR_SPARKLE_EACH: 420,
 } as const;
 
 /**
@@ -330,42 +382,6 @@ export const ASSEMBLY = {
 
 /** Rest at 0:00 shows GO for this long, then returns to the log view (PLAN D6). */
 export const REST_GO_MS = 2000;
-
-
-/**
- * The tour's launch (decision 85), keyframes over `DEVICE.TOUR_LAUNCH` on an 844-tall reference:
- * the crouch, the throw (already spinning), seven turns at the top, the slow-down to face-on and a
- * hang, the drop, the squash and the settle at the perch. `turn` is degrees about the vertical axis;
- * the device draws it as a slab (the insert's SceneKit body, or face, edge and back in 2D), so the new finish can swap in edge-on.
- */
-export const TOUR_POSE = [
-  { at: 0, y: 0, sx: 1, sy: 1, turn: 0 },
-  { at: 0.094, y: 46, sx: 1.03, sy: 0.88, turn: 0 },
-  { at: 0.26, y: -205, sx: 0.34, sy: 0.34, turn: 720 },
-  { at: 0.54, y: -212, sx: 0.34, sy: 0.34, turn: 2160 },
-  { at: 0.69, y: -196, sx: 0.38, sy: 0.38, turn: 2520 },
-  { at: 0.77, y: -204, sx: 0.38, sy: 0.38, turn: 2520 },
-  { at: 0.9375, y: -115, sx: 0.53, sy: 0.45, turn: 2520 },
-  { at: 0.969, y: -143, sx: 0.48, sy: 0.53, turn: 2520 },
-  { at: 1, y: -130, sx: 0.5, sy: 0.5, turn: 2520 },
-] as const;
-
-/** Each segment's easing (the prototype's): anticipation, throw, a steady spin, the slow-down, the hang, the fall, the bounce, the settle. As data, so the native 3D launch plays the same curves. */
-export const TOUR_POSE_CURVES = [
-  [0.3, 0, 0.6, 1],
-  [0.25, 0.6, 0.6, 1],
-  [0, 0, 1, 1],
-  [0.15, 0.6, 0.3, 1],
-  [0.42, 0, 0.58, 1],
-  [0.55, 0, 0.9, 0.4],
-  [0, 0, 0.58, 1],
-  [0.42, 0, 0.58, 1],
-] as const;
-
-export const TOUR_POSE_EASE = TOUR_POSE_CURVES.map(([x1, y1, x2, y2]) => Easing.bezierFn(x1, y1, x2, y2));
-
-/** The reference height the pose's `y` is measured on. */
-export const TOUR_POSE_HEIGHT = 844;
 
 /**
  * Import plan (decision 88). The illustration is one loop: the first half copies a plan out of a

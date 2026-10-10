@@ -67,11 +67,7 @@ export function SheetHost() {
   }
   const kind = open?.kind ?? shown?.kind ?? null;
   const topKind = kind ? sheetTop(kind) : null;
-  const top = !topKind
-    ? 0
-    : topKind === 'swatches'
-      ? windowHeight - sheetGeometry.swatchesHeight
-      : fromReferenceTop(sheetGeometry.tops[topKind], insets.top);
+  const top = !topKind ? 0 : fromReferenceTop(sheetGeometry.tops[topKind], insets.top);
   const sheetHeight = Math.max(1, windowHeight - top);
 
   /** 0 hidden, 1 up. */

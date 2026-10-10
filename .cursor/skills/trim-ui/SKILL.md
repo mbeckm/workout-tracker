@@ -22,7 +22,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 1. **One surface, one job, one primary action.** Each device mode has one job and one big key. Each sheet answers one question. Anything else moves a layer down (§2) or goes away.
 2. **Fast is the feature.** Launch to the first logged set is two presses (Start, Log). A prefilled set is one. Nothing we add may cost the loop a press or make it wait (`PRODUCT.md` → Principles).
 3. **The interface explains itself.** No helper text, gesture hints or summaries, on the display or in sheets. If something needs a sentence, the layout is wrong. The one exception is the guided tour (decision 85, §12 Moments): once, after onboarding, Trim talks on its own display and has the owner use each essential control.
-4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest ring, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
+4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest battery, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
 5. **Layout carries hierarchy.** Size, brightness (amber, dim, off) and position say what matters. Labels that only restate hierarchy are banned.
 6. **Three layers, never mixed.** Device: physical metal, raised keys, a recessed display. Sheets: flat and dark. Moments: physical 3D objects on a dark grid. A sheet never gets a bevel, and the device never gets a flat list.
 7. **Color is a signal.** Orange marks action, current and selected. Green means done, yellow means record, and ordinary change is ink with ↑ or ↓ (§5). Each signal has exactly one meaning.
@@ -90,9 +90,8 @@ Information lives on the lowest layer that serves the job:
 | Top edge | Sheets |
 | --- | --- |
 | 96 (the device's top row stays visible) | menu, plans rack, history wall, settings, and other short sheets |
-| 60 (tall) | progress, lift detail, exercise, editor, add lifts, receipt |
+| 60 (tall) | progress, lift detail, exercise, editor, add lifts, receipt, the Skin Library (its row of machines, decision 97) |
 | 200 | Today |
-| bottom-anchored, 372 tall | finishes (as tall as its content, so the device behind stays visible on every phone height; a fixed top edge made it grow on tall phones) |
 | 430 | keypad (short, so the drum stays in view) |
 
 ### Jobs
@@ -101,7 +100,7 @@ Information lives on the lowest layer that serves the job:
 | --- | --- | --- | --- |
 | Home | Start the next workout; where the week stands | The selected day's row | `Start` |
 | Log | What this set needs right now | The weight on the drum | `Log` |
-| Rest | How long until the next set | The time in the ring | `Skip` (metal) |
+| Rest | How long until the next set | The time, under `SET 2 IN` | `Skip` (metal) |
 | Finish | End the workout on purpose | `ALL DONE` / `END EARLY?` | `Finish`, held |
 | Edit | This lift's sets × reps | The framed number the wheel controls | `Done` (metal) |
 | Receipt (finish screen) | What I just did, against last time | The three stats; on a moment, the paper | `Done` (light pill) |
@@ -186,7 +185,7 @@ Use a role from `theme.ts` as-is. Override only `color`, and only with another t
 
 These live in the `device` geometry block in `theme.ts` (`displayPad: 22`, `edge: 20`, `lampGap: 7`, key sizes, radii), never as raw numbers in a part.
 
-**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and the reps, the rest ring and its clock scale down together to fit between header and footer, Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
+**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and the reps, rest's line, clock and battery stay centred between header and footer (the tour's rest over its chat tightens its gaps and uses a 40-tall battery), Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
 
 ### Display layout
 
@@ -364,6 +363,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Motion | Duration / curve | Notes |
 | --- | --- | --- |
 | Key press | translateY 3 (round keys), 6 (big key); 80 ms; the lip shadow collapses | On press-in, not release |
+| Choice card press (onboarding) | `softPress` (`motion.ts`): scale .97 over 120 ms in, back over 200 ms, ease-out, no overshoot; the selection ring or fill fades in over 200 ms, out over 150 (`softSelect`) | Reanimated CSS transitions, so React holds both resting states. Reduce Motion: it dims instead of shrinking |
 | Display content change | fade and rise 8, 220 ms, bezier(.2,.8,.3,1) | Every mode change |
 | Weight drum step | translateY ±24, then back, 160 ms, bezier(.2,.8,.3,1) | Per wheel notch |
 | Wheel | Ridges follow the finger 1:1. One notch = 16 pt of travel | Weight: one step per notch. Rest: ±15 s per 2 notches. Reps while editing: 1 per notch. |
@@ -371,6 +371,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Rocker press | 2D stand-in for rotateY ±10° (scaleX 0.985, rotate ±1.5°), 160 ms | Tilts toward the end pressed (3D layers composite badly on iOS) |
 | Hand-off (decision 87) | The card comes in over 140 ms (scale .97 → 1), holds 1400 ms, then rises 150 and shrinks to half over 280 ms (`EASE_OUT_FN`) as rest shows | Any key or a sheet ends it at once. Reduce Motion: plain fades |
 | Roll call (decision 86) | The list fades in over 100 ms, the ring glides to the new row over 180 ms (`EASE_OUT_FN`), holds 900 ms after the last press, fades out over 180 ms | Any other key or a sheet ends it at once. Reduce Motion: the ring jumps |
+| Rest battery (decision 96) | A cell lights over 220 ms (`DEVICE.DISPLAY`, `EASE_OUT_FN`) as rest runs out; the cell charging next breathes from off to dim and back once per 2000 ms (`REST_BREATHE`, `EASE_BREATHE_FN`). At GO the last cell lights and one soft light band (96 wide, white .5) sweeps across the battery in 900 ms (`REST_SWEEP`, `EASE_OUT_FN`) | ±15 lights or takes back cells at once (it measures against the longest this rest has been). Reduce Motion: no breathing and no sweep, the cells just fill |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
 | Finish screen (decision 90) | The cards rise 16 and fade in over 420 ms (`EASE_OUT_FN`), 80 apart; the stats count up from 0 over 850 ms (ease-out cubic), 150 in | Fresh only; from History everything is in place. Reduce Motion: no rise, no count |
 | Receipt feed | On a moment, 800 ms in: up out of the bottom slot, translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms); the screen scrolls to it | Tapping the paper completes it. Fresh only. Reduce Motion: the paper fades in where it ends |
@@ -385,6 +386,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Needle (progress gauge) | −70° to its value over 1.4 s, bezier(.2,.8,.3,1) | Not shipped while there's no rank data (D4) |
 | First open (D74) | One clock, 0 → 6500 ms (`ASSEMBLY`, `motion.ts`). 0–1600 the body approaches out of space (scale .06 → 1, tilted 48°, turned −28°, bezier(.2,.9,.25,1.04)) under a deep haptic swell; it lands with a thump and its outline flashes amber. Parts land at 2000 (display, from above), 2420 (menu, left), 2760 (history, right), 3040 (rocker, above), 3260 (+), 3440 (−), 3590 (wheel, right), each flying 200 ms, bezier(.55,0,1,.6), with a spark, a click a step higher, and a 4.5 % recoil of the stage. 3660–4900 the Start key hovers at 2.7× and trembles harder and harder (±1.5° → ±5.5°) while a glow and a stuttering rumble build and the camera pushes in to 1.08×; it slams in the last 20 % (bezier(.8,0,1,.5)). **At 4900, the bang:** the push snaps back, a double shockwave, a long shake, an amber burst, and the grid floor lights over space. 5000 a scan line, 5060 the display boots, 5600 the words, 6300 Continue | A tap anywhere skips to the end. Reduce Motion: the device fades in whole; the bang's haptic and sound stay |
 | Days wheel (onboarding, D74) | A tall wheel and a drum of numbers ride the finger 1:1, one day per 46 pt; a flick carries on (velocity × 0.09 s) and settles with `SPRING.fling`; past 2 or 6 it gives like a rubber band (30 % of the finger at first, never more than half a day) | Each day passed clicks, while dragging and while settling |
+| The tour's gift (decision 95) | Start: the device's old skin lets go and the whole machine falls past the bottom edge in 520 ms (`TOUR_DROP`, bezier(.55,0,1,.45)), down 1.1 screen heights and tilting 9° about a point 30 % across its top; Graphite stands behind it at full size. From 380 ms it steps back over 420 ms (`EASE_DISPLAY`) into a row of six machines, each 60 % of the screen wide, 18 apart, neighbours at .9 scale and half opacity; the foot fades in over the last half. A swipe rides the finger 1:1, a flick carries on (velocity × 0.1 s) and settles with `SPRING.fling`, past either end it gives like a rubber band; a tap on a neighbour or a dot springs there. As the row settles (800 ms), eight pixel sparkles (plus signs, 13 across, 3 thick, in the display's white and the brand amber) twinkle round Graphite once: each scales up and out over 420 ms (`TOUR_SPARKLE_EACH`), staggered over 1 s (`TOUR_SPARKLE`), one shared value on the UI thread. Use: the machine steps forward over 380 ms, then the device fades in over it in 200 ms, Home in that skin | No spin. A tap during the fall skips it. Reduce Motion: the device fades out over the row, a pick crossfades, no sparkles, and on Use the device fades back in |
 
 ### Plan activation (the insert, SPEC §7)
 
@@ -411,7 +413,7 @@ Core Haptics patterns in the `TrimDevice` module through `useHaptics()`; `expo-h
 | --- | --- | --- |
 | Wheel notch (weight, time, reps) | transient, intensity .7, sharpness .9; every 5th notch or whole 10 kg: intensity 1.0; with the `notch` click | `selectionAsync` |
 | Key press (any key) | transient .85 / .6, with the `key` click | `impactAsync(Light)` |
-| A tap on the display (a day row, the drum) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
+| A tap on the display (a day row, the drum); a Got a plan? card picked (the cards are little Trims) | transient .45 / .95, with the `blip`: lighter and digital, never a key's click | `selectionAsync` |
 | A plan has loaded (the days have ticked in, Home takes over) | transients .55, .7 and 1.0, 90 ms apart, then .5 / .2 for 120 ms; with the `ready` chime | `notificationAsync(Success)` |
 | Each repeat of a held tall key (reps, ±15) | the wheel notch | `selectionAsync` |
 | Big key press-in | transient 1.0 / .45, then 30 ms later .5 / .2; with the `press` clunk | `impactAsync(Medium)` |
@@ -450,8 +452,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `rocker` | a short tick with a little body | The rocker tilts |
 | `notch` | a tiny dry click | Each wheel detent; a day ticking in while a plan loads |
 | `swatch` | a metal tile set down | A choice card or a paywall plan picked |
-| `reskin` | a tight closed-hat tick and a short blip on one note (D7), 90 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin, the tour's picker) |
-| `blip` | a soft electronic blip | A tap on the display (a day row, the drum) |
+| `reskin` | a low thock (150 → 80 Hz, a short 260 Hz knock) with an air tick above 8 kHz, nothing in the middle so it sits under music (decision 95), 110 ms | The device changes its skin: a finish picked (Finishes sheet, Pick your skin), the old skin letting go and each machine passing the middle of the tour's row |
+| `blip` | a soft electronic blip | A tap on the display (a day row, the drum); a Got a plan? card or Build my own picked |
 | `ready` | three rising display tones, a latch under the last, a short metal shimmer | A plan has loaded: the days have ticked in and Home takes over |
 | `alarm` | a digital watch alarm, beep-beep … beep-beep (2.7 kHz) | Rest reaches 0:00, with `GO` |
 | `arrive` | a long airy swell over a low hum, landing in a thump | First open: the body approaches |
@@ -459,10 +461,8 @@ Short, dry, mechanical, never musical (first open is the exception: its build cl
 | `charge` | rising air over a rising hum, ticks coming faster | First open: the Start key charges |
 | `bang` | a heavy low thud, a sharp metal hit and a short ring | First open: the Start key slams home |
 | `boot` | two tiny electronic blips | First open: the display boots |
-| `spin` | a flick, then a whoosh on every half turn (denser and higher as it speeds up, gone in the hang), falling air, a landing thud and bounce; drawn from `TOUR_POSE` | The tour's launch, started by the 3D body's first frame |
-| `pulse` | one short, low 808-style pulse with a soft tick (0.3 s) | The tour's ring of lit dots at the landing (a pick's ring is silent: the pick plays `reskin`) |
 
-No other sounds.
+No other sounds. (`spin` and `pulse`, the 3D launch's, are still rendered and bundled but no longer played, decision 95.)
 
 ---
 
@@ -476,7 +476,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Numbers carry real units: `85.0`, `KG`, `×8`, `1:24`, `~45 MIN`, `0:45`, `20 MIN`.
 - On the display, `×` joins without spaces (`LAST 80×8`, `NEXT 85×8`, `BENCH PRESS 3×8`). On cartridge chips, the edit display and receipts it takes spaces (`3 × 8`, `SETS 4 × REPS 15`, `90 × 9`).
 - No helper text, gesture hints, middle dots or emoji. There's no `HOLD TO FINISH`: the big key's VoiceOver label says it.
-- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
+- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `SET 2 IN`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
 
 ### In sheets
 
@@ -597,6 +597,7 @@ Every action reachable by a gesture has a second way in, and every gesture-only 
 | Remove a lift in the editor | Swipe the row + the device's Remove key in edit |
 | Delete a workout | Long-press a History row or slip → action sheet (D9) |
 | Day actions | The `…` on the day header |
+| Pick a machine (the tour's gift, the Skin Library) | Swipe the row + tap a neighbour + the dots under it; VoiceOver increment / decrement on the row. A pull down still closes the Skin Library (the row's pan gives way to vertical drags) |
 
 No other custom gestures (double-tap, two-finger, shake).
 
@@ -653,13 +654,13 @@ We study the highest-converting apps and use their principles, never their dark 
 | **Goals and milestones** | The receipt prints: the milestone, `GOAL REACHED ✓` with the target per goal (D7). No badges, no trophy screen. A workout without a record, goal or milestone prints nothing. |
 | **Week complete** | After the receipt's Done, the finished-week report prints onto the spike (D15): lifts up, records, volume, best. Once per week. |
 | **A plan saved** | The cartridges file onto the shelf. |
-| **The guided tour's reward** (decision 85) | Start throws the device up into a spin over Trim's dot-matrix room, on the same SceneKit body as the cartridge insert (44 pt deep, its face the device as it was a moment ago), and it stays that object through the perch, the picks and the landing: perched, it leans (`perchTiltX` / `perchTiltY`) so its rounded corners and side show, never a flat scaled-down screen. The JS device takes over only once it has landed face-on at full size. The 2D face, edge and back only where the native view is missing or under Reduce Motion; it slows to face the owner in the new finish, hangs, drops, squashes and settles perched. A ring of lit dots ripples out from it, `UNLOCKED` stamps on with the stamp's thud, and the finish picker rises. Each pick re-dresses the device with the ripple and a wiggle. About 5 s to the picker (once, like first open). |
+| **The guided tour's reward** (decisions 85, 95, 97) | Start lets the old skin go: the machine falls away like a case and Graphite stands behind it, then steps back into the row of all six machines on the dark ground (the owner's, Graphite, then the free ones, then Trim Pro's), and eight pixel sparkles twinkle round Graphite once (the celebration; none under Reduce Motion, none when the owner already had Graphite). Swipe the row, tap a neighbour or a dot under it; the machine in the middle is the pick, and each one that passes the middle clicks (`reskin`). The foot says what it is (`NEW SKIN UNLOCKED`, `TRIM PRO SKIN`, `YOUR SKIN`, `FREE SKIN`) over the dots (a padlock on each locked one) and the pill: `Use <skin>`, `Keep <skin>` for the one they had, `Try Trim Pro` on a locked one (the paywall; if they buy, that skin). Use steps it forward and the device fades in, home, in that skin; no paywall follows (decision 97). No spin, no 3D, no stamp, no ripple: about 0.8 s to the row. The row is `SkinRow` (`device/skin-row.tsx`), shared with the Skin Library; in the gift each machine is drawn once under the device while the tour's last lines type (`TourGift`, `device/tour/tour-gift.tsx`), so Start only starts animations and a pick never re-renders a device. |
 | **First Pro purchase** | The thing they wanted happens within 100 ms of Apple's confirmation (the finish applies, the range switches), a toast confirms `Trim Pro is on`, with a success haptic. |
 
 Rules for every moment:
 - **Once** where it's a first or a milestone (a persisted flag; `weekMomentsShown` for the week).
 - **After the action lands, never in its way.** Input is live throughout; a tap skips to the end.
-- **Short.** Under 4 s, the insert included. First open and the tour's reward are the two once-only exceptions, and a tap still skips the first.
+- **Short.** Under 4 s, the insert and the tour's gift included. First open is the one once-only exception, and a tap still skips it.
 - **One at a time.** Queue them: the Home stamp, then the week moment, then the post-workout paywall. Never two modal moments at once.
 - **Built from Trim's own parts:** the device, cartridges, receipts, stamps, lamps, the spike, the knob. No confetti, emoji, stickers, mascots or fireworks. Sounds only from §8.
 - **Words stay facts.** No `Congrats!`, no `You crushed it`.
@@ -669,14 +670,14 @@ Rules for every moment:
 
 1. **Every question changes the product.** Units, days a week, a plan, a finish: each answer shapes what they leave with. Name is the one optional question; it pays off on the receipt header. No vanity or marketing questions.
 2. **Value before asks.** It ends with a real, active plan on a working Home, Start one press away. No account, no permission prompts (Live Activity asks at the first rest, with the system prompt only).
-3. **Short.** Welcome, Name, Units, Got a plan? (decision 88), then Import plan → Reading → Fix, or Days → Pick a plan (packs as cartridges), or Build my own → Days; then Pick your finish, then the insert as "Plan ready", then the guided tour (§12 Moments, decision 85), then the paywall on the template path. One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
+3. **Short.** Welcome, Name, Units, Got a plan? (decision 88), then Import plan → Reading → Fix, or Days → Pick a plan (packs as cartridges), or Build my own → Days; then Pick your finish, then the insert as "Plan ready", then the guided tour (§12 Moments, decision 85), then Home (or the editor on Build my own). No paywall in onboarding (decision 97). One question per screen, choices as rows or objects, a light Continue pill at the thumb. Back always works and keeps the answers.
 4. **Descriptions describe options, not the UI.** A plan pack may carry one line saying what it is (`Upper and lower body, twice each`).
 5. **Build my own** inserts an empty plan with n days, plays the tour (on a push day's first three lifts), then opens the editor sheet.
 6. **The guided tour** (decision 85). Trim's lines type onto the foot of the display under the practice set (dim line before, current line, a blinking `▸` when a tap goes on), or fill the display on the first and last screens. The first line also says `TAP MY SCREEN TO GO ON`. A line about a control types out first, then the control wears the focus ring (`FocusRing`: the display's 2-pt amber frame, 5 off, with a glow) and the next line waits for it. Only taught controls respond. In a tall sheet the line moves into the sheet (`TrimSays`, a small panel of the machine's screen): the exercise sheet frames the alternative to swap to, the tour's menu says on each row what's inside. Lines are facts and verbs in Trim's voice, sentence by sentence; no exclamation marks. Nothing is logged or saved.
 
 ### Paywall (D13)
 
-6. **Right after value.** Only at the moments in `PRODUCT.md` → Trim Pro: the end of onboarding on the template path, once after the first completed workout (on the receipt's Done), a Pro-locked tap, and Settings → Trim Pro. Never during a workout (locked finishes there preview only), never on launch, never twice for the same moment. The post-workout paywall counts only once prices have rendered.
+6. **Right after value.** Only at the moments in `PRODUCT.md` → Trim Pro: once after the first completed workout (on the receipt's Done), a Pro-locked tap (Try Trim Pro on a locked skin in the tour's gift or the Skin Library included), and Settings → Trim Pro. Not at the end of onboarding (decision 97: right after Graphite was given, it read as a lock on the gift). Never during a workout (locked finishes there preview only), never on launch, never twice for the same moment. The post-workout paywall counts only once prices have rendered.
 7. **Their context, not ours.** The headline speaks to why they're here: their plan after onboarding, the feature they tapped at a gate. One headline, no subheading, no superlatives, no exclamation marks.
 8. **Outcomes, not features.** One row per Pro feature (including "Every skin", D3), a short title and one line of 45 characters or fewer written as what they get. At most four rows. No checkmark-bullet lists.
 9. **Two choices, one clear default.** Annual and monthly as pill cards, annual preselected. Its saving is a real fact computed from the two StoreKit prices (`Save 52%`), never an invented reference price.
@@ -696,7 +697,7 @@ Rules for every moment:
 
 ### Pro gates
 
-20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) preview live on the device; the finishes sheet then shows a light `Get Trim Pro` pill, the only way to the paywall from there; closing the sheet reverts the preview silently (D3).
+20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) are machines in the skin row with a padlock on their dot, for Trim Free only: with Trim Pro nothing is locked, so no padlock and no `Try Trim Pro` (`finishLock` returns null); in the middle, the pill is `Try Trim Pro`, the only way to the paywall from there (decision 97).
 21. **Free stays whole.** Logging, history and the current plan are never gated, interrupted or nagged.
 
 ### Changing a money screen
@@ -741,9 +742,12 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Rest [08]
 
-- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12, centred between the header and the footer at every display height: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
-- Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s, label `TIME`); big key `Skip` (metal); Undo stays.
-- At 0:00: a blinking `GO` with the rest haptic for 2 s (`REST_GO_MS`), then the log view for the same upcoming set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
+- **The clock counts to the next set, never a set's length (decision 96).** Header `REST` / `NEXT 85×8`, dim. Centred between the header and the footer: `SET 2 IN` (`lcdSmall`, ink: the set that's up next, `restUpText`; `SET 1` when a lift's last set hands over to the next lift, `EXTRA SET` past the plan), 12 under it the time (`lcdBig` 56, tabular), and 28 under that the battery (`RestCharge`, `device/log/rest-charge.tsx`). Footer: the lift name ▾, dim. No ring, no set pills, no bolt.
+- **Battery:** 248 × 64, a 2 pt ink outline (r10) with a 6 × 26 nub on the right (r3); inside, 5 in, 8 cells 4 apart (r3). Cells are `amberOff`, light left to right in ink with the lamp glow as rest runs out (`restCharge`, measured against the longest this rest has been, so `+15` takes cells back and `−15` lights them), and the cell charging next breathes off → dim. The last cell waits for GO: the battery is full only when the next set is up. Geometry is `logGeometry.rest*`.
+- Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s; no engraved label, it reads "Rest time" to VoiceOver); big key `Skip` (metal); Undo stays.
+- At 0:00: the battery fills, one soft light sweeps across it, the line reads `SET 2` over a blinking `GO`, with the rest haptic for 2 s (`REST_GO_MS`); then the log view for that set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
+- **VoiceOver:** "Rest, 1 minute 12 left, then set 2 of 3, Bench press, 85 kilograms by 8"; at GO "Rest over, set 2 of 3 now, …".
+- **The tour's practice rest** is the same screen, 10 s long (`TOUR_REST_SECONDS`), under the line `Logged. Now you recharge. Set 2 starts when the battery's full.` It runs to full, GO and set 2 before the next line (Undo); `Skip` answers it too, and a tap only finishes the line.
 
 ### Finish [11, 12]
 
@@ -820,7 +824,7 @@ No rank gauge and no rank line (D4); Progress opens with GOALS. GOALS: the pinne
 
 ### Skin Library (N7) [16, 17]
 
-Top edge 430. A sticky title `Skin 089, Pocket`, then six swatches 92 tall in a sideways row (number in Doto 22, name 13; Holo's swatch is its foil), up to 112 wide but narrowed so three and a half always show: the fourth peeks, so the row reads as scrolling. A picked swatch scrolls fully into view with its left neighbour peeking, and the sheet opens scrolled to the saved one. The selected swatch is rotated −4°, lifted and ringed in white (200 ms; Reduce Motion fades the ring only). The device behind changes live; the finish-swatch haptic on pick. 212 and 101 are free and save on tap (101 once the guided tour has given it; until then it carries `EARN` and previews only); for free users 707, 089, 077 and 777 carry a small `PRO` display chip (lcd ground, amber Doto), preview on tap and show the light `Get Trim Pro` pill above `Done` (D3). After a purchase the previewed skin saves at once. During a workout they preview only, no pill. Closing the sheet reverts a preview silently.
+Decision 97: the tour's row in a tall sheet (top edge `tall`, title `Skin Library`, ✕). Every skin as the whole machine (`SkinRow`, `device/skin-row.tsx`, the same row as the tour's gift): the saved one in the middle, its neighbours smaller and dimmer either side; swipe the row, tap a neighbour or a dot, and each machine that passes the middle clicks (`reskin`). Under it the label (`YOUR SKIN`, `FREE SKIN`, `TRIM PRO SKIN`, `TOUR REWARD` while Graphite is still the tour's), the dots (a padlock badge on each locked one) and the pill: `Keep <skin>` for the saved one, `Use <skin>` saves another free one, `Try Trim Pro` on a locked one opens the paywall (after a purchase that skin saves at once). Either way the sheet closes onto the device in its skin. Nothing previews on the device: the machine in the row is the preview. During a workout a locked skin shows `Comes with Trim Pro`, disabled (never a paywall mid-workout); `Earned in the tour`, disabled, before the tour has given Graphite. No sparkles here. A pull down, the scrim or ✕ closes it.
 
 ### Settings (D1)
 
@@ -828,7 +832,7 @@ A dark sheet reached from the menu's last row, built like the menu and editor: c
 
 ### Onboarding (D12)
 
-Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the six swatches in a 3 × 2 grid; free finishes save on tap, locked ones preview only (Graphite shows `EARN`: the guided tour gives it). Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready", then the paywall on the template path; if they aren't Pro after it, a locked finish falls back to the free finish saved last (212 unless they picked 101). Build my own has no paywall, so a previewed locked finish falls back there too.
+Dark grid ground, the new type (`onboardingType`: titles 30/34 centred, one fact line under), a round ‹ top left, one question per screen (see §12 Onboarding), the light full-width Continue pill (60) at the thumb, riding the keyboard on Name. Welcome (D74): first open in space (the `ASSEMBLY` scene, §8 motion table): the device as an object (`DeviceObject`: the real parts scaled, rim and cast shadow) assembles itself and comes alive with a bang, the grid floor lights, the display boots to `SLOT EMPTY` and a blinking `INSERT PLAN`, then `Trim` and `A workout machine.`, then Continue. Its Start key is metal (`bigKeyVariant`), not the finish's primary colour: the machine isn't armed until a plan is in it; the amber charge glow and burst stay. No unit under the wheel. Days (D74): no fact line; a tall wheel in a metal bezel on the right and a drum of numbers (SF Mono heavy, `onboardingType.wheelNumber`) on the left, an amber notch between them; the wheel is the control (VoiceOver: adjustable). Plan packs are cartridges (PB1: 40 × 64, the day title in the label window, or its initials past 5 characters); a pack's fact line is `~40 min a day`; a picked pack's cartridges hop once in turn. Build my own is the empty pack (`+` slots). Pick your finish (N10): the device large on the grid in the finish being picked, over the six swatches in a 3 × 2 grid; free finishes save on tap, locked ones preview only (Graphite shows `EARN`: the guided tour gives it). Its pill is `Load <plan>` (template) or `Continue` (Build my own). Then the insert as "Plan ready" and the tour; a previewed locked finish stays only for an owner who is already Pro, otherwise the gift's pick stands (decision 97: no onboarding paywall).
 
 ### Paywall (D13)
 

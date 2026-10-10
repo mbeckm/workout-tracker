@@ -328,6 +328,7 @@ function bezier(x1, y1, x2, y2) {
   };
 }
 
+// No longer played (decision 95 replaced the launch with the gift); kept with its recipe.
 // The tour's launch, keep in step with TOUR_POSE, TOUR_POSE_CURVES and DEVICE.TOUR_LAUNCH in
 // src/motion.ts: `spin` is drawn from the same turn curve, so every whoosh lands on a half turn.
 const LAUNCH_SECONDS = 4.8;
@@ -407,7 +408,7 @@ SOUNDS.spin = () => {
   return voice;
 };
 
-// The tour's ring of lit dots ripples out as the device lands: one short, low 808-style pulse
+// No longer played (decision 95). The tour's ring of lit dots ripples out as the device lands: one short, low 808-style pulse
 // with a soft tick on top. Short and dry, like `reskin`, not a held tone.
 SOUNDS.pulse = () => {
   const voice = makeVoice(0.32, 28);
@@ -416,15 +417,14 @@ SOUNDS.pulse = () => {
   return voice;
 };
 
-// The machine changes its skin: a tight closed-hat tick and a short blip on one note (D7). Short
-// and high, its own sound apart from `swatch` (the paywall's and the choice cards' tile).
+// The machine changes its skin (decision 95): a low thock with an air tick on top, and nothing in
+// the middle (no tone between ~400 Hz and 8 kHz), so it sits under music instead of poking out of
+// it. The thock falls 150 to 80 Hz; a short 260 Hz knock gives phone speakers something to play.
 SOUNDS.reskin = () => {
-  const voice = makeVoice(0.09, 29);
-  hit(voice, 0, 9000, 1.2, 0.9, 0.025);
-  hit(voice, 0, 6200, 1.6, 0.35, 0.015);
-  const env = (p) => (p < 0.06 ? p / 0.06 : Math.pow(1 - p, 3));
-  glide(voice, 0.003, 0.055, 2349, 2349, 0.55, env);
-  glide(voice, 0.003, 0.04, 4698, 4698, 0.12, env);
+  const voice = makeVoice(0.11, 29);
+  thump(voice, 0, 150, 80, 1.0, 0.075);
+  hit(voice, 0, 260, 1.4, 0.45, 0.014);
+  hit(voice, 0, 10500, 1.8, 0.35, 0.008);
   return voice;
 };
 

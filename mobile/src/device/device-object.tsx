@@ -14,6 +14,7 @@ import {
   TallKey,
   Well,
   Wheel,
+  type BigKeyVariant,
   type LampState,
 } from '@/device/parts';
 
@@ -102,6 +103,7 @@ export function DeviceObject({
   lamps = [],
   wheelLabel,
   bigKeyLabel = 'Start',
+  bigKeyVariant = 'primary',
   accessibilityLabel,
   assembly,
   style,
@@ -114,6 +116,8 @@ export function DeviceObject({
   /** Engraved under the wheel (the weight unit). */
   wheelLabel?: string;
   bigKeyLabel?: string;
+  /** `metal` on first open: the machine isn't armed until a plan is in it. */
+  bigKeyVariant?: BigKeyVariant;
   accessibilityLabel: string;
   assembly?: DeviceAssembly;
   style?: StyleProp<ViewStyle>;
@@ -186,7 +190,7 @@ export function DeviceObject({
             </Slot>
             {/* After the wheel, so the Start key passes over it while it hovers (first open). */}
             <Slot animated={parts.bigKey} style={[styles.centered, { top: BIG_KEY_Y }]}>
-              <BigKey label={bigKeyLabel} />
+              <BigKey label={bigKeyLabel} variant={bigKeyVariant} />
             </Slot>
           </View>
         </View>
