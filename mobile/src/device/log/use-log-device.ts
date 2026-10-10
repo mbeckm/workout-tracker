@@ -11,7 +11,7 @@ import type { DrumNudge, NotchResult } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { DEVICE, LINEAR_FN } from '@/motion';
 
-import { drumStep, spokenShortSet, spokenValue, type DrumKind } from './log-model';
+import { drumStep, spokenSetLabel, spokenShortSet, spokenValue, type DrumKind } from './log-model';
 import { useLogSession } from './log-session-context';
 import type { SetValues } from './log-state';
 import { useRest } from './use-rest';
@@ -281,11 +281,16 @@ export function useLogDevice() {
     if (log.loadStep) actions.push({ name: 'step', label: `Change step, now ${log.loadStep.text.slice(1)} ${log.units}` });
     if (log.footer?.targetLocked) actions.push({ name: 'targets', label: 'Show targets' });
   } else if (view === 'rest' && log.current) {
+    // Decision 96: the rest, then the set it leads to ("then set 2 of 3"), as the display's `SET 2 IN`.
     const next = log.stage ? spokenShortSet(log.stage.values, minutes) : null;
+    const up = log.stage ? spokenSetLabel(log.stage) : null;
     summary = [
       rest.go ? 'Rest over' : `Rest, ${spokenClock(rest.secondsLeft)} left`,
-      next ? `next ${log.current.prescription.name}, ${next}` : log.current.prescription.name,
-    ].join(', ');
+      up ? (rest.go ? `${up} now` : `then ${up}`) : null,
+      next ? `${log.current.prescription.name}, ${next}` : log.current.prescription.name,
+    ]
+      .filter(Boolean)
+      .join(', ');
     actions.push({ name: 'exercise', label: 'Exercise info' });
   } else if (view === 'finish' && log.finishSummary) {
     const { headline, logged, planned, nothingLogged, volumeText } = log.finishSummary;
@@ -301,7 +306,7 @@ export function useLogDevice() {
   const drumKind = log.controls?.drum ?? null;
   const wheel =
     view === 'rest'
-      ? { label: 'TIME', accessibilityLabel: 'Rest time', accessibilityValue: spokenClock(rest.secondsLeft) }
+      ? { label: 'REST', accessibilityLabel: 'Rest time', accessibilityValue: spokenClock(rest.secondsLeft) }
       : {
           // trim-ui: the wheel reads `LB`, the display's units read `LBS`.
           label: log.drum ? (log.drum.label === 'LBS' ? 'LB' : log.drum.label) : '',

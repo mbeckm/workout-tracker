@@ -151,6 +151,8 @@ export const EASE_KEY_FN = Easing.bezierFn(0.25, 0.1, 0.25, 1);
 /** The week report dropping onto the spike (QC2 `drop`): bezier(.3,1.3,.5,1). */
 export const EASE_WEEK_DROP_FN = Easing.bezierFn(0.3, 1.3, 0.5, 1);
 export const LINEAR_FN = Easing.linear;
+/** The rest battery's charging cell: a slow, even in and out. */
+export const EASE_BREATHE_FN = Easing.bezierFn(0.45, 0, 0.55, 1);
 /** First open (D74): the body floats in and just overshoots; parts accelerate into their hit; the Start key slams. */
 export const EASE_ARRIVE_FN = Easing.bezierFn(0.2, 0.9, 0.25, 1.04);
 export const EASE_HIT_FN = Easing.bezierFn(0.55, 0, 1, 0.6);
@@ -169,8 +171,12 @@ export const DEVICE = {
   DRUM_FLASH: 120,
   /** Long-press repeat on the tall keys: a step every REPEAT once the long press lands. */
   REPEAT: 90,
-  /** The rest ring glides between the clock's ticks (`useRest` ticks every 250 ms). */
+  /** The tour's practice rest reads its clock this often (`useRest` ticks every 250 ms too). */
   REST_TICK: 250,
+  /** Rest's battery (decision 96): the charging cell brightens and fades once per REST_BREATHE. */
+  REST_BREATHE: 2000,
+  /** Full: one soft light sweep across the battery, as GO shows. */
+  REST_SWEEP: 900,
   /** Finish mode's `N MIN` refresh. */
   MINUTE_TICK: 15000,
   /** Sheet in/out. */

@@ -13,7 +13,7 @@ import { EARNED_FINISH, finishLock, type Finish } from '@/domain/finish';
 import { defaultLoadStep } from '@/domain/load-step';
 import { trainableDays } from '@/domain/plan-loop';
 import type { ExercisePrescription, WorkoutPlan } from '@/domain/types';
-import { DEVICE } from '@/motion';
+import { DEVICE, REST_GO_MS } from '@/motion';
 import { useWorkoutStore } from '@/store/workout-store';
 
 import { tourDone, tourHandoffPending, setTourHandoff, whenTourDone } from './tour-done';
@@ -24,6 +24,7 @@ import {
   swapTarget,
   taught,
   tourReducer,
+  tourRestLeft,
   type TourAction,
   type TourControl,
   type TourLift,
@@ -57,6 +58,8 @@ type TourContextValue = {
   loadStep: number;
   /** Seconds left in the practice rest. */
   restLeft: number;
+  /** The practice rest reached 0:00: the battery is full and GO shows until `restOver`. */
+  restGo: boolean;
   /** The practice lift's prescription (the exercise sheet shows it). */
   current: ExercisePrescription | null;
   alternatives: readonly ExercisePrescription[];
@@ -166,19 +169,32 @@ export function TourProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [dispatch, tour?.typed, tour?.beat, typing]);
 
-  // The practice rest counts down for real.
-  const [restLeft, setRestLeft] = useState(0);
+  // The practice rest counts down for real, then hands over as the log's does (decision 96): GO
+  // with the rest haptic at 0:00, and set 2 after REST_GO_MS.
+  const [now, setNow] = useState(() => Date.now());
+  const [goFor, setGoFor] = useState(0);
   const restEndsAt = active && tour?.screen === 'rest' ? tour.restEndsAt : 0;
   useEffect(() => {
     if (restEndsAt <= 0) return;
-    const read = () => setRestLeft(Math.max(0, Math.ceil((restEndsAt - Date.now()) / 1000)));
+    const read = () => setNow(Date.now());
     const first = setTimeout(read, 0);
     const timer = setInterval(read, DEVICE.REST_TICK);
+    const wait = Math.max(0, restEndsAt - Date.now());
+    const go = setTimeout(() => {
+      setGoFor(restEndsAt);
+      haptics.restGo();
+    }, wait);
+    const over = setTimeout(() => dispatch({ type: 'restOver' }), wait + REST_GO_MS);
     return () => {
       clearTimeout(first);
       clearInterval(timer);
+      clearTimeout(go);
+      clearTimeout(over);
     };
-  }, [restEndsAt]);
+  }, [dispatch, haptics, restEndsAt]);
+  const restGo = restEndsAt > 0 && goFor === restEndsAt;
+  // Until the first tick the clock may be stale: it never reads more than the rest's length.
+  const restLeft = tour && restEndsAt > 0 ? (restGo ? 0 : Math.min(tour.restLongest, tourRestLeft(tour, now))) : 0;
 
   // The menu beat ends when the menu the tour opened closes.
   const menuWasOpen = useRef(false);
@@ -286,6 +302,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       taught: (control: TourControl) => taught(state, control),
       dispatch,
       restLeft,
+      restGo,
       loadStep,
       current,
       alternatives,
@@ -300,7 +317,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
       choose,
       keep,
     }),
-    [active, alternatives, before, choose, current, dispatch, facts, keep, launch, line, loadStep, pick, restLeft, reveal, run, start, state, target],
+    [active, alternatives, before, choose, current, dispatch, facts, keep, launch, line, loadStep, pick, restGo, restLeft, reveal, run, start, state, target],
   );
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;

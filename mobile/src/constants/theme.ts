@@ -661,6 +661,9 @@ export const bodyFinish = {
   /** The glass over every screen: a white glare fading out by 36%. */
   glass: 'rgba(255,255,255,0.09)',
   glassClear: 'rgba(255,255,255,0)',
+  /** The light that sweeps once across the rest battery when it's full (decision 96). */
+  restSweep: 'rgba(255,255,255,0.5)',
+  restSweepClear: 'rgba(255,255,255,0)',
   /** Screen textures, in points. */
   dotPitch: 5,
   dotRadius: 1.1,
@@ -1377,7 +1380,7 @@ export const device = {
   gridColumns: 9,
   gridLamp: 10,
   gridGap: 8,
-  /** Rest ring. */
+  /** Screen 08's rest ring, drawn now only by the dev gallery (rest is a battery since decision 96). */
   restRingRadius: 95,
   restRingStroke: 12,
   /** Bottom clearance above the home indicator at the reference; 16 on iPhone SE. */
@@ -1454,13 +1457,32 @@ export const logGeometry = {
   setLampLabelGap: 12,
   /** From the reps number to `REPS`. */
   repsUnitGap: 8,
-  /** Rest: the ring's 230 box, centred between header and footer (r95, stroke 12; the track dashed 3 on, 7 off). */
-  restRingBox: 230,
-  restRingDash: '3 7',
   /** The rest footer sits 20 from the bottom. */
   restFooterY: 20,
-  /** Short displays (iPhone SE): the ring and its clock shrink to fit this far inside the header and footer. */
-  restRingClear: 8,
+  /**
+   * Rest (decision 96): `SET 2 IN`, the clock 12 under it, and 28 under that the battery that
+   * charges toward the next set, centred between header and footer. The battery is 248 × 64 with
+   * a 2 pt outline (r10), 5 inside it 8 cells 4 apart (r3), and a 6 × 26 nub on the right (r3).
+   */
+  restLabelGap: 12,
+  restBatteryGap: 28,
+  restBatteryWidth: 248,
+  restBatteryHeight: 64,
+  restBatteryStroke: 2,
+  restBatteryRadius: 10,
+  restBatteryPad: 5,
+  restCells: 8,
+  restCellGap: 4,
+  restCellRadius: 3,
+  restNubWidth: 6,
+  restNubHeight: 26,
+  restNubRadius: 3,
+  /** The one light sweep across the full battery: a band this wide. */
+  restSweepWidth: 96,
+  /** Where that doesn't fit (the tour's rest over its chat on iPhone SE): tighter, and a 40-tall battery. */
+  restLabelGapCompact: 4,
+  restBatteryGapCompact: 12,
+  restBatteryHeightCompact: 40,
   /** Finish: the title, the set grid (120 clear on the right) and the stats. */
   finishTitleY: 64,
   finishGridY: 150,

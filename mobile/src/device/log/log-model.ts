@@ -311,6 +311,32 @@ export function restNextText(values: Values, minutes = false): string | null {
   return text ? `NEXT ${text}` : null;
 }
 
+/**
+ * Rest's line over the clock (decision 96): the set that's up next, so the clock reads as time
+ * until it, never as the set's length. `SET 2` (shown as `SET 2 IN` while counting, `SET 2` over
+ * GO), `SET 1` when the next lift is up, `EXTRA SET` past the plan.
+ */
+export function restUpText(stage: Pick<Stage, 'kind' | 'setIndex' | 'set'>): string {
+  if (stage.kind === 'extra' || stage.set?.extra) {
+    return 'EXTRA SET';
+  }
+  return `SET ${stage.setIndex + 1}`;
+}
+
+/**
+ * The rest battery (decision 96): how many of `cells` are lit as rest runs out (`fraction` 1 → 0,
+ * measured against the longest this rest has been), and the one charging next. The last cell
+ * waits for GO, so the battery is full only when the next set is up.
+ */
+export function restCharge(fraction: number, go: boolean, cells: number): { lit: number; charging: number | null } {
+  if (go) {
+    return { lit: cells, charging: null };
+  }
+  const left = Math.min(1, Math.max(0, Number.isFinite(fraction) ? fraction : 1));
+  const lit = Math.min(cells - 1, Math.floor((1 - left) * cells));
+  return { lit, charging: lit };
+}
+
 // ---------------------------------------------------------------------------
 // Lamps
 

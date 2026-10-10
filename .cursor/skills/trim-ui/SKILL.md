@@ -22,7 +22,7 @@ Every rule has a reason. When a case isn't covered, apply the reason, then add t
 1. **One surface, one job, one primary action.** Each device mode has one job and one big key. Each sheet answers one question. Anything else moves a layer down (§2) or goes away.
 2. **Fast is the feature.** Launch to the first logged set is two presses (Start, Log). A prefilled set is one. Nothing we add may cost the loop a press or make it wait (`PRODUCT.md` → Principles).
 3. **The interface explains itself.** No helper text, gesture hints or summaries, on the display or in sheets. If something needs a sentence, the layout is wrong. The one exception is the guided tour (decision 85, §12 Moments): once, after onboarding, Trim talks on its own display and has the owner use each essential control.
-4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest ring, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
+4. **The display shows only what the control in use needs.** The device is the screen, and it carries no labels beyond the display and the small engraved labels. Information appears while a control is in use (the rest battery, the step tag), and the wheel stows when it has no job. The wheel carries no label: the value it turns is on the display (decision 84).
 5. **Layout carries hierarchy.** Size, brightness (amber, dim, off) and position say what matters. Labels that only restate hierarchy are banned.
 6. **Three layers, never mixed.** Device: physical metal, raised keys, a recessed display. Sheets: flat and dark. Moments: physical 3D objects on a dark grid. A sheet never gets a bevel, and the device never gets a flat list.
 7. **Color is a signal.** Orange marks action, current and selected. Green means done, yellow means record, and ordinary change is ink with ↑ or ↓ (§5). Each signal has exactly one meaning.
@@ -101,7 +101,7 @@ Information lives on the lowest layer that serves the job:
 | --- | --- | --- | --- |
 | Home | Start the next workout; where the week stands | The selected day's row | `Start` |
 | Log | What this set needs right now | The weight on the drum | `Log` |
-| Rest | How long until the next set | The time in the ring | `Skip` (metal) |
+| Rest | How long until the next set | The time, under `SET 2 IN` | `Skip` (metal) |
 | Finish | End the workout on purpose | `ALL DONE` / `END EARLY?` | `Finish`, held |
 | Edit | This lift's sets × reps | The framed number the wheel controls | `Done` (metal) |
 | Receipt (finish screen) | What I just did, against last time | The three stats; on a moment, the paper | `Done` (light pill) |
@@ -186,7 +186,7 @@ Use a role from `theme.ts` as-is. Override only `color`, and only with another t
 
 These live in the `device` geometry block in `theme.ts` (`displayPad: 22`, `edge: 20`, `lampGap: 7`, key sizes, radii), never as raw numbers in a part.
 
-**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and the reps, the rest ring and its clock scale down together to fit between header and footer, Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
+**Layout rule.** Lay out with flex and safe areas, not absolute positions. The top row sits under the safe area; the bottom row sits above the home indicator with 34 clearance at the reference size. The display takes the remaining height: at least 360 on screens 812 tall or more. On iPhone SE (667) it may go down to about 296 with a bottom clearance of 16, and Home's rows scroll inside the display (with a fade). Display modes lay out from the display's measured height (`useDisplayHeight()`): from 360 up they match their screens exactly; on shorter displays the log drum drops its dim steps (below first, then above) and centres the framed 104 weight between the header and the reps, rest's line, clock and battery stay centred between header and footer (the tour's rest over its chat tightens its gaps and uses a 40-tall battery), Edit keeps the lift name to one shrunk line, and Finish's set grid compresses past 4 rows (8-pt lamps 4 apart, then more columns) so it never reaches the stats. Nothing on the display ever overlaps. Key sizes never change. On Pro Max the margins scale and the display grows; keys stay the same size.
 
 ### Display layout
 
@@ -372,6 +372,7 @@ Motion exists to make Trim feel **faster** (instant acknowledgement), **more flu
 | Rocker press | 2D stand-in for rotateY ±10° (scaleX 0.985, rotate ±1.5°), 160 ms | Tilts toward the end pressed (3D layers composite badly on iOS) |
 | Hand-off (decision 87) | The card comes in over 140 ms (scale .97 → 1), holds 1400 ms, then rises 150 and shrinks to half over 280 ms (`EASE_OUT_FN`) as rest shows | Any key or a sheet ends it at once. Reduce Motion: plain fades |
 | Roll call (decision 86) | The list fades in over 100 ms, the ring glides to the new row over 180 ms (`EASE_OUT_FN`), holds 900 ms after the last press, fades out over 180 ms | Any other key or a sheet ends it at once. Reduce Motion: the ring jumps |
+| Rest battery (decision 96) | A cell lights over 220 ms (`DEVICE.DISPLAY`, `EASE_OUT_FN`) as rest runs out; the cell charging next breathes from off to dim and back once per 2000 ms (`REST_BREATHE`, `EASE_BREATHE_FN`). At GO the last cell lights and one soft light band (96 wide, white .5) sweeps across the battery in 900 ms (`REST_SWEEP`, `EASE_OUT_FN`) | ±15 lights or takes back cells at once (it measures against the longest this rest has been). Reduce Motion: no breathing and no sweep, the cells just fill |
 | Hold to finish | 1100 ms linear ring fill; snaps back on release | |
 | Finish screen (decision 90) | The cards rise 16 and fade in over 420 ms (`EASE_OUT_FN`), 80 apart; the stats count up from 0 over 850 ms (ease-out cubic), 150 in | Fresh only; from History everything is in place. Reduce Motion: no rise, no count |
 | Receipt feed | On a moment, 800 ms in: up out of the bottom slot, translateY 100% to 0 in 18 steps over 1.8 s, jump-start (each step lands with its print tick at 0, 100 … 1700 ms); the screen scrolls to it | Tapping the paper completes it. Fresh only. Reduce Motion: the paper fades in where it ends |
@@ -476,7 +477,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Numbers carry real units: `85.0`, `KG`, `×8`, `1:24`, `~45 MIN`, `0:45`, `20 MIN`.
 - On the display, `×` joins without spaces (`LAST 80×8`, `NEXT 85×8`, `BENCH PRESS 3×8`). On cartridge chips, the edit display and receipts it takes spaces (`3 × 8`, `SETS 4 × REPS 15`, `90 × 9`).
 - No helper text, gesture hints, middle dots or emoji. There's no `HOLD TO FINISH`: the big key's VoiceOver label says it.
-- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
+- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `SET 2 IN`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
 
 ### In sheets
 
@@ -742,9 +743,12 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Rest [08]
 
-- Header `REST` / `NEXT 85×8`. A ring of radius 95, stroke 12, centred between the header and the footer at every display height: a dashed `amberOff` track and amber progress (no glow), the time (56) in the centre, ticking plainly. Footer: the lift name ▾ and the set label.
-- Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s, label `TIME`); big key `Skip` (metal); Undo stays.
-- At 0:00: a blinking `GO` with the rest haptic for 2 s (`REST_GO_MS`), then the log view for the same upcoming set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
+- **The clock counts to the next set, never a set's length (decision 96).** Header `REST` / `NEXT 85×8`, dim. Centred between the header and the footer: `SET 2 IN` (`lcdSmall`, ink: the set that's up next, `restUpText`; `SET 1` when a lift's last set hands over to the next lift, `EXTRA SET` past the plan), 12 under it the time (`lcdBig` 56, tabular), and 28 under that the battery (`RestCharge`, `device/log/rest-charge.tsx`). Footer: the lift name ▾, dim. No ring, no set pills, no bolt.
+- **Battery:** 248 × 64, a 2 pt ink outline (r10) with a 6 × 26 nub on the right (r3); inside, 5 in, 8 cells 4 apart (r3). Cells are `amberOff`, light left to right in ink with the lamp glow as rest runs out (`restCharge`, measured against the longest this rest has been, so `+15` takes cells back and `−15` lights them), and the cell charging next breathes off → dim. The last cell waits for GO: the battery is full only when the next set is up. Geometry is `logGeometry.rest*`.
+- Keys `+15` / `−15`; the wheel changes time (2 notches = 15 s; no engraved label, it reads "Rest time" to VoiceOver); big key `Skip` (metal); Undo stays.
+- At 0:00: the battery fills, one soft light sweeps across it, the line reads `SET 2` over a blinking `GO`, with the rest haptic for 2 s (`REST_GO_MS`); then the log view for that set. Nothing is logged or advanced. Adjusting below 0 ends rest. After a relaunch past the end time, the log view shows with no `GO`.
+- **VoiceOver:** "Rest, 1 minute 12 left, then set 2 of 3, Bench press, 85 kilograms by 8"; at GO "Rest over, set 2 of 3 now, …".
+- **The tour's practice rest** is the same screen, 10 s long (`TOUR_REST_SECONDS`), under the line `Logged. Now you recharge. Set 2 starts when the battery's full.` It runs to full, GO and set 2 before the next line (Undo); `Skip` answers it too, and a tap only finishes the line.
 
 ### Finish [11, 12]
 

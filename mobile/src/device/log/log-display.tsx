@@ -1,33 +1,20 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
 
 import { device, gadgetType, lcd, logGeometry } from '@/constants/theme';
 import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
-import { useScreen } from '@/device/finish';
 import { Drum, drumLayout, useDisplayHeight, type DrumLayout, type DrumNudge } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { sessionDurationMinutes } from '@/domain/log-session';
 import { DEVICE } from '@/motion';
 
-import { restNextText, setLampLayout, type SetLampState } from './log-model';
+import { restNextText, restUpText, setLampLayout, type SetLampState } from './log-model';
 import { useLogSession } from './log-session-context';
+import { RestCharge } from './rest-charge';
 import { useRest } from './use-rest';
 
 /** Weights from 1000 (`1000.0`) and `20 MIN` take six characters: the drum's compact size. */
 const COMPACT_FROM = 6;
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 /** The display's lift name (amber in log, dim in rest), ▾ marks it as the way into the exercise sheet. */
 function LiftName({
@@ -207,19 +194,19 @@ export function LogDisplay({
 }
 
 /**
- * Rest (screen 08): `REST` / `NEXT 85×8`, the ring (r95, stroke 12, a dashed amberOff track
- * under the amber time left), the clock (56), and the lift name ▾ with the set label. At 0:00 a
- * blinking `GO` replaces the clock for `REST_GO_MS` (D6); then the log view returns.
+ * Rest (decision 96): `REST` / `NEXT 85×8`, then centred between header and footer `SET 2 IN`
+ * over the clock (56) and the battery that charges toward the next set (`RestCharge`), and the
+ * lift name ▾ in the footer. At 0:00 the battery is full and `SET 2` / a blinking `GO` show for
+ * `REST_GO_MS` (D6); then the log view returns.
  */
 export function RestDisplay({ onName }: { onName: () => void }) {
   const styles = useScreenStyles(baseStyles);
-  const lcd = useScreen();
-  const { current, stage, setLabel } = useLogSession();
+  const { current, stage } = useLogSession();
   const rest = useRest();
   const height = useDisplayHeight();
 
-  // The ring measures against the longest this rest has been (the prototype's
-  // `restTotal = max(restTotal, rest)`): −15 takes a visible bite, +15 grows the whole.
+  // The battery measures against the longest this rest has been (the prototype's
+  // `restTotal = max(restTotal, rest)`): −15 lights cells, +15 takes them back.
   const [longest, setLongest] = useState({ key: rest.startedAtMs, seconds: rest.totalSeconds });
   if (longest.key !== rest.startedAtMs || rest.totalSeconds > longest.seconds) {
     setLongest({ key: rest.startedAtMs, seconds: rest.totalSeconds });
@@ -227,31 +214,10 @@ export function RestDisplay({ onName }: { onName: () => void }) {
   const total = longest.key === rest.startedAtMs ? Math.max(longest.seconds, rest.totalSeconds) : rest.totalSeconds;
   const fraction = rest.go || total <= 0 ? 0 : Math.min(1, rest.secondsLeft / total);
 
-  // The ring follows the clock smoothly between ticks (the prototype's 1 s linear transition).
-  const progress = useSharedValue(fraction);
-  useEffect(() => {
-    progress.set(withTiming(fraction, { duration: DEVICE.REST_TICK, easing: Easing.linear }));
-  }, [progress, fraction]);
-
-  const { box, top } = restRingLayout(height);
-  const scale = box / logGeometry.restRingBox;
-  const r = device.restRingRadius * scale;
-  const stroke = device.restRingStroke * scale;
-  const circumference = 2 * Math.PI * r;
-  const ringProps = useAnimatedProps(() => ({
-    strokeDashoffset: circumference * (1 - Math.min(1, Math.max(0, progress.get()))),
-  }));
-
   if (!current || !stage) {
     return null;
   }
   const next = restNextText(stage.values, durationIsMinutes(current.prescription));
-  const center = box / 2;
-  // The clock shrinks with the ring, so it keeps screen 08's margin inside the stroke.
-  const clockSize =
-    scale < 1
-      ? { fontSize: Math.round(gadgetType.lcdBig.fontSize * scale), lineHeight: Math.round(gadgetType.lcdBig.lineHeight * scale) }
-      : null;
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -265,82 +231,19 @@ export function RestDisplay({ onName }: { onName: () => void }) {
           </LcdText>
         ) : null}
       </View>
-      <View style={[styles.ring, { top, height: box }]}>
-        <Svg width={box} height={box} viewBox={`0 0 ${box} ${box}`}>
-          <Circle
-            cx={center}
-            cy={center}
-            r={r}
-            fill="none"
-            stroke={lcd.amberOff}
-            strokeWidth={stroke}
-            strokeDasharray={logGeometry.restRingDash}
-          />
-          <AnimatedCircle
-            cx={center}
-            cy={center}
-            r={r}
-            fill="none"
-            stroke={lcd.amber}
-            strokeWidth={stroke}
-            strokeDasharray={`${circumference} ${circumference}`}
-            transform={`rotate(-90 ${center} ${center})`}
-            animatedProps={ringProps}
-          />
-        </Svg>
-        <View style={[StyleSheet.absoluteFill, styles.centered]}>
-          {rest.go ? (
-            <Blink>
-              <LcdText style={[gadgetType.lcdBig, clockSize]}>
-                GO
-              </LcdText>
-            </Blink>
-          ) : (
-            <LcdText style={[gadgetType.lcdBig, clockSize, styles.tabular]}>
-              {rest.clock}
-            </LcdText>
-          )}
-        </View>
-      </View>
+      <RestCharge
+        up={restUpText(stage)}
+        clock={rest.clock}
+        fraction={fraction}
+        go={rest.go}
+        room={height - HEADER_BOTTOM - logGeometry.restFooterY - gadgetType.lcdSmall.lineHeight}
+        style={styles.restMiddle}
+      />
       <View style={[styles.footer, styles.restFooter]} pointerEvents="box-none">
         <LiftName name={current.prescription.name} dim onPress={onName} />
-        <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.dim, styles.noShrink]}>
-          {setLabel}
-        </LcdText>
       </View>
     </View>
   );
-}
-
-/**
- * The ring's box and top in a display `height` tall: screen 08's 230 wherever it fits, else as
- * big as fits (iPhone SE), always centred between the header and the footer.
- */
-function restRingLayout(height: number): { box: number; top: number } {
-  if (height <= 0) return { box: logGeometry.restRingBox, top: HEADER_BOTTOM + logGeometry.restRingClear };
-  const footerTop = logGeometry.restFooterY + gadgetType.lcdSmall.lineHeight;
-  const room = height - HEADER_BOTTOM - footerTop;
-  const box = Math.min(logGeometry.restRingBox, room - 2 * logGeometry.restRingClear);
-  return { box, top: HEADER_BOTTOM + Math.round((room - box) / 2) };
-}
-
-/** Blinking display text (`GO`): on for half the period, dim for the other half, as CSS steps(1). */
-function Blink({ children }: { children: ReactNode }) {
-  const blink = useSharedValue(1);
-  useEffect(() => {
-    const half = DEVICE.BLINK / 2;
-    blink.set(
-      withRepeat(
-        withSequence(
-          withDelay(half, withTiming(device.blinkDimOpacity, { duration: DEVICE.SNAP })),
-          withDelay(half, withTiming(1, { duration: DEVICE.SNAP })),
-        ),
-        -1,
-      ),
-    );
-  }, [blink]);
-  const style = useAnimatedStyle(() => ({ opacity: blink.get() }));
-  return <Animated.View style={style}>{children}</Animated.View>;
 }
 
 /** The minutes since the start, refreshed while finish mode shows. */
@@ -485,8 +388,13 @@ const baseStyles = StyleSheet.create({
   setLamp: { height: logGeometry.setLampHeight, borderRadius: logGeometry.setLampHeight / 2 },
   setLampOn: { borderWidth: device.drumFrameStroke, borderColor: lcd.amber },
   restFooter: { bottom: logGeometry.restFooterY, alignItems: 'baseline' },
-  ring: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  centered: { alignItems: 'center', justifyContent: 'center' },
+  restMiddle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: HEADER_BOTTOM,
+    bottom: logGeometry.restFooterY + gadgetType.lcdSmall.lineHeight,
+  },
   finishTitle: { position: 'absolute', left: device.displayPad, right: device.displayPad, top: logGeometry.finishTitleY },
   grid: {
     position: 'absolute',

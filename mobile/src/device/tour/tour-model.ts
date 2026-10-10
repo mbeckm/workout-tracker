@@ -9,10 +9,10 @@
  */
 
 /** What answers a beat: a tap on the display, or the control the line is about. */
-export type TourWait = 'tap' | 'show' | 'wheel' | 'reps' | 'log' | 'undo' | 'next' | 'swap' | 'menu' | 'start';
+export type TourWait = 'tap' | 'show' | 'wheel' | 'reps' | 'log' | 'rested' | 'undo' | 'next' | 'swap' | 'menu' | 'start';
 
 /** The controls a beat can light. */
-export type TourControl = Exclude<TourWait, 'tap' | 'show' | 'start'>;
+export type TourControl = Exclude<TourWait, 'tap' | 'show' | 'start' | 'rested'>;
 
 /** What the display shows under the chat. */
 export type TourScreen = 'intro' | 'log' | 'rest' | 'ready';
@@ -40,7 +40,8 @@ export const TOUR_SCRIPT: readonly TourBeat[] = [
   { say: '+ and − set the reps.', wait: 'reps' },
   { say: 'Got it.', wait: 'tap' },
   { say: 'Press Log when the set is done.', wait: 'log' },
-  { say: 'This is your rest timer. You can skip it or change the duration.', wait: 'tap' },
+  // Decision 96: the practice rest runs to full, GO and set 2 before Undo; Skip answers it too.
+  { say: "Logged. Now you recharge. Set 2 starts when the battery's full.", wait: 'rested' },
   { say: 'Made a mistake? You can undo your previous set.', wait: 'undo' },
   { say: 'Undone. Nothing is lost.', wait: 'tap' },
   { say: 'Use the arrows to navigate between exercises.', wait: 'next' },
@@ -111,7 +112,8 @@ export type TourState = {
 
 export const TOUR_START_WEIGHT = 20;
 export const TOUR_START_REPS = 8;
-export const TOUR_REST_SECONDS = 90;
+/** The practice rest is short, so the owner sees it run out and hand over to set 2 (decision 96). */
+export const TOUR_REST_SECONDS = 10;
 export const TOUR_SETS = 3;
 const REPS_MIN = 1;
 const REPS_MAX = 50;
@@ -145,6 +147,8 @@ export type TourAction =
   | { type: 'reps'; direction: 1 | -1 }
   | { type: 'log'; now: number }
   | { type: 'skipRest' }
+  /** The practice rest's GO is over: set 2 is up. */
+  | { type: 'restOver' }
   | { type: 'nudgeRest'; seconds: number; now: number }
   | { type: 'undo' }
   | { type: 'lift'; direction: 1 | -1 }
@@ -231,7 +235,11 @@ export function tourReducer(state: TourState, action: TourAction, facts: TourFac
       });
     }
     case 'skipRest':
-      return state.screen === 'rest' ? { ...state, screen: 'log', restEndsAt: 0 } : state;
+      return state.screen === 'rest' ? answer(state, facts, 'rested', { screen: 'log', restEndsAt: 0 }) : state;
+    case 'restOver':
+      return state.screen === 'rest' && state.restEndsAt > 0
+        ? answer(state, facts, 'rested', { screen: 'log', restEndsAt: 0 })
+        : state;
     case 'nudgeRest':
       return state.screen === 'rest' && state.restEndsAt > 0
         ? {
