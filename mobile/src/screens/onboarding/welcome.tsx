@@ -83,6 +83,7 @@ export function OnboardingWelcome() {
                 displayKey="empty"
                 display={reduceMotion ? <EmptySlot /> : <BootingSlot clock={scene.clock} />}
                 assembly={reduceMotion ? undefined : scene.assembly}
+                bigKeyVariant="metal"
                 accessibilityLabel="Trim, with no plan in it yet"
               />
             </Animated.View>
