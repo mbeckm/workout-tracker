@@ -1,12 +1,13 @@
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { showToast } from '@/components/toast';
 import { fontScaleCap, gadgetType, importGeometry, importType, sheetColors, space } from '@/constants/theme';
 import { PRESS_SCALE } from '@/motion';
+import { useWorkoutStore } from '@/store/workout-store';
 
 import { usePulseStyle } from './import-art';
 import type { ImportInput } from './session';
@@ -29,6 +30,7 @@ export function importButtonReach(pillHeight: number, gapAbove: number) {
  * Apple's own paste control skips that prompt but draws in the system font and breaks at large
  * text sizes, so it was dropped in visual QA. Screenshots opens the photo picker (no library
  * access needed) for up to ten, in the order picked.
+ * Both ask once before the first import is sent (decision 98, App Review 5.1.2(i)).
  */
 export function ImportButtons({
   t,
@@ -41,18 +43,41 @@ export function ImportButtons({
 }) {
   const pastePulse = usePulseStyle(t, 'paste');
   const shotsPulse = usePulseStyle(t, 'screenshots');
+  const { importConsent, allowImportReading } = useWorkoutStore();
+
+  /**
+   * Nothing leaves the phone before the owner allows it (decision 98). `Allow` is remembered;
+   * `Read on iPhone` reads this import on the phone and isn't, so the next import asks again.
+   */
+  const hand = (input: ImportInput) => {
+    if (importConsent) {
+      onInput(input);
+      return;
+    }
+    Alert.alert(CONSENT_TITLE, CONSENT_MESSAGE, [
+      { text: 'Read on iPhone', onPress: () => onInput({ ...input, onPhone: true }) },
+      {
+        text: 'Allow',
+        isPreferred: true,
+        onPress: () => {
+          allowImportReading();
+          onInput(input);
+        },
+      },
+    ]);
+  };
 
   const paste = async () => {
     // A read that fails (or is refused) counts as nothing to paste.
     const text = await Clipboard.getStringAsync().catch(() => '');
     if (text.trim()) {
-      onInput({ kind: 'text', text });
+      hand({ kind: 'text', text });
       return;
     }
     if (await Clipboard.hasImageAsync().catch(() => false)) {
       const image = await Clipboard.getImageAsync({ format: 'jpeg', jpegQuality: 0.9 }).catch(() => null);
       if (image) {
-        onInput({ kind: 'images', uris: [image.data] });
+        hand({ kind: 'images', uris: [image.data] });
         return;
       }
     }
@@ -69,7 +94,7 @@ export function ImportButtons({
       quality: 1,
     });
     if (!result.canceled && result.assets.length > 0) {
-      onInput({ kind: 'images', uris: result.assets.map((asset) => asset.uri) });
+      hand({ kind: 'images', uris: result.assets.map((asset) => asset.uri) });
     }
   };
 
@@ -116,6 +141,11 @@ export function ImportButtons({
 
 /** Where an import goes (decision 88): said once, where it's sent, in plain words. */
 export const IMPORT_NOTE = 'Trim sends what you import to Claude by Anthropic to read it. Trim doesn’t keep it.';
+
+/** The one-time consent before the first send (decision 98). */
+const CONSENT_TITLE = 'Read it with Claude?';
+const CONSENT_MESSAGE =
+  'To read your plan, Trim sends this text or these screenshots to Anthropic’s Claude through Trim’s server. Nothing is stored by Trim, and Anthropic doesn’t train on it.';
 
 function Pill({
   title,

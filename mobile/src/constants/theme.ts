@@ -2049,8 +2049,9 @@ export const onboardingType = {
   wheelNumber: { fontFamily: fontFamily.mono, fontSize: 168, lineHeight: 176, fontWeight: weight.heavy, color: sheetColors.ink },
   /** The `PRO` mark on a locked swatch. */
   lock: lcdRole(10, 12),
-  /** The paywall: the headline, a plan card's price and sub, feature rows, small print. */
+  /** The paywall: the headline, a plan card's period, price and sub, feature rows, small print. */
   headline: { ...roundedRole(26, 30, weight.heavy, -0.5), color: sheetColors.ink },
+  planLabel: { ...roundedRole(13, 17, weight.bold), color: sheetColors.muted },
   planPrice: { ...roundedRole(17, 22, weight.heavy), color: sheetColors.ink },
   planSub: { ...roundedRole(13, 17, weight.semibold), color: sheetColors.muted },
   featureTitle: { ...roundedRole(16, 20, weight.heavy), color: sheetColors.ink },
@@ -2290,8 +2291,8 @@ export const paywallGeometry = {
   featureGap: 8,
   featureLamp: 10,
   featureLampTop: 5,
-  /** Plan pill cards (N9 `.plan`): 64 tall, r20, a 2pt quiet ring; selected 3pt orange. */
-  planHeight: 64,
+  /** Plan pill cards (N9 `.plan`): 84 tall (period, price, sub), r20, a 2pt quiet ring; selected 3pt orange. */
+  planHeight: 84,
   planRadius: 20,
   planPadX: 18,
   planGap: 8,

@@ -1,6 +1,7 @@
 {
   "configVersion": 0,
   "apple": {
+    "version": "1.0",
     "copyright": "2026 Marvin Beckmann",
     "categories": [
       "HEALTH_AND_FITNESS",
@@ -9,27 +10,25 @@
     "info": {
       "en-US": {
         "title": "Trim Workout",
-        "subtitle": "Log sets. Follow a plan",
-        "description": "Trim is a workout logger built around your plan. Open today's day and log one set at a time.\n\nPLAN\n• Plans made of training days, each with exercises, sets and reps\n• Start from a starter plan, or build your own\n• 200+ built-in exercises, plus your own custom exercises\n\nLOG\n• One set at a time, with what you lifted last time\n• A rest timer that starts when you log a set\n• A workout in progress stays saved if you leave or close the app\n• kg or lbs\n\nREVIEW\n• History of every completed workout, with personal records\n• Progress: estimated 1RM for each lift, and body check-ins\n\nYour data stays on your iPhone. No account, no sign-in.\n\nTRIM PRO\nLogging is free. The free version includes one plan, your full workout history, and the last 3 months of Progress.\n\nTrim Pro adds:\n• Unlimited plans, and switching between them\n• Progress beyond 3 months, for lifts and body\n• Next-session targets\n\nTrim Pro is an optional auto-renewable subscription, billed monthly or yearly. The yearly option includes a 7-day free trial for eligible new subscribers. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in Settings › Apple Account › Subscriptions.\n\nPrivacy Policy: https://scratch-legal.vercel.app/privacy\nTerms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+        "subtitle": "Gym log. One set at a time.",
+        "description": "Trim is a workout logger built like a little machine: a dot-matrix display, real keys, a rocker and a wheel. Open it between sets, log, and get back to the bar.\n\nYOUR PLAN, ON THE DISPLAY\n• Today's day is on the display. Press Start.\n• Import the plan you already follow from pasted text or screenshots, start from a starter plan, or build your own.\n• 200+ built-in exercises, plus your own.\n\nONE SET AT A TIME\n• The wheel sets the weight, the keys set reps, one press logs the set.\n• What you lifted last time is right under the number.\n• Rest charges on the display, then GO.\n• Undo, swap or reorder lifts, and add one mid-workout.\n• Close the app mid-workout and pick up exactly where you were.\n\nWHAT YOU DID\n• Hold the big key to finish. Records print.\n• History: every week, every workout.\n• Progress: estimated max for every lift, goals, and body check-ins.\n\nA MACHINE YOU PICK\n• Six finishes, each a whole machine with its own screen. Aluminium and Graphite come with Trim; four more come with Trim Pro.\n• Tactile haptics and short mechanical sounds that respect the silent switch.\n\nPRIVATE BY DESIGN\nNo account, no sign-in. Your workouts stay on your iPhone. When you import a plan, Trim asks first, then sends that text or those screenshots to Anthropic's Claude to read it. Nothing is stored by Trim.\n\nTRIM PRO\nLogging, history and plan import are free. Trim Pro adds:\n• Unlimited plans, and switching between them\n• Progress beyond 3 months, for lifts and body\n• Next-session targets\n• Every finish: Field, Pocket, Bunker and Holo\n\nTrim Pro is an optional auto-renewable subscription, billed monthly or yearly. The yearly option includes a 7-day free trial for eligible new subscribers. Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in Settings › Apple Account › Subscriptions.\n\nPrivacy Policy: https://scratch-legal.vercel.app/privacy\nTerms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
         "keywords": [
-          "gym",
-          "reps",
-          "training",
-          "fitness",
-          "weights",
+          "weightlifting",
           "strength",
-          "exercise",
-          "tracker",
           "lifting",
+          "tracker",
           "routine",
           "program",
           "split",
-          "1rm"
+          "reps",
+          "1rm",
+          "bodybuilding",
+          "powerlifting"
         ],
-        "releaseNotes": "First release of Trim: plans, one-set-at-a-time logging with last time and a rest timer, history with personal records, Progress, and Trim Pro.",
         "privacyPolicyUrl": "https://scratch-legal.vercel.app/privacy",
         "supportUrl": "https://scratch-legal.vercel.app",
-        "marketingUrl": "https://scratch-legal.vercel.app"
+        "marketingUrl": "https://scratch-legal.vercel.app",
+        "promoText": "A workout logger built like a little machine. Turn the wheel, press Log, rest on the display. Your plan, your numbers, nothing else."
       }
     },
     "advisory": {
@@ -60,8 +59,7 @@
       "ageAssurance": false
     },
     "release": {
-      "automaticRelease": false,
-      "phasedRelease": true
+      "automaticRelease": false
     },
     "review": {
       "firstName": "Marvin",
@@ -69,7 +67,7 @@
       "email": "marvinbeckm@gmail.com",
       "phone": "+49 160 5736073",
       "demoRequired": false,
-      "notes": "No account or login is needed. Every feature works without signing in, and all workout data stays on the device.\n\nTrim Pro is an auto-renewable subscription (monthly, or yearly with a 7-day free trial) bought in the in-app paywall. Prices load from StoreKit through RevenueCat. Each Pro gate opens the same paywall:\n1. Settings tab > Trim Pro.\n2. Plans tab > + (after the first plan exists) opens \"Add another plan\". Free users keep one plan.\n3. Finish a first workout: Workout tab > Start on a day > Log set > Finish > Done. The paywall opens once after the first completed workout.\n4. Progress tab > tap a lift (after logging a workout) > the 6M, YTD or All chip. Free shows the last 3 months.\n5. Progress tab > Log check-in > tap a body metric > the 6M, YTD or All chip. Free shows the last 3 months.\n6. Next-session targets: shown during logging for Pro users; free users see the Pro prompt there.\n\nRestore Purchases is in the paywall footer and in Settings. Terms of Use (Apple standard EULA) and Privacy Policy are linked from the paywall footer and Settings."
+      "notes": "No account or login. Every feature works without signing in; workout data stays on the device.\n\nGETTING IN (12 taps): Welcome > Continue > Continue (name optional) > Continue (units) > \"Got a plan?\": \"Pick one for me\" > Continue > Continue (days a week) > Continue (plan) > Load (finish) > Skip (tour) > tap the screen > Start > \"Use Graphite\" > Home.\n\nTHE DEVICE: Trim is one screen styled as a device. The top-left key opens the menu (Plans, Progress, History, Settings, Skin Library). The big orange key is Start / Log. The wheel on the right sets weight, the +/- keys set reps. Hold the big key to finish a workout.\n\nTRIM PRO (auto-renewable: monthly, or yearly with a 7-day free trial). Every gate opens the same paywall; prices load from StoreKit via RevenueCat:\n1. Menu > Settings > Trim Pro.\n2. Menu > Skin Library > tap a locked finish (padlock) > Try Trim Pro. Also on the finish picker after the tour.\n3. Menu > Plans > New plan (the starter plan counts as the free plan).\n4. Log a workout, then Menu > Progress > tap a lift > the 6M, 1Y or All chip (marked PRO).\n5. After the first completed workout: Start > Log sets > hold the big key > receipt > Done. Shown once.\nRestore Purchases is in the paywall footer and in Settings. Terms of Use (Apple standard EULA) and Privacy Policy are linked from the paywall and from Settings.\n\nPLAN IMPORT (third-party AI, guideline 5.1.2): free, during onboarding: \"Got a plan?\" > I have one > Import plan > Paste or Screenshots. (Later imports go through Menu > Plans > New plan > Import plan; a second plan needs Trim Pro.) Before anything is sent, Trim asks for permission (\"Read it with Claude?\": Allow / Read on iPhone). With Allow, the text or images go to Trim's server and Anthropic's Claude API to read the plan structure; nothing is stored by Trim. \"Read on iPhone\" reads it on the device with Apple text recognition and sends nothing. Sample text to paste: \"Push: Bench press 3x8, Overhead press 3x8, Cable fly 3x12. Pull: Deadlift 3x5, Lat pulldown 3x10.\"\n\nPhoto library access is only used for the screenshots the user picks for import."
     }
   }
 }

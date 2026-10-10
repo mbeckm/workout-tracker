@@ -172,6 +172,9 @@ type WorkoutStoreState = {
   /** Device sounds (D14); haptics don't depend on it. */
   soundsOn: boolean;
   setSoundsOn: (soundsOn: boolean) => void;
+  /** Plan import may send to Claude (decision 98); set once, from the consent prompt. */
+  importConsent: boolean;
+  allowImportReading: () => void;
   /** ISO week keys whose week report already played (D15). */
   weekMomentsShown: string[];
   markWeekMomentShown: (weekKey: string) => void;
@@ -675,6 +678,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => (current.soundsOn === soundsOn ? current : { ...current, soundsOn }));
   }, []);
 
+  const allowImportReading = useCallback(() => {
+    setSnapshot((current) => (current.importConsent ? current : { ...current, importConsent: true }));
+  }, []);
+
   const completeTour = useCallback((finish?: Finish) => {
     setSnapshot((current) => ({ ...current, tourDone: true, finish: finish ?? current.finish }));
   }, []);
@@ -826,6 +833,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setFinish,
       soundsOn: snapshot.soundsOn,
       setSoundsOn,
+      importConsent: snapshot.importConsent,
+      allowImportReading,
       weekMomentsShown: snapshot.weekMomentsShown,
       markWeekMomentShown,
       loadSteps: snapshot.loadSteps,
@@ -875,6 +884,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     restoreBodyGoal,
     setFinish,
     setSoundsOn,
+    allowImportReading,
     markWeekMomentShown,
     setLoadStep,
     completeTour,

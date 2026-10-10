@@ -198,11 +198,27 @@ export type OffersResult =
   | { status: 'ok'; offering: PurchasesOffering; offers: ProOffer[] }
   | { status: 'offline' | 'unavailable' };
 
+/** How long the paywall waits for prices before it offers Try again (App Review: no endless spinner). */
+const OFFERS_TIMEOUT_MS = 15_000;
+
 /**
  * The offering for this placement (falls back to the current offering), with intro
- * pricing only where the store says the account is eligible.
+ * pricing only where the store says the account is eligible. A store that hasn't answered
+ * in 15 s counts as unavailable; a late answer is dropped.
  */
 export async function loadProOffers(reason: ProReason): Promise<OffersResult> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<OffersResult>((resolve) => {
+    timer = setTimeout(() => resolve({ status: 'unavailable' }), OFFERS_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([fetchProOffers(reason), timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+async function fetchProOffers(reason: ProReason): Promise<OffersResult> {
   const Purchases = purchasesSdk();
   if (!Purchases) {
     return { status: 'unavailable' };

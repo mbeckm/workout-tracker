@@ -55,6 +55,11 @@ export type WorkoutSnapshot = {
   loadSteps: LoadSteps;
   /** The guided tour has ended (finished or skipped) and given Graphite (decision 85). */
   tourDone: boolean;
+  /**
+   * The owner allowed plan import to send what they import to Claude (decision 98). Asked once
+   * before the first send; `Read on iPhone` doesn't save a refusal, so the next import asks again.
+   */
+  importConsent: boolean;
 };
 
 export const defaultSnapshot: WorkoutSnapshot = {
@@ -82,6 +87,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   weekMomentsShown: [],
   loadSteps: {},
   tourDone: false,
+  importConsent: false,
 };
 
 function normalizeAppearance(value: unknown): AppearancePreference {
@@ -209,6 +215,8 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     loadSteps: normalizeLoadSteps(data.loadSteps),
     // Owners from before the tour never get it, and keep Graphite.
     tourDone: typeof data.tourDone === 'boolean' ? data.tourDone : data.hasCompletedOnboarding === true,
+    // Snapshots from before the consent prompt never allowed it: the next import asks.
+    importConsent: data.importConsent === true,
   };
 }
 
