@@ -144,6 +144,7 @@ Read this before your first command. Each item cost real time once.
 - `npx expo lint` has 0 errors on the device code (the old "refs during render" errors went with the old screens). Don't add new ones.
 
 ### iOS Simulator
+- To prove a change in the app, use the `verify` skill (`.claude/skills/verify/`): its own "Trim Verify" simulator and Metro on :8095, deep links into any sheet, screenshots plus the persisted app state as evidence in `.claude/verify-runs/` (gitignored), and a feature map of recipes. It never touches another session's simulator or Metro.
 - If the Simulator panel's screenshots fail after an Xcode update, use `xcrun simctl io booted screenshot <file>` and read the PNG.
 - The Simulator tool can't send backspace, so it can't empty a text field; say what couldn't be checked.
 - iOS caches the launch screen per install. A new splash only shows after a fresh install (TestFlight, or deleting the app, which deletes its data). Verify the compiled images in `ios/Trim/Images.xcassets/SplashScreenLogo.imageset` instead.
