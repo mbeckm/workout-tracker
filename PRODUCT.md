@@ -82,7 +82,7 @@ The device is the one persistent screen: a machine in the chosen skin (212 Alumi
 
 One lift, one set at a time, on the device:
 
-- The display shows the lift's name (tap it for the exercise sheet: figure, muscles, how-to, swap for an alternative, your numbers), `SET n/m` (or `EXTRA SET`), the weight on the drum and `×reps`, and `LAST 80×8` (Pro: `TARGET 87.5×8`).
+- The display shows the lift's name (tap it for the exercise sheet: figure, muscles, how-to, swap for an alternative, your numbers), the set lamps and `n/m`, and the set card: the weight over `8 REPS`. Its bottom edge reads `LAST 80×8`; with Auto mode (Pro) the clip on its top edge reads `AUTO` and the edge says why (`▲ FROM 80×8`), and moving the weight flips the clip to `MAN` (decision 99).
 - The wheel sets the weight in the lift's load steps; a tap on the drum makes the step finer (`±2` → `±1` → `±0.5`), saved per lift, and a long press types a weight; the `+` and `−` keys set reps. The big key is Log.
 - The rocker's `‹ ›` move between lifts, and its lamps show each lift done, part-done or current. Its middle opens Today: jump to a lift, reorder, swap, add or remove a lift, or edit a logged set.
 - The top-right key is Undo last set: immediate, with an Undo toast.
@@ -92,11 +92,11 @@ One lift, one set at a time, on the device:
 - After the last set, or End workout from the menu, the device is in finish mode: hold the big key until the ring closes. The receipt prints out of the device; Done returns to Home with the day stamped.
 - A session in progress survives leaving or killing the app, and shows as a Live Activity.
 
-**Next-session targets (Trim Pro).** Double progression on the plan's reps: if last session hit the prescribed reps on every set, the load goes up one step (kg: +2.5 bar, +2 dumbbells, +2.5 machine/cable compounds, +1 isolation; lbs: +5, or +2.5 machine/cable isolation); otherwise the load holds and the set aims for last time's reps + 1, up to the plan. Bodyweight adds a rep, assisted moves remove assistance, holds add 5 s; cardio, stretches, mobility and timers get none. No history means no target, and after a clearly worse session the load holds. Logic: `mobile/src/domain/targets.ts`.
+**Auto mode: next-session targets (Trim Pro, decision 99).** The drum opens on each set's target and the card's clip says `AUTO`; its sheet says why in a sentence and has the switch. Double progression on the plan's reps: if last session hit the prescribed reps on every set, the load goes up one step (kg: +2.5 bar, +2 dumbbells, +2.5 machine/cable compounds, +1 isolation; lbs: +5, or +2.5 machine/cable isolation); otherwise the load holds and the set aims for last time's reps + 1, up to the plan. Bodyweight adds a rep, assisted moves remove assistance, holds add 5 s; cardio, stretches, mobility and timers get none. No history means no target, and after a clearly worse session the load holds. Logic: `mobile/src/domain/targets.ts`.
 
 ## Trim Pro
 
-Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, next-session targets, and every skin (212 Aluminium and 101 Graphite are free, Graphite once the guided tour has given it; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
+Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, Auto mode (next-session targets), and every skin (212 Aluminium and 101 Graphite are free, Graphite once the guided tour has given it; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
 
 The paywall appears only at these moments: once after the first completed workout (from the receipt's Done), when the user taps a Pro-locked feature, and from Settings → Trim Pro. Not at the end of onboarding (decision 97). A locked skin is a machine in the skin row (the tour's gift, the Skin Library) with a padlock on its dot; the paywall opens from its `Try Trim Pro` pill, never during a workout.
 

@@ -189,8 +189,8 @@ These live in the `device` geometry block in `theme.ts` (`displayPad: 22`, `edge
 
 ### Display layout
 
-- Content insets 22 from the display's edges. The header (`hd`, `lcdSmall`) sits 20 from the top: left the subject, right the position (`NEXT 85×8`, `2 OF 4`). Log is the exception: the subject is the lift name in `lcdRow` and the position is a row under it (Log below).
-- The footer sits 22 from the bottom: the value you adjust with the keys on the left, the reference fact on the right (`LAST 80×8`, amber in log). Everything in the footer shares one bottom line: small text beside a 56 number sits on the number's bottom edge (`lcdSmallBesideReps`).
+- Content insets 22 from the display's edges. The header (`hd`, `lcdSmall`) sits 20 from the top: left the subject, right the position (`NEXT 85×8`, `2 OF 4`). Log is the exception: the subject is the lift name in `lcdRow` and the position is the set lamps and `2/3` on the same line (Log below).
+- The footer sits 22 from the bottom: the value you adjust with the keys on the left, the reference fact on the right. Log is the exception: its set card holds the keys' value and the fact is cut into the card's bottom edge (decision 99). Everything in the footer shares one bottom line: small text beside a 56 number sits on the number's bottom edge (`lcdSmallBesideReps`).
 - Home's rows inset 14 from the display's sides, stacked from the top 8 apart.
 
 ### Sheet layout
@@ -476,7 +476,7 @@ Trim's text is **names, numbers, facts and verbs.** If a string isn't one of tho
 - Numbers carry real units: `85.0`, `KG`, `×8`, `1:24`, `~45 MIN`, `0:45`, `20 MIN`.
 - On the display, `×` joins without spaces (`LAST 80×8`, `NEXT 85×8`, `BENCH PRESS 3×8`). On cartridge chips, the edit display and receipts it takes spaces (`3 × 8`, `SETS 4 × REPS 15`, `90 × 9`).
 - No helper text, gesture hints, middle dots or emoji. There's no `HOLD TO FINISH`: the big key's VoiceOver label says it.
-- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `TARGET ›`, `REST`, `SET 2 IN`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
+- The vocabulary: `SET 2/3`, `EXTRA SET`, `EDIT SET 2`, `REPS`, `LAST 80×8`, `AUTO`, `MAN`, `▲ FROM 85×8`, `= FROM 100×4`, `REST`, `SET 2 IN`, `GO`, `ALL DONE`, `END EARLY?`, `NOTHING LOGGED`, `9 OF 9 SETS`, `WEEK 12`, `WEEK 12  ▲3`, `WEEK DONE`, `0 LIFTS`, `+2 MORE`, `SLOT EMPTY`, `INSERT PLAN`, `LOADED`, `ASSIST`. An empty weight is `--.-`.
 
 ### In sheets
 
@@ -613,7 +613,7 @@ Row gestures act only on what the finger landed on, and only once it has stopped
 | Selected | A 2 px amber outline (Home's row), the current lamp | Orange fill with dark ink (chips, segments, ticks) |
 | Loading | `SLOT EMPTY` / `LOADED` during activation only | Prices only: the CTA says `Loading prices…`. No spinners for local work. |
 | Empty | `SLOT EMPTY` + blinking `INSERT PLAN`, big key `Plans` (no plans) | The fact (`No lifts yet`), or the blank torn receipt (History) |
-| Pro-locked | `TARGET ›` dim, opens the paywall (`targets`) | The item stays visible and opens the paywall: `PRO` on ranges, a locked finish previews (D3). Never blur or hide the user's data. |
+| Pro-locked | The set card's dim `✦ AUTO` with a padlock, opens the paywall (`targets`) | The item stays visible and opens the paywall: `PRO` on ranges, a locked finish previews (D3). Never blur or hide the user's data. |
 
 ---
 
@@ -697,7 +697,7 @@ Rules for every moment:
 
 ### Pro gates
 
-20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, `TARGET ›`, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) are machines in the skin row with a padlock on their dot, for Trim Free only: with Trim Pro nothing is locked, so no padlock and no `Try Trim Pro` (`finishLock` returns null); in the middle, the pill is `Try Trim Pro`, the only way to the paywall from there (decision 97).
+20. **Locked, not hidden.** A Pro feature stays visible where it lives (`PRO` on a range, a locked swatch, the locked `AUTO` clip, `+` on the rack) and opens the paywall for that reason. Locked finishes (707 Field, 089 Pocket, 077 Bunker, 777 Holo) are machines in the skin row with a padlock on their dot, for Trim Free only: with Trim Pro nothing is locked, so no padlock and no `Try Trim Pro` (`finishLock` returns null); in the middle, the pill is `Try Trim Pro`, the only way to the paywall from there (decision 97).
 21. **Free stays whole.** Logging, history and the current plan are never gated, interrupted or nagged.
 
 ### Changing a money screen
@@ -730,15 +730,17 @@ Same system, different winner. Don't invent a size or a colour for a screen. Tar
 
 ### Log (V2) [04, 05, 09]
 
-- **Header (decision 84):** the exercise name ▾ in `lcdRow` amber, one line, truncating with … (tap opens the exercise sheet). 6 under it, the set row: one lamp per prescribed set (22 × 10 pills 8 apart; 12 wide 5 apart from 7 to 12 sets; none past 12), done lit amber with a glow, the set on the display outlined 2 px, the rest `amberOff`; then, 12 on, `SET n/m`, `EXTRA SET` or `EDIT SET n` in amber (it must be readable mid-set, so never dim). The header is too tall for the drum's step above, so the step above drops and the frame sits 32 under the header (`drumHeaderClear`).
-- **Drum:** the weight (§10 `Drum`); `--.-` with no history, the first notch going to the first load step. With targets shown (Pro) it opens on the target, so the target is never repeated in the footer.
-- **Footer:** the reps (56, `6`) with `REPS` (`lcdSmall`) beside it, left; `LAST 80×6` amber right, always, when this set has a last time. Without one, free users with targets locked see a dim `TARGET ›` that opens the paywall. No delta to last time. All of it on one bottom line.
+- **Header (decision 99):** one line: the exercise name ▾ in `lcdRow` amber, truncating with … (tap opens the exercise sheet), then the set lamps (12 × 10, 5 apart: done lit amber with a glow, the set on the display outlined 2 px, the rest `amberOff`; none past 12) and `2/3` in `lcdRow` amber (`EXTRA`, `EDIT 2`). Never dim: it's read mid-set.
+- **Set card:** one frame (2 pt amber, r20, inset 10) from 26 under the header to 24 above the display's bottom holds the set: the weight (`lcdHero`, `lcdHeroCompact` from six characters) over the keys' value (`6` in `lcdReps` with `REPS`), centred; `ASSIST` dim above an assisted load. No dim drum steps; each notch still rolls the value 24 pt and settles. With no weight on the first weighted set, Log flashes the card's frame. Tap the card: the lift's wheel step (`±2`, inside the bottom-right corner, dim unless chosen); long-press: the keypad.
+- **The clip (Auto mode):** on the card's top edge, 16 in, 30 tall (44 pt hit area), only where Trim has a target for this set: `✦ AUTO` filled amber with dark ink while the set equals the target (Pro); `MAN` outlined amber once the wheel or keys move it, with `✦ 87.5×8` (AUTO's set) cut into the top edge on the right; `✦ AUTO` outlined dim when the switch is off; `✦ AUTO` with a padlock, outlined dim, on Trim Free. The spark and padlock are pixel glyphs (`SparkGlyph`, `PadlockGlyph`). Tap: the Auto mode sheet (Free: the paywall, `targets`).
+- **Bottom edge:** cut into the card's bottom border, centred: on AUTO `▲ FROM 85×8` (forward) or `= FROM 100×4` (the load holds), amber; otherwise `LAST 85×8`, dim. Nothing without a last time.
+- **Auto mode sheet** (`auto`, default top): title `Auto mode` (`Manual` on MAN), ✕. On AUTO: `BENCH PRESS, SET 1`, Trim's set in `bigNumber` orange, last session's sets as done chips, one sentence why (`autoReason`); `IF YOU CHANGE IT` and its sentence; the `Auto mode` switch row. On MAN: what you set (ink), "You set this. Auto mode had 87.5 × 8." and the why; `NEXT TIME`; the light pill `Back to 87.5 × 8` (closes onto AUTO); the switch. Off: one sentence and the switch.
 - **Keys:** `+` / `−` reps (1–50, long press repeats); top right Undo last set (immediate, toast with Undo, disabled when there's nothing to undo); the rocker moves between lifts, its middle opens Today; the wheel has no label.
 - **Hand-off (decision 87):** the set that finishes a lift (when the log moves on to another lift) clears the display to `NEXT` (`lcdSmall`, dim), the next lift's name in `lcdTitle` (centred, up to 3 lines, shrinking to fit) and its prescription (`3×12`, dim) for 1.4 s, then rest shows as usual. Any key or a sheet ends it at once; the rocker replaces it with the roll call. Not after the workout's last set (finish shows instead).
 - **Roll call (decision 86):** a press on a rocker end turns the display into today's lifts for a moment, so you see which lift you're on and what the rocker did, in the middle of the display where the thumb on the rocker doesn't cover it. Header: the day dim on the left, `4/6` dim on the right. Rows in `lcdRow`, 36 tall, 8 apart, centred under the header: todo rows on `todoRow` in dim ink with sets logged of planned (`1/3`), done lifts filled with a ✓, the current lift in ink. A 2 pt ring (Home's selected ring, clear of the row by 2) steps from the lift you were on to the new one. It holds 900 ms after the last press, then fades; a display too short for every row shows a window around the current lift. Any other key or a sheet ends it at once. The same in rest, in Edit (rows show the prescription, `3×8`) and in the tour (`PRACTICE`). Not interactive: touches pass through.
 - **Log:** logs the set with the log-set haptic, starts rest, and moves to the next incomplete lift when this one is done (the obvious next step only). The first weighted set with no weight flashes the drum's frame instead of logging.
 - **Tracking modes** (PLAN §6.6): bodyweight puts reps on the drum (`×12` at 104, no keys value); assisted shows `−20.0` under an `ASSIST` header; holds put seconds on the drum (5 s per notch, `0:45`); minute-based cardio 1 min per notch (`20 MIN`); reps and duration put the duration on the wheel and reps on the keys.
-- **VoiceOver:** one summary ("Bench press, set 2 of 3, 85 kilograms, 8 reps, last time 80 by 8"); the wheel is adjustable ("85 kilograms"); rocker ends are "Previous lift" and "Next lift", the middle "Today's lifts".
+- **VoiceOver:** one summary ("Bench press, set 2 of 3, 85 kilograms, 8 reps, last time 80 by 8"); the wheel is adjustable ("85 kilograms"); rocker ends are "Previous lift" and "Next lift", the middle "Today's lifts"; the clip is a display action ("Auto mode, on. Why this weight", "Manual. Back to auto mode", "Auto mode, off", "Auto mode, Trim Pro").
 
 ### Rest [08]
 
