@@ -136,4 +136,4 @@ export function autoReason(input: {
 
 /** What happens when the lifter moves off AUTO (the sheet's second card). */
 export const AUTO_CHANGE_TEXT =
-  'Turn the wheel or the keys and your numbers count for the rest of this lift. Next time Trim starts from what you log.';
+  'Turn the wheel or press the keys, and your numbers count for the rest of this lift. Next time Trim starts from what you log.';

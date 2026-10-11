@@ -1466,7 +1466,7 @@ export const logGeometry = {
   clipInsetX: 16,
   clipPadX: 10,
   clipGap: 6,
-  clipGlyph: 13,
+  clipGlyph: 17,
   clipLock: 11,
   /** The cut in the card's edge behind the bottom words and MAN's spark: the frame stops this far either side. */
   cutPadX: 10,
