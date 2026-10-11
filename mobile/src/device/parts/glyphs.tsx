@@ -111,3 +111,27 @@ export function MinusGlyph({ color: colorProp, size = TALL_GLYPH }: GlyphProps) 
     </Svg>
   );
 }
+
+/**
+ * Auto mode's sparkle (decision 99) on the display's own 9 × 9 pixel grid: a star with thin long
+ * rays and a small one beside it, so it reads as ✨ and never as the dot-matrix `+` decimal point.
+ */
+export function SparkGlyph({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 9 9">
+      <Path
+        fill={color}
+        d="M3 2h1v2H3zM2 4h3v1H2zM0 5h7v1H0zM2 6h3v1H2zM3 7h1v2H3zM7 0h1v1H7zM6 1h3v1H6zM7 2h1v1H7z"
+      />
+    </Svg>
+  );
+}
+
+/** A padlock on the same pixel grid (6 × 8): the locked AUTO clip on Trim Free. */
+export function PadlockGlyph({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={(size * 6) / 8} height={size} viewBox="0 0 6 8">
+      <Path fill={color} d="M1 1h1V0h2v1h1v2H4V1H2v2H1zM0 3h6v5H0z" />
+    </Svg>
+  );
+}

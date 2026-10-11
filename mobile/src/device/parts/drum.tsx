@@ -53,6 +53,39 @@ export function drumLayout(height: number, headerBottom: number = SMALL_HEADER_B
   return { offset: centred - device.drumFrameY, frameY: centred, above: false, below: false };
 }
 
+/** The drum's roll: on each wheel notch the value jumps 24pt in the notch's direction and settles back over 160 ms. */
+export function useDrumRoll(nudge: DrumNudge | null | undefined) {
+  const reduceMotion = useReducedMotion();
+  const offset = useSharedValue(0);
+
+  useEffect(() => {
+    if (!nudge || reduceMotion) return;
+    offset.set(nudge.direction * device.drumStepTravel);
+    offset.set(withTiming(0, { duration: DEVICE.DRUM, easing: EASE_DISPLAY_FN }));
+  }, [nudge, offset, reduceMotion]);
+
+  return useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
+}
+
+/**
+ * The frame's flash when `flash` is bumped: three blinks in steps, off/on (a blink, not movement,
+ * so Reduce Motion keeps it). A single blink read as nothing at all on device. Only a bump after
+ * mount flashes: the drum remounts with each display swap (another lift), which must not replay
+ * an old flash.
+ */
+export function useFrameFlash(flash: number) {
+  const frameOpacity = useSharedValue(1);
+  const flashSeen = useRef(flash);
+  useEffect(() => {
+    if (flash === flashSeen.current) return;
+    flashSeen.current = flash;
+    const snap = (value: number) => withDelay(DEVICE.DRUM_FLASH, withTiming(value, { duration: DEVICE.SNAP }));
+    frameOpacity.set(0);
+    frameOpacity.set(withSequence(snap(1), snap(0), snap(1), snap(0), snap(1)));
+  }, [flash, frameOpacity]);
+  return useAnimatedStyle(() => ({ opacity: frameOpacity.get() }));
+}
+
 /**
  * The weight drum (SPEC §5 Log): the step above (40, dim), the current value (104) and the step
  * below (40, dim), framed by a 2pt amber rounded rectangle 124 tall, with the display's top fade
@@ -84,30 +117,8 @@ export function Drum({
 }) {
   const styles = useScreenStyles(baseStyles);
   const lcd = useScreen();
-  const reduceMotion = useReducedMotion();
-  const offset = useSharedValue(0);
-
-  useEffect(() => {
-    if (!nudge || reduceMotion) return;
-    offset.set(nudge.direction * device.drumStepTravel);
-    offset.set(withTiming(0, { duration: DEVICE.DRUM, easing: EASE_DISPLAY_FN }));
-  }, [nudge, offset, reduceMotion]);
-
-  const rollStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
-
-  // Three blinks in steps, off/on (a blink, not movement, so Reduce Motion keeps it). A single
-  // blink read as nothing at all on device. Only a bump after mount flashes: the drum remounts
-  // with each display swap (another lift), which must not replay an old flash.
-  const frameOpacity = useSharedValue(1);
-  const flashSeen = useRef(flash);
-  useEffect(() => {
-    if (flash === flashSeen.current) return;
-    flashSeen.current = flash;
-    const snap = (value: number) => withDelay(DEVICE.DRUM_FLASH, withTiming(value, { duration: DEVICE.SNAP }));
-    frameOpacity.set(0);
-    frameOpacity.set(withSequence(snap(1), snap(0), snap(1), snap(0), snap(1)));
-  }, [flash, frameOpacity]);
-  const frameStyle = useAnimatedStyle(() => ({ opacity: frameOpacity.get() }));
+  const rollStyle = useDrumRoll(nudge);
+  const frameStyle = useFrameFlash(flash);
 
   const shift = layout.offset ? { transform: [{ translateY: layout.offset }] } : null;
 

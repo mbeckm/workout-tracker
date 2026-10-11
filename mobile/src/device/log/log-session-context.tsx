@@ -19,6 +19,7 @@ import { useHaptics } from '@/device/haptics';
 import { clonePrescription, durationIsMinutes, formatSetsCount, withDay } from '@/domain/helpers';
 import {
   buildDrafts,
+  clearTargets,
   findSessionDay,
   loggedSetCount,
   openLogSession,
@@ -40,6 +41,8 @@ import { REST_GO_MS } from '@/motion';
 import { requirePro } from '@/purchases/pro-gate';
 import { useWorkoutStore, type PreviousExerciseLog } from '@/store/workout-store';
 
+import { autoView, type AutoView } from './auto-model';
+
 import {
   controlsFor,
   displaySummary,
@@ -49,16 +52,15 @@ import {
   keysFace,
   keyStep,
   liftLamps,
-  logFooter,
   setLabel,
   setLamps,
+  setTag,
   type Controls,
   type DrumKind,
   type DrumView,
   type FinishSummary,
   type KeysFace,
   type LiftLampState,
-  type LogFooter,
   type SetLampState,
 } from './log-model';
 import {
@@ -160,9 +162,16 @@ export type LogSessionValue = {
   keys: KeysFace | null;
   /** `SET 2/3`, `EXTRA SET`, `EDIT SET 2`. */
   setLabel: string | null;
+  /** The set card header's tag: `2/3`, `EXTRA`, `EDIT 2`. */
+  setTag: string | null;
   /** One per prescribed set of the current lift, beside the set label (`setLampLayout`). */
   setLamps: SetLampState[];
-  footer: LogFooter | null;
+  /** Auto mode on the set card (decision 99): the clip on its top edge and the words on its bottom edge. */
+  auto: AutoView | null;
+  /** This set's target (computed for free users too), whatever the lamp shows. */
+  stageTarget: SetTarget | null;
+  /** The Auto mode switch (Trim Pro). */
+  autoMode: boolean;
   /** One per lift for the rocker strip (`lampLayout`/`lampText` for many lifts). */
   lamps: LiftLampState[];
   previous: PreviousExerciseLog | null;
@@ -223,8 +232,12 @@ export type LogSessionValue = {
   endWorkout: () => void;
   /** Finish mode's Back. */
   leaveFinish: () => void;
-  /** `TARGET ›`: the paywall (`targets`); true once targets show. */
+  /** The locked AUTO clip: the paywall (`targets`); true once Auto mode works. */
   unlockTargets: () => Promise<boolean>;
+  /** The sheet's switch. Turning it on puts targets on the sets nobody has touched. */
+  setAutoMode: (on: boolean) => void;
+  /** MAN → AUTO: the set back on its target. */
+  backToAuto: () => void;
   /** Saves the workout and closes the log. The new workout's id, or null when nothing was logged. */
   finish: () => string | null;
   /** Today's swaps and order, held for the fresh receipt of `workoutId`. */
@@ -274,6 +287,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
     logSession,
     saveLogSession,
     loadSteps,
+    autoMode,
   } = store;
   const device = useDevice();
   const haptics = useHaptics();
@@ -296,12 +310,12 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
   const sessionRef = useRef<Session | null>(initial.session);
   const storeRef = useRef(store);
   const ownsSession = useRef(initial.session?.open.restored ?? false);
-  // Pro targets: computed for free users too; the quiet `TARGET ›` appears only where one exists.
+  // Pro targets: computed for free users too; the locked AUTO clip shows only where one exists.
   const [targetsUnlocked, setTargetsUnlocked] = useState(false);
-  const [targetOfferDismissed, setTargetOfferDismissed] = useState(false);
   const [planSwaps, setPlanSwaps] = useState<PlanSwaps | null>(null);
   const planSwapsRef = useRef<PlanSwaps | null>(null);
-  const showTargets = isPro || targetsUnlocked;
+  const pro = isPro || targetsUnlocked;
+  const showTargets = pro && autoMode;
   const showTargetsRef = useRef(showTargets);
   /** The rest window (by `endsAtMs`) whose GO is showing. */
   const [goFor, setGoFor] = useState<number | null>(null);
@@ -356,7 +370,7 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
 
   const open = useCallback(
     (link: LogLink): OpenResult => {
-      const { plans: allPlans, logSession: saved, previousSetsForExercise: previousSets, isPro: pro, clearLogSession } =
+      const { plans: allPlans, logSession: saved, previousSetsForExercise: previousSets, isPro: pro, autoMode: auto, clearLogSession } =
         storeRef.current;
       const found = findSessionDay(link, allPlans);
       if (!found || found.day.exercises.length === 0) {
@@ -373,11 +387,10 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
         const next = sessionFromOpened(to, opened, startMoment && !opened.restored);
         // A fresh Pro log opens with targets in the drum; a restored one keeps what it had.
         const log =
-          pro && !opened.restored
+          pro && auto && !opened.restored
             ? { ...next.log, drafts: prefillTargets(next.log.drafts, targetsFor, previousSets) }
             : next.log;
         ownsSession.current = opened.restored;
-        setTargetOfferDismissed(false);
         commit({ open: next.open, log });
         applyFocus(to, to.exerciseId);
       };
@@ -694,13 +707,35 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       unlockTargets: async () => {
         const unlocked = await requirePro('targets');
         if (!unlocked) {
-          setTargetOfferDismissed(true);
           return false;
         }
         setTargetsUnlocked(true);
+        storeRef.current.setAutoMode(true);
         const previousSets = storeRef.current.previousSetsForExercise;
         update((log) => ({ ...log, drafts: prefillTargets(log.drafts, targetsFor, previousSets) }));
         return true;
+      },
+      setAutoMode: (on: boolean) => {
+        storeRef.current.setAutoMode(on);
+        const previousSets = storeRef.current.previousSetsForExercise;
+        const swap = on ? prefillTargets : clearTargets;
+        update((log) => ({ ...log, drafts: swap(log.drafts, targetsFor, previousSets) }));
+      },
+      backToAuto: () => {
+        const current = sessionRef.current;
+        const stage = current ? stageOf(current.log) : null;
+        if (!stage || stage.kind !== 'set') return;
+        const { workoutHistory: history, units: unit } = storeRef.current;
+        const target = targetsFromHistory(stage.current.prescription, history, unit, stage.current.sets.length)?.[
+          stage.setIndex
+        ];
+        if (!target) return;
+        const patch: Partial<SetValues> = {};
+        if (target.weight != null) patch.weight = target.weight;
+        if (target.counterweight != null) patch.counterweight = target.counterweight;
+        if (target.reps != null) patch.reps = target.reps;
+        if (target.durationSeconds != null) patch.durationSeconds = target.durationSeconds;
+        update((log) => patchStage(log, patch));
       },
       finish: (): string | null => {
         const current = sessionRef.current;
@@ -850,7 +885,6 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
   );
   const stageTarget = stage && targets ? (targets[stage.setIndex] ?? null) : null;
   const minutes = current ? durationIsMinutes(current.prescription) : false;
-  const offerTargets = !showTargets && !targetOfferDismissed && rest == null && stage?.kind === 'set';
   const needsWeight =
     stage?.kind === 'set' &&
     log?.weightNudgeSetId === stage.set?.id &&
@@ -874,17 +908,22 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       drum: stage && controls ? drumView(controls.drum, stage.values, increment, units) : null,
       keys: stage && controls ? keysFace(controls.keys, stage.values) : null,
       setLabel: stage ? setLabel(stage) : null,
+      setTag: stage ? setTag(stage) : null,
       setLamps: stage ? setLamps(stage) : [],
-      footer: stage
-        ? logFooter({
+      auto: stage
+        ? autoView({
+            target: stageTarget,
+            values: stage.values,
             previousSets: previous?.sets,
             setIndex: stage.setIndex,
-            target: stageTarget,
-            showTargets,
-            offerTargets,
+            pro,
+            autoMode,
+            active: stage.kind === 'set' && rest == null,
             minutes,
           })
         : null,
+      stageTarget,
+      autoMode,
       lamps: log ? liftLamps(log.drafts, log.exerciseIndex) : [],
       previous,
       targets,
@@ -923,9 +962,10 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       log,
       minutes,
       needsWeight,
-      offerTargets,
+      autoMode,
       open,
       planSwaps,
+      pro,
       previous,
       rest,
       restGo,

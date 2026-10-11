@@ -1,6 +1,7 @@
 import type { OpenSheet, SheetKind } from '@/device/device-state';
 
 import { AddLiftsSheet } from './add-sheet';
+import { AutoSheet } from './auto-sheet';
 import { CheckInSheet } from './check-in-sheet';
 import { BodySheet, LiftSheet } from './detail-sheets';
 import { EditorSheet } from './editor-sheet';
@@ -46,6 +47,7 @@ const TITLES: Record<SheetKind, string> = {
   checkin: 'Check in',
   import: 'Import plan',
   'new-plan': 'New plan',
+  auto: 'Auto mode',
 };
 
 /** The content for the open sheet. Keyed by the open, so a swap starts fresh (scroll at top). */
@@ -85,6 +87,8 @@ export function SheetContent({ sheet }: { sheet: OpenSheet }) {
       return <NewPlanSheet key={sheet.key} params={sheet.params} />;
     case 'import':
       return <ImportSheet key={sheet.key} params={sheet.params} />;
+    case 'auto':
+      return <AutoSheet key={sheet.key} />;
     case 'checkin':
       return <CheckInSheet key={sheet.key} params={sheet.params} />;
     default:

@@ -39,9 +39,9 @@ export const PRO_FEATURES: readonly ProFeature[] = [
   },
   {
     id: 'targets',
-    title: 'Next-session targets',
-    detail: 'Weight and reps for every set.',
-    symbol: 'scope',
+    title: 'Auto mode',
+    detail: 'Trim sets the weight and reps for every set.',
+    symbol: 'sparkle',
     shipped: true,
     reasons: ['targets'],
   },

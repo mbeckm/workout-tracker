@@ -35,6 +35,8 @@ export const SHEET_KINDS = [
   // Import plan (decision 88): paste or screenshots, reading, fixing unknown lifts.
   'import',
   'new-plan',
+  // Auto mode (decision 99): why the set card holds this weight, and the switch.
+  'auto',
 ] as const;
 
 export type SheetKind = (typeof SHEET_KINDS)[number];
@@ -70,6 +72,7 @@ const TOPS: Record<SheetKind, SheetTop> = {
   checkin: 'tall',
   import: 'tall',
   'new-plan': 'tall',
+  auto: 'default',
 };
 
 export function sheetTop(kind: SheetKind): SheetTop {
@@ -85,6 +88,7 @@ export const TRACKED_SHEETS: readonly SheetKind[] = [
   'progress',
   'history',
   'settings',
+  'auto',
 ];
 
 export type OpenSheet = {

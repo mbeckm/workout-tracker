@@ -61,7 +61,7 @@ export function Display({
   style?: StyleProp<ViewStyle>;
   /** One summary per mode (PLAN §7 VoiceOver). */
   accessibilityLabel?: string;
-  /** What the display's tappable words do (the exercise name, `TARGET ›`, the keypad). */
+  /** What the display's tappable words do (the exercise name, the AUTO clip, the keypad). */
   accessibilityActions?: readonly AccessibilityActionInfo[];
   onAccessibilityAction?: (event: AccessibilityActionEvent) => void;
 }) {

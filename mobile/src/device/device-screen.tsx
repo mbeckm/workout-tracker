@@ -448,6 +448,7 @@ function DeviceSurface() {
                     onName={work.openExercise}
                     onKeypad={work.openKeypad}
                     onStep={work.cycleLoadStep}
+                    onAuto={work.openAuto}
                   />
                 ) : view === 'rest' ? (
                   <RestDisplay onName={work.openExercise} />

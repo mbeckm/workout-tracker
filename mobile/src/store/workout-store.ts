@@ -172,6 +172,9 @@ type WorkoutStoreState = {
   /** Device sounds (D14); haptics don't depend on it. */
   soundsOn: boolean;
   setSoundsOn: (soundsOn: boolean) => void;
+  /** Auto mode (Trim Pro): the drum opens on each set's target. */
+  autoMode: boolean;
+  setAutoMode: (autoMode: boolean) => void;
   /** Plan import may send to Claude (decision 98); set once, from the consent prompt. */
   importConsent: boolean;
   allowImportReading: () => void;
@@ -678,6 +681,10 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     setSnapshot((current) => (current.soundsOn === soundsOn ? current : { ...current, soundsOn }));
   }, []);
 
+  const setAutoMode = useCallback((autoMode: boolean) => {
+    setSnapshot((current) => (current.autoMode === autoMode ? current : { ...current, autoMode }));
+  }, []);
+
   const allowImportReading = useCallback(() => {
     setSnapshot((current) => (current.importConsent ? current : { ...current, importConsent: true }));
   }, []);
@@ -833,6 +840,8 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       setFinish,
       soundsOn: snapshot.soundsOn,
       setSoundsOn,
+      autoMode: snapshot.autoMode,
+      setAutoMode,
       importConsent: snapshot.importConsent,
       allowImportReading,
       weekMomentsShown: snapshot.weekMomentsShown,
@@ -884,6 +893,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
     restoreBodyGoal,
     setFinish,
     setSoundsOn,
+    setAutoMode,
     allowImportReading,
     markWeekMomentShown,
     setLoadStep,
