@@ -19,6 +19,7 @@ import { useHaptics } from '@/device/haptics';
 import { clonePrescription, durationIsMinutes, formatSetsCount, withDay } from '@/domain/helpers';
 import {
   buildDrafts,
+  clearTargets,
   findSessionDay,
   loggedSetCount,
   openLogSession,
@@ -716,10 +717,9 @@ export function LogSessionProvider({ children }: { children: ReactNode }) {
       },
       setAutoMode: (on: boolean) => {
         storeRef.current.setAutoMode(on);
-        if (on) {
-          const previousSets = storeRef.current.previousSetsForExercise;
-          update((log) => ({ ...log, drafts: prefillTargets(log.drafts, targetsFor, previousSets) }));
-        }
+        const previousSets = storeRef.current.previousSetsForExercise;
+        const swap = on ? prefillTargets : clearTargets;
+        update((log) => ({ ...log, drafts: swap(log.drafts, targetsFor, previousSets) }));
       },
       backToAuto: () => {
         const current = sessionRef.current;

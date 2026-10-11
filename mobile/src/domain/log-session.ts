@@ -627,6 +627,42 @@ export function prefillTargets(
 }
 
 /**
+ * The reverse of `prefillTargets` (Auto mode switched off, decision 99): undone plan sets still
+ * on their target go back to what `buildDrafts` puts there (last time). Typed, carried and
+ * logged sets stay. Returns the same array when nothing changes.
+ */
+export function clearTargets(
+  drafts: DraftExercise[],
+  targetsFor: (exercise: DraftExercise) => readonly (WellValues | null)[] | null,
+  previousSetsForExercise: (name: string) => LoggedSet[],
+): DraftExercise[] {
+  let changed = false;
+  const next = drafts.map((exercise) => {
+    const targets = exercise.orphan ? null : targetsFor(exercise);
+    if (!targets) {
+      return exercise;
+    }
+    const baseline = buildDrafts([exercise.prescription], previousSetsForExercise)[0]?.sets ?? [];
+    let touched = false;
+    const sets = exercise.sets.map((set, index) => {
+      const target = targets[index];
+      const prefill = baseline[index];
+      if (set.done || set.extra || !target || !prefill || !sameWellValues(set, targetValues(target))) {
+        return set;
+      }
+      touched = true;
+      return { ...set, ...targetValues(prefill) };
+    });
+    if (!touched) {
+      return exercise;
+    }
+    changed = true;
+    return { ...exercise, sets };
+  });
+  return changed ? next : drafts;
+}
+
+/**
  * After logging set `index`, later undone sets inherit what was logged, so the next set
  * is one tap. With targets, a later set that has its own target keeps it, except the
  * load: a load the lifter chose over this set's target carries forward. Without

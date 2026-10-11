@@ -135,5 +135,5 @@ const styles = StyleSheet.create({
   auto: { color: signal.orange },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.tight },
   words: { color: sheetColors.inkSoft },
-  pill: { marginTop: sheetGeometry.pillTop },
+  pill: { marginVertical: sheetGeometry.pillTop },
 });
