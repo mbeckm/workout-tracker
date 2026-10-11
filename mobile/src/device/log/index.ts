@@ -3,6 +3,7 @@ export type { LogLink, LogSessionValue, OpenDay, OpenResult } from './log-sessio
 export { useRest } from './use-rest';
 export { useLiveActivitySync } from './use-live-activity-sync';
 export * from './log-model';
+export * from './auto-model';
 export type {
   CompleteResult,
   LogState,

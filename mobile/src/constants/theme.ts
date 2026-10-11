@@ -1453,6 +1453,28 @@ export const logGeometry = {
   /** The rest footer sits 20 from the bottom. */
   restFooterY: 20,
   /**
+   * The set card (decision 99): one frame holds the set, weight over reps, centred. It starts
+   * this far under the one-line header (room for the clip on its top edge) and ends this far
+   * above the display's bottom (room for the words cut into its bottom edge).
+   */
+  cardTopClear: 26,
+  cardBottomY: 24,
+  /** Between the weight and the reps inside the card; `ASSIST` sits this far over the weight. */
+  cardValueGap: 2,
+  /** The clip on the card's top edge: 30 tall, 16 in from the card's left, a 44 pt hit area. */
+  clipHeight: 30,
+  clipInsetX: 16,
+  clipPadX: 10,
+  clipGap: 6,
+  clipGlyph: 13,
+  clipLock: 11,
+  /** The cut in the card's edge behind the bottom words and MAN's spark: the frame stops this far either side. */
+  cutPadX: 10,
+  /** The step tag (`±2`) inside the card, this far from its bottom-right corner. */
+  cardStepInset: 14,
+  /** The set lamps beside `1/3` in the one-line header: 12 × 10, 5 apart (the compact size). */
+  headerLampGap: 5,
+  /**
    * Rest (decision 96): `SET 2 IN`, the clock 12 under it, and 28 under that the battery that
    * charges toward the next set, centred between header and footer. The battery is 248 × 64 with
    * a 2 pt outline (r10), 5 inside it 8 cells 4 apart (r3), and a 6 × 26 nub on the right (r3).

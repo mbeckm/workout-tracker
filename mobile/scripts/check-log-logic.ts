@@ -24,18 +24,19 @@ import {
   lampLayout,
   lampText,
   liftLamps,
-  logFooter,
   restCharge,
   restUpText,
   setLabel,
   setLampLayout,
   setLamps,
+  setTag,
   spokenValue,
   stepLoad,
   stepMinutes,
   stepReps,
   stepSeconds,
 } from '@/device/log/log-model';
+import { autoReason, autoView, targetGlyph } from '@/device/log/auto-model';
 import {
   REST_MAX_SECONDS,
   addDraft,
@@ -603,22 +604,39 @@ check('reps clamp 1–50 everywhere', () => {
 // ---------------------------------------------------------------------------------------------
 // Footer, lamps, finish, VoiceOver
 
-check('footer: LAST always wins; free TARGET › only without history', () => {
-  const previousSets: LoggedSet[] = [{ id: 'a', index: 1, weight: 80, reps: 8 }];
-  const target = { weight: 87.5, reps: 8, counterweight: null, durationSeconds: null };
-  const base = { previousSets, setIndex: 0, target, offerTargets: true };
-  assert.equal(logFooter({ ...base, target: null, showTargets: false }).text, 'LAST 80×8');
-  // The target is on the drum already; the footer keeps last time.
-  const pro = logFooter({ ...base, showTargets: true });
-  assert.deepEqual([pro.text, pro.target], ['LAST 80×8', 'TARGET 87.5×8']);
-  const withHistory = logFooter({ ...base, showTargets: false });
-  assert.deepEqual([withHistory.targetLocked, withHistory.text], [false, 'LAST 80×8']);
-  const firstTime = logFooter({ ...base, previousSets: [], showTargets: false });
-  assert.deepEqual([firstTime.targetLocked, firstTime.text], [true, 'TARGET ›']);
-  assert.equal(logFooter({ ...base, previousSets: [], showTargets: false, offerTargets: false }).text, null);
+check('auto mode: the clip and the card edge (decision 99)', () => {
+  const previousSets: LoggedSet[] = [{ id: 'a', index: 1, weight: 85, reps: 8 }];
+  const target = { weight: 87.5, reps: 8, counterweight: null, durationSeconds: null, step: 'load' as const };
+  const base = { previousSets, setIndex: 0, target, values: { weight: 87.5, reps: 8 }, pro: true, autoMode: true, active: true };
+  assert.deepEqual(autoView(base), { lamp: 'auto', edge: '▲ FROM 85×8', autoText: null });
+  // Off the target: MAN, last time on the edge, AUTO's set on the top edge.
+  assert.deepEqual(autoView({ ...base, values: { weight: 90, reps: 8 } }), { lamp: 'man', edge: 'LAST 85×8', autoText: '87.5×8' });
+  assert.deepEqual(autoView({ ...base, values: { weight: 87.5, reps: 7 } }).lamp, 'man');
+  assert.equal(autoView({ ...base, autoMode: false }).lamp, 'off');
+  assert.deepEqual(autoView({ ...base, pro: false, values: { weight: 85, reps: 8 } }), { lamp: 'locked', edge: 'LAST 85×8', autoText: null });
+  // No target (first time, or an extra set): no clip; the edge keeps last time.
+  assert.deepEqual(autoView({ ...base, target: null }), { lamp: null, edge: 'LAST 85×8', autoText: null });
+  assert.equal(autoView({ ...base, active: false }).lamp, null);
+  assert.equal(autoView({ ...base, target: null, previousSets: [] }).edge, null);
+  // Same load, one more rep reads as held on purpose.
+  const reps = { weight: 100, reps: 5, counterweight: null, durationSeconds: null, step: 'reps' as const };
+  assert.equal(
+    autoView({ ...base, previousSets: [{ id: 'b', index: 1, weight: 100, reps: 4 }], target: reps, values: { weight: 100, reps: 5 } }).edge,
+    '= FROM 100×4',
+  );
+  assert.equal(targetGlyph({ step: 'reps', weight: null, counterweight: null }), '▲');
+  assert.equal(
+    autoReason({ target, lastSet: { weight: 85, reps: 8 }, goal: 8, units: 'kg' }),
+    'Last time you made all 8 reps on every set, so Trim adds 2.5 kg.',
+  );
+  assert.equal(
+    autoReason({ target: reps, lastSet: { weight: 100, reps: 4 }, goal: 5, units: 'kg' }),
+    'Last time this set was 4 of 5. Same weight, one more rep.',
+  );
   assert.equal(compactSet({ durationSeconds: 40 }), '0:40');
   assert.equal(compactSet({ durationSeconds: 1200 }, true), '20 MIN');
   assert.equal(compactSet({ reps: 12 }), '12');
+  assert.equal(setTag({ kind: 'set', setIndex: 1, set: null, current: { sets: [{}, {}, {}] } } as never), '2/3');
 });
 
 check('lamps: done / on / part / off, compression past 12 and text past 16', () => {

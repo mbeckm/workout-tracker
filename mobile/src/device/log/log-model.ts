@@ -240,6 +240,18 @@ export function setLabel(stage: Pick<Stage, 'kind' | 'setIndex' | 'set' | 'curre
   return `SET ${stage.setIndex + 1}/${planned}`;
 }
 
+/** The set card header's short tag beside the lamps (decision 99): `1/3`, `EXTRA`, `EDIT 2`. */
+export function setTag(stage: Pick<Stage, 'kind' | 'setIndex' | 'set' | 'current'>): string {
+  if (stage.kind === 'edit') {
+    return `EDIT ${stage.setIndex + 1}`;
+  }
+  if (stage.kind === 'extra' || stage.set?.extra) {
+    return 'EXTRA';
+  }
+  const planned = stage.current.sets.filter((set) => !set.extra).length;
+  return `${stage.setIndex + 1}/${planned}`;
+}
+
 /** The set label in words: `set 2 of 3`, `extra set`, `editing set 2`. */
 export function spokenSetLabel(stage: Pick<Stage, 'kind' | 'setIndex' | 'set' | 'current'>): string {
   if (stage.kind === 'edit') {
@@ -274,35 +286,6 @@ export function compactSet(set: Values, minutes = false): string | null {
     return time != null ? `${reps}×${time}` : String(reps);
   }
   return time;
-}
-
-export type LogFooter = {
-  /** `LAST 80×8`, or null without history. */
-  last: string | null;
-  /** `TARGET 87.5×8` when targets are shown (Pro or unlocked) and this set has one. */
-  target: string | null;
-  /** Free with a target here: the dim `TARGET ›` that opens the paywall (`targets`). */
-  targetLocked: boolean;
-  /** The one footer line: last time, else the locked offer. The target is already on the drum. */
-  text: string | null;
-};
-
-export function logFooter(input: {
-  previousSets: readonly LoggedSet[] | null | undefined;
-  setIndex: number;
-  target: Values | null;
-  showTargets: boolean;
-  /** The offer may show (not dismissed this workout, not resting, not editing). */
-  offerTargets: boolean;
-  minutes?: boolean;
-}): LogFooter {
-  const lastSet = lastTimeSetFor(input.previousSets, input.setIndex);
-  const lastText = lastSet ? compactSet(lastSet, input.minutes) : null;
-  const targetText = input.showTargets && input.target ? compactSet(input.target, input.minutes) : null;
-  const last = lastText ? `LAST ${lastText}` : null;
-  const target = targetText ? `TARGET ${targetText}` : null;
-  const targetLocked = !input.showTargets && input.offerTargets && input.target != null;
-  return { last, target, targetLocked: last == null && targetLocked, text: last ?? (targetLocked ? 'TARGET ›' : null) };
 }
 
 /** Rest header: `NEXT 85×8` for the set that's up next. */

@@ -111,3 +111,24 @@ export function MinusGlyph({ color: colorProp, size = TALL_GLYPH }: GlyphProps) 
     </Svg>
   );
 }
+
+/**
+ * Auto mode's spark (decision 99): a four-point star on the display's own 7 × 7 pixel grid, so
+ * it reads as part of the dot matrix rather than an app icon.
+ */
+export function SparkGlyph({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 7 7">
+      <Path fill={color} d="M3 0h1v2H3zM2 2h3v1H2zM0 3h7v1H0zM2 4h3v1H2zM3 5h1v2H3z" />
+    </Svg>
+  );
+}
+
+/** A padlock on the same pixel grid (6 × 8): the locked AUTO clip on Trim Free. */
+export function PadlockGlyph({ color, size }: { color: string; size: number }) {
+  return (
+    <Svg width={(size * 6) / 8} height={size} viewBox="0 0 6 8">
+      <Path fill={color} d="M1 1h1V0h2v1h1v2H4V1H2v2H1zM0 3h6v5H0z" />
+    </Svg>
+  );
+}

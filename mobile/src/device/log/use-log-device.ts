@@ -11,6 +11,7 @@ import type { DrumNudge, NotchResult } from '@/device/parts';
 import { durationIsMinutes } from '@/domain/helpers';
 import { DEVICE, LINEAR_FN } from '@/motion';
 
+import type { AutoLamp } from './auto-model';
 import { drumStep, spokenSetLabel, spokenShortSet, spokenValue, type DrumKind } from './log-model';
 import { useLogSession } from './log-session-context';
 import type { SetValues } from './log-state';
@@ -138,6 +139,14 @@ function useHoldToFinish(onComplete: () => void) {
  * big key (Log / Save, Skip, hold to Finish, Discard), Undo with its toast, and the display's
  * VoiceOver summary and actions.
  */
+/** The clip's VoiceOver action per lamp (decision 99). */
+const AUTO_ACTION: Record<AutoLamp, string> = {
+  auto: 'Auto mode, on. Why this weight',
+  man: 'Manual. Back to auto mode',
+  off: 'Auto mode, off',
+  locked: 'Auto mode, Trim Pro',
+};
+
 export function useLogDevice() {
   const log = useLogSession();
   const rest = useRest();
@@ -261,6 +270,14 @@ export function useLogDevice() {
     if (currentId) openSheet('exercise', { exerciseId: currentId });
   }, [currentId, openSheet]);
 
+  /** The set card's clip (decision 99): the Auto mode sheet; on Trim Free, the paywall. */
+  const autoLamp = log.auto?.lamp ?? null;
+  const openAuto = useCallback(() => {
+    haptics.displayTap();
+    if (autoLamp === 'locked') void log.unlockTargets();
+    else if (autoLamp) openSheet('auto');
+  }, [autoLamp, haptics, log, openSheet]);
+
   const openKeypad = useCallback(() => {
     haptics.displayTap();
     openSheet('keypad');
@@ -279,7 +296,7 @@ export function useLogDevice() {
     summary = log.summary ?? undefined;
     actions.push({ name: 'exercise', label: 'Exercise info' }, { name: 'keypad', label: 'Type a value' });
     if (log.loadStep) actions.push({ name: 'step', label: `Change step, now ${log.loadStep.text.slice(1)} ${log.units}` });
-    if (log.footer?.targetLocked) actions.push({ name: 'targets', label: 'Show targets' });
+    if (autoLamp) actions.push({ name: 'auto', label: AUTO_ACTION[autoLamp] });
   } else if (view === 'rest' && log.current) {
     // Decision 96: the rest, then the set it leads to ("then set 2 of 3"), as the display's `SET 2 IN`.
     const next = log.stage ? spokenShortSet(log.stage.values, minutes) : null;
@@ -320,7 +337,7 @@ export function useLogDevice() {
     if (name === 'exercise') openExercise();
     if (name === 'keypad') openKeypad();
     if (name === 'step') cycleLoadStep();
-    if (name === 'targets') void log.unlockTargets();
+    if (name === 'auto') openAuto();
   };
 
   return {
@@ -338,6 +355,7 @@ export function useLogDevice() {
     finishWorkout,
     openExercise,
     openKeypad,
+    openAuto,
     cycleLoadStep,
     wheel,
     display: { summary, actions, onAction: onDisplayAction },

@@ -47,6 +47,8 @@ export type WorkoutSnapshot = {
   finish: Finish;
   /** Device sounds (D14). The silent switch still silences them. */
   soundsOn: boolean;
+  /** Auto mode (Trim Pro): the drum opens on each set's target. The lamp's sheet turns it off. */
+  autoMode: boolean;
   /** D2: the one-time `appearance` → `finish` migration has run (or was never needed). */
   appearanceMigratedToFinish: boolean;
   /** ISO week keys whose week report already played (D15), so it shows once. */
@@ -83,6 +85,7 @@ export const defaultSnapshot: WorkoutSnapshot = {
   bodyGoals: [],
   finish: '212',
   soundsOn: true,
+  autoMode: true,
   appearanceMigratedToFinish: false,
   weekMomentsShown: [],
   loadSteps: {},
@@ -209,6 +212,7 @@ export function normalizeSnapshot(raw: unknown, now: Date = new Date()): Workout
     // Snapshots from before the Gadget redesign have none of these.
     finish: normalizeFinish(data.finish),
     soundsOn: data.soundsOn !== false,
+    autoMode: data.autoMode !== false,
     appearanceMigratedToFinish: data.appearanceMigratedToFinish === true,
     weekMomentsShown: normalizeWeekKeys(data.weekMomentsShown),
     // Snapshots from before chosen wheel steps have none.

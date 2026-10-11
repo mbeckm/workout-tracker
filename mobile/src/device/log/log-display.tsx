@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { device, gadgetType, lcd, logGeometry } from '@/constants/theme';
+import { device, gadgetRadius, gadgetType, lcd, logGeometry, PRESSED_OPACITY, TOUCH_TARGET } from '@/constants/theme';
 import { LcdText, useScreenStyles } from '@/device/parts/lcd-text';
-import { Drum, drumLayout, useDisplayHeight, type DrumLayout, type DrumNudge } from '@/device/parts';
+import { PadlockGlyph, SparkGlyph, useDisplayHeight, useDrumRoll, useFrameFlash, type DrumNudge } from '@/device/parts';
+import { useScreen } from '@/device/finish';
 import { durationIsMinutes } from '@/domain/helpers';
 import { sessionDurationMinutes } from '@/domain/log-session';
 import { DEVICE } from '@/motion';
 
+import type { AutoLamp } from './auto-model';
 import { restNextText, restUpText, setLampLayout, type SetLampState } from './log-model';
 import { useLogSession } from './log-session-context';
 import { RestCharge } from './rest-charge';
@@ -47,32 +50,22 @@ function LiftName({
 
 const HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
 
-/** The log header: the lift name (`lcdRow`), then the set lamps and `SET 2/4`. */
-const LOG_HEADER_BOTTOM =
-  device.displayHeaderY + gadgetType.lcdRow.lineHeight + logGeometry.nameSetGap + gadgetType.lcdSmall.lineHeight;
-
-/** `ASSIST` rides the step above; without it it sits midway between the header and the frame. */
-function assistY(layout: DrumLayout): number {
-  return layout.above
-    ? device.drumAboveY + layout.offset
-    : Math.round((LOG_HEADER_BOTTOM + layout.frameY - gadgetType.lcdSmall.lineHeight) / 2);
-}
+/** The log header (decision 99): one line, the lift name (`lcdRow`), the set lamps and `2/3`. */
+const LOG_HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdRow.lineHeight;
+const CARD_TOP = LOG_HEADER_BOTTOM + logGeometry.cardTopClear;
 
 /** The set lamps (`setLamps`): done lit, the set on the display outlined, the rest off. */
 function SetLamps({ lamps }: { lamps: readonly SetLampState[] }) {
   const styles = useScreenStyles(baseStyles);
-  const layout = setLampLayout(lamps.length);
-  if (layout === 'none' || lamps.length === 0) {
+  if (setLampLayout(lamps.length) === 'none' || lamps.length === 0) {
     return null;
   }
-  const compact = layout === 'compact';
-  const size = { width: compact ? logGeometry.setLampWidthCompact : logGeometry.setLampWidth };
   return (
-    <View style={[styles.setLamps, { gap: compact ? logGeometry.setLampGapCompact : logGeometry.setLampGap }]}>
+    <View style={styles.setLamps}>
       {lamps.map((lamp, index) => (
         <View
           key={index}
-          style={[styles.setLamp, size, lamp === 'done' ? styles.gridOn : lamp === 'on' ? styles.setLampOn : styles.gridOff]}
+          style={[styles.setLamp, lamp === 'done' ? styles.gridOn : lamp === 'on' ? styles.setLampOn : styles.gridOff]}
         />
       ))}
     </View>
@@ -80,22 +73,39 @@ function SetLamps({ lamps }: { lamps: readonly SetLampState[] }) {
 }
 
 /**
- * Where the drum's step tag (`±2`) sits: right-aligned just under the frame, or null when a
- * short display has no room for it above the `×8` footer.
+ * The clip on the set card's top edge (decision 99): `AUTO` lit when Trim set the numbers, `MAN`
+ * when the lifter moved them, a dim `AUTO` when Auto mode is off, a dim `AUTO` with a padlock on
+ * Trim Free. Tapping it opens the Auto mode sheet (Free: the paywall).
  */
-function stepTagY(layout: DrumLayout, height: number): number | null {
-  const top = layout.frameY + device.drumFrameHeight + device.drumClear;
-  if (height <= 0) return top;
-  const footerTop = height - device.repsFooterY - gadgetType.lcdReps.lineHeight;
-  return top + gadgetType.lcdSmall.lineHeight + device.drumClear <= footerTop ? top : null;
+function AutoClip({ lamp, onPress }: { lamp: AutoLamp; onPress: () => void }) {
+  const styles = useScreenStyles(baseStyles);
+  const screen = useScreen();
+  const ink = lamp === 'auto' ? screen.lcd : lamp === 'man' ? screen.amber : screen.amberDim;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessible={false}
+      hitSlop={(TOUCH_TARGET - logGeometry.clipHeight) / 2}
+      style={({ pressed }) => [
+        styles.clip,
+        lamp === 'auto' ? styles.clipOn : lamp === 'man' ? styles.clipMan : styles.clipOff,
+        pressed && styles.clipPressed,
+      ]}>
+      {lamp === 'man' ? null : <SparkGlyph color={ink} size={logGeometry.clipGlyph} />}
+      <LcdText glow={lamp !== 'auto'} style={[gadgetType.lcdSmall, { color: ink }]}>
+        {lamp === 'man' ? 'MAN' : 'AUTO'}
+      </LcdText>
+      {lamp === 'locked' ? <PadlockGlyph color={ink} size={logGeometry.clipLock} /> : null}
+    </Pressable>
+  );
 }
 
 /**
- * Log (screens 04, 05, 09; decision 84): the lift name ▾ (`lcdRow`), the set lamps and the set
- * label, the drum (the wheel's value, already the target when targets show), the keys' value
- * (`6 REPS`) and last time (`LAST 80×8`, else the locked `TARGET ›`), on one bottom line.
- * Tapping the drum cycles the lift's wheel step, shown as `±2` under the frame (80);
- * long-pressing it opens the keypad (D19).
+ * Log (decision 99, built on decision 84): one header line (the lift name ▾, the set lamps,
+ * `2/3`), then the set card: weight over reps in one frame. Auto mode clips onto the card's top
+ * edge (`AUTO` / `MAN`, and on MAN AUTO's own set with its spark on the right); the card's
+ * bottom edge says why (`▲ FROM 85×8`) or last time (`LAST 85×8`). Tapping the card cycles the
+ * lift's wheel step, shown as `±2` inside it (80); long-pressing it opens the keypad (D19).
  */
 export function LogDisplay({
   nudge,
@@ -103,92 +113,90 @@ export function LogDisplay({
   onName,
   onKeypad,
   onStep,
+  onAuto,
 }: {
   nudge: DrumNudge | null;
   flash: number;
   onName: () => void;
   onKeypad: () => void;
   onStep: () => void;
+  /** The clip: the Auto mode sheet, or on Trim Free the paywall. */
+  onAuto: () => void;
 }) {
   const styles = useScreenStyles(baseStyles);
-  const { current, drum, keys, setLabel, setLamps, footer, controls, loadStep, unlockTargets } = useLogSession();
-  const height = useDisplayHeight();
-  const layout = drumLayout(height, LOG_HEADER_BOTTOM);
-  const tagY = loadStep ? stepTagY(layout, height) : null;
+  const screen = useScreen();
+  const { current, drum, keys, setTag, setLamps, auto, controls, loadStep } = useLogSession();
+  const rollStyle = useDrumRoll(nudge);
+  const frameStyle = useFrameFlash(flash);
   if (!current || !drum || !controls) {
     return null;
   }
   // Bodyweight puts reps on the drum; the keys step the same value, so it shows once.
   const keysValue = controls.keys && controls.keys !== controls.drum ? keys : null;
+  const lamp = auto?.lamp ?? null;
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Drum
-        current={drum.text}
-        above={drum.up ?? undefined}
-        below={drum.down ?? undefined}
-        nudge={nudge}
-        flash={flash}
-        compact={drum.text.length >= COMPACT_FROM}
-        layout={layout}
-      />
-      <Pressable
-        accessible={false}
-        onPress={onStep}
-        onLongPress={onKeypad}
-        style={[styles.drumHit, { top: layout.frameY }]}
-      />
-      {loadStep && tagY != null ? (
-        <LcdText
-          style={[gadgetType.lcdSmall, !loadStep.chosen && styles.dim, styles.stepTag, { top: tagY }]}>
-          {loadStep.text}
-        </LcdText>
-      ) : null}
-      <View style={[styles.header, styles.logHeader]} pointerEvents="box-none">
-        <View style={styles.nameRow} pointerEvents="box-none">
-          <LiftName name={current.prescription.name} large onPress={onName} />
-        </View>
+      <View style={styles.header} pointerEvents="box-none">
+        <LiftName name={current.prescription.name} large onPress={onName} />
         <View style={styles.setRow}>
           <SetLamps lamps={setLamps} />
-          <LcdText numberOfLines={1} style={gadgetType.lcdSmall}>
-            {setLabel}
+          <LcdText numberOfLines={1} style={gadgetType.lcdRow}>
+            {setTag}
           </LcdText>
         </View>
       </View>
-      {drum.header ? (
-        <LcdText style={[gadgetType.lcdSmall, styles.dim, styles.assist, { top: assistY(layout) }]}>
-          {drum.header}
-        </LcdText>
-      ) : null}
-      <View style={styles.footer} pointerEvents="box-none">
-        <View style={styles.keysValue}>
-          <LcdText numberOfLines={1} style={gadgetType.lcdReps}>
-            {keysValue?.value ?? ''}
-          </LcdText>
-          {keysValue?.unit ? (
-            <LcdText style={[gadgetType.lcdSmall, styles.besideReps]}>
-              {keysValue.unit}
+      <Animated.View pointerEvents="none" style={[styles.card, frameStyle]} />
+      <Pressable accessible={false} onPress={onStep} onLongPress={onKeypad} style={styles.cardBody}>
+        <Animated.View style={[styles.cardValues, rollStyle]}>
+          {drum.header ? (
+            <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
+              {drum.header}
             </LcdText>
           ) : null}
-        </View>
-        {footer?.text ? (
-          footer.targetLocked ? (
-            <Pressable
-              accessible={false}
-              hitSlop={device.displayFooterY}
-              onPress={() => void unlockTargets()}
-              style={({ pressed }) => [styles.footerFact, pressed && styles.namePressed]}>
-              <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
-                {footer.text}
+          <LcdText
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={[drum.text.length >= COMPACT_FROM ? gadgetType.lcdHeroCompact : gadgetType.lcdHero, styles.center]}>
+            {drum.text}
+          </LcdText>
+          {keysValue ? (
+            <View style={styles.keysValue}>
+              <LcdText numberOfLines={1} style={gadgetType.lcdReps}>
+                {keysValue.value}
               </LcdText>
-            </Pressable>
-          ) : (
-            <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, styles.footerFact]}>
-              {footer.text}
-            </LcdText>
-          )
+              {keysValue.unit ? (
+                <LcdText style={[gadgetType.lcdSmall, styles.besideReps]}>
+                  {keysValue.unit}
+                </LcdText>
+              ) : null}
+            </View>
+          ) : null}
+        </Animated.View>
+        {loadStep ? (
+          <LcdText style={[gadgetType.lcdSmall, !loadStep.chosen && styles.dim, styles.stepTag]}>
+            {loadStep.text}
+          </LcdText>
         ) : null}
-      </View>
+      </Pressable>
+      {lamp ? (
+        <View style={styles.clipRow} pointerEvents="box-none">
+          <AutoClip lamp={lamp} onPress={onAuto} />
+          {lamp === 'man' && auto?.autoText ? (
+            <Pressable accessible={false} onPress={onAuto} hitSlop={logGeometry.clipPadX} style={styles.cut}>
+              <SparkGlyph color={screen.amber} size={logGeometry.clipGlyph} />
+              <LcdText style={gadgetType.lcdSmall}>{auto.autoText}</LcdText>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+      {auto?.edge ? (
+        <View style={styles.edgeRow} pointerEvents="none">
+          <LcdText numberOfLines={1} style={[gadgetType.lcdSmall, lamp !== 'auto' && styles.dim, styles.cut]}>
+            {auto.edge}
+          </LcdText>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -360,14 +368,66 @@ const baseStyles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   namePressed: { backgroundColor: lcd.amberPress },
-  drumHit: {
+  card: {
     position: 'absolute',
     left: device.drumFrameInset,
     right: device.drumFrameInset,
-    height: device.drumFrameHeight,
+    top: CARD_TOP,
+    bottom: logGeometry.cardBottomY,
+    borderRadius: gadgetRadius.lcdFrame,
+    borderCurve: 'continuous',
+    borderWidth: device.drumFrameStroke,
+    borderColor: lcd.amber,
   },
-  assist: { position: 'absolute', right: device.displayPad },
-  stepTag: { position: 'absolute', right: device.displayPad },
+  cardBody: {
+    position: 'absolute',
+    left: device.drumFrameInset,
+    right: device.drumFrameInset,
+    top: CARD_TOP,
+    bottom: logGeometry.cardBottomY,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardValues: { alignItems: 'center', gap: logGeometry.cardValueGap, alignSelf: 'stretch', paddingHorizontal: device.displayPad },
+  center: { textAlign: 'center', alignSelf: 'stretch' },
+  stepTag: { position: 'absolute', right: logGeometry.cardStepInset, bottom: logGeometry.cardStepInset },
+  clipRow: {
+    position: 'absolute',
+    left: device.drumFrameInset + logGeometry.clipInsetX,
+    right: device.drumFrameInset + logGeometry.clipInsetX,
+    top: CARD_TOP - logGeometry.clipHeight / 2,
+    height: logGeometry.clipHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  clip: {
+    height: logGeometry.clipHeight,
+    borderRadius: logGeometry.clipHeight / 2,
+    paddingHorizontal: logGeometry.clipPadX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: logGeometry.clipGap,
+    backgroundColor: lcd.lcd,
+  },
+  clipOn: { backgroundColor: lcd.amber, boxShadow: `0 0 12px ${lcd.amberGlow}` },
+  clipMan: { borderWidth: device.drumFrameStroke, borderColor: lcd.amber },
+  clipOff: { borderWidth: device.drumFrameStroke, borderColor: lcd.amberDim },
+  clipPressed: { opacity: PRESSED_OPACITY },
+  cut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: logGeometry.clipGap,
+    paddingHorizontal: logGeometry.cutPadX,
+    backgroundColor: lcd.lcd,
+  },
+  edgeRow: {
+    position: 'absolute',
+    left: device.displayPad,
+    right: device.displayPad,
+    bottom: logGeometry.cardBottomY - gadgetType.lcdSmall.lineHeight / 2,
+    alignItems: 'center',
+  },
   footer: {
     position: 'absolute',
     left: device.displayPad,
@@ -378,14 +438,15 @@ const baseStyles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: device.rowGap,
   },
-  footerFact: { marginBottom: device.lcdSmallBesideReps, flexShrink: 1 },
   besideReps: { marginBottom: device.lcdSmallBesideReps },
-  keysValue: { flexDirection: 'row', alignItems: 'flex-end', gap: logGeometry.repsUnitGap, flexShrink: 0 },
-  logHeader: { flexDirection: 'column', justifyContent: 'flex-start', gap: logGeometry.nameSetGap },
-  nameRow: { flexDirection: 'row' },
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: logGeometry.setLampLabelGap },
-  setLamps: { flexDirection: 'row', alignItems: 'center' },
-  setLamp: { height: logGeometry.setLampHeight, borderRadius: logGeometry.setLampHeight / 2 },
+  keysValue: { flexDirection: 'row', alignItems: 'flex-end', gap: logGeometry.repsUnitGap },
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: logGeometry.setLampLabelGap, flexShrink: 0 },
+  setLamps: { flexDirection: 'row', alignItems: 'center', gap: logGeometry.headerLampGap },
+  setLamp: {
+    width: logGeometry.setLampWidthCompact,
+    height: logGeometry.setLampHeight,
+    borderRadius: logGeometry.setLampHeight / 2,
+  },
   setLampOn: { borderWidth: device.drumFrameStroke, borderColor: lcd.amber },
   restFooter: { bottom: logGeometry.restFooterY, alignItems: 'baseline' },
   restMiddle: {
