@@ -44,6 +44,7 @@ npx eas-cli build --platform ios --profile production --auto-submit
 **Done**
 - [x] Paid Apps agreement, banking and tax forms active.
 - [x] Subscription group "Trim Pro": `…pro.yearly` $39.99 with a 1-week free trial, `…pro.monthly` $6.99.
+- [ ] Non-consumable `…pro.lifetime` "Trim Pro Lifetime" $79.99 (created 11 Oct 2026, all 175 regions, en-US name and description). Review screenshot uploaded (paywall with Lifetime selected). Still to do: **Zur Prüfung hinzufügen** together with the next app version (Apple requires the first non-consumable to ship with a new version); until it's approved, StoreKit doesn't return it in production, so the paywall keeps showing yearly and monthly only. RevenueCat: attached to `Scratch Pro`, `$rc_lifetime` package in `default`.
 - [x] RevenueCat: entitlement `Scratch Pro`, offering `default`; EAS `production` env has the RevenueCat and PostHog keys.
 - [x] Age rating 9+ (Health or Wellness Topics).
 - [x] App icon and splash.

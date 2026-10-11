@@ -26,8 +26,8 @@ export type PaywallMock = (typeof PAYWALL_MOCKS)[number];
 
 type MockProduct = {
   identifier: string;
-  packageType: 'ANNUAL' | 'MONTHLY';
-  subscriptionPeriod: 'P1Y' | 'P1M';
+  packageType: 'ANNUAL' | 'MONTHLY' | 'LIFETIME';
+  subscriptionPeriod: 'P1Y' | 'P1M' | null;
   price: number;
   priceString: string;
   pricePerMonthString: string;
@@ -51,6 +51,15 @@ const PRODUCTS: MockProduct[] = [
     price: 6.99,
     priceString: '$6.99',
     pricePerMonthString: '$6.99',
+    trialDays: null,
+  },
+  {
+    identifier: 'trim_pro_lifetime',
+    packageType: 'LIFETIME',
+    subscriptionPeriod: null,
+    price: 79.99,
+    priceString: '$79.99',
+    pricePerMonthString: '$79.99',
     trialDays: null,
   },
 ];
