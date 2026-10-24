@@ -212,7 +212,7 @@ function DayRow({
                   ) : (
                     <View key={index} style={styles.line}>
                       <LcdText lines={1} style={[gadgetType.lcdList, styles.shrink]}>{line.name}</LcdText>
-                      <LcdText lines={1} style={[gadgetType.lcdList, styles.dim]}>{` ${line.prescription}`}</LcdText>
+                      <LcdText lines={1} style={[gadgetType.lcdList, styles.dim, styles.keep]}>{` ${line.prescription}`}</LcdText>
                     </View>
                   ),
                 )}
@@ -398,6 +398,8 @@ const baseStyles = StyleSheet.create({
   todoRow: { justifyContent: 'center', backgroundColor: lcd.todoRow },
   rowHead: { flexDirection: 'row', justifyContent: 'space-between', gap: device.rowGap },
   shrink: { flexShrink: 1 },
+  // The prescription never truncates; the lift name gives way.
+  keep: { flexShrink: 0 },
   meta: { marginTop: device.rowMetaGap },
   lines: { marginTop: device.rowListGap },
   line: { flexDirection: 'row' },

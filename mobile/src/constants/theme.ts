@@ -213,7 +213,7 @@ export const finishColors: Record<FinishId, FinishColors> = {
     sheen: 0.35,
     screen: 'amber',
     // 3.5:1 under `WEEK n` and at the bottom of the body (was #7C7A73, 2.7:1 at the bottom).
-    label: '#6A6862',
+    label: '#575550',
     labelShadow: 'rgba(255,255,255,0.75)',
     keyEdge: '#A9A69E',
     lampOn: '#FF6A1A',
@@ -259,7 +259,7 @@ export const finishColors: Record<FinishId, FinishColors> = {
     material: 'powder',
     sheen: 0.16,
     screen: 'paper',
-    label: '#EEEAD4',
+    label: '#F9F7EF',
     labelShadow: 'rgba(0,0,0,0.5)',
     keyEdge: '#2A291C',
     key1: '#EEE9D6',
@@ -332,7 +332,7 @@ export const finishColors: Record<FinishId, FinishColors> = {
     material: 'powder',
     sheen: 0.12,
     screen: 'phosphor',
-    label: '#E8E2C2',
+    label: '#EFEAD4',
     labelShadow: 'rgba(0,0,0,0.55)',
     keyEdge: '#5E4518',
     key1: '#E6C67A',
@@ -381,7 +381,7 @@ export const finishColors: Record<FinishId, FinishColors> = {
     material: 'holo',
     sheen: 0.35,
     screen: 'vfd',
-    label: '#6E6890',
+    label: '#615C7F',
     labelShadow: 'rgba(255,255,255,0.85)',
     keyEdge: '#B7B0CC',
     key1: '#FFFFFF',
@@ -500,7 +500,7 @@ export type ScreenColors = {
   amber: string;
   /** The hold ring's glow and the lamp halo, ink at ~35%. */
   amberGlow: string;
-  /** Dim ink: 3.7:1 or more on every screen, so it reads mid-set. */
+  /** Dim ink: 4.5:1 or more on every screen's ground (4.3:1 on Amber's todo rows), so it reads mid-set. */
   amberDim: string;
   amberOff: string;
   /** Pressed tint behind a tappable display word (the exercise name). */
@@ -528,8 +528,8 @@ export const screenColors: Record<ScreenId, ScreenColors> = {
     lcdShade: 'rgba(0,0,0,0.8)',
     amber: '#FF6A1A',
     amberGlow: 'rgba(255,106,26,0.35)',
-    // Raised from #7A3E1C (2.2:1) to 3.7:1 (decision 80).
-    amberDim: '#B05A20',
+    // Raised from #7A3E1C (2.2:1) to 3.7:1 (decision 80), then to AA on the ground (decision 100).
+    amberDim: '#C85F1F',
     amberOff: '#3A2214',
     amberPress: '#2A1A10',
     doneRow: '#FF6A1A',
@@ -549,7 +549,7 @@ export const screenColors: Record<ScreenId, ScreenColors> = {
     lcdShade: 'rgba(0,0,0,0.9)',
     amber: '#F6F6F3',
     amberGlow: 'rgba(230,236,255,0.3)',
-    amberDim: '#7E7E79',
+    amberDim: '#80807B',
     amberOff: '#262624',
     amberPress: '#1A1A1A',
     doneRow: '#F6F6F3',
@@ -569,7 +569,7 @@ export const screenColors: Record<ScreenId, ScreenColors> = {
     lcdShade: 'rgba(0,0,0,0.28)',
     amber: '#191816',
     amberGlow: 'rgba(25,24,22,0.2)',
-    amberDim: '#6B675E',
+    amberDim: '#5E5A52',
     amberOff: '#CFCBC0',
     amberPress: '#D6D2C6',
     doneRow: '#191816',
@@ -589,7 +589,7 @@ export const screenColors: Record<ScreenId, ScreenColors> = {
     lcdShade: 'rgba(0,0,0,0.38)',
     amber: '#0E220C',
     amberGlow: 'rgba(14,34,12,0.25)',
-    amberDim: '#30461B',
+    amberDim: '#2F451B',
     amberOff: '#9AAA52',
     amberPress: '#A2B35A',
     doneRow: '#0E220C',
@@ -746,8 +746,8 @@ export const finishMarks = {
 export const marksType = {
   print: {
     fontFamily: Platform.OS === 'web' ? 'ui-rounded, system-ui, sans-serif' : 'ui-rounded',
-    fontSize: 8,
-    lineHeight: 10,
+    fontSize: 10,
+    lineHeight: 12,
     fontWeight: '800',
     fontStyle: 'italic',
     letterSpacing: 0.6,
@@ -762,7 +762,7 @@ export const marksType = {
   },
   stencil: {
     fontFamily: Platform.OS === 'web' ? 'ui-rounded, system-ui, sans-serif' : 'ui-rounded',
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 12,
     fontWeight: '800',
     letterSpacing: 2.5,
@@ -781,7 +781,7 @@ export const sheetColors = {
   /** Body copy a step below ink (how-to steps, muscle chips). */
   inkSoft: '#D9D6CF',
   muted: '#8C8A84',
-  sectionLabel: '#6E6C66',
+  sectionLabel: '#83817B',
   control: '#262624',
   controlInk: '#C9C6BF',
   /** Tracks and done chips. */
@@ -952,9 +952,9 @@ export const gadgetType = {
   /** Small display labels (SETS / REPS in edit), sheet section labels. */
   lcdCaption: lcdRole(13, 16),
   /** Day row meta. */
-  lcdMeta: lcdRole(12, 14),
+  lcdMeta: lcdRole(13, 15),
   /** The PR stamp. */
-  lcdStamp: lcdRole(11, 13),
+  lcdStamp: lcdRole(12, 14),
   /** Glyphs on round keys (☰, ↶, ✕). */
   keyGlyph: { ...roundedRole(22, 26, weight.heavy), color: deviceColors.keyInk },
   /** Glyphs on tall keys (+, −) and the rocker ends (‹ ›). */
@@ -966,7 +966,7 @@ export const gadgetType = {
   /** The big key's label. */
   bigKeyLabel: roundedRole(24, 28, weight.heavy),
   /** Engraved body labels (`.lab`): uppercase, label colour, 1pt labelShadow. */
-  engraved: roundedRole(10, 12, weight.heavy, 1.5),
+  engraved: roundedRole(11, 13, weight.heavy, 1.5),
   sheetTitle: { ...roundedRole(18, 22, weight.heavy), color: sheetColors.ink },
   sheetHero: { ...roundedRole(28, 32, weight.heavy, -0.5), color: sheetColors.ink },
   bigNumber: { ...roundedRole(54, 58, weight.heavy, -1.5), color: sheetColors.ink },
@@ -991,7 +991,7 @@ export const gadgetType = {
   receiptStub: { fontFamily: fontFamily.receipt, fontSize: 11, lineHeight: 16, color: receiptColors.ink },
   receiptStubBold: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 16, color: receiptColors.ink },
   receiptStubName: { fontFamily: fontFamily.receiptBold, fontSize: 13, lineHeight: 18, letterSpacing: 1, color: receiptColors.ink },
-  receiptStamp: { fontFamily: fontFamily.receiptBold, fontSize: 10, lineHeight: 11, color: receiptColors.pr },
+  receiptStamp: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 12, color: receiptColors.pr },
   /** A History slip (H2): Plex Mono 11/15 bold, its big lines in Doto 26/28. */
   receiptSlip: { fontFamily: fontFamily.receiptBold, fontSize: 11, lineHeight: 15, color: receiptColors.ink },
   receiptSlipBig: { fontFamily: fontFamily.lcd, fontSize: 26, lineHeight: 28, color: receiptColors.title },
@@ -1718,8 +1718,8 @@ export const plansType = {
   shelfSub: { ...roundedRole(13, 16, weight.semibold), color: sheetColors.muted },
   /** The `Active` badge (`.act`). */
   badge: { ...roundedRole(11, 13, weight.heavy), color: sheetColors.onOrange },
-  /** A cartridge's label window (`.cart i`, Doto 9 on a 24 line). */
-  cartLabel: lcdRole(9, 24),
+  /** A cartridge's label window (`.cart i`, Doto 10 on a 24 line: six letters fill the 38 window). */
+  cartLabel: lcdRole(10, 24),
   /** The editor's plan name (`.ptitle b`); a TextInput while renaming (no line height). */
   planTitleInput: { fontFamily: fontFamily.rounded, fontSize: 28, fontWeight: weight.heavy, letterSpacing: -0.5 },
   /** A day header (`.dh b`). */
@@ -2038,7 +2038,7 @@ export const insertGeometry = {
 /** The cartridge's printing in the insert (`.c3 .lbl b`, `.lbl span`, `.brand`). */
 export const insertType = {
   cartName: lcdRole(17, 19),
-  cartDays: { ...lcdRole(10, 15), color: lcd.amberDim },
+  cartDays: { ...lcdRole(11, 15), color: lcd.amberDim },
   brand: { ...roundedRole(11, 13, weight.heavy, 2), color: insertColors.cartBack },
 } as const;
 
@@ -2058,8 +2058,8 @@ export const onboardingType = {
   packTitle: { ...roundedRole(20, 24, weight.heavy, -0.3), color: sheetColors.ink },
   /** A pack's fact line (`.pack span.s`). */
   packSub: { ...roundedRole(14, 18, weight.semibold), color: sheetColors.muted },
-  /** A cartridge's label window (Doto 9). */
-  cartLabel: lcdRole(9, 11),
+  /** A cartridge's label window (Doto 10). */
+  cartLabel: lcdRole(10, 12),
   /** The `+` in an empty cartridge slot. */
   cartPlus: { ...roundedRole(22, 26, weight.heavy), color: sheetColors.sectionLabel },
   /** Units and days: the chosen value and the others (residue). */
@@ -2070,7 +2070,7 @@ export const onboardingType = {
   /** Days a week (D74): the wheel's number in SF Mono heavy, the steps around it dim. */
   wheelNumber: { fontFamily: fontFamily.mono, fontSize: 168, lineHeight: 176, fontWeight: weight.heavy, color: sheetColors.ink },
   /** The `PRO` mark on a locked swatch. */
-  lock: lcdRole(10, 12),
+  lock: lcdRole(11, 13),
   /** The paywall: the headline, a plan card's period, price and sub, feature rows, small print. */
   headline: { ...roundedRole(26, 30, weight.heavy, -0.5), color: sheetColors.ink },
   planLabel: { ...roundedRole(13, 17, weight.bold), color: sheetColors.muted },
@@ -2089,6 +2089,8 @@ export const onboardingType = {
 
 /** Onboarding geometry (PB1, N10; 390 × 844 reference). */
 export const onboardingGeometry = {
+  /** Below this window height (iPhone SE, an iPhone app on iPad) a step's stage scrolls rather than squeeze. */
+  compactHeight: 740,
   /** Side margin of a step. */
   gutter: 16,
   /** The title's top under the back control. */

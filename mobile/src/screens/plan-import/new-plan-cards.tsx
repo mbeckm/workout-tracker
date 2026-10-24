@@ -165,7 +165,7 @@ export function ImportDeviceCard({ onPress, title = 'Import plan', sub = 'From a
             );
           })}
         </View>
-        <View style={styles.display} onLayout={(event) => setDisplayHeight(event.nativeEvent.layout.height)}>
+        <View style={[styles.display, styles.importDisplay]} onLayout={(event) => setDisplayHeight(event.nativeEvent.layout.height)}>
           <Text
             onLayout={(event) => setMetaHeight(event.nativeEvent.layout.height)}
             maxFontSizeMultiplier={fontScaleCap.display}
@@ -273,7 +273,7 @@ export function StarterDeviceCard({ onPress, title = 'Pick one for me', sub = 'S
   const on = clock == null ? 0 : Math.floor(clock / IMPORT.SOURCE_STEP);
   return (
     <DeviceCard title={title} sub={sub} onPress={onPress} selected={selected} testID={testID}>
-      <View style={styles.display}>
+      <View style={[styles.display, styles.starterDisplay]}>
         <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.lcdMeta, styles.dim]}>
           STARTER PLANS
         </Text>
@@ -345,6 +345,10 @@ const styles = StyleSheet.create({
     gap: space.tight,
     overflow: 'hidden',
   },
+  // Short screens (iPhone SE, an iPhone app on iPad) never squeeze a display below what it shows:
+  // the label and one landed lift, or every starter plan. The stage scrolls instead.
+  importDisplay: { minHeight: 2 * G.displayPad + gadgetType.lcdMeta.lineHeight + space.tight + gadgetType.lcdSmall.lineHeight },
+  starterDisplay: { minHeight: 2 * G.displayPad + gadgetType.lcdMeta.lineHeight + STARTERS.length * (space.tight + G.displayRow) },
   buildDisplay: { gap: space.tight },
   dim: { color: lcd.amberDim },
   row: { height: G.displayRow, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.related },

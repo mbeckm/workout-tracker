@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { useReducedMotion } from 'react-native-reanimated';
 
-import { fontScaleCap, gadgetType, importGeometry, sheetColors, signal, space } from '@/constants/theme';
+import { fontScaleCap, gadgetType, importGeometry, onboardingGeometry, sheetColors, signal, space } from '@/constants/theme';
 import { ImportDeviceCard, StarterDeviceCard } from '@/screens/plan-import/new-plan-cards';
 import { haptics } from '@/device/haptics';
 import { DURATION, softPress, softSelect } from '@/motion';
@@ -23,6 +23,9 @@ export function OnboardingHavePlan() {
   const reduceMotion = useReducedMotion();
   const [ownPressed, setOwnPressed] = useState(false);
   const ownOn = answer === 'own';
+  // On short screens (iPhone SE, an iPhone app on iPad) the cards keep New plan's height and the
+  // stage scrolls, so neither display is squeezed.
+  const compact = useWindowDimensions().height < onboardingGeometry.compactHeight;
 
   const pick = (next: Answer) => {
     if (next !== answer) {
@@ -41,11 +44,11 @@ export function OnboardingHavePlan() {
   return (
     <OnboardingFrame
       title="Got a plan?"
-      scroll={false}
+      scroll={compact}
       action={{ title: 'Continue', onPress: next }}
       testID="onboarding-have-plan">
       <View accessibilityRole="radiogroup" accessibilityLabel="Got a plan?" style={styles.stage}>
-        <View style={styles.fill}>
+        <View style={compact ? styles.fixed : styles.fill}>
           <ImportDeviceCard
             title="I have one"
             sub="From a note, an AI chat or another app"
@@ -54,7 +57,7 @@ export function OnboardingHavePlan() {
             testID="onboarding-have-plan-yes"
           />
         </View>
-        <View style={styles.fill}>
+        <View style={compact ? styles.fixed : styles.fill}>
           <StarterDeviceCard selected={answer === 'pick'} onPress={() => pick('pick')} testID="onboarding-have-plan-pick" />
         </View>
         <Pressable
@@ -88,6 +91,7 @@ const inkTransition = {
 const styles = StyleSheet.create({
   stage: { flex: 1, gap: space.gutter, paddingTop: space.gutter, paddingBottom: space.related },
   fill: { flex: 1 },
+  fixed: { height: importGeometry.forkCardHeight },
   ownHit: { alignSelf: 'center' },
   own: {
     minHeight: importGeometry.choiceHeight,
