@@ -7,7 +7,7 @@
 - **App:** `mobile/`, Expo + Expo Router, iPhone only. Trim is one persistent device: its look is the user's skin (called a finish in code), and sheets and moments are always dark (decision 73). There is no light or dark appearance.
 - **Legal pages:** `legal/`, deployed to https://scratch-legal.vercel.app (support, privacy policy).
 - **Docs:** `PRODUCT.md` is the product model. `PRODUCT-DECISIONS.md` records decisions that changed it. `APP_STORE_RELEASE_GUIDE.md` covers store setup and shipping builds.
-- **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md`, then the shipped code. New design work happens in Claude Design; Paper is a frozen, optional reference (see *Where design lives*).
+- **UI source of truth:** `.cursor/skills/trim-ui/SKILL.md`, then the shipped code. New design work happens in Claude Design (see *Where design lives*).
 
 EAS project: `@mbeckms-team/workout-app` (ID `88024391-8ffd-4a6d-923d-18c766972365`). App Store Connect app ID: `6805436799`.
 
@@ -29,7 +29,7 @@ Trim is one persistent metal device with a dot-matrix display, keys, a rocker an
 
 `design/gadget/` (PLAN, SPEC, the prototype, screens, frames and boards) is history: how the device was specified. When it disagrees with the code or `trim-ui`, they win. The pre-gadget app is at git tag `archive/pre-gadget`.
 
-- **Obsolete for UI:** Paper and the old screenshots of the tabbed app describe the old interface.
+- **Obsolete for UI:** the old screenshots of the tabbed app describe the old interface.
 - **Branches:** the gadget is the only app now. `main` is the trunk: one branch per task with a PR into `main`. Unmerged pre-gadget branches and worktrees are preserved in tag `archive/pre-cleanup-2026-10-04` (one commit whose parents are every archived tip; its message lists name → sha, restore with `git branch <name> <sha>`).
 - **Shipping to Marvin's phone:** his phone runs a `testflight-gadget` build, which listens on the EAS channel `gadget`: `npx eas-cli update --channel gadget --platform ios --environment production --message "<what changed>"`, and `npx eas-cli build --platform ios --profile testflight-gadget --auto-submit` for native changes. `preview` serves only old pre-gadget binaries; never publish to it or to `production`.
 - **Self-check:** `npm run check`, then the web smoke test: `node scripts/web-smoke.mjs /tmp/trim-web / "/?sheet=plans" "/?sheet=progress" "/?sheet=history" "/?sheet=settings" /paywall` (Settings and the rest are sheets, opened by `?sheet=`).
@@ -48,9 +48,7 @@ Skip this only for bugs, copy fixes and polish inside an existing `trim-ui` patt
 ### Where design lives
 
 - **New work:** always Claude Design, in every session, local or cloud.
-- **How an existing surface should look**, in this order: `trim-ui` (always available, always wins), then the current code in `mobile/`. Paper describes the old app.
-- **Paper is frozen and optional.** It only works in a local session with the Paper desktop app open, and parts of it are out of date. Use it as a reference when it's there; if it disagrees with `trim-ui` or the code, they win. Nobody updates it anymore. Paper pages named in `PRODUCT-DECISIONS.md` stay valid as history.
-- **Cloud sessions** don't try to reach Paper, don't block on it, and don't mention its absence.
+- **How an existing surface should look**, in this order: `trim-ui` (always available, always wins), then the current code in `mobile/`.
 
 ## How to implement UI
 
@@ -157,7 +155,6 @@ Read this before your first command. Each item cost real time once.
 - **RevenueCat:** project "Scratch" (`5a59d39e`), app `app80da402380`.
 - **PostHog:** EU cloud, project `285218`. Product analytics only; session replay and web analytics off; client IP discarded.
 - **Vercel:** `legal/` deploys to team `mbeckms-projects`, project `scratch-legal`. The Vercel MCP connector has no access to that team; use the CLI (`cd legal && vercel deploy --prod --yes`, needs `vercel login`).
-- **Paper (frozen, local only):** app design in "Scratch workout new"; icon artwork in "Trim Logo" (the Start key icon and the other directions are on its *Gadget identity* page, decision 75). Paper can generate images (`paper-gen://`), so no separate image connector is needed for moodboards.
 
 ### Steps only Marvin can do
 - Apple ID sign-in and two-factor codes, `sudo` commands, creating accounts (sandbox testers), and `vercel login`.
