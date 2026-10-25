@@ -2387,6 +2387,8 @@ export const tourGeometry = {
   chatRuleDash: 2,
   chatGap: 7,
   chatTop: 9,
+  /** The practice set's drum on a short display scales into the room left, never below this. */
+  compactDrumMinScale: 0.25,
   /** The display's own focus frame on the first line (tap my screen). */
   focusStroke: 3,
   focusOffset: 5,

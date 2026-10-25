@@ -106,10 +106,11 @@ function PaywallView({ paywall }: { paywall: PaywallController }) {
       <GridGround />
       <View pointerEvents="none" style={styles.glow} />
 
+      {/* The scroll starts under `Not now`'s bar, so scrolled plans never pass under it (decision 100). */}
       <ScrollView
-        style={styles.fill}
+        style={[styles.fill, { marginTop: insets.top + geo.topBar }]}
         contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.tight }]}>
+        contentContainerStyle={styles.content}>
         <KnobHero turned={turned} />
 
         <Text

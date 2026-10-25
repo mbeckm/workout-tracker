@@ -34,7 +34,8 @@ npx eas-cli build --platform ios --profile production --auto-submit
 
 | Guideline | Answer |
 |---|---|
-| 2.1 completeness | No login; review notes walk every Pro gate and the 12-tap onboarding path. Sandbox prices load in the paywall. |
+| 2.1 completeness | No login; review notes walk every Pro gate and the 12-tap onboarding path. Sandbox prices load in the paywall. **Every IAP (Yearly, Monthly, Lifetime) must be attached to the version** under "In-App-Käufe und Abos" on the version page before submitting: 1.0 (17) was rejected under 2.1(b) because they weren't, so the review sandbox had no products. |
+| 4 design (iPad) | Trim is iPhone only, but App Review tests on an iPad, where it runs in a 375 × 667 compatibility window scaled up. Check every onboarding step and sheet at that size (an iPad simulator works); steps scroll under 740 tall (decision 100). |
 | 2.3 metadata | Description and screenshots show the current device app only; Pro skins are marked PRO; no prices in screenshots. |
 | 3.1.2 subscriptions | Paywall: period label + price per card, trial timeline, renewal terms, Restore, Terms (Apple EULA), Privacy; the EULA and privacy links are also in the description. Prices time out to Try again after 15 s. |
 | 5.1.1 / 5.1.2(i) data and third-party AI | Plan import asks "Read it with Claude?" (Allow / Read on iPhone) before anything is sent (decision 98). Privacy policy names Anthropic, Vercel, RevenueCat, PostHog. |
