@@ -45,7 +45,7 @@ npx eas-cli build --platform ios --profile production --auto-submit
 **Done**
 - [x] Paid Apps agreement, banking and tax forms active.
 - [x] Subscription group "Trim Pro": `…pro.yearly` $39.99 with a 1-week free trial, `…pro.monthly` $6.99.
-- [ ] Non-consumable `…pro.lifetime` "Trim Pro Lifetime" $79.99 (created 11 Oct 2026, all 175 regions, en-US name and description). Review screenshot uploaded (paywall with Lifetime selected). Still to do: **Zur Prüfung hinzufügen** together with the next app version (Apple requires the first non-consumable to ship with a new version); until it's approved, StoreKit doesn't return it in production, so the paywall keeps showing yearly and monthly only. RevenueCat: attached to `Scratch Pro`, `$rc_lifetime` package in `default`.
+- [x] Non-consumable `…pro.lifetime` "Trim Pro Lifetime" $79.99 (created 11 Oct 2026, all 175 regions, en-US name and description, review screenshot). Submitted with 1.0 (18) on 25 Oct. RevenueCat: attached to `Scratch Pro`, `$rc_lifetime` package in `default`. The review sandbox returns it before approval, so it must be in the same submission as any build whose paywall can show it.
 - [x] RevenueCat: entitlement `Scratch Pro`, offering `default`; EAS `production` env has the RevenueCat and PostHog keys.
 - [x] Age rating 9+ (Health or Wellness Topics).
 - [x] App icon and splash.
@@ -65,6 +65,8 @@ npx eas-cli build --platform ios --profile production --auto-submit
 - [x] Both subscriptions and the Trim Pro group added to the same review submission as the version (each item's "Add for Review" → the existing draft).
 - [x] Build 1.0.0 (17), `production` profile from main @ 14b5251, selected; content rights: no third-party content.
 - [x] Submitted for review on 10 October 2026, 20:35 (4 items: app 1.0, yearly, monthly, group). Manual release.
+- [x] Rejected 23 October (1.0 (17)): guideline 4 (hard-to-read type in the iPad window) and 2.1(b) (the reviewer couldn't find the IAPs). Fixed in #139 (decision 100).
+- [x] Resubmitted 25 October 2026, 12:43: the rejected submission was cancelled and a fresh one sent with 5 items (app 1.0 (18) from main @ 6ab222a with Xcode 26.6, the Trim Pro group, yearly, monthly, lifetime). Review notes carry the tap path to the paywall. Manual release.
 
 **After approval**
 - [ ] Release the version (Marvin).
