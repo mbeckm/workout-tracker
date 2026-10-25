@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 import { device, gadgetType, lcd, logGeometry, tourGeometry, tourType } from '@/constants/theme';
@@ -16,6 +16,18 @@ import { loggedOn, tourSetLamps } from './tour-model';
 /** The log header: the lift name, then the set lamps (as the log display, decision 84). */
 const HEADER_BOTTOM =
   device.displayHeaderY + gadgetType.lcdRow.lineHeight + logGeometry.nameSetGap + gadgetType.lcdSmall.lineHeight;
+
+/** What the practice set needs under the header: the drum clear of it and the 56 reps at the foot. */
+const PRACTICE_HEIGHT =
+  HEADER_BOTTOM +
+  device.drumHeaderClear +
+  device.drumFrameHeight +
+  2 * device.drumClear +
+  gadgetType.lcdReps.lineHeight +
+  device.repsFooterY;
+
+/** The compact practice set keeps the drum at its reference spot and scales it into the room left. */
+const COMPACT_DRUM_LAYOUT = { offset: 0, frameY: device.drumFrameY, above: false, below: false };
 
 /** The rest header (`REST` / `NEXT 20.0×8`) is one `lcdSmall` line. */
 const REST_HEADER_BOTTOM = device.displayHeaderY + gadgetType.lcdSmall.lineHeight;
@@ -39,6 +51,11 @@ export function TourDisplay({ onName }: { onName: () => void }) {
   const full = state.screen === 'intro' || state.screen === 'ready';
   const waitsForTap = tour.typedLine.length === tour.line.length && tour.state.beat >= 0 && !tour.lit;
   const firstLine = state.beat === 0;
+  // A short display (an iPhone SE, an iPhone app on iPad) can't hold the practice set over the
+  // full chat: the chat keeps only the line being said and the set goes compact (decision 100).
+  const compact = height - tourGeometry.chatHeight < PRACTICE_HEIGHT;
+  const [chatHeight, setChatHeight] = useState<number>(tourGeometry.chatHeight);
+  const onChatLayout = (event: LayoutChangeEvent) => setChatHeight(event.nativeEvent.layout.height);
 
   const tap = () => {
     haptics.displayTap();
@@ -51,8 +68,9 @@ export function TourDisplay({ onName }: { onName: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={tour.line}
       accessibilityHint={waitsForTap ? 'Continues' : undefined}
-      style={full ? styles.chatFull : [styles.chat, { height: tourGeometry.chatHeight }]}>
-      {state.previous ? (
+      onLayout={compact && !full ? onChatLayout : undefined}
+      style={full ? styles.chatFull : [styles.chat, compact ? null : { height: tourGeometry.chatHeight }]}>
+      {state.previous && (full || !compact) ? (
         <LcdText numberOfLines={full ? undefined : 1} style={[full ? tourType.lcdChatLarge : tourType.lcdChat, styles.dim]}>
           {state.previous.toUpperCase()}
         </LcdText>
@@ -81,7 +99,7 @@ export function TourDisplay({ onName }: { onName: () => void }) {
     );
   }
 
-  const contentHeight = Math.max(0, height - tourGeometry.chatHeight);
+  const contentHeight = Math.max(0, height - (compact ? chatHeight : tourGeometry.chatHeight));
   return (
     <View style={StyleSheet.absoluteFill}>
       {/* "Tap my screen": anywhere on the display goes on (the lift name keeps its own tap). */}
@@ -89,7 +107,7 @@ export function TourDisplay({ onName }: { onName: () => void }) {
         {state.screen === 'rest' ? (
           <TourRest height={contentHeight} />
         ) : (
-          <TourLog height={contentHeight} onName={onName} />
+          <TourLog height={contentHeight} compact={compact} onName={onName} />
         )}
       </Pressable>
       {chat}
@@ -98,12 +116,19 @@ export function TourDisplay({ onName }: { onName: () => void }) {
 }
 
 /** The practice set: name ▾ (framed while the swap waits), set lamps, the drum and the reps. */
-function TourLog({ height, onName }: { height: number; onName: () => void }) {
+function TourLog({ height, compact, onName }: { height: number; compact: boolean; onName: () => void }) {
   const styles = useScreenStyles(baseStyles);
   const tour = useTour();
   const { state } = tour;
   const lift = state.lifts[state.lift];
-  const layout = drumLayout(height, HEADER_BOTTOM);
+  const layout = compact ? COMPACT_DRUM_LAYOUT : drumLayout(height, HEADER_BOTTOM);
+  // Compact: the reps take one row at the foot and the drum scales into what's between.
+  const room = height - device.repsFooterY - gadgetType.lcdRow.lineHeight - HEADER_BOTTOM - 2 * device.drumClear;
+  const scale = Math.min(1, Math.max(tourGeometry.compactDrumMinScale, room / device.drumFrameHeight));
+  const centre = HEADER_BOTTOM + device.drumClear + room / 2;
+  const fit = compact
+    ? { transformOrigin: 'top', transform: [{ translateY: centre - (device.drumFrameY + device.drumFrameHeight / 2) * scale }, { scale }] }
+    : null;
   const nudge = useNudge(state.weight);
   if (!lift) return null;
   const step = tour.loadStep;
@@ -111,13 +136,15 @@ function TourLog({ height, onName }: { height: number; onName: () => void }) {
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Drum
-        current={weightText(state.weight)}
-        above={layout.above ? weightText(state.weight + step) : undefined}
-        below={layout.below && state.weight - step >= 0 ? weightText(state.weight - step) : undefined}
-        nudge={nudge}
-        layout={layout}
-      />
+      <View style={[StyleSheet.absoluteFill, fit]} pointerEvents="none">
+        <Drum
+          current={weightText(state.weight)}
+          above={layout.above ? weightText(state.weight + step) : undefined}
+          below={layout.below && state.weight - step >= 0 ? weightText(state.weight - step) : undefined}
+          nudge={nudge}
+          layout={layout}
+        />
+      </View>
       <View style={styles.header} pointerEvents="box-none">
         <View style={styles.nameRow} pointerEvents="box-none">
           <Pressable
@@ -144,10 +171,10 @@ function TourLog({ height, onName }: { height: number; onName: () => void }) {
       </View>
       <View style={styles.footer} pointerEvents="none">
         <View style={styles.keysValue}>
-          <LcdText style={gadgetType.lcdReps}>{String(state.reps)}</LcdText>
-          <LcdText style={[gadgetType.lcdSmall, styles.besideReps]}>REPS</LcdText>
+          <LcdText style={compact ? gadgetType.lcdRow : gadgetType.lcdReps}>{String(state.reps)}</LcdText>
+          <LcdText style={[gadgetType.lcdSmall, !compact && styles.besideReps]}>REPS</LcdText>
         </View>
-        <LcdText style={[gadgetType.lcdSmall, styles.dim, styles.besideReps]}>PRACTICE</LcdText>
+        <LcdText style={[gadgetType.lcdSmall, styles.dim, !compact && styles.besideReps]}>PRACTICE</LcdText>
       </View>
     </View>
   );

@@ -195,9 +195,12 @@ function RockerEnd({
       onPress={() => {
         if (!actedOnPressIn.current) onPress();
       }}
-      // Pressability calls onPressOut after onPress (and alone on a cancelled touch).
+      // Pressability calls onPressOut before onPress on a press held past ~130 ms (after it on a
+      // quick tap, alone on a cancelled touch), so clear the flag once this release is handled.
       onPressOut={() => {
-        actedOnPressIn.current = false;
+        setTimeout(() => {
+          actedOnPressIn.current = false;
+        }, 0);
       }}
       style={[styles.end, styles.center, { opacity: disabled ? device.rockerEndDisabledOpacity : 1 }]}>
       <Text maxFontSizeMultiplier={fontScaleCap.display} style={[gadgetType.bigKeyLabel, { color: palette.keyInk }]}>

@@ -96,7 +96,7 @@ One lift, one set at a time, on the device:
 
 ## Trim Pro
 
-Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, Auto mode (next-session targets), and every skin (212 Aluminium and 101 Graphite are free, Graphite once the guided tour has given it; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
+Auto-renewable subscription: yearly $39.99 with a 7-day free trial, or monthly $6.99; or a one-time lifetime purchase at $79.99. Adds unlimited plans and switching, Progress beyond 3 months plus body trends, Auto mode (next-session targets), and every skin (212 Aluminium and 101 Graphite are free, Graphite once the guided tour has given it; 707 Field, 089 Pocket, 077 Bunker and 777 Holo are Pro). Logging and history are free. Prices always come from the App Store through RevenueCat.
 
 The paywall appears only at these moments: once after the first completed workout (from the receipt's Done), when the user taps a Pro-locked feature, and from Settings → Trim Pro. Not at the end of onboarding (decision 97). A locked skin is a machine in the skin row (the tour's gift, the Skin Library) with a padlock on its dot; the paywall opens from its `Try Trim Pro` pill, never during a workout.
 

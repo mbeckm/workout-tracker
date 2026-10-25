@@ -79,7 +79,7 @@ Store builds: see `APP_STORE_RELEASE_GUIDE.md` (`npx eas-cli build --platform io
 
 ## Services
 
-- **Purchases:** RevenueCat project "Scratch", entitlement `Scratch Pro`, current offering `default` (`$rc_annual`, `$rc_monthly`). Key: `EXPO_PUBLIC_REVENUECAT_API_KEY` (`appl_…`) in `mobile/.env` and EAS.
+- **Purchases:** RevenueCat project "Scratch", entitlement `Scratch Pro`, current offering `default` (`$rc_annual`, `$rc_monthly`, `$rc_lifetime`). Key: `EXPO_PUBLIC_REVENUECAT_API_KEY` (`appl_…`) in `mobile/.env` and EAS.
 - **Analytics:** PostHog EU, anonymous (`mobile/src/analytics/analytics.ts`). Key: `EXPO_PUBLIC_POSTHOG_KEY`. Development builds only log events unless `EXPO_PUBLIC_ANALYTICS_IN_DEV=1`. Keep events free of workout contents; if what's collected changes, update `legal/privacy.html` and App Privacy.
 - **Plan import (decision 88):** Vercel project `trim-api` (code in `server/`, region fra1), the only backend. It forwards pasted text and downscaled screenshots to the Claude API (Claude Haiku 5.5) and returns the plan structure; it never stores or logs the content. Key: `ANTHROPIC_API_KEY` on Vercel only, never in the app. Offline or on failure the app reads the plan locally (Apple text recognition + the local parser). It's the one place user content leaves the phone: if what's sent changes, update `legal/privacy.html` and App Privacy.
 - **Persistence:** local only (`mobile/src/store/persistence*.ts`). No backend for user data.
@@ -91,7 +91,7 @@ These still say "Scratch" and are load-bearing. Renaming them loses user data or
 - Storage keys `scratchWorkout.*` (app state, catalog cache, Live Activity focus).
 - Bundle IDs `com.marvinbeckmann.ScratchWorkout` (+ `.ExpoWidgetsTarget`) and app group `group.com.marvinbeckmann.ScratchWorkout`.
 - URL scheme `scratchworkout` (Live Activity deep links).
-- RevenueCat entitlement `Scratch Pro` and product IDs `com.marvinbeckmann.ScratchWorkout.pro.yearly` / `.monthly`.
+- RevenueCat entitlement `Scratch Pro` and product IDs `com.marvinbeckmann.ScratchWorkout.pro.yearly` / `.monthly` / `.lifetime`.
 - EAS slug `workout-app`.
 
 The Scratch-era SwiftUI prototype and its docs were removed; they are preserved at git tag `archive/scratch-era`.
@@ -135,6 +135,7 @@ Read this before your first command. Each item cost real time once.
 ### Expo and React Native
 - "Unimplemented component <RNSVG…>" or a crash on import means the installed dev build predates a native dependency. Rebuild (`npx expo prebuild --platform ios && npx expo run:ios`), don't debug the JS.
 - The runtime fingerprint hashes `mobile/package.json` **scripts**, so editing a script (even `check`) makes every installed build ignore new EAS updates. Between native builds, add new checks as their own step in `.github/workflows/checks.yml` instead of chaining them into `npm run check`. A `fingerprint.config.js` that skips package.json scripts lands with the next native build.
+- Store builds are pinned to Xcode 26.6 (`"image": "macos-tahoe-26.5-xcode-26.6"` in `eas.json`). Anything linked against the iOS 27 SDK (Xcode 27, EAS's newer images or this Mac's local Xcode) must adopt the UIScene lifecycle, or iOS 27 kills it at launch (`UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`). Build 15 crashed this way. Expo SDK 57's AppDelegate has no scene support yet, so keep the pin until the app adopts scenes.
 - `expo run:ios` reuses `mobile/ios/`; it doesn't pick up `app.json` changes (icon, splash, plugins, name) until `npx expo prebuild` runs.
 - Anything that animates on the UI thread with a custom easing (NumberFlow, Reanimated `withTiming` in a worklet) needs a worklet easing (`EASE_OUT_FN` = `Easing.bezierFn`). A plain RN `Easing.bezier` throws "easing function is not a worklet" the first time it runs.
 - Sheets are `SheetHost` content (`src/device/sheets/`), never RN `Modal` or RNScreens `formSheet`: the device must stay mounted under them, and toasts and the paywall must sit above.

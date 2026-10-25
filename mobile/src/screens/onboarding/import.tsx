@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { onboardingGeometry as G, space } from '@/constants/theme';
@@ -21,6 +21,9 @@ export function OnboardingImport() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useArtClock();
+  // On short screens (iPhone SE, an iPhone app on iPad) the art keeps its minimum height and the
+  // stage scrolls, so Screenshots and the line under it stay on screen.
+  const compact = useWindowDimensions().height < G.compactHeight;
 
   const onInput = (input: ImportInput) => {
     startImport(input);
@@ -28,7 +31,7 @@ export function OnboardingImport() {
   };
 
   return (
-    <OnboardingFrame title="Import plan" sub={IMPORT_SUB} scroll={false} testID="onboarding-import">
+    <OnboardingFrame title="Import plan" sub={IMPORT_SUB} scroll={compact} testID="onboarding-import">
       <View style={[styles.stage, { paddingBottom: Math.max(insets.bottom, space.inline) }]}>
         <ImportArt t={t} reach={importButtonReach(G.ctaHeight, space.section)} />
         <ImportButtons t={t} pillHeight={G.ctaHeight} onInput={onInput} />

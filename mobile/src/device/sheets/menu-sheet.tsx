@@ -60,7 +60,7 @@ export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | nu
   const { swapSheet: swapTo } = useDevice();
   // The tour's menu (decision 85): each row says what's inside and only closes the menu.
   const swapSheet: typeof swapTo = tour ? () => close() : swapTo;
-  const { workoutHistory } = useWorkoutStore();
+  const { workoutHistory, isPro } = useWorkoutStore();
 
   // The lifts Progress lists (weighted sets); no rank line (D4).
   const trackedLifts = useMemo(() => trackedLiftCount(workoutHistory), [workoutHistory]);
@@ -113,7 +113,8 @@ export function MenuSheet({ workout, tour = false }: { workout: MenuWorkout | nu
         <SheetRow
           icon={<ObjectIcon kind="toggles" />}
           title="Settings"
-          sub={tour ? 'Units, sounds, Trim Pro' : undefined}
+          // Trim Pro lives in Settings: say so until it's bought, so it's found without a workout first.
+          sub={tour ? 'Units, sounds, Trim Pro' : isPro ? undefined : 'Trim Pro'}
           onPress={() => swapSheet('settings', from)}
           testID="menu-settings"
         />
