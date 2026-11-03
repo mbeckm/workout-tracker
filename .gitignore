@@ -21,3 +21,4 @@ xcuserdata/
 
 # Gadget redesign orchestrator ledgers
 .claude/gadget-runs/
+.claude/verify-runs/
