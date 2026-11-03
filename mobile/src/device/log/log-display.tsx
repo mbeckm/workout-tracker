@@ -148,18 +148,21 @@ export function LogDisplay({
       </View>
       <Animated.View pointerEvents="none" style={[styles.card, frameStyle]} />
       <Pressable accessible={false} onPress={onStep} onLongPress={onKeypad} style={styles.cardBody}>
-        <Animated.View style={[styles.cardValues, rollStyle]}>
+        <View style={styles.cardValues}>
           {drum.header ? (
             <LcdText style={[gadgetType.lcdSmall, styles.dim]}>
               {drum.header}
             </LcdText>
           ) : null}
-          <LcdText
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            style={[drum.text.length >= COMPACT_FROM ? gadgetType.lcdHeroCompact : gadgetType.lcdHero, styles.center]}>
-            {drum.text}
-          </LcdText>
+          {/* Only the wheel's value rolls on a notch; the reps (the keys' value) stay put. */}
+          <Animated.View style={[styles.rollRow, rollStyle]}>
+            <LcdText
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={[drum.text.length >= COMPACT_FROM ? gadgetType.lcdHeroCompact : gadgetType.lcdHero, styles.center]}>
+              {drum.text}
+            </LcdText>
+          </Animated.View>
           {keysValue ? (
             <View style={styles.keysValue}>
               <LcdText numberOfLines={1} style={gadgetType.lcdReps}>
@@ -172,7 +175,7 @@ export function LogDisplay({
               ) : null}
             </View>
           ) : null}
-        </Animated.View>
+        </View>
         {loadStep ? (
           <LcdText style={[gadgetType.lcdSmall, !loadStep.chosen && styles.dim, styles.stepTag]}>
             {loadStep.text}
@@ -390,6 +393,7 @@ const baseStyles = StyleSheet.create({
   },
   cardValues: { alignItems: 'center', gap: logGeometry.cardValueGap, alignSelf: 'stretch', paddingHorizontal: device.displayPad },
   center: { textAlign: 'center', alignSelf: 'stretch' },
+  rollRow: { alignSelf: 'stretch' },
   stepTag: { position: 'absolute', right: logGeometry.cardStepInset, bottom: logGeometry.cardStepInset },
   clipRow: {
     position: 'absolute',
